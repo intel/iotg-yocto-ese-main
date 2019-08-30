@@ -1,0 +1,149 @@
+#! /bin/sh
+mkdir -p /dev /proc /sys /run/udev
+
+mount -t devtmpfs none /dev
+mount -t proc     none /proc
+mount -t sysfs    none /sys
+
+# try mount efivarfs
+if [ -d /sys/firmware/efi/efivars ]; then
+    mount -o nodev,noexec -t efivarfs none /sys/firmware/efi/efivars
+fi
+
+# busybox findfs cannot handle GPT PARTUUIDs!
+udevd --daemon
+udevadm trigger
+
+if [ -c /dev/kmsg ]; then
+    use_kmsg=1
+fi
+
+say() {
+    if [ -n "${use_kmsg}" ]; then
+        echo "[initrd] $@" > /dev/kmsg
+    else
+        echo "[initrd] $@" 1>&2
+    fi
+}
+
+fail() {
+    say "Startup failed"
+    exec /bin/sh
+}
+
+find_part() {
+    name="$1"
+    hint="$(grep ${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
+    if [ -z "${hint}" ]; then
+        fail
+    fi
+
+    type="$( echo "${hint}" | cut -d= -f1 )"
+    value="$( echo "${hint}" | cut -d= -f2 )"
+
+    if [ "${type}" == "LABEL" ]; then
+        echo "/dev/disk/by-label/${value}"
+        return
+    fi
+
+    if [ "${type}" == "PARTLABEL" ]; then
+        echo "/dev/disk/by-partlabel/${value}"
+        return
+    fi
+
+    if [ "${type}" == "PARTUUID" ]; then
+        echo "/dev/disk/by-partuuid/${value}"
+        return
+    fi
+
+    if [ "${type}" == "UUID" ]; then
+        echo "/dev/disk/by-uuid/${value}"
+        return
+    fi
+
+    # unknown?
+    echo "${hint}"
+}
+
+check_mount() {
+    source="$1"
+
+    # path-like? wait for it to enumerate
+    if $( echo "${source}" | grep -q ^/dev ) ; then
+       say "waiting for ${source}"
+       while [ ! -b "${source}" ]; do
+           usleep 100
+       done
+    fi
+
+    # some weirdo path leaks breaking fwupdate?
+    realpart="$( realpath ${source} )"
+    shift
+    mount "${realpart}" $@
+    if [ "$?" -ne 0 ]; then
+      say "Fatal error mounting ${source}"
+      fail
+    fi
+}
+
+# wait for devices to be enumerated
+
+# real root, mount as rw, as we need to update the mender.conf file
+realroot="/realroot"
+rootpart="$( find_part root )"
+mkdir -p "${realroot}"
+check_mount "${rootpart}" "${realroot}" -o rw || fail
+say "root done"
+
+# mount data partition
+data_part="$( find_part mender.data )"
+check_mount "${data_part}" "${realroot}/data" -o rw || fail
+say "data done"
+
+# mount boot partition, must be rw so mender can update grub env
+efi_part="$( find_part mender.efi )"
+if [ -n "${efi_part}" ]; then
+  check_mount "${efi_part}" "${realroot}/boot/efi" -o rw || fail
+  say "efi done"
+fi
+
+# try swap
+swap_part="$( find_part mender.swap )"
+if [ -n "${efi_part}" ]; then
+  swapon "${efi_part}"
+  say "swap done"
+fi
+
+# fix up root
+mount -o rbind /dev  "${realroot}/dev"  || fail
+mount -o rbind /proc "${realroot}/proc" || fail
+mount -o rbind /sys  "${realroot}/sys"  || fail
+say "rbind done"
+
+# fix up persistent content
+mount -o rbind "${realroot}/data/persistent/etc"  "${realroot}/etc"  || fail
+mount -o rbind "${realroot}/data/persistent/var"  "${realroot}/var"  || fail
+mount -o rbind "${realroot}/data/persistent/home" "${realroot}/home" || fail
+say "rbind persistent done"
+
+# fix up apparmor
+mount -o rbind "${realroot}/usr/share/intel/managed/apparmor"   "${realroot}/etc/apparmor"   || fail
+mount -o rbind "${realroot}/usr/share/intel/managed/apparmor.d" "${realroot}/etc/apparmor.d" || fail
+mount -o rbind "${realroot}/data/persistent/apparmor.d.cache"   "${realroot}/etc/apparmor.d/cache" || fail
+say "rbind apparmor done"
+
+# fix up mender pointers
+primary_part="$( realpath $( find_part mender.primary ) )"
+secondary_part="$( realpath $( find_part mender.secondary ) )"
+
+if [ ! -f "${realroot}/etc/mender/mender.conf" -a -f "${realroot}/etc/mender/mender.conf.in" ]; then
+    if [ -z "$primary_part" -o -z "$secondary_part" ]; then
+        fail
+    fi
+    sed -e "s@mender.primary@${primary_part}@g" -e "s@mender.secondary@${secondary_part}@g" < "${realroot}/etc/mender/mender.conf.in" > "${realroot}/etc/mender/mender.conf"
+fi
+say "mender.conf done"
+
+udevadm control --exit
+exec switch_root -c /dev/console "${realroot}" /sbin/init
+fail

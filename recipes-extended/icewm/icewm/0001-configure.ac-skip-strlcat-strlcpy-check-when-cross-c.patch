@@ -1,0 +1,21 @@
+diff --git a/configure.ac b/configure.ac
+index 99b50a5a..a287502a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -139,6 +139,7 @@ AC_CHECK_FUNCS([sysctl sysctlbyname sysinfo uname wordexp])
+ AC_CHECK_FUNC([getloadavg],[AC_DEFINE([HAVE_GETLOADAVG2], 1, [getloadavg() is available])])
+ AC_FUNC_SELECT_ARGTYPES
+ 
++AS_IF([test "$host" = "$build"],[
+ AC_MSG_CHECKING([for strlcpy])
+ AC_RUN_IFELSE([AC_LANG_PROGRAM([[#include <string.h>]],[[
+                char a[2];
+@@ -170,7 +171,7 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[#include <string.h>]],[[
+                AH_TEMPLATE([HAVE_STRLCAT],
+                            [Define to 1 if you have the strlcat function.])
+               ])
+-
++])
+ 
+ PKG_CHECK_MODULES([CORE],[fontconfig xext x11])
+ AC_SUBST([CORE_CFLAGS])

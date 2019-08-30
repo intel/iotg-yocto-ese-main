@@ -1,0 +1,118 @@
+From d501c8ebd5e4d1dd8d0c85e36a53fc783cc0e2ab Mon Sep 17 00:00:00 2001
+From: Ong Boon Leong <boon.leong.ong@intel.com>
+Date: Tue, 13 Aug 2019 15:08:40 +0800
+Subject: [PATCH] taprio: Add support for setting Frame Preemption Queue Mask
+
+This adds a new paramter, fpe-qmask, to used by user to specify which
+Tx Queue is mapped to preemptible MAC as described by IEEE 802.1Qbu/
+IEEE 802.3br Frame Preemption.
+
+For example, fpe-qmask 0x13 (0001 0011) means TxQ4, TxQ1 & TxQ0 are
+mapped to preemptible MAC.
+
+Signed-off-by: Ong Boon Leong <boon.leong.ong@intel.com>
+---
+ include/uapi/linux/pkt_sched.h |  1 +
+ tc/q_taprio.c                  | 32 +++++++++++++++++++++++++++++++-
+ 2 files changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/include/uapi/linux/pkt_sched.h b/include/uapi/linux/pkt_sched.h
+index 18f18529..152767bc 100644
+--- a/include/uapi/linux/pkt_sched.h
++++ b/include/uapi/linux/pkt_sched.h
+@@ -1175,6 +1175,7 @@ enum {
+ 	TCA_TAPRIO_ATTR_SCHED_CYCLE_TIME_EXTENSION, /* s64 */
+ 	TCA_TAPRIO_ATTR_FLAGS, /* u32 */
+ 	TCA_TAPRIO_ATTR_TXTIME_DELAY, /* u32 */
++	TCA_TAPRIO_ATTR_FPE_QMASK, /* u32 */
+ 	__TCA_TAPRIO_ATTR_MAX,
+ };
+ 
+diff --git a/tc/q_taprio.c b/tc/q_taprio.c
+index b9954436..b5c81a07 100644
+--- a/tc/q_taprio.c
++++ b/tc/q_taprio.c
+@@ -52,7 +52,7 @@ static void explain(void)
+ 		"		[num_tc NUMBER] [map P0 P1 ...] "
+ 		"		[queues COUNT@OFFSET COUNT@OFFSET COUNT@OFFSET ...] "
+ 		"		[ [sched-entry index cmd gate-mask interval] ... ] "
+-		"		[base-time time] [txtime-delay delay]"
++		"		[base-time time] [txtime-delay delay] [fpe-qmask mask]"
+ 		"\n"
+ 		"CLOCKID must be a valid SYS-V id (i.e. CLOCK_TAI)\n");
+ }
+@@ -99,6 +99,10 @@ static const char *entry_cmd_to_str(__u8 cmd)
+ 	switch (cmd) {
+ 	case TC_TAPRIO_CMD_SET_GATES:
+ 		return "S";
++	case TC_TAPRIO_CMD_SET_AND_HOLD:
++		return "H";
++	case TC_TAPRIO_CMD_SET_AND_RELEASE:
++		return "R";
+ 	default:
+ 		return "Invalid";
+ 	}
+@@ -108,6 +112,10 @@ static int str_to_entry_cmd(const char *str)
+ {
+ 	if (strcmp(str, "S") == 0)
+ 		return TC_TAPRIO_CMD_SET_GATES;
++	if (strcmp(str, "H") == 0)
++		return TC_TAPRIO_CMD_SET_AND_HOLD;
++	if (strcmp(str, "R") == 0)
++		return TC_TAPRIO_CMD_SET_AND_RELEASE;
+ 
+ 	return -1;
+ }
+@@ -161,6 +169,7 @@ static int taprio_parse_opt(struct qdisc_util *qu, int argc,
+ 	struct rtattr *tail, *l;
+ 	__u32 taprio_flags = 0;
+ 	__u32 txtime_delay = 0;
++	__u32 fpe_qmask = 0;
+ 	__s64 cycle_time = 0;
+ 	__s64 base_time = 0;
+ 	int err, idx;
+@@ -305,6 +314,16 @@ static int taprio_parse_opt(struct qdisc_util *qu, int argc,
+ 				return -1;
+ 			}
+ 
++		} else if (strcmp(*argv, "fpe-qmask") == 0) {
++			NEXT_ARG();
++			if (fpe_qmask != 0) {
++				fprintf(stderr, "taprio: duplicate \"fpe-qmask\" specification\n");
++				return -1;
++			}
++			if (get_u32(&fpe_qmask, *argv, 0)) {
++				PREV_ARG();
++				return -1;
++			}
+ 		} else if (strcmp(*argv, "help") == 0) {
+ 			explain();
+ 			return -1;
+@@ -330,6 +349,9 @@ static int taprio_parse_opt(struct qdisc_util *qu, int argc,
+ 	if (txtime_delay)
+ 		addattr_l(n, 1024, TCA_TAPRIO_ATTR_TXTIME_DELAY, &txtime_delay, sizeof(txtime_delay));
+ 
++	if (fpe_qmask)
++		addattr_l(n, 1024, TCA_TAPRIO_ATTR_FPE_QMASK, &fpe_qmask, sizeof(fpe_qmask));
++
+ 	if (base_time)
+ 		addattr_l(n, 1024, TCA_TAPRIO_ATTR_SCHED_BASE_TIME, &base_time, sizeof(base_time));
+ 
+@@ -486,6 +508,14 @@ static int taprio_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
+ 		print_uint(PRINT_ANY, "txtime_delay", " txtime delay %d", txtime_delay);
+ 	}
+ 
++
++	if (tb[TCA_TAPRIO_ATTR_FPE_QMASK]) {
++		__u32 fpe_qmask;
++
++		fpe_qmask = rta_getattr_s32(tb[TCA_TAPRIO_ATTR_FPE_QMASK]);
++		print_0xhex(PRINT_ANY, "fpe_qmask", " FPE queue mask %#x", fpe_qmask);
++	}
++
+ 	print_schedule(f, tb);
+ 
+ 	if (tb[TCA_TAPRIO_ATTR_ADMIN_SCHED]) {
+-- 
+2.17.1
+

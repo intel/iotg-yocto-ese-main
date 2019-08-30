@@ -1,0 +1,24 @@
+From c466e31b23fa27ad732ab4c9a6b63a317a2770a7 Mon Sep 17 00:00:00 2001
+From: dnagasun <devamekalai.nagasundaram@intel.com>
+Date: Mon, 26 Nov 2018 15:25:53 +0800
+Subject: [PATCH] link libgstallocator to libgstmsdk 
+
+---
+ configure.ac | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 1a27f917d..37a4a0f34 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1081,6 +1081,7 @@ AG_GST_CHECK_FEATURE(TINYALSA, [tinyalsa], tinyalsa, [
+ dnl check for intel mediasdk
+ translit(dnm, m, l) AM_CONDITIONAL(USE_MSDK, true)
+ AG_GST_CHECK_FEATURE(MSDK, [Intel MediaSDK], msdk, [
++AG_GST_PKG_CHECK_MODULES(GST_ALLOCATORS, gstreamer-allocators-1.0)
+   PKG_CHECK_MODULES(G_UDEV, gudev-1.0 , [
+           AC_DEFINE([HAVE_GUDEV], 1, [Define if gudev is installed])
+           HAVE_GUDEV="yes" ],
+-- 
+2.19.0
+

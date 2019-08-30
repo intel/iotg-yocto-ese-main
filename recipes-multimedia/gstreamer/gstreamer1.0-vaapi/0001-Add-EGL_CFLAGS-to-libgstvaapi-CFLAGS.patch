@@ -1,0 +1,30 @@
+From 8282b5846c4d3163f0f618701120584c6b2665a2 Mon Sep 17 00:00:00 2001
+From: "Soon, Thean Siew" <thean.siew.soon@intel.com>
+Date: Fri, 26 Oct 2018 18:23:17 +0800
+Subject: [PATCH] Add EGL_CFLAGS to libgstvaapi CFLAGS
+
+We need this to pass correctly EGL CFLAGS when building with EGL support.
+
+Signed-off-by: Soon, Thean Siew <thean.siew.soon@intel.com>
+---
+ gst/vaapi/Makefile.am | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gst/vaapi/Makefile.am b/gst/vaapi/Makefile.am
+index b299ac98..d6cab71f 100644
+--- a/gst/vaapi/Makefile.am
++++ b/gst/vaapi/Makefile.am
+@@ -24,6 +24,10 @@ libgstvaapi_LIBS += $(top_builddir)/gst-libs/gst/vaapi/libgstvaapi-glx.la
+ endif
+ 
+ if USE_EGL
++libgstvaapi_CFLAGS += \
++	$(EGL_CFLAGS)	\
++	$(NULL)
++
+ libgstvaapi_LIBS += $(top_builddir)/gst-libs/gst/vaapi/libgstvaapi-egl.la
+ endif
+ 
+-- 
+2.19.0
+

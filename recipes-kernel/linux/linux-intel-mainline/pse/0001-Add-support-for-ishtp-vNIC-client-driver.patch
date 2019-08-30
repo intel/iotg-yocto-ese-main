@@ -1,0 +1,1045 @@
+From 6ad9926d5ee5a69e9c54dfd2130af48adb0dcf8a Mon Sep 17 00:00:00 2001
+From: "K Naduvalath, Sumesh" <sumesh.k.naduvalath@intel.com>
+Date: Mon, 19 Aug 2019 02:31:58 +0530
+Subject: [PATCH] Add support for ishtp vNIC client driver
+
+Description:
+This driver is probed by vNIC client guid and works as a Network adapter
+(over ish transport protocol)
+
+Change-Id: Ic25a70a324b117f18441241aae1c9db2f9759c09
+Signed-off-by: K Naduvalath, Sumesh <sumesh.k.naduvalath@intel.com>
+---
+ drivers/hid/intel-ish-hid/Kconfig    |  10 +
+ drivers/hid/intel-ish-hid/Makefile   |   1 +
+ drivers/hid/intel-ish-hid/eth-heci.c | 925 +++++++++++++++++++++++++++
+ drivers/hid/intel-ish-hid/eth-heci.h |  55 ++
+ 4 files changed, 991 insertions(+)
+ create mode 100644 drivers/hid/intel-ish-hid/eth-heci.c
+ create mode 100644 drivers/hid/intel-ish-hid/eth-heci.h
+
+diff --git a/drivers/hid/intel-ish-hid/Kconfig b/drivers/hid/intel-ish-hid/Kconfig
+index d0598ed4dcca..c5085d2a05aa 100644
+--- a/drivers/hid/intel-ish-hid/Kconfig
++++ b/drivers/hid/intel-ish-hid/Kconfig
+@@ -40,4 +40,14 @@ config INTEL_ISH_ECLITE
+          the dedicated low power chip and the host. The driver also acts as an
+          operation region driver.
+ 
++config INTEL_ISHTP_VNIC
++       tristate "Intel ISHTP vNIC client driver"
++       default n
++       select HID
++       depends on INTEL_ISH_HID
++       help
++         If you say Y here, Network stack will be able to talk to vNIC fw on a
++         dedicated low power chip over ishtp through this driver.
++
++
+ endmenu
+diff --git a/drivers/hid/intel-ish-hid/Makefile b/drivers/hid/intel-ish-hid/Makefile
+index 798188d035e9..d835d6a6935b 100644
+--- a/drivers/hid/intel-ish-hid/Makefile
++++ b/drivers/hid/intel-ish-hid/Makefile
+@@ -23,5 +23,6 @@ intel-ishtp-hid-objs += ishtp-hid-client.o
+ obj-$(CONFIG_INTEL_ISH_FIRMWARE_DOWNLOADER) += intel-ishtp-loader.o
+ intel-ishtp-loader-objs += ishtp-fw-loader.o
+ obj-$(CONFIG_INTEL_ISH_ECLITE) += intel-ishtp-eclite.o
++obj-$(CONFIG_INTEL_ISHTP_VNIC) += eth-heci.o
+ 
+ ccflags-y += -I $(srctree)/$(src)/ishtp
+diff --git a/drivers/hid/intel-ish-hid/eth-heci.c b/drivers/hid/intel-ish-hid/eth-heci.c
+new file mode 100644
+index 000000000000..bf82390404d4
+--- /dev/null
++++ b/drivers/hid/intel-ish-hid/eth-heci.c
+@@ -0,0 +1,925 @@
++ /*
++ *  eth_heci.c - Intel Ethernet over HECI driver for OSE
++ *
++ *  Copyright (C) 2019-20 Intel Corp
++ *  Author: Sing Nallasellan
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  In the dpcm driver modelling when a particular FE/BE/Mixer/Pipe is active
++ *  we forward the settings and parameters, rest we keep the values  in
++ *  driver and forward when DAPM enables them
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/moduleparam.h>
++
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/types.h>
++#include <linux/interrupt.h>
++
++#include <linux/in.h>
++#include <linux/ethtool.h>
++#include <linux/netdevice.h>
++#include <linux/if_arp.h>
++#include <linux/etherdevice.h>
++#include <linux/ip.h>
++#include <linux/tcp.h>
++#include <linux/skbuff.h>
++#include <linux/in6.h>
++#include <asm/checksum.h>
++#include <linux/device.h>
++#include <linux/intel-ish-client-if.h>
++
++#include "ishtp/ishtp-dev.h"
++#include "ishtp/client.h"
++#include "ishtp-hid.h"
++#include "ishtp/bus.h"
++
++#include "eth-heci.h"
++
++static const uuid_le eth_heci_ishtp_uuid =
++			UUID_LE (0xeb83e1fb, 0x4c61, 0x4829,
++				0x98, 0x4c, 0x3, 0x23, 0xab, 0x4b, 0x41, 0x65);
++
++#define ETH_HECI_DRV_NAME                 "eth_heci"
++#define ETH_HECI_DRV_VERSION              "0.1.0"
++#define ETH_HECI_DRV_DESC                 "Intel Ethernet HECI Driver"
++
++#define WAIT_FOR_SEND_SLICE_MS          100
++#define WAIT_FOR_SEND_COUNT             10
++
++static int timeout = ETH_HECI_TIMEOUT;
++module_param(timeout, int, 0);
++
++struct eth_heci_prv {
++	struct device *dev;
++	struct net_device *net_dev;
++	struct net_device_stats stats;
++	spinlock_t lock;
++
++	unsigned char *txb;
++	unsigned char *tx_head;
++	int tx_left;
++
++	unsigned char *rxb;
++	unsigned char *rx_head;
++	int rx_used;
++
++	struct ishtp_cl *eth_heci_cl;
++	struct ishtp_cl_device *cl_device;
++	struct ishtp_fw_client *fw_client;
++
++	wait_queue_head_t read_wait;
++	struct ishtp_cl_rb *rb;
++	struct mutex cl_mutex;
++
++	struct work_struct tx_work;
++	struct work_struct event_work;
++	struct work_struct reset_work;
++};
++
++struct eth_heci_ioctl_data {
++	unsigned short id;
++	unsigned short val_in;
++	unsigned short val_out;
++};
++
++#ifdef DEBUG
++static void hexdump(const unsigned char *buf, unsigned short len)
++{
++	if (1) {
++		int i;
++		for (i = 0; i < len; i++) {
++			printk(KERN_CONT " 0x%02X", (unsigned char)buf[i]);
++		}
++		printk("\n");
++	}
++}
++#else
++static void hexdump(const unsigned char *buf, unsigned short len) {}
++#endif
++
++static int eth_heci_cl_write(struct eth_heci_prv *prv, int *written)
++{
++	struct ishtp_cl *cl;
++	unsigned char *buf = prv->tx_head;
++	int len = prv->tx_left;
++	int ret;
++
++	cl = prv->eth_heci_cl;
++	*written = 0;
++
++	if (!cl || !cl->dev) {
++		ret = -ENODEV;
++		goto err_exit;
++	}
++
++	if (cl->dev->dev_state != ISHTP_DEV_ENABLED) {
++		ret = -ENODEV;
++		goto err_exit;
++	}
++
++	if (cl->state != ISHTP_CL_CONNECTED)
++	{
++		dev_err(prv->dev,"[WRITE] host client %d not connected to FW client = %d\n",
++				cl->host_client_id, cl->fw_client_id);
++		ret = -ENODEV;
++		goto err_exit;
++	}
++
++	if (len <= 0 || len > cl->device->fw_client->props.max_msg_length) {
++		ret = -EMSGSIZE;
++		goto err_exit;
++	}
++
++	hexdump(buf, len);
++
++	ret = ishtp_cl_send(cl, buf, len);
++	if (!ret)
++	{
++		*written = len;
++		return 0;
++	}
++	dev_err(prv->dev,"[WRITE] Data sent error: %x\n", ret);
++err_exit:
++	return ret;
++}
++
++/*
++ * Receive a packet
++ */
++static void eth_heci_rx(struct net_device *dev)
++{
++	struct sk_buff *skb;
++	struct eth_heci_prv *prv;
++
++	if (!dev)
++		return;
++	prv = netdev_priv(dev);
++
++	if (!prv)
++		return;
++
++	/*
++	 * The packet has been retrieved from the transmission
++	 * medium. Build an skb around it, so upper layers can handle it
++	 */
++	skb = dev_alloc_skb(prv->rx_used + 2);
++	if (!skb) {
++		dev_info(prv->dev, "eth_heci rx: low on mem - packet dropped\n");
++		prv->stats.rx_dropped++;
++		goto out;
++	}
++	skb_reserve(skb, 2); /* align IP on 16B boundary */
++	memcpy(skb_put(skb, prv->rx_used), prv->rx_head, prv->rx_used);
++
++	/* Write metadata, and then pass to the receive level */
++	skb->dev = dev;
++	skb->protocol = eth_type_trans(skb, dev);
++	skb->ip_summed = CHECKSUM_UNNECESSARY; /* don't check it */
++	prv->stats.rx_packets++;
++	prv->stats.rx_bytes += prv->rx_used;
++	netif_rx(skb);
++	prv->rx_used = 0;
++	prv->rx_head = prv->rxb;
++  out:
++	return;
++}
++
++static void eth_heci_process_rx_data(struct eth_heci_prv *prv)
++{
++	struct net_device *net_dev;
++	struct ishtp_cl_rb *rb;
++
++	net_dev = prv->net_dev;
++	rb = prv->rb;
++
++	memcpy(prv->rx_head, rb->buffer.data, rb->buffer.size);
++	prv->rx_used = rb->buffer.size;
++
++	eth_heci_rx(net_dev);
++}
++
++#if 0
++static void eth_heci_process_rx_event(struct eth_heci_prv *prv)
++{
++	schedule_work(&prv->event_work);
++}
++#endif
++
++static void eth_heci_cl_event_cb(struct ishtp_cl_device *cl_device)
++{
++	struct eth_heci_prv *prv;
++	struct ishtp_cl_rb *rb;
++
++	prv = ishtp_get_drvdata(cl_device);
++
++	if (!prv) {
++		printk("prv == NULL");
++		return;
++	}
++
++	while ((rb = ishtp_cl_rx_get_rb(prv->eth_heci_cl)) != NULL) {
++		prv->rb = rb;
++
++		eth_heci_process_rx_data(prv);
++		prv->rb = NULL;
++
++		ishtp_cl_io_rb_recycle(rb);
++	}
++}
++
++static int eth_heci_open(struct net_device *dev)
++{
++	netif_start_queue(dev);
++	return 0;
++}
++
++static int eth_heci_stop(struct net_device *dev)
++{
++	netif_stop_queue(dev);
++	//flush_work(&prv->tx_work);
++
++	return 0;
++}
++
++/*
++ * Configuration changes by ifconfig
++ */
++static int eth_heci_config(struct net_device *dev, struct ifmap *map)
++{
++	if (dev->flags & IFF_UP) /* can't act on a running interface */
++		return -EBUSY;
++
++	return 0;
++}
++
++static void eth_heci_event(struct work_struct *work)
++{
++	struct eth_heci_prv *prv = container_of(work, struct eth_heci_prv, event_work);
++
++	return;
++}
++
++static void eth_heci_transmit(struct work_struct *work)
++{
++	struct eth_heci_prv *prv = container_of(work, struct eth_heci_prv, tx_work);
++	int written;
++	int stat;
++
++	spin_lock_bh(&prv->lock);
++
++	if (!netif_running(prv->net_dev)) {
++		spin_unlock_bh(&prv->lock);
++		return;
++	}
++
++	if (prv->tx_left <= 0)  {
++		prv->stats.tx_packets++;
++		spin_unlock_bh(&prv->lock);
++		netif_wake_queue(prv->net_dev);
++		return;
++	}
++
++	stat = eth_heci_cl_write(prv, &written);
++
++	if (written > 0) {
++		prv->tx_left -= written;
++		prv->tx_head += written;
++	}
++	spin_unlock_bh(&prv->lock);
++}
++
++/*
++ * Transmit a packet (called by the kernel)
++ */
++static int eth_heci_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct eth_heci_prv *prv = netdev_priv(dev);
++	u8 *pos;
++	int written;
++	int stat;
++
++        if (skb->len <= 0) {
++                dev_kfree_skb_any(skb);
++                return NETDEV_TX_OK;
++        }
++
++	if (!netif_running(dev))  {
++		dev_info(prv->dev, "xmit: iface is down\n");
++		dev_kfree_skb_any(skb);
++		return NETDEV_TX_OK;
++	}
++
++	pos = prv->txb;
++	memcpy(pos, skb->data, skb->len);
++
++	prv->tx_left = skb->len;
++	prv->tx_head = prv->txb;
++
++	hexdump(skb->data, skb->len);
++	//netif_stop_queue(prv->net_dev);
++
++	stat = eth_heci_cl_write(prv, &written);
++#if 0
++	pos += skb->len;
++	if (written > 0) {
++		prv->tx_left = (pos - prv->txb) - written;
++		prv->tx_head = prv->txb + written;
++		prv->stats.tx_bytes += written;
++	}
++#endif
++
++	dev_kfree_skb_any(skb);
++	return NETDEV_TX_OK;
++}
++
++static void eth_heci_tx_timeout (struct net_device *dev)
++{
++	struct eth_heci_prv *prv = netdev_priv(dev);
++
++	dev_info(prv->dev, "eth_heci tx timeout\n");
++	dev_info(prv->dev, "Transmit timeout at %ld, latency %ld\n",
++		    jiffies, dev_trans_start(dev));
++
++	prv->stats.tx_errors++;
++	prv->stats.tx_dropped++;
++
++	netif_wake_queue(dev);
++	return;
++}
++
++#if 0
++
++int eth_heci_process_ioctl(struct eth_heci_prv *prv,
++		struct eth_heci_ioctl_data  *data)
++{
++        struct ishtp_cl *cl;
++        struct ishtp_device *ishtp_dev;
++        struct ishtp_connect_client_data *connect_data;
++        uint32_t fw_stat_buf;
++        unsigned int ring_size;
++	int ret = 0;
++
++	if (!prv)
++		ret = -EFAULT;
++
++        mutex_lock(&prv->cl_mutex);
++
++        ishtp_dev = cl->dev;
++
++#define GI_HW_RESET         (1)
++#define GI_SET_RX_RING_SIZE (2)
++#define GI_SET_TX_RING_SIZE (3)
++#define GI_GET_FW_STATUS    (4)
++#define GI_CONNECT_CLIENT   (5)
++
++	switch (data->id)
++	{
++	case GI_HW_RESET:
++                ret = ish_hw_reset(ishtp_dev);
++		break;
++
++        case GI_SET_RX_RING_SIZE:
++                ring_size = data;
++
++                if (ring_size > CL_MAX_RX_RING_SIZE) {
++                        ret = -EINVAL;
++                        break;
++                }
++
++                if (cl->state != ISHTP_CL_INITIALIZING) {
++                        ret = -EBUSY;
++                        break;
++                }
++
++                cl->tx_ring_size = ring_size;
++                break;
++
++        case GI_SET_TX_RING_SIZE:
++                ring_size = data;
++
++                if (ring_size > CL_MAX_TX_RING_SIZE) {
++                        ret = -EINVAL;
++                        break;
++                }
++
++                if (cl->state != ISHTP_CL_INITIALIZING) {
++                        ret = -EBUSY;
++                        break;
++                }
++
++                cl->tx_ring_size = ring_size;
++                break;
++
++        case GI_GET_FW_STATUS:
++                if (!data) {
++                        ret = -ENOMEM;
++                        break;
++                }
++
++                fw_stat_buf = dev->ops->get_fw_status(ishtp_dev);
++
++                if (copy_to_user((char __user *)data, &fw_stat_buf,
++                                sizeof(fw_stat_buf))) {
++                        ret = -EFAULT;
++                        break;
++                }
++
++                ret = sizeof(fw_stat_buf);
++                break;
++
++
++        case GI_CONNECT_CLIENT:
++                if (dev->dev_state != ISHTP_DEV_ENABLED) {
++                        ret = -ENODEV;
++                        break;
++                }
++
++                connect_data = memdup_user((char __user *)data,
++                                        sizeof(struct ishtp_connect_client_data));
++                if (IS_ERR(connect_data)) {
++                        ret = PTR_ERR(connect_data);
++                        break;
++                }
++
++                ret = ishtp_cl_ioctl_connect_client(file, connect_data);
++                if (ret) {
++                        kfree(connect_data);
++                        break;
++                }
++
++                /* If all is ok, copying the data back to user. */
++                if (copy_to_user((char __user *)data, connect_data,
++                                sizeof(struct ishtp_connect_client_data)))
++                        ret = -EFAULT;
++
++                kfree(connect_data);
++
++                break;
++	default:
++                ret = -EINVAL;
++                break;
++	}
++
++        mutex_unlock(&prv->cl_mutex);
++
++        return ret;
++}
++#endif
++
++static int eth_heci_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
++{
++        struct eth_heci_prv *prv = netdev_priv(dev);
++
++	return 0;
++
++#if 0
++        int ret = 0;
++        struct ishtp_cl *cl;
++        struct eth_heci_ioctl_data  data;
++
++        if (!capable(CAP_SYS_ADMIN))
++                return -EPERM;
++
++        if (!(dev && dev->flags & IFF_UP))
++                return -ENODEV;
++
++        mutex_lock(&prv->cl_mutex);
++
++        cl = prv->eth_heci_cl;
++
++        if (!cl || !cl->dev) {
++                mutex_unlock(&prv->cl_mutex);
++                return -ENODEV;
++        }
++
++        switch (cmd) {
++        case SIOCDEVPRIVATE:
++                if(copy_from_user(&data, ifr->ifr_data, sizeof(data)))
++                        return -EFAULT;
++                break;
++
++        default:
++                ret = -EINVAL;
++                break;
++        }
++
++        mutex_unlock(&prv->cl_mutex);
++
++        return eth_heci_process_ioctl(prv, &data);
++#endif
++}
++
++
++struct net_device_stats *eth_heci_stats(struct net_device *dev)
++{
++	struct eth_heci_prv *prv = netdev_priv(dev);
++
++	return &prv->stats;
++}
++
++static int eth_heci_dev_init(struct net_device *dev)
++{
++	struct eth_heci_prv *prv = netdev_priv(dev);
++	struct ishtp_fw_client *fw_client;
++	struct ishtp_cl *eth_heci_cl;
++	struct ishtp_device *ishtp_dev;
++	int ret;
++
++	ishtp_dev = prv->cl_device->ishtp_dev;
++        if (!ishtp_dev)
++                return -ENODEV;
++
++	dev->mtu = ETH_HECI_MAX_MTU;
++	dev->type = ARPHRD_ETHER;
++
++	prv->txb = kzalloc(ETH_HECI_TX_MAX_LEN, GFP_KERNEL);
++	if (!prv->txb) {
++		return -ENOMEM;
++	}
++
++	prv->rxb = kzalloc(ETH_HECI_RX_MAX_LEN, GFP_KERNEL);
++	if (!prv->rxb) {
++		kfree(prv->txb);
++		prv->txb = NULL;
++		return -ENOMEM;
++	}
++
++	prv->tx_head = prv->txb;
++	prv->tx_left = 0;
++
++	prv->rx_head = prv->rxb;
++	prv->rx_used = 0;
++
++	eth_heci_cl = ishtp_cl_allocate(prv->cl_device);
++	if (!eth_heci_cl){
++		printk("ishtp cl allocate failed\n");
++		ret = -ENOMEM;
++		goto err_free_skb;
++	}
++
++	if (ishtp_dev->dev_state != ISHTP_DEV_ENABLED) {
++                ret = -ENODEV;
++                goto err_free_cl;
++        }
++
++	prv->eth_heci_cl = eth_heci_cl;
++
++	ret = ishtp_cl_link(eth_heci_cl);
++	if (ret) {
++		dev_err(prv->dev, "ishtp_cl_link failed\n");
++		ret = -ENOENT;
++		goto err_free_cl;
++	}
++
++	/* Connect to FW client */
++	eth_heci_cl->rx_ring_size = ETH_HECI_CL_RX_RING_SIZE;
++	eth_heci_cl->tx_ring_size = ETH_HECI_CL_TX_RING_SIZE;
++
++	fw_client = ishtp_fw_cl_get_client(prv->cl_device->ishtp_dev, &eth_heci_ishtp_uuid);
++	if (!fw_client) {
++		printk("FW client not found\n");
++		ret = -ENOENT;
++		goto err_cl_unlink;
++	}
++
++	eth_heci_cl->fw_client_id = fw_client->client_id;
++	eth_heci_cl->state = ISHTP_CL_CONNECTING;
++
++	ret = ishtp_cl_connect(eth_heci_cl);
++	if (ret) {
++		printk("Client connect failed\n");
++		goto err_cl_unlink;
++	}
++
++	printk("Host client = %d is  connected to fw client = %d\n",
++			eth_heci_cl->host_client_id,
++			eth_heci_cl->fw_client_id);
++
++	return 0;
++
++err_cl_unlink:
++	printk("error cl unlink");
++	ishtp_cl_unlink(eth_heci_cl);
++
++err_free_cl:
++	printk("error free cl");
++	ishtp_cl_free(eth_heci_cl);
++	prv->eth_heci_cl = NULL;
++
++err_free_skb:
++	printk("error free rx skb");
++
++	return ret;
++}
++
++static void eth_heci_dev_uninit(struct net_device *dev)
++{
++	struct eth_heci_prv *prv = netdev_priv(dev);
++	struct ishtp_device *ishtp_dev;
++	struct ishtp_cl *cl;
++        int try = WAIT_FOR_SEND_COUNT;
++	int ret;
++	struct ishtp_cl_rb *rb;
++
++	printk("eth_heci_dev_uninit");
++
++	if (!prv) {
++		printk("eth_heci_dev_uinit prv == NULL");
++		return;
++	}
++
++	cancel_work_sync(&prv->tx_work);
++	cancel_work_sync(&prv->event_work);
++	cancel_work_sync(&prv->reset_work);
++
++	cl = prv->eth_heci_cl;
++
++	if (cl) {
++		ishtp_dev = cl->dev;
++
++		if ((ishtp_dev->dev_state == ISHTP_DEV_ENABLED) &&
++                        (cl->state == ISHTP_CL_CONNECTED)) {
++			do {
++				if (!ishtp_cl_tx_empty(cl))
++					msleep_interruptible(WAIT_FOR_SEND_SLICE_MS);
++				else
++					break;
++			} while (--try);
++
++			cl->state = ISHTP_CL_DISCONNECTING;
++			ret = ishtp_cl_disconnect(cl);
++		}
++		ishtp_cl_unlink(cl);
++		ishtp_cl_flush_queues(cl);
++		ishtp_cl_free(cl);
++
++		prv->eth_heci_cl = NULL;
++	}
++
++        rb = prv->rb;
++        if (rb) {
++                ishtp_cl_io_rb_recycle(rb);
++                prv->rb = NULL;
++        }
++
++	if (prv->txb) kfree(prv->txb);
++	if (prv->rxb) kfree(prv->rxb);
++
++	prv->txb = prv->rxb = NULL;
++}
++
++static const struct net_device_ops eth_heci_netdev_ops = {
++	.ndo_init            = eth_heci_dev_init,
++	.ndo_uninit          = eth_heci_dev_uninit,
++	.ndo_open            = eth_heci_open,
++	.ndo_stop            = eth_heci_stop,
++	.ndo_start_xmit      = eth_heci_xmit,
++	.ndo_set_mac_address = eth_mac_addr,
++	.ndo_do_ioctl        = eth_heci_ioctl,
++	.ndo_set_config      = eth_heci_config,
++	.ndo_get_stats       = eth_heci_stats,
++	.ndo_tx_timeout      = eth_heci_tx_timeout,
++	.ndo_validate_addr   = eth_validate_addr
++};
++
++void eth_heci_setup(struct net_device *dev)
++{
++	struct eth_heci_prv *prv;
++
++	printk("eth_heci setup entry\n");
++
++	ether_setup(dev);
++	dev->watchdog_timeo = timeout;
++
++	dev->netdev_ops = &eth_heci_netdev_ops;
++
++	dev->flags           |= IFF_NOARP;
++	dev->features        |= NETIF_F_HW_CSUM;
++
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
++	dev->tx_queue_len = 100;
++
++	dev->min_mtu = ETH_HECI_MIN_MTU;
++	dev->max_mtu = ETH_HECI_MAX_MTU;
++
++	prv = netdev_priv(dev);
++	memset(prv, 0, sizeof(struct eth_heci_prv));
++	spin_lock_init(&prv->lock);
++
++	return;
++}
++
++static void eth_heci_reset(struct work_struct *work)
++{
++	struct eth_heci_prv *prv;
++	struct ishtp_device *dev;
++	struct ishtp_cl_device *cl_device;
++	struct ishtp_cl *eth_heci_cl;
++	struct ishtp_fw_client *fw_client;
++	int ret = 0;
++
++	printk("eth_heci_reset");
++
++	prv = container_of(work,
++			struct eth_heci_prv, reset_work);
++
++
++	dev = prv->cl_device->ishtp_dev;
++	if (!dev) {
++		dev_err(prv->dev,
++			"This cl_device not link to ishtp_dev\n");
++		return;
++	}
++
++	cl_device = prv->cl_device;
++
++	eth_heci_cl = prv->eth_heci_cl;
++	if (eth_heci_cl) {
++		ishtp_cl_unlink(eth_heci_cl);
++		ishtp_cl_flush_queues(eth_heci_cl);
++		ishtp_cl_free(eth_heci_cl);
++
++		eth_heci_cl = NULL;
++
++		eth_heci_cl = ishtp_cl_allocate(cl_device);
++		if (!eth_heci_cl) {
++			dev_err(&prv->cl_device->dev,
++				"Allocate ishtp_cl failed\n");
++			return;
++		}
++
++		if (cl_device->ishtp_dev->dev_state != ISHTP_DEV_ENABLED) {
++			dev_err(&prv->cl_device->dev,
++				"Ishtp dev isn't enabled\n");
++			ret = -ENODEV;
++			goto out_free;
++		}
++
++		ret = ishtp_cl_link(eth_heci_cl);
++		if (ret) {
++			dev_err(&prv->cl_device->dev,
++				"Can not link to ishtp\n");
++			goto out_free;
++		}
++
++		fw_client = ishtp_fw_cl_get_client(prv->cl_device->ishtp_dev,
++				&cl_device->fw_client->props.protocol_name);
++		if (!fw_client) {
++			dev_err(&prv->cl_device->dev,
++				"Don't find related fw client\n");
++			ret = -ENOENT;
++			goto out_free;
++		}
++
++		eth_heci_cl->fw_client_id = fw_client->client_id;
++		eth_heci_cl->state = ISHTP_CL_CONNECTING;
++
++		ret = ishtp_cl_connect(eth_heci_cl);
++		if (ret) {
++			dev_err(&prv->cl_device->dev,
++				"Connect to fw failed\n");
++			goto out_free;
++		}
++
++		prv->eth_heci_cl = eth_heci_cl;
++	}
++
++	/* After reset, must register event callback again */
++	ret = ishtp_register_event_cb(cl_device, eth_heci_cl_event_cb);
++
++out_free:
++	if (ret) {
++		ishtp_cl_free(eth_heci_cl);
++		prv->eth_heci_cl = NULL;
++		dev_err(&prv->cl_device->dev, "Reset failed\n");
++	}
++}
++
++static int eth_heci_cl_reset(struct ishtp_cl_device *cl_device)
++{
++	struct eth_heci_prv *prv = (struct eth_heci_prv *)ishtp_get_drvdata(cl_device);
++
++	if (!prv) {
++		dev_err(&cl_device->dev, "Client driver not ready yet\n");
++		return -ENODEV;
++	}
++
++	schedule_work(&prv->reset_work);
++
++	return 0;
++}
++
++static int eth_heci_cl_remove(struct ishtp_cl_device *cl_device)
++{
++        struct eth_heci_prv *prv;
++
++        prv = ishtp_get_drvdata(cl_device);
++        if (!prv)
++                return -ENODEV;
++
++        unregister_netdev(prv->net_dev);
++        free_netdev(prv->net_dev);
++
++        ishtp_put_device(cl_device);
++
++        return 0;
++}
++
++int eth_heci_cl_probe(struct ishtp_cl_device *cl_device)
++{
++	int ret;
++	struct eth_heci_prv *eth_heci_prv;
++	struct net_device *net_dev;
++
++	if (!cl_device)
++		return	-ENODEV;
++
++	/* Allocate the devices */
++	net_dev = alloc_netdev(sizeof(struct eth_heci_prv), "ehi%d",
++			NET_NAME_UNKNOWN, eth_heci_setup);
++	if (net_dev == NULL) {
++		printk("alloc_netdev failed\n");
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	eth_heci_prv  = netdev_priv(net_dev);
++	eth_heci_prv->net_dev = net_dev;
++	eth_heci_prv->dev = &net_dev->dev;
++
++	eth_heci_prv->cl_device = cl_device;
++	ishtp_set_drvdata(cl_device, eth_heci_prv);
++
++	ishtp_get_device(cl_device);
++
++	ret = ishtp_register_event_cb(cl_device, eth_heci_cl_event_cb);
++	if (ret) {
++		printk("eth_heci: ishtp register callback failed\n");
++		free_netdev(net_dev);
++		goto out;
++	}
++
++	eth_hw_addr_random(eth_heci_prv->net_dev);
++	printk("Using random MAC address: %pM\n",
++			 eth_heci_prv->net_dev->dev_addr);
++
++	INIT_WORK(&eth_heci_prv->tx_work, eth_heci_transmit);
++	INIT_WORK(&eth_heci_prv->event_work, eth_heci_event);
++	INIT_WORK(&eth_heci_prv->reset_work, eth_heci_reset);
++
++	spin_lock_init(&eth_heci_prv->lock);
++
++        mutex_init(&eth_heci_prv->cl_mutex);
++
++	ret = register_netdev(net_dev);
++	if (ret) {
++		printk("eth_heci: Unable to register net device\n");
++		free_netdev(net_dev);
++		goto out;
++	}
++
++   out:
++	return ret;
++}
++
++static struct ishtp_cl_driver eth_heci_cl_driver = {
++	.name = ETH_HECI_DRV_NAME,
++	.guid = &eth_heci_ishtp_uuid,
++	.probe = eth_heci_cl_probe,
++	.remove = eth_heci_cl_remove,
++	.reset = eth_heci_cl_reset,
++};
++
++static int __init eth_heci_init(void)
++{
++	return ishtp_cl_driver_register(&eth_heci_cl_driver, THIS_MODULE);
++}
++
++static void __exit eth_heci_exit(void)
++{
++	return ishtp_cl_driver_unregister(&eth_heci_cl_driver);
++}
++
++module_init(eth_heci_init);
++module_exit(eth_heci_exit);
++
++MODULE_DESCRIPTION(ETH_HECI_DRV_DESC);
++MODULE_VERSION(ETH_HECI_DRV_VERSION);
++
++MODULE_AUTHOR("Sing Nallasellan");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/hid/intel-ish-hid/eth-heci.h b/drivers/hid/intel-ish-hid/eth-heci.h
+new file mode 100644
+index 000000000000..018d8cf0e0ba
+--- /dev/null
++++ b/drivers/hid/intel-ish-hid/eth-heci.h
+@@ -0,0 +1,55 @@
++ /*
++ *  eth_heci.h - Intel VNIC Driver for OSE
++ *
++ *  Copyright (C) 2019-20 Intel Corp
++ *  Author: Sing Nallasellan
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  In the dpcm driver modelling when a particular FE/BE/Mixer/Pipe is active
++ *  we forward the settings and parameters, rest we keep the values  in
++ *  driver and forward when DAPM enables them
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#define ETH_HECI_MSG_DATA	(0x1)
++#define	ETH_HECI_MSG_EVENT	(0x2)
++
++#define ETH_HECI_READ		(0x1)
++#define ETH_HECI_WRITE		(0x2)
++#define ETH_HECI_HEADER_VERSION (0)
++
++#define ETH_HECI_CL_RX_RING_SIZE (4)
++#define ETH_HECI_CL_TX_RING_SIZE (4)
++
++#define ETH_HECI_DATA_BUFLEN	(984)
++#define ETH_HECI_RX_MAX_LEN	(984)
++#define ETH_HECI_TX_MAX_LEN	(984)
++
++/* Default timeout period */
++#define ETH_HECI_TIMEOUT	(5)   /* In jiffies */
++
++#define ETH_HECI_MIN_MTU (ETH_ZLEN - ETH_HLEN)
++#define ETH_HECI_MAX_MTU  ETH_HECI_DATA_BUFLEN
++
++struct eth_heci_msg_hdr {
++        uint32_t version:2;
++        uint32_t data_type:2;
++        uint32_t request_type:2;
++        uint32_t offset;
++        uint32_t data_len;
++        uint32_t event;
++};
++
++struct eth_heci_msg {
++        struct eth_heci_msg_hdr hdr;
++        char payload[ETH_HECI_DATA_BUFLEN];
++};
+-- 
+2.21.0
+

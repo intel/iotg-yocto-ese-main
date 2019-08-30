@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexander Graf <agraf@csgraf.de>
+Date: Tue, 30 Apr 2019 22:43:56 +0200
+Subject: [PATCH] arm: Move trampolines into code section
+
+When creating T32->A32 transition jumps, the relocation code in grub
+will generate trampolines. These trampolines live in the .data section
+of our PE binary which means they are not marked as executable.
+
+This misbehavior was unmasked by commit a51f953f4ee87 ("mkimage: Align
+efi sections on 4k boundary") which made the X/NX boundary more obvious
+because everything became page aligned.
+
+To put things into proper order, let's move the arm trampolines into the
+.text section instead. That way everyone knows they are executable.
+
+Fixes: a51f953f4ee87 ("mkimage: Align efi sections on 4k boundary")
+Reported-by: Julien ROBIN <julien.robin28@free.fr>
+Reported-by: Leif Lindholm <leif.lindholm@linaro.org>
+Signed-off-by: Alexander Graf <agraf@csgraf.de>
+Tested-by: Julien ROBIN <julien.robin28@free.fr>
+Reviewed-by: Leif Lindholm <leif.lindholm@linaro.org>
+Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+Reviewed-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+ util/grub-mkimagexx.c | 32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
+
+diff --git a/util/grub-mkimagexx.c b/util/grub-mkimagexx.c
+index a483c674c49..86e6254a27e 100644
+--- a/util/grub-mkimagexx.c
++++ b/util/grub-mkimagexx.c
+@@ -1900,6 +1900,21 @@ SUFFIX (locate_sections) (Elf_Ehdr *e, const char *kernel_path,
+ 	  }
+       }
+ 
++#ifdef MKIMAGE_ELF32
++  if (image_target->elf_target == EM_ARM)
++    {
++      grub_size_t tramp;
++
++      layout->kernel_size = ALIGN_UP (layout->kernel_size, 16);
++
++      tramp = arm_get_trampoline_size (e, smd->sections, smd->section_entsize,
++				       smd->num_sections, image_target);
++
++      layout->tramp_off = layout->kernel_size;
++      layout->kernel_size += ALIGN_UP (tramp, 16);
++    }
++#endif
++
+   layout->kernel_size = ALIGN_UP (layout->kernel_size + image_target->vaddr_offset,
+ 			      image_target->section_align)
+     - image_target->vaddr_offset;
+@@ -1913,23 +1928,6 @@ SUFFIX (locate_sections) (Elf_Ehdr *e, const char *kernel_path,
+       layout->kernel_size = SUFFIX (put_section) (s, i, layout->kernel_size, smd,
+ 						  image_target);
+ 
+-#ifdef MKIMAGE_ELF32
+-  if (image_target->elf_target == EM_ARM)
+-    {
+-      grub_size_t tramp;
+-      layout->kernel_size = ALIGN_UP (layout->kernel_size + image_target->vaddr_offset,
+-				      image_target->section_align) - image_target->vaddr_offset;
+-
+-      layout->kernel_size = ALIGN_UP (layout->kernel_size, 16);
+-
+-      tramp = arm_get_trampoline_size (e, smd->sections, smd->section_entsize,
+-				       smd->num_sections, image_target);
+-
+-      layout->tramp_off = layout->kernel_size;
+-      layout->kernel_size += ALIGN_UP (tramp, 16);
+-    }
+-#endif
+-
+   layout->bss_start = layout->kernel_size;
+   layout->end = layout->kernel_size;
+   

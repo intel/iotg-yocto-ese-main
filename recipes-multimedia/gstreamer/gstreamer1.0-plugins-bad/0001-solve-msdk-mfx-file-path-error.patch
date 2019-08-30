@@ -1,0 +1,213 @@
+From db16ea99c32f09364220469aa948315a50b9588b Mon Sep 17 00:00:00 2001
+From: dnagasun <devamekalai.nagasundaram@intel.com>
+Date: Thu, 28 Feb 2019 11:42:00 +0800
+Subject: [PATCH] solve msdk mfx file path error
+
+Signed-off-by: dnagasun <devamekalai.nagasundaram@intel.com>
+---
+ configure.ac               | 19 +++++++++++++------
+ sys/msdk/gstmsdkh265dec.c  |  6 +++++-
+ sys/msdk/gstmsdkh265enc.c  |  6 +++++-
+ sys/msdk/gstmsdkmjpegdec.c |  9 +++++++--
+ sys/msdk/gstmsdkvp8dec.c   |  9 +++++++--
+ sys/msdk/gstmsdkvp8enc.c   |  9 +++++++--
+ sys/msdk/gstmsdkvp9dec.c   |  9 +++++++--
+ sys/msdk/meson.build       |  2 +-
+ sys/msdk/msdk.h            |  6 +++++-
+ 9 files changed, 57 insertions(+), 18 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 6aa9119ca..c6f43d3c6 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1052,9 +1052,7 @@ AG_GST_CHECK_FEATURE(MSDK, [Intel MediaSDK], msdk, [
+     CPPFLAGS="$LIBMFX_CFLAGS $save_CPPFLAGS"
+     AC_CHECK_HEADER(mfx/mfxdefs.h, [HAVE_MFX_MFXDEFS_H=1], [HAVE_MFX_MFXDEFS_H=0])
+     if test $HAVE_MFX_MFXDEFS_H -eq 1; then
+-      MFX_INCDIR="`$PKG_CONFIG --variable=includedir libmfx`"
+-      MSDK_CFLAGS="-I$MFX_INCDIR/mfx"
+-      AC_SUBST(MSDK_CFLAGS)
++	AC_DEFINE(HAVE_MFX_MFXDEFS_H, 1, [Define if mfx/mfxdefs.h available])      
+     fi
+     CPPFLAGS="$save_CPPFLAGS"
+   ], [
+@@ -1066,7 +1064,7 @@ AG_GST_CHECK_FEATURE(MSDK, [Intel MediaSDK], msdk, [
+             [AS_IF([test "x$MFX_HOME" != "x"],
+                    [MSDK_PREFIX="$MFX_HOME"],
+                    [MSDK_PREFIX="/opt/intel/media"])])
+-    MSDK_CFLAGS="-I$MSDK_PREFIX/include -I$MSDK_PREFIX/include/mfx"
++    MSDK_CFLAGS="-I$MSDK_PREFIX/include"
+     MSDK_LIBS="-L$MSDK_PREFIX/lib/lin_x64 -L$MSDK_PREFIX/lib/x64 -L$MSDK_PREFIX/lib64 -L$MSDK_PREFIX/lib -lmfx -ldl"
+     AC_SUBST(MSDK_CFLAGS)
+     AC_SUBST(MSDK_LIBS)
+@@ -1109,12 +1107,21 @@ AG_GST_CHECK_FEATURE(MSDK, [Intel MediaSDK], msdk, [
+   [
+     #include <mfxplugin.h>
+   ])
++  dnl check the availability of vp9 apis in PREFIX/include/mfx
++  AC_CHECK_HEADER(mfx/mfxvp9.h, [HAVE_MFX_MFXVP9_H=1], [HAVE_MFX_MFXVP9_H=0],
++  [
++    #include <mfx/mfxplugin.h>
++  ])
++  if test $HAVE_MFX_MFXVP9_H -eq 1; then
++    AC_DEFINE(HAVE_MFX_MFXVP9_H, 1, [Define if mfx/mfxdefs.h available])
++  fi
+ 
+-  if test $HAVE_MFXVP9_H -eq 1; then
++  if test $HAVE_MFXVP9_H -eq 1 \
++    -o $HAVE_MFX_MFXVP9_H -eq 1; then
+       USE_MSDK_VP9_DEC=1
+       AC_DEFINE(USE_MSDK_VP9_DEC, 1, [Define if MediaSDK VP9 decoder api is available])
+   fi
+-], [USE_MSDK_VP9_DEC=0])
++  ], [USE_MSDK_VP9_DEC=0])
+ AM_CONDITIONAL(USE_MSDK_LIBVA,
+     test "x$HAVE_MSDK" = "xyes" -a "x$HAVE_LIBVA_DRM" = "xyes")
+ AM_CONDITIONAL([USE_MSDK_VP9_DEC],
+diff --git a/sys/msdk/gstmsdkh265dec.c b/sys/msdk/gstmsdkh265dec.c
+index 9b4efd76c..7968ee99a 100644
+--- a/sys/msdk/gstmsdkh265dec.c
++++ b/sys/msdk/gstmsdkh265dec.c
+@@ -33,7 +33,11 @@
+ #  include <config.h>
+ #endif
+ 
+-#include <mfxplugin.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxplugin.h>
++#else
++#  include "mfxplugin.h"
++#endif
+ 
+ #include "gstmsdkh265dec.h"
+ #include "gstmsdkvideomemory.h"
+diff --git a/sys/msdk/gstmsdkh265enc.c b/sys/msdk/gstmsdkh265enc.c
+index 1ce2a4d3e..13e9b2769 100644
+--- a/sys/msdk/gstmsdkh265enc.c
++++ b/sys/msdk/gstmsdkh265enc.c
+@@ -33,7 +33,11 @@
+ #  include <config.h>
+ #endif
+ 
+-#include <mfxplugin.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxplugin.h>
++#else
++#  include "mfxplugin.h"
++#endif
+ 
+ #include <gst/allocators/gstdmabuf.h>
+ 
+diff --git a/sys/msdk/gstmsdkmjpegdec.c b/sys/msdk/gstmsdkmjpegdec.c
+index 69845016c..4456474a5 100644
+--- a/sys/msdk/gstmsdkmjpegdec.c
++++ b/sys/msdk/gstmsdkmjpegdec.c
+@@ -33,8 +33,13 @@
+ #  include <config.h>
+ #endif
+ 
+-#include <mfxstructures.h>
+-#include <mfxjpeg.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxstructures.h>
++#  include <mfx/mfxjpeg.h>
++#else
++#  include "mfxstructures.h"
++#  include "mfxjpeg.h"
++#endif
+ 
+ #include "gstmsdkmjpegdec.h"
+ 
+diff --git a/sys/msdk/gstmsdkvp8dec.c b/sys/msdk/gstmsdkvp8dec.c
+index f339956c5..21727bd1d 100644
+--- a/sys/msdk/gstmsdkvp8dec.c
++++ b/sys/msdk/gstmsdkvp8dec.c
+@@ -34,8 +34,13 @@
+ #  include <config.h>
+ #endif
+ 
+-#include <mfxplugin.h>
+-#include <mfxvp8.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxplugin.h>
++#  include <mfx/mfxvp8.h>
++#else
++#  include "mfxplugin.h"
++#  include "mfxvp8.h"
++#endif
+ 
+ #include "gstmsdkvp8dec.h"
+ 
+diff --git a/sys/msdk/gstmsdkvp8enc.c b/sys/msdk/gstmsdkvp8enc.c
+index 258437b83..95a74a3c1 100644
+--- a/sys/msdk/gstmsdkvp8enc.c
++++ b/sys/msdk/gstmsdkvp8enc.c
+@@ -33,8 +33,13 @@
+ #  include <config.h>
+ #endif
+ 
+-#include <mfxplugin.h>
+-#include <mfxvp8.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxplugin.h>
++#  include <mfx/mfxvp8.h>
++#else
++#  include "mfxplugin.h"
++#  include "mfxvp8.h"
++#endif
+ 
+ #include "gstmsdkvp8enc.h"
+ 
+diff --git a/sys/msdk/gstmsdkvp9dec.c b/sys/msdk/gstmsdkvp9dec.c
+index 18d2a9f27..16ada6202 100644
+--- a/sys/msdk/gstmsdkvp9dec.c
++++ b/sys/msdk/gstmsdkvp9dec.c
+@@ -35,8 +35,13 @@
+ #  include <config.h>
+ #endif
+ 
+-#include <mfxplugin.h>
+-#include <mfxvp9.h>
++#ifdef HAVE_MFX_MFXVP9_H
++#  include <mfx/mfxplugin.h>
++#  include <mfx/mfxvp9.h>
++#else
++#  include "mfxplugin.h"
++#  include "mfxvp9.h"
++#endif
+ 
+ #include "gstmsdkvp9dec.h"
+ #include "gstmsdkvideomemory.h"
+diff --git a/sys/msdk/meson.build b/sys/msdk/meson.build
+index e1ca58218..3c98a3e1e 100644
+--- a/sys/msdk/meson.build
++++ b/sys/msdk/meson.build
+@@ -61,7 +61,7 @@ endif
+ 
+ # Old versions of MediaSDK don't have the 'mfx' directory prefix
+ if cxx.has_header('mfx/mfxdefs.h', args: '-I' + mfx_incdir)
+-  mfx_incdir = join_paths([mfx_incdir, 'mfx'])
++  cdata.set('HAVE_MFX_MFXDEFS_H', 1)
+ endif
+ 
+ if cxx.has_header('mfxvp9.h', args: '-I' + mfx_incdir)
+diff --git a/sys/msdk/msdk.h b/sys/msdk/msdk.h
+index 12b5d5adf..a2775a65b 100644
+--- a/sys/msdk/msdk.h
++++ b/sys/msdk/msdk.h
+@@ -41,7 +41,11 @@
+ #include <gst/gst.h>
+ #include <gst/video/video.h>
+ 
+-#include <mfxvideo.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxvideo.h>
++#else
++#  include "mfxvideo.h"
++#endif
+ 
+ G_BEGIN_DECLS
+ 
+-- 
+2.19.2
+

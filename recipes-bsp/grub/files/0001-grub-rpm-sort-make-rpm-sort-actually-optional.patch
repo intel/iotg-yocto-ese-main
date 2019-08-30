@@ -1,0 +1,40 @@
+From 996828cc8f7e0f66e7d7d79866d74fe50afd9f98 Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Thu, 7 Mar 2019 04:42:06 +0000
+Subject: [PATCH] grub-rpm-sort: make rpm-sort actually optional
+
+rpm-sort still builds even when disabled through configure.
+
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ Makefile.util.def | 1 +
+ configure.ac      | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/Makefile.util.def b/Makefile.util.def
+index eca3dfa..0d99838 100644
+--- a/Makefile.util.def
++++ b/Makefile.util.def
+@@ -738,6 +738,7 @@ program = {
+   ldadd = grub-core/gnulib/libgnu.a;
+   ldadd = libgrubkern.a;
+   ldadd = '$(LIBDEVMAPPER) $(LIBRPM)';
++  condition = COND_RPM_SORT;
+ };
+ 
+ script = {
+diff --git a/configure.ac b/configure.ac
+index 077df91..5150a44 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2122,6 +2122,7 @@ AM_CONDITIONAL([COND_HAVE_CXX], [test x$HAVE_CXX = xyes])
+ AM_CONDITIONAL([COND_HAVE_ASM_USCORE], [test x$HAVE_ASM_USCORE = x1])
+ AM_CONDITIONAL([COND_STARFIELD], [test "x$starfield_excuse" = x])
+ AM_CONDITIONAL([COND_HAVE_EXEC], [test "x$have_exec" = xy])
++AM_CONDITIONAL([COND_RPM_SORT], [test x"$rpm_sort_excuse" = x])
+ 
+ test "x$prefix" = xNONE && prefix="$ac_default_prefix"
+ test "x$exec_prefix" = xNONE && exec_prefix="${prefix}"
+-- 
+2.17.1
+

@@ -1,0 +1,29 @@
+From e9af39a2140a08dfd10e0bda51e74309b51e2b21 Mon Sep 17 00:00:00 2001
+From: Chong Yi Chai <chong.yi.chai@intel.com>
+Date: Thu, 27 Jun 2019 16:14:48 +0800
+Subject: [PATCH] CMakeLists.txt: remove ROP mitigation
+
+ROP mitigation is only for x86.
+
+Signed-off-by: Chong Yi Chai <chong.yi.chai@intel.com>
+---
+ CMakeLists.txt | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 213d5a8..8169777 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -163,9 +163,6 @@ target_compile_options(${PROJECT_NAME}_objlib
+                        PRIVATE --param ssp-buffer-size=4 -ftrapv)
+ target_compile_options(${PROJECT_NAME}_objlib PRIVATE -fPIE -fPIC)
+ 
+-if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_GREATER 6)
+-    target_compile_options(${PROJECT_NAME}_objlib PRIVATE -mmitigate-rop)
+-endif()
+ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -z noexecstack -z relro -z now")
+ 
+ option(BUILD_ERROR_ON_WARNING "Fail compilation on warning" OFF)
+-- 
+2.7.4
+

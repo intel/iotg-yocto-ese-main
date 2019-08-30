@@ -1,0 +1,15 @@
+#! /bin/sh
+
+primary=$(grep -oP mender.primary=\\S+ < /proc/cmdline | gawk -F = '{printf "%s=%s\n", $2, $3}')
+echo "Found Primary root at $primary"
+
+secondary=$(grep -oP mender.secondary=\\S+ < /proc/cmdline | gawk -F = '{printf "%s=%s\n", $2, $3}')
+echo "Found Secondary root at $secondary"
+
+if [ -z "$primary" -o -z "$secondary" ]; then
+	exit 1
+fi
+
+# Assuming ext4
+tune2fs "$primary" -L primary || exit $?
+tune2fs "$secondary" -L secondary

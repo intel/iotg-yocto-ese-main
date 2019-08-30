@@ -1,0 +1,30 @@
+From 5e8c39700e85696263475a7fe773ffe8c56fabaa Mon Sep 17 00:00:00 2001
+From: dnagasun <devamekalai.nagasundaram@intel.com>
+Date: Thu, 28 Feb 2019 11:45:52 +0800
+Subject: [PATCH] solve path msdk
+
+Signed-off-by: dnagasun <devamekalai.nagasundaram@intel.com>
+---
+ sys/msdk/msdk_libva.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/sys/msdk/msdk_libva.h b/sys/msdk/msdk_libva.h
+index 4155ebbdb..691ea25a0 100644
+--- a/sys/msdk/msdk_libva.h
++++ b/sys/msdk/msdk_libva.h
+@@ -40,7 +40,11 @@
+ #include <gst/gst.h>
+ #include <va/va.h>
+ 
+-#include <mfxvideo.h>
++#ifdef HAVE_MFX_MFXDEFS_H
++#  include <mfx/mfxvideo.h>
++#else
++#  include "mfxvideo.h"
++#endif
+ 
+ G_BEGIN_DECLS
+ 
+-- 
+2.19.2
+

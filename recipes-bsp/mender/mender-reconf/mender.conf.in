@@ -1,0 +1,9 @@
+{
+    "InventoryPollIntervalSeconds": 1800,
+    "RetryPollIntervalSeconds": 300,
+    "RootfsPartA": "mender.primary",
+    "RootfsPartB": "mender.secondary",
+    "ServerURL": "https://docker.mender.io",
+    "TenantToken": "dummy",
+    "UpdatePollIntervalSeconds": 1800
+}

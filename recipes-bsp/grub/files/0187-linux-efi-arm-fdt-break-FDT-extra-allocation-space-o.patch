@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Robinson <pbrobinson@gmail.com>
+Date: Thu, 20 Jun 2019 16:21:48 +0100
+Subject: [PATCH] linux, efi, arm*, fdt: break FDT extra allocation space out
+ into a #define
+
+A certain amount of dynamic space is required for the handover from
+GRUB/Linux-EFI-stub. This entails things like initrd addresses,
+address-cells entries and associated strings.
+
+But move this into a proper centralised #define rather than live-code
+it in the loader.
+
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Reviewed-by: Daniel Kiper <daniel.kiper@oracle.com>
+Signed-off-by: Peter Robinson <pbrobinson@gmail.com>
+---
+ grub-core/loader/arm64/linux.c | 2 +-
+ include/grub/fdt.h             | 3 +++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/grub-core/loader/arm64/linux.c b/grub-core/loader/arm64/linux.c
+index e1110749eb9..628b320618c 100644
+--- a/grub-core/loader/arm64/linux.c
++++ b/grub-core/loader/arm64/linux.c
+@@ -73,7 +73,7 @@ finalize_params_linux (void)
+   grub_err_t err = GRUB_ERR_NONE;
+   void *fdt;
+ 
+-  fdt = grub_fdt_load (0x400);
++  fdt = grub_fdt_load (GRUB_EFI_LINUX_FDT_EXTRA_SPACE);
+   if (!fdt)
+     {
+       err = grub_error(GRUB_ERR_BAD_OS, "failed to load FDT");
+diff --git a/include/grub/fdt.h b/include/grub/fdt.h
+index e34644631e1..2041341fd68 100644
+--- a/include/grub/fdt.h
++++ b/include/grub/fdt.h
+@@ -24,6 +24,9 @@
+ #include <grub/types.h>
+ #include <grub/symbol.h>
+ 
++/* Space required when preparing the /chosen node after boot has been called. */
++#define GRUB_EFI_LINUX_FDT_EXTRA_SPACE 0x400
++
+ #define FDT_MAGIC 0xD00DFEED
+ 
+ typedef struct {
