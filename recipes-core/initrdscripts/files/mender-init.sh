@@ -67,6 +67,7 @@ find_part() {
 
 check_mount() {
     source="$1"
+    dest="$2"
 
     # path-like? wait for it to enumerate
     if $( echo "${source}" | grep -q ^/dev ) ; then
@@ -76,10 +77,7 @@ check_mount() {
        done
     fi
 
-    # some weirdo path leaks breaking fwupdate?
-    realpart="$( realpath ${source} )"
-    shift
-    mount "${realpart}" $@
+    mount $@
     if [ "$?" -ne 0 ]; then
       say "Fatal error mounting ${source}"
       fail

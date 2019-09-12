@@ -1,0 +1,29 @@
+From fe1975b067e1e41e18eb3dd2e5ca12edb3f522d3 Mon Sep 17 00:00:00 2001
+From: Ong Boon Leong <boon.leong.ong@intel.com>
+Date: Sun, 28 Jul 2019 14:46:49 +0800
+Subject: [PATCH 05/52] net: stmmac: fix missing netdev->features in
+ stmmac_set_features
+
+Fixes: d2afb5bdffdei stmmac: fix the rx csum feature
+
+Signed-off-by: Ong Boon Leong <boon.leong.ong@intel.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index cbf25de..23e857b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -3624,6 +3624,8 @@ static int stmmac_set_features(struct net_device *netdev,
+ 	 */
+ 	stmmac_rx_ipc(priv, priv->hw);
+ 
++	netdev->features = features;
++
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

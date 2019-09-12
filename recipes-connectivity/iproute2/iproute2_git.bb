@@ -1,9 +1,7 @@
 require recipes-connectivity/iproute2/iproute2.inc
 
-SRC_URI = "git://git.kernel.org/pub/scm/network/iproute2/iproute2-next.git \
-           file://0001-taprio-Add-support-for-setting-Frame-Preemption-Queu.patch \
-"
-SRCREV= "a8360dd3f25fc8fe4730ab39a8d7b359f397149f"
+SRC_URI = "git://git.kernel.org/pub/scm/network/iproute2/iproute2-next.git"
+SRCREV= "a794d0523711d5ab4530483b9435ba627e07d28b"
 S = "${WORKDIR}/git"
 PV = "git+${SRCPV}"
 

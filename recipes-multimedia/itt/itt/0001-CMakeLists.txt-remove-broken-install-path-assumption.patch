@@ -1,0 +1,62 @@
+From 7ed5d468f540db957bf90322bf0d0a795ca15902 Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Tue, 14 May 2019 16:41:42 +0000
+Subject: [PATCH] CMakeLists.txt: remove broken install path assumptions
+
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ CMakeLists.txt | 23 ++---------------------
+ 1 file changed, 2 insertions(+), 21 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 479c443..3485f02 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -65,20 +65,6 @@ foreach (Flag ${Flags})
+     message(STATUS "${Flag} = ${${Flag}}")
+ endforeach()
+ 
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../bin)
+-
+-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+-set(LIBRARY_OUTPUT_PATH ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+-set(ARCHIVE_OUTPUT_PATH ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+-
+-foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+-    string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+-    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG}     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+-    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG}     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+-    set( CMAKE_EXECUTABLE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+-    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}     ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
+-endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
+-
+ add_executable(IntelSEAPI
+     main.cpp
+     memory.cpp
+@@ -202,7 +188,7 @@ install(
+     DESTINATION include
+ )
+ 
+-set(SEA_PROJECT_BIN ${PROJECT_SOURCE_DIR}/bin)
++set(SEA_PROJECT_BIN ittnotify)
+ 
+ function(InstallWildCard what where)
+     install(
+@@ -261,13 +247,8 @@ else()
+ 
+     set(CPACK_BUNDLE_NAME "IntelSEAPI")
+     set(CPACK_GENERATOR STGZ)
+-    install(
+-        DIRECTORY "${SEA_PROJECT_BIN}"
+-        DESTINATION .
+-        PATTERN "*.a" EXCLUDE
+-    )
+ 
+-    InstallWildCard("${SEA_PROJECT_BIN}/*ittnotify*.a" "lib")
++    InstallWildCard("${SEA_PROJECT_BIN}/*ittnotify*.a" "${CMAKE_INSTALL_LIBDIR}")
+ 
+     if(APPLE)
+         install(
+-- 
+2.17.1
+
