@@ -36,8 +36,8 @@ SRC_URI_append_x86-64 = " ${@bb.utils.contains("DISTRO_FEATURES","backport-iwlwi
 # do we want TPM?
 SRC_URI_append_x86-64 = " ${@bb.utils.contains("MACHINE_FEATURES","tpm", "file://bsp/${BSP_SUBTYPE}/yes-tpm.cfg", "file://bsp/${BSP_SUBTYPE}/no-tpm.cfg", d)}"
 
-# TSN patches for v5.3 kernel for TGL
-SRC_URI_append_x86-64 = " file://bsp/${BSP_SUBTYPE}/ethernet-patches.scc"
+# from meta-virtualization, optional
+include recipes-kernel/linux/linux-yocto_virtualization.inc
 
 #########
 # common
@@ -46,3 +46,13 @@ SRC_URI_append_x86-64 = " file://bsp/${BSP_SUBTYPE}/ethernet-patches.scc"
 SRC_URI_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'dm-verity', 'file://dmverity.cfg', '', d)}"
 SRC_URI_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'smack', 'file://lsm-stacking.cfg', '', d)}"
 SRC_URI_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'lsm-debug', 'file://lsm-debug.cfg', '', d)}"
+
+SRC_URI_append = " git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=master;destsuffix=${KMETA}"
+SRCREV_meta ?= "8b7b8b81908ae2fb83c5e367419f7e7dd1fd4f54"
+KMETA ?= "kernel-meta"
+
+#########
+# optional stub settings
+#########
+include recipes-kernel/linux/linux-intel-ese-internal.inc
+

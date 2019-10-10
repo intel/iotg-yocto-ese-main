@@ -1,0 +1,4 @@
+# suppress bpf build warnings, 37b7c058d4... is already available upstream
+# and can be removed anytime it is no longer needed
+patch libbpf/37b7c058d4103b7ea8fb3773d330a883c0f66592..dadb81d0afe732a7670f7c1bd287dada163a9f2f.patch
+patch libbpf/0001-Added-ldflags.patch

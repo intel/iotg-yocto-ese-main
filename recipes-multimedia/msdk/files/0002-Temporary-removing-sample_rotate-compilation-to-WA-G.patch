@@ -1,0 +1,48 @@
+From fad7c1704d4e0eb88856a5f5127cb3d50201c62c Mon Sep 17 00:00:00 2001
+From: dnagasun <devamekalai.nagasundaram@intel.com>
+Date: Thu, 6 Dec 2018 12:56:06 +0800
+Subject: [PATCH] Temporary-removing-sample_rotate-compilation-to-WA-G
+
+---
+ .../rotate_opencl/CMakeLists.txt              | 31 -------------------
+ 1 file changed, 31 deletions(-)
+
+diff --git a/samples/sample_plugins/rotate_opencl/CMakeLists.txt b/samples/sample_plugins/rotate_opencl/CMakeLists.txt
+index d8c4aeb..e69de29 100644
+--- a/samples/sample_plugins/rotate_opencl/CMakeLists.txt
++++ b/samples/sample_plugins/rotate_opencl/CMakeLists.txt
+@@ -1,31 +0,0 @@
+-include( ${BUILDER_ROOT}/FindOpenCL.cmake )
+-
+-set( PLUGINS_COMMON_PATH    ${CMAKE_CURRENT_SOURCE_DIR}/../plugins_common_files )
+-
+-
+-include_directories (
+-  ${CMAKE_CURRENT_SOURCE_DIR}/../../sample_common/include
+-  ${CMAKE_CURRENT_SOURCE_DIR}/include
+-)
+-
+-set( LDFLAGS "${LDFLAGS} -Wl,--version-script=${PLUGINS_COMMON_PATH}/mfx_plugin.map" )
+-
+-# for clCreateFromGLTexture2D and clCreateFromGLTexture3D in CL/cl_gl.h
+-set( CFLAGS "-DCL_USE_DEPRECATED_OPENCL_1_1_APIS" )
+-
+-list( APPEND LIBS_VARIANT sample_common )
+-list(APPEND sources.plus "${PLUGINS_COMMON_PATH}/mfx_plugin_module.cpp")
+-
+-set(DEPENDENCIES opencl libva libmfx dl)
+-make_library( sample_plugin_opencl none shared )
+-
+-install( TARGETS ${target} LIBRARY DESTINATION ${MFX_SAMPLES_INSTALL_LIB_DIR} )
+-
+-if ( DEFINED OPENCL_FOUND )
+-    # copy .cl file into build directory
+-    execute_process( COMMAND ${CMAKE_COMMAND} -E copy
+-    "${CMAKE_CURRENT_SOURCE_DIR}/src/ocl_rotate.cl"
+-    "${CMAKE_BIN_DIR}/${CMAKE_BUILD_TYPE}/ocl_rotate.cl" )
+-
+-    install( FILES src/ocl_rotate.cl DESTINATION ${MFX_SAMPLES_INSTALL_LIB_DIR} )
+-endif ( )
+-- 
+2.19.0
+

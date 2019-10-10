@@ -31,10 +31,12 @@ fail() {
     exec /bin/sh
 }
 
+find_part_nofatal=""
 find_part() {
     name="$1"
     hint="$(grep ${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
-    if [ -z "${hint}" ]; then
+    if [ -z "find_part_nofatal" -a -z "${hint}" ]; then
+        say "Cannot find ${name}"
         fail
     fi
 
@@ -67,7 +69,6 @@ find_part() {
 
 check_mount() {
     source="$1"
-    dest="$2"
 
     # path-like? wait for it to enumerate
     if $( echo "${source}" | grep -q ^/dev ) ; then
@@ -77,14 +78,24 @@ check_mount() {
        done
     fi
 
-    mount $@
+    # some weirdo path leaks breaking fwupdate?
+    realpart="$( realpath ${source} )"
+    shift
+    mount "${realpart}" $@
     if [ "$?" -ne 0 ]; then
       say "Fatal error mounting ${source}"
       fail
     fi
 }
 
-# wait for devices to be enumerated
+# are we resuming?
+find_part_nofatal=1
+resume_part="$( find_part resume )"
+if [ -n "${resume_part}" ]; then
+  echo "${resume_part}" > /sys/power/resume
+  say "resume failed, continuing with normal boot path"
+fi
+find_part_nofatal=""
 
 # real root, mount as rw, as we need to update the mender.conf file
 realroot="/realroot"

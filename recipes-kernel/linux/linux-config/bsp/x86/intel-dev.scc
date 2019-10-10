@@ -1,4 +1,4 @@
-define KFEATURE_DESCRIPTION "KeystoneLake-I feature set"
+define KFEATURE_DESCRIPTION "Intel Reference Board feature set"
 define KFEATURE_COMPATIBILITY board
 
 kconf hardware blockdevice.cfg

@@ -25,6 +25,7 @@ SRC_URI = "http://w1.fi/releases/wpa_supplicant-${PV}.tar.gz  \
            file://wpa_supplicant.conf-sane \
            file://99_wpa_supplicant \
            file://0001-replace-systemd-install-Alias-with-WantedBy.patch \
+	   file://wpa-supplicant-Handle-long-P2P-Device-Interface-name.patch \
           "
 SRC_URI[md5sum] = "0af5998c5d924e985cab16b9a1c77904"
 SRC_URI[sha256sum] = "a689336a12a99151b9de5e25bfccadb88438f4f4438eb8db331cd94346fd3d96"
