@@ -13,7 +13,8 @@ SRC_URI = "git://github.com/intel/intel-graphics-compiler.git;protocol=https \
            file://0003-comment-out-dump-functions.patch \
            "
 
-SRCREV = "0f629735f95290e2b001d61a9fb571f45b662418"
+SRCREV = "45bd13b77d9f9c0508747363c1cb5edecc0390ee"
+PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"
 

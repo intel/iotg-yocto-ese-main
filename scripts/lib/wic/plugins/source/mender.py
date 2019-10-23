@@ -1,3 +1,4 @@
+import re
 import logging
 import os
 import shutil
@@ -242,7 +243,7 @@ fi
         grubefi_conf += "}\n"
 
         if kernels:
-            for k in kernels.split(" "):
+            for k in re.compile("\s+").split(kernels.strip()):
                 grubefi_conf += "menuentry 'boot %s' {\n" % k
                 grubefi_conf += "  echo Using ${kernelroot}\n"
                 grubefi_conf += "  echo 'Loading kernel %s'\n" % k

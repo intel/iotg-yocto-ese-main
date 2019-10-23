@@ -2,10 +2,10 @@ DESCRIPTION = "Ice Window Manager (IceWM)"
 SRC_URI = "git://github.com/ice-wm/icewm.git;protocol=https \
            file://0001-configure.ac-skip-strlcat-strlcpy-check-when-cross-c.patch \
            "
-SRCREV = "e5f7a8b034ea9989c78057512528c29b10194c41"
+SRCREV = "cddfd1281ce025e6e42631d4144ea3c5dd0f26c6"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4a26952467ef79a7efca4a9cf52d417b"
-DEPENDS = "asciidoc-native fontconfig fribidi gdk-pixbuf libice libsm libx11 libxext libxft libxpm libxrandr libxrender libxinerama"
+DEPENDS = "asciidoc-native fontconfig fribidi gdk-pixbuf libice libsm libx11 libxext libxft libxpm libxrandr libxrender libxinerama libxfixes libxdamage libxcomposite"
 RDEPENDS_${PN} = "perl"
 REQUIRED_DISTRO_FEATURES = "x11"
 

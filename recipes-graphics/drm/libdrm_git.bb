@@ -11,8 +11,8 @@ PROVIDES = "drm"
 DEPENDS = "libpthread-stubs libpciaccess"
 
 libdrm_url = "git://gitlab.freedesktop.org/mesa/drm;branch=master;protocol=https"
-libdrm_srcrev = "b7a7a90336fbb19efb3f91f92b5d964b0dfb7ec2"
-libdrm_pv = "2.4.97+git${SRCPV}"
+libdrm_srcrev = "f057dc91e93ae21e11ab48a26127d569972f3eae"
+libdrm_pv = "2.4.99+git${SRCPV}"
 
 SRC_URI = "${libdrm_url}"
 SRCREV = "${libdrm_srcrev}"
@@ -20,15 +20,16 @@ PV = "${libdrm_pv}"
 
 S = "${WORKDIR}/git"
 
-inherit autotools pkgconfig manpages
+inherit meson pkgconfig manpages
 
-EXTRA_OECONF += "--disable-cairo-tests \
-                 --enable-omap-experimental-api \
-                 --enable-etnaviv-experimental-api \
-                 --enable-install-test-programs \
-                 --disable-valgrind \
-                "
-PACKAGECONFIG[manpages] = "--enable-manpages, --disable-manpages, libxslt-native xmlto-native"
+EXTRA_OEMESON += "-Dcairo-tests=false \
+                  -Domap=true \
+                  -Detnaviv=true \
+                  -Dinstall-test-programs=true \
+                  -Dvalgrind=false \
+                 "
+
+PACKAGECONFIG[manpages] = "-Dman-pages=true, -Dman-pages=false, libxslt-native xmlto-native"
 
 ALLOW_EMPTY_${PN}-drivers = "1"
 PACKAGES =+ "${PN}-tests ${PN}-drivers ${PN}-radeon ${PN}-nouveau ${PN}-omap \

@@ -67,9 +67,8 @@ find_part() {
     echo "${hint}"
 }
 
-check_mount() {
+wait_file() {
     source="$1"
-
     # path-like? wait for it to enumerate
     if $( echo "${source}" | grep -q ^/dev ) ; then
        say "waiting for ${source}"
@@ -77,7 +76,11 @@ check_mount() {
            usleep 100
        done
     fi
+}
 
+check_mount() {
+    source="$1"
+    wait_file "$1"
     # some weirdo path leaks breaking fwupdate?
     realpart="$( realpath ${source} )"
     shift
@@ -92,8 +95,11 @@ check_mount() {
 find_part_nofatal=1
 resume_part="$( find_part resume )"
 if [ -n "${resume_part}" ]; then
-  echo "${resume_part}" > /sys/power/resume
-  say "resume failed, continuing with normal boot path"
+    wait_file "${resume_part}"
+    real_resume="$( realpath ${resume_part} )"
+    say "trying to resume using ${resume_part} (${real_resume})"
+    echo "${real_resume}" > /sys/power/resume
+    say "resume failed, continuing with normal boot path"
 fi
 find_part_nofatal=""
 
@@ -118,8 +124,8 @@ fi
 
 # try swap
 swap_part="$( find_part mender.swap )"
-if [ -n "${efi_part}" ]; then
-  swapon "${efi_part}"
+if [ -n "${swap_part}" ]; then
+  swapon "${swap_part}"
   say "swap done"
 fi
 

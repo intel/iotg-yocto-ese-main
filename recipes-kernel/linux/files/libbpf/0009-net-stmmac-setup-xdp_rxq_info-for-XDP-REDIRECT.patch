@@ -1,0 +1,99 @@
+From 3df7f37c2dfb2ddbac3024e4711abecf65e8ee81 Mon Sep 17 00:00:00 2001
+From: Ong Boon Leong <boon.leong.ong@intel.com>
+Date: Sat, 28 Sep 2019 01:58:19 +0800
+Subject: [PATCH 09/17] net: stmmac: setup xdp_rxq_info for XDP REDIRECT
+
+Add xdp_rxq_info structure to RX queue to prepare for XDP
+REDIRECT page return through __xdp_return().
+
+Signed-off-by: Ong Boon Leong <boon.leong.ong@intel.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h  |  2 ++
+ .../net/ethernet/stmicro/stmmac/stmmac_main.c | 23 ++++++++++++++++++-
+ 2 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index 1572004621da..10140cf2677f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -21,6 +21,7 @@
+ #include <linux/net_tstamp.h>
+ #include <linux/reset.h>
+ #include <net/page_pool.h>
++#include <net/xdp.h>
+ 
+ struct stmmac_resources {
+ 	void __iomem *addr;
+@@ -84,6 +85,7 @@ struct stmmac_rx_queue {
+ 	dma_addr_t dma_rx_phy;
+ 	u32 rx_tail_addr;
+ 	struct bpf_prog *xdp_prog;
++	struct xdp_rxq_info xdp_rxq;
+ };
+ 
+ struct stmmac_channel {
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index e66425c2e3e8..5dbe041f6f5e 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -43,6 +43,7 @@
+ #include <linux/of_mdio.h>
+ #include <linux/bpf.h>
+ #include <linux/bpf_trace.h>
++#include <net/xdp.h>
+ #include "dwmac1000.h"
+ #include "dwxgmac2.h"
+ #include "hwif.h"
+@@ -1319,6 +1320,17 @@ static int init_dma_rx_desc_ring(struct stmmac_priv *priv, u32 queue,
+ 
+ 	stmmac_clear_rx_descriptors(priv, queue);
+ 
++	xdp_rxq_info_unreg_mem_model(&rx_q->xdp_rxq);
++
++	ret = xdp_rxq_info_reg_mem_model(&rx_q->xdp_rxq,
++					 MEM_TYPE_PAGE_POOL,
++					 rx_q->page_pool);
++	if (ret)
++		return ret;
++
++	netdev_info(priv->dev, "Register XDP MEM_TYPE_PAGE_SHARED RxQ-%d\n",
++		    rx_q->queue_index);
++
+ 	for (i = 0; i < priv->dma_rx_size; i++) {
+ 		struct dma_desc *p;
+ 
+@@ -1546,7 +1558,11 @@ static void free_dma_rx_desc_resources_q(struct stmmac_priv *priv, u32 queue)
+ 
+ 	kfree(rx_q->buf_pool);
+ 	if (rx_q->page_pool) {
+-		page_pool_request_shutdown(rx_q->page_pool);
++		if (xdp_rxq_info_is_reg(&rx_q->xdp_rxq))
++			xdp_rxq_info_unreg(&rx_q->xdp_rxq);
++		else
++			page_pool_request_shutdown(rx_q->page_pool);
++
+ 		page_pool_destroy(rx_q->page_pool);
+ 	}
+ 
+@@ -1661,6 +1677,9 @@ static int alloc_dma_rx_desc_resources_q(struct stmmac_priv *priv, u32 queue)
+ 	}
+ 
+ 	rx_q->xdp_prog = priv->xdp_prog;
++	ret = xdp_rxq_info_reg(&rx_q->xdp_rxq, priv->dev, rx_q->queue_index);
++	if (ret)
++		goto err_dma;
+ 
+ 	return 0;
+ 
+@@ -4161,6 +4180,8 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
+ 	unsigned int count = 0;
+ 	struct xdp_buff xdp;
+ 
++	xdp.rxq = &rx_q->xdp_rxq;
++
+ 	if (netif_msg_rx_status(priv)) {
+ 		void *rx_head;
+ 
+-- 
+2.17.0
+

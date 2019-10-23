@@ -1,6 +1,6 @@
 SUMMARY = "shim is a trivial EFI application that, when run, attempts to open and \
 execute another application."
-LICENSE = "Proprietary"
+LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
 SRC_URI = "git://github.com/rhboot/shim.git;protocol=https \

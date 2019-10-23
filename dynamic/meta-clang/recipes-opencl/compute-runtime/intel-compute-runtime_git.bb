@@ -15,13 +15,12 @@ SRC_URI_append_class-target = " \
       file://dont-use-ld-library-path.patch \
 "
 
-SRCREV = "3b228667e50ab4f1125442b791c8112cd46e1b62"
+SRCREV = "d652e07c20aae1d8356c45bd1ef2cf336295357d"
+PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"
 
-DEPENDS += " intel-graphics-compiler gmmlib clang"
-DEPENDS_append_class-target = " intel-compute-runtime-native"
-
+DEPENDS += " intel-graphics-compiler intel-graphics-compiler-native intel-compute-runtime-native gmmlib clang"
 RDEPENDS_${PN} += " intel-graphics-compiler gmmlib ( >= 19.3.2 )"
 
 inherit cmake pkgconfig

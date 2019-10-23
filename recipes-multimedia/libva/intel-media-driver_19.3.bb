@@ -9,9 +9,10 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=6aab5363823095ce682b155fef0231f0 \
                     file://media_driver/media_libvpx.LICENSE;md5=d5b04755015be901744a78cc30d390d4 \
                     "
 
-SRC_URI = "git://github.com/intel/media-driver.git;protocol=https;branch=intel-media-19.3"
-
-SRCREV = "2f1adfcecb9f8f050a78def3027149156da63a3e"
+SRC_URI = "git://github.com/intel/media-driver.git;protocol=https \
+"
+PV = "19.3+git${SRCPV}"
+SRCREV = "e0f615e0ebb550defd89f671dbc81b6abdee75cb"
 S = "${WORKDIR}/git"
 
 DEPENDS += "libva gmmlib"

@@ -1,1 +1,0 @@
-# IOTG-Yocto-ESE-Main

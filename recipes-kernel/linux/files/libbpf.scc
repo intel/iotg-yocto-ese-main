@@ -1,4 +1,17 @@
-# suppress bpf build warnings, 37b7c058d4... is already available upstream
-# and can be removed anytime it is no longer needed
-patch libbpf/37b7c058d4103b7ea8fb3773d330a883c0f66592..dadb81d0afe732a7670f7c1bd287dada163a9f2f.patch
-patch libbpf/0001-Added-ldflags.patch
+patch libbpf/0001-net-stmmac-revert-previous-AF_XDP-patch-set.patch
+patch libbpf/0002-net-stmmac-split-init_dma_tx-rx_desc_rings-to-ring-s.patch
+patch libbpf/0003-net-stmmac-split-free_dma_rx-tx_desc_resources-to-ri.patch
+patch libbpf/0004-net-stmmac-split-alloc_dma_rx-tx_desc_resources-to-r.patch
+patch libbpf/0005-net-stmmac-call-stmmac_clear_tx_descriptors-in-stmma.patch
+patch libbpf/0006-net-stmmac-move-DMA-buffer-size-setting-to-alloc_dma.patch
+patch libbpf/0007-net-stmmac-add-XDP-support-for-XDP-PASS-and-DROP-act.patch
+patch libbpf/0008-net-stmmac-add-support-for-XDP_TX-action.patch
+patch libbpf/0009-net-stmmac-setup-xdp_rxq_info-for-XDP-REDIRECT.patch
+patch libbpf/0010-net-stmmac-add-support-for-XDP_REDIRECT.patch
+patch libbpf/0011-net-stmmac-introduce-per-RX-queue-dma-buffer-size.patch
+patch libbpf/0012-net-stmmac-introduce-stmmac_alloc_rx_buffers.patch
+patch libbpf/0013-net-stmmac-add-AF_XDP-zero-copy-Rx-support.patch
+patch libbpf/0014-net-stmmac-add-AF_XDP-zero-copy-Tx-support.patch
+patch libbpf/0015-net-stmmac-Fixes-for-stmmac_xmit_zc.patch
+patch libbpf/0016-net-stmmac-export-set_tbs_launchtime.patch
+patch libbpf/0017-net-xdp-introduce-AF_XDP-per-packet-time-based-sched.patch

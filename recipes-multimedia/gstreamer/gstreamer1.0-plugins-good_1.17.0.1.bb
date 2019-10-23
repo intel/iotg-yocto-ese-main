@@ -10,7 +10,7 @@ SRC_URI = " \
     file://0001-introspection.m4-prefix-pkgconfig-paths-with-PKG_CON.patch \
 "
 
-SRCREV = "4911ac38acfbaf4c8424891c8738447f75ef0c7e"
+SRCREV = "6e8e3910d32502702400d76b32c521e1e85f09e5"
 
 S = "${WORKDIR}/git"
 

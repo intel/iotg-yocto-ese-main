@@ -8,15 +8,14 @@ BUGTRACKER = "https://github.com/intel/metrics-discovery/issues"
 
 SECTION = "x11"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=5ac9e51fb25f5d5b10a1bea412a4b74c"
-PV = "1.5.96+git${SRCPV}"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=8c5c9ac8ffd04a5614befdf63fba6ba8"
+PV = "1.5.110+git${SRCPV}"
 
-# Sync up to metrics-discovery release 1.5.96
 MDAPI_GIT_URI ?= "git://github.com/intel/metrics-discovery"
 UPSTREAM_CHECK_URI = "https://github.com/intel/metrics-discovery/releases"
 UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>(\d+(\.\d+)+))"
 
-SRCREV_mdapi ?= "33e89767a27c52b8c01d0847fc095113664b0d3f"
+SRCREV_mdapi ?= "2601e0bffbfaaeec2353a08d18d86568b509425d"
 
 SRC_URI = "${MDAPI_GIT_URI};protocol=https;name=mdapi;destsuffix=git"
 
@@ -32,5 +31,6 @@ do_install_append() {
 	if [ "(" "${libdir}" != "${prefix}/lib" ")" -a \
 		-d "${D}${prefix}/lib" -a ! -d "${D}${libdir}" ]; then
 		mv "${D}${prefix}/lib" "${D}${libdir}"
+		sed "s@libdir=${prefix}/lib/@libdir=${libdir}/@g" -i ${D}${libdir}/pkgconfig/libmd.pc
 	fi
 }

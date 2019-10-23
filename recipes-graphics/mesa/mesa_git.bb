@@ -34,3 +34,13 @@ do_install_append() {
     fi
 }
 
+
+# mesa driver settings (should be in mesa-megadriver)
+do_install_append() {
+	install -m 755 -d ${D}/etc/profile.d
+	if [ -n "${MESA_FORCE_DRIVER}" ]; then
+		echo 'export MESA_LOADER_DRIVER_OVERRIDE=${MESA_FORCE_DRIVER}' > ${D}/etc/profile.d/mesa_driver.sh
+	else
+		: > ${D}/etc/profile.d/mesa_driver.sh
+	fi
+}

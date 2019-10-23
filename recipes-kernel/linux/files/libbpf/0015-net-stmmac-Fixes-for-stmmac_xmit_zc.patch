@@ -1,0 +1,96 @@
+From 33cd3f6207381c45b732e7a8c0d901b586f3fae8 Mon Sep 17 00:00:00 2001
+From: "Wong, Vincent Por Yin" <vincent.por.yin.wong@intel.com>
+Date: Thu, 10 Oct 2019 21:39:03 +0800
+Subject: [PATCH 15/17] net: stmmac: Fixes for stmmac_xmit_zc()
+
+Signed-off-by: Wong, Vincent Por Yin <vincent.por.yin.wong@intel.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 14 ++++++++++++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac_xsk.c  | 15 +++++++++++----
+ 2 files changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index b4f132ebae32..521421a04507 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -5365,6 +5365,7 @@ static int stmmac_xdp_setup(struct stmmac_priv *priv,
+ 	/* When turning XDP on->off/off->on we reset and rebuild the rings. */
+ 	need_reset = (stmmac_enabled_xdp(priv) != !!prog);
+ 
++#if 1
+ 	if (need_reset && netif_running(priv->dev))
+ 		stmmac_release(priv->dev);
+ 
+@@ -5372,7 +5373,20 @@ static int stmmac_xdp_setup(struct stmmac_priv *priv,
+ 
+ 	if (need_reset && netif_running(priv->dev))
+ 		stmmac_open(priv->dev);
++#else
++	u32 maxq = priv->plat->num_queue_pairs;
++	u32 queue;
++
++	if (need_reset && netif_running(priv->dev))
++		for (queue = 0; queue < maxq; queue++)
++			stmmac_queue_pair_disable(priv, queue);
+ 
++	old_prog = xchg(&priv->xdp_prog, prog);
++
++	if (need_reset && netif_running(priv->dev))
++		for (queue = 0; queue < maxq; queue++)
++				stmmac_queue_pair_enable(priv, queue);
++#endif
+ 	/* RX, TX & TX XDP queues are mapped to independent DMA Channels.
+ 	 * In the case whereby IP is configured to have assymmetric RX
+ 	 * and TX channels, we only set xdp_prog for the RX & TX queue pair.
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_xsk.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_xsk.c
+index 2ada9389fcbd..438b18d63ccf 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_xsk.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_xsk.c
+@@ -702,6 +702,7 @@ static bool stmmac_xmit_zc(struct stmmac_tx_queue *xdp_q, unsigned int budget)
+ 	struct xdp_desc desc;
+ 	dma_addr_t dma;
+ 	int entry = xdp_q->cur_tx;
++	int first_entry = xdp_q->cur_tx;
+ 
+ 	while (budget-- > 0) {
+ 		if (!unlikely(STMMAC_TX_DESC_UNUSED(xdp_q))) {
+@@ -744,10 +745,10 @@ static bool stmmac_xmit_zc(struct stmmac_tx_queue *xdp_q, unsigned int budget)
+ 		wmb();
+ 
+ 		entry = STMMAC_GET_ENTRY(entry, priv->dma_tx_size);
++		xdp_q->cur_tx = entry;
+ 	}
+ 
+-	if (entry != xdp_q->cur_tx) {
+-		xdp_q->cur_tx = entry;
++	if (first_entry != entry) {
+ 		stmmac_xdp_queue_update_tail(xdp_q);
+ 		xsk_umem_consume_tx_done(xdp_q->xsk_umem);
+ 	}
+@@ -820,8 +821,10 @@ int stmmac_xdp_tx_clean(struct stmmac_priv *priv, int budget, u32 queue)
+ 	priv->dev->stats.tx_packets += completed_frames;
+ 
+ out_xmit:
+-
+-	stmmac_xmit_zc(xdp_q, budget);
++	if (spin_trylock(&xdp_q->xdp_xmit_lock)) {
++		stmmac_xmit_zc(xdp_q, budget);
++		spin_unlock(&xdp_q->xdp_xmit_lock);
++	}
+ 
+ 	return completed_frames;
+ }
+@@ -856,6 +859,10 @@ int stmmac_xsk_async_xmit(struct net_device *dev, u32 queue)
+ 	if (!xdp_q->xsk_umem)
+ 		return -ENXIO;
+ 
++	spin_lock(&xdp_q->xdp_xmit_lock);
++	stmmac_xmit_zc(xdp_q, priv->dma_tx_size);
++	spin_unlock(&xdp_q->xdp_xmit_lock);
++
+ 	/* The idea here is that if NAPI is running, mark a miss, so
+ 	 * it will run again. Since we do not have interrupt here,
+ 	 * we directly call the stmmac_xmit_zc() instead
+-- 
+2.17.0
+

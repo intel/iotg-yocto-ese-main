@@ -13,6 +13,6 @@ SRC_URI = " \
     file://0006-glimagesink-Downrank-to-marginal.patch \
 "
 
-SRCREV = "d8d4904e712344b9017f494084aa88c6c46649f0"
+SRCREV = "2409f4f3609d2dce3f65d1a8c4be5e470b7cf9d3"
 
 S = "${WORKDIR}/git"
