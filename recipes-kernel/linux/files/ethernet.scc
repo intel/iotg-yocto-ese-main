@@ -1,1 +1,2 @@
 patch ethernet/0001-net-e1000e-add-new-device-ids-for-TGL-platforms.patch
+patch ethernet/v1-0001-e1000e-Add-support-for-Comet-Lake.patch

@@ -25,3 +25,6 @@ SRC_URI_append = " file://audio.scc"
 
 # resctrl patches for 5.4
 SRC_URI_append = " file://resctrl-5.4.scc"
+
+# Programmable Software Engine
+SRC_URI_append = " file://ishtp-5.4.scc"

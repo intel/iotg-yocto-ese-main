@@ -225,7 +225,7 @@ fi
 """
 
         # menu entries
-        grubefi_conf += "menuentry 'boot' {\n"
+        grubefi_conf += "menuentry 'boot %s' {\n" % source_params['boot_name']
 
         kernel = "bzImage-kernel"
         kernels = source_params['extra_kernels']

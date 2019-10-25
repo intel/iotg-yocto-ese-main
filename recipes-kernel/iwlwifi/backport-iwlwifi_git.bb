@@ -15,7 +15,7 @@ SRC_URI = "git://github.com/intel/backport-iwlwifi.git;nobranch=1;protocol=ssh \
           "
 
 PV = "47-82+git${SRCPV}"
-SRCREV = "d4cea394a06e2ed6dd1ccddf1c0b2829996daf50"
+SRCREV = "df37c4b595dc257a6ca6353dedf0aaa590322055"
 
 S = "${WORKDIR}/git/iwlwifi-stack-dev"
 
@@ -35,5 +35,7 @@ do_install_append() {
 }
 
 RDEPENDS_${PN} = "linux-firmware-iwlwifi"
-KERNEL_MODULE_PACKAGE_PREFIX = "backport-iwlwifi"
+### This breaks dependency resolution on external kernel modules like libarc4
+# where instead of kernel-modules-libarc4, dnf searches for backport-iwlwifikernel-modules-libarc4
+#KERNEL_MODULE_PACKAGE_PREFIX = "backport-iwlwifi"
 CLEANBROKEN = "1"

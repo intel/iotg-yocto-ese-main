@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
 SRC_URI = " \
         gitsm://github.com/GStreamer/gst-libav.git;protocol=https"
 
-SRCREV = "40f5953828c4d82b39890ad4da4603693eff8af7"
+SRCREV = "1e8e040fbc7cfff63f29c5c872685bbb5578d965"
 
 S = "${WORKDIR}/git"
 

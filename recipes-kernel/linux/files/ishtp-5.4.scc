@@ -1,0 +1,4 @@
+patch ishtp-5.4/0001-ishtp-Add-support-for-Intel-ishtp-eclite-driver.patch
+patch ishtp-5.4/0002-ishtp-ACPI-ID-change-for-Intel-ishtp-eclite-driver.patch
+patch ishtp-5.4/0003-misc-intel-ish-client-add-intel-ishtp-clients-driver.patch
+patch ishtp-5.4/0004-net-Add-support-for-Intel-vnic-driver.patch

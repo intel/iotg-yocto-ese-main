@@ -1,6 +1,6 @@
 require recipes-kernel/linux/linux-yocto.inc
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/linux-config:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/linux-config:${THISDIR}/files:"
 
 LINUX_VERSION_EXTENSION = "-intel-${LINUX_KERNEL_TYPE}"
 PV = "${LINUX_VERSION}+git${SRCPV}"

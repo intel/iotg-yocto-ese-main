@@ -15,7 +15,7 @@ SRC_URI = " \
     file://0001-solve-path-msdk.patch \
 "
 
-SRCREV = "e5279cd97abe3ff52fa916afcc7897402f7e2eba"
+SRCREV = "aafda1c76f4089505e16b6128f8b80ab316ab2f0"
 
 S = "${WORKDIR}/git"
 
