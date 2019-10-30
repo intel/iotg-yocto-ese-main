@@ -1,0 +1,27 @@
+From e263fbcbd7bdacef343341871f802fa900e277be Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Fri, 25 Oct 2019 01:49:29 +0000
+Subject: [PATCH] iwlwifi: linux 5.4 compatibility fixes
+
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ .../drivers/net/wireless/intel/iwlwifi/pcie/trans.c             | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/iwlwifi-stack-dev/drivers/net/wireless/intel/iwlwifi/pcie/trans.c b/iwlwifi-stack-dev/drivers/net/wireless/intel/iwlwifi/pcie/trans.c
+index 664ab42..359729f 100644
+--- a/iwlwifi-stack-dev/drivers/net/wireless/intel/iwlwifi/pcie/trans.c
++++ b/iwlwifi-stack-dev/drivers/net/wireless/intel/iwlwifi/pcie/trans.c
+@@ -62,7 +62,9 @@
+  *
+  *****************************************************************************/
+ #include <linux/pci.h>
++#if LINUX_VERSION_IS_LESS(5,4,0)
+ #include <linux/pci-aspm.h>
++#endif
+ #include <linux/interrupt.h>
+ #include <linux/debugfs.h>
+ #include <linux/sched.h>
+-- 
+2.20.1
+

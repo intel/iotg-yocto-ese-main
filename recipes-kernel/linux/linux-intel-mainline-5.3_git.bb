@@ -30,3 +30,6 @@ SRC_URI_append = " file://pinctrl.scc"
 
 # i915 video PCI ID
 SRC_URI_append = " file://graphics-5.3.scc"
+
+# add patch for io
+SRC_URI_append = " file://io-5.3.scc"

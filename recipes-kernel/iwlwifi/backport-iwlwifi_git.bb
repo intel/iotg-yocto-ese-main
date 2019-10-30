@@ -11,6 +11,7 @@ inherit module
 
 SRC_URI = "git://github.com/intel/backport-iwlwifi.git;nobranch=1;protocol=ssh \
            file://0001-Makefile.real-skip-host-install-scripts.patch \
+           file://0001-iwlwifi-linux-5.4-compatibility-fixes.patch;striplevel=2 \
            file://iwlwifi.conf \
           "
 

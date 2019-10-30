@@ -15,7 +15,17 @@ DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'hardened', 'openssl-native'
 INHIBIT_PACKAGE_STRIP = "${@bb.utils.contains('DISTRO_FEATURES', 'hardened', '1', '0', d)}"
 
 # fix build warnings caused by libbpf
-SRC_URI_append = " file://libbpf/0001-Added-ldflags.patch"
+SRC_URI_append = " file://libbpf/0001-Added-ldflags.patch;apply=0"
+SRC_URI_append = " file://libbpf/0001-bpf-respect-LDFLAGS.patch;apply=0"
+
+do_patch_append(){
+	merge_rev="$( git merge-base 1bd63524593b964934a33afd442df16b8f90e2b5 HEAD )"
+	if [ "${merge_rev}" = 1bd63524593b964934a33afd442df16b8f90e2b5 ]; then
+		git am "${WORKDIR}/libbpf/0001-bpf-respect-LDFLAGS.patch"
+	else
+		git am "${WORKDIR}/libbpf/0001-Added-ldflags.patch"
+	fi
+}
 
 # add patch for ethernet
 SRC_URI_append = " file://ethernet.scc"
