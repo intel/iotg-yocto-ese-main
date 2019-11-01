@@ -1,13 +1,13 @@
 #! /bin/sh
 mkdir -p /dev /proc /sys /run/udev
 
-mount -t devtmpfs none /dev
-mount -t proc     none /proc
-mount -t sysfs    none /sys
+mount -t devtmpfs devtmpfs /dev  -o nosuid
+mount -t proc     proc     /proc -o nosuid,nodev,noexec
+mount -t sysfs    sysfs    /sys  -o nosuid,nodev,noexec
 
 # try mount efivarfs
 if [ -d /sys/firmware/efi/efivars ]; then
-    mount -o nodev,noexec -t efivarfs none /sys/firmware/efi/efivars
+    mount -o nosuid,nodev,noexec -t efivarfs efivarfs /sys/firmware/efi/efivars
 fi
 
 # busybox findfs cannot handle GPT PARTUUIDs!

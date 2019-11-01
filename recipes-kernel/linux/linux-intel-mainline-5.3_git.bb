@@ -25,9 +25,6 @@ SRC_URI_append = " file://ethernet.scc"
 # add patch for audio
 SRC_URI_append = " file://audio.scc"
 
-# Enable tgl pinctrl
-SRC_URI_append = " file://pinctrl.scc"
-
 # i915 video PCI ID
 SRC_URI_append = " file://graphics-5.3.scc"
 

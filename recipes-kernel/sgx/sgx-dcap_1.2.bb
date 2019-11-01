@@ -6,8 +6,8 @@ inherit module
 
 SRC_URI = "git://github.com/intel/SGXDataCenterAttestationPrimitives.git \
            file://dcap_intel_sgx_Makefile_for_yocto_build.patch;striplevel=3 \
-           file://${PN}-kernel-5.2.patch;striplevel=3 \
-           file://${PN}-kernel-5.3.patch;striplevel=3 \
+           file://sgx-dcap-kernel-5.2.patch;striplevel=3 \
+           file://sgx-dcap-kernel-5.3.patch;striplevel=3 \
           "
 
 SRCREV = "2c236e7600c579efbfb2e3775b8cb50f0521bda5"

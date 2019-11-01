@@ -1,0 +1,397 @@
+From 5258cfee2d0b55f58d7a3322df5f477c6dd276b1 Mon Sep 17 00:00:00 2001
+From: mmohdbo <muhammad.nazif.mohd.borhan@intel.com>
+Date: Sat, 2 Nov 2019 01:08:22 +0800
+Subject: [PATCH] ASoC: EHL: support EHL CRB with rt5660
+
+This patch adds the support of Intel EHL CRB with Realtek rt5660 codec.
+
+Signed-off-by: Muhammad Nazif Bin Mohd Borhan <muhammad.nazif.mohd.borhan@intel.com>
+Signed-off-by: Libin Yang <libin.yang@linux.intel.com>
+---
+ sound/soc/intel/boards/ehl_rt5660.c           | 214 ++++++++++++++----
+ .../intel/common/soc-acpi-intel-ehl-match.c   |  52 ++---
+ sound/soc/sof/sof-pci-dev.c                   |   2 +-
+ 3 files changed, 189 insertions(+), 79 deletions(-)
+
+diff --git a/sound/soc/intel/boards/ehl_rt5660.c b/sound/soc/intel/boards/ehl_rt5660.c
+index 454cec47a614..de07af97e793 100644
+--- a/sound/soc/intel/boards/ehl_rt5660.c
++++ b/sound/soc/intel/boards/ehl_rt5660.c
+@@ -22,16 +22,22 @@
+ #include <linux/module.h>
+ #include <linux/acpi.h>
+ #include <sound/core.h>
++#include <sound/jack.h>
+ #include <sound/pcm.h>
+ #include <sound/pcm_params.h>
+ #include <sound/soc.h>
++#include <sound/soc-acpi.h>
+ 
+ #include "../../codecs/rt5660.h"
++#include "../../codecs/hdac_hdmi.h"
+ 
+ #define EHL_BE_FIXUP_RATE	48000
+ #define RT5660_CODEC_DAI	"rt5660-aif1"
+ #define DUAL_CHANNEL 2
+ 
++struct ehl_card_private {
++	struct list_head hdmi_pcm_list;
++};
+ 
+ static const struct snd_kcontrol_new ehl_controls[] = {
+ 	SOC_DAPM_PIN_SWITCH("Speaker"),
+@@ -44,6 +50,7 @@ static const struct snd_soc_dapm_widget ehl_rt5660_widgets[] = {
+ 	SND_SOC_DAPM_SPK("Speaker", NULL),
+ 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
+ 	SND_SOC_DAPM_MIC("Headset Mic2", NULL),
++	SND_SOC_DAPM_MIC("SoC DMIC", NULL),
+ 	SND_SOC_DAPM_LINE("Line Out", NULL),
+ };
+ 
+@@ -68,15 +75,77 @@ static const struct snd_soc_dapm_route ehl_map[] = {
+ 	{"Line Out", NULL, "LOUTR"},
+ 	{"Line Out", NULL, "LOUTL"},
+ 
+-	/* CODEC BE connections */
+-	{"AIF1 Playback", NULL, "ssp0 Tx"},
+-	{"ssp0 Tx", NULL, "codec0_out"},
++	{"DMic", NULL, "SoC DMIC"},
++
++};
+ 
+-	{"ssp0 Rx", NULL, "AIF1 Capture"},
+-	{"codec0_in", NULL, "ssp0 Rx"},
++#if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
++static struct snd_soc_jack ehl_hdmi[4];
+ 
++struct ehl_hdmi_pcm {
++	struct list_head head;
++	struct snd_soc_dai *codec_dai;
++	int device;
+ };
+ 
++static int ehl_hdmi_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct ehl_card_private *ctx = snd_soc_card_get_drvdata(rtd->card);
++	struct snd_soc_dai *dai = rtd->codec_dai;
++	struct ehl_hdmi_pcm *pcm;
++
++	pcm = devm_kzalloc(rtd->card->dev, sizeof(*pcm), GFP_KERNEL);
++	if (!pcm)
++		return -ENOMEM;
++
++	/* dai_link id is 1:1 mapped to the PCM device */
++	pcm->device = rtd->dai_link->id;
++	pcm->codec_dai = dai;
++
++	list_add_tail(&pcm->head, &ctx->hdmi_pcm_list);
++
++	return 0;
++}
++
++#define NAME_SIZE	32
++static int ehl_card_late_probe(struct snd_soc_card *card)
++{
++	struct ehl_card_private *ctx = snd_soc_card_get_drvdata(card);
++	struct ehl_hdmi_pcm *pcm;
++	struct snd_soc_component *component = NULL;
++	int err, i = 0;
++	char jack_name[NAME_SIZE];
++
++	list_for_each_entry(pcm, &ctx->hdmi_pcm_list, head) {
++		component = pcm->codec_dai->component;
++		snprintf(jack_name, sizeof(jack_name),
++			 "HDMI/DP, pcm=%d Jack", pcm->device);
++		err = snd_soc_card_jack_new(card, jack_name,
++					    SND_JACK_AVOUT, &ehl_hdmi[i],
++					    NULL, 0);
++
++		if (err)
++			return err;
++
++		err = hdac_hdmi_jack_init(pcm->codec_dai, pcm->device,
++					  &ehl_hdmi[i]);
++		if (err < 0)
++			return err;
++
++		i++;
++	}
++
++	if (!component)
++		return -EINVAL;
++
++	return hdac_hdmi_jack_port_init(component, &card->dapm);
++}
++#else
++static int ehl_card_late_probe(struct snd_soc_card *card)
++{
++	return 0;
++}
++#endif
+ 
+ static int ehl_be_fixup(struct snd_soc_pcm_runtime *rtd,
+ 			    struct snd_pcm_hw_params *params)
+@@ -149,34 +218,6 @@ static const struct snd_pcm_hw_constraint_list constraints_channels = {
+ 	.mask = 0,
+ };
+ 
+-static int ehl_fe_startup(struct snd_pcm_substream *substream)
+-{
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+-
+-	/*
+-	 * On this platform for PCM device we support,
+-	 * 48Khz
+-	 * stereo
+-	 * 16 bit audio
+-	 */
+-
+-	runtime->hw.channels_max = DUAL_CHANNEL;
+-	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
+-					   &constraints_channels);
+-
+-	runtime->hw.formats = SNDRV_PCM_FMTBIT_S16_LE;
+-	snd_pcm_hw_constraint_msbits(runtime, 0, 16, 16);
+-
+-	snd_pcm_hw_constraint_list(runtime, 0,
+-				SNDRV_PCM_HW_PARAM_RATE, &constraints_rates);
+-
+-	return 0;
+-}
+-
+-static const struct snd_soc_ops ehl_rt5660_fe_ops = {
+-	.startup = ehl_fe_startup,
+-};
+-
+ #if IS_ENABLED(CONFIG_SND_SOC_INTEL_EHL_RT5660_FPGA)
+ static const char pname[] = "0000:02:1f.3";
+ static const char cname[] = "i2c-INT34C2:00";
+@@ -194,6 +235,35 @@ SND_SOC_DAILINK_DEF(rt5660_codec,
+ SND_SOC_DAILINK_DEF(platform,
+ 	DAILINK_COMP_ARRAY(COMP_PLATFORM(pname)));
+ 
++SND_SOC_DAILINK_DEF(dmic_pin,
++	DAILINK_COMP_ARRAY(COMP_CPU("DMIC01 Pin")));
++SND_SOC_DAILINK_DEF(dmic_codec,
++	DAILINK_COMP_ARRAY(COMP_CODEC("dmic-codec", "dmic-hifi")));
++SND_SOC_DAILINK_DEF(dmic16k,
++	DAILINK_COMP_ARRAY(COMP_CPU("DMIC16k Pin")));
++
++#if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
++SND_SOC_DAILINK_DEF(idisp1_pin,
++	DAILINK_COMP_ARRAY(COMP_CPU("iDisp1 Pin")));
++SND_SOC_DAILINK_DEF(idisp1_codec,
++	DAILINK_COMP_ARRAY(COMP_CODEC("ehdaudio0D2", "intel-hdmi-hifi1")));
++
++SND_SOC_DAILINK_DEF(idisp2_pin,
++	DAILINK_COMP_ARRAY(COMP_CPU("iDisp2 Pin")));
++SND_SOC_DAILINK_DEF(idisp2_codec,
++	DAILINK_COMP_ARRAY(COMP_CODEC("ehdaudio0D2", "intel-hdmi-hifi2")));
++
++SND_SOC_DAILINK_DEF(idisp3_pin,
++	DAILINK_COMP_ARRAY(COMP_CPU("iDisp3 Pin")));
++SND_SOC_DAILINK_DEF(idisp3_codec,
++	DAILINK_COMP_ARRAY(COMP_CODEC("ehdaudio0D2", "intel-hdmi-hifi3")));
++
++SND_SOC_DAILINK_DEF(idisp4_pin,
++	DAILINK_COMP_ARRAY(COMP_CPU("iDisp4 Pin")));
++SND_SOC_DAILINK_DEF(idisp4_codec,
++	DAILINK_COMP_ARRAY(COMP_CODEC("ehdaudio0D2", "intel-hdmi-hifi4")));
++#endif	/* IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI) */
++
+ static struct snd_soc_dai_link ehl_rt5660_msic_dailink[] = {
+ 	/* back ends */
+ 	{
+@@ -207,22 +277,65 @@ static struct snd_soc_dai_link ehl_rt5660_msic_dailink[] = {
+ 		.dpcm_capture = 1,
+ 		.ops = &ehl_rt5660_ops,
+ 		.be_hw_params_fixup = ehl_be_fixup,
++		.nonatomic = true,
+ 		SND_SOC_DAILINK_REG(ssp0_pin, rt5660_codec, platform),
+ 	},
++	{
++		.name = "dmic01",
++		.id = 1,
++		.ignore_suspend = 1,
++		.dpcm_capture = 1,
++		.no_pcm = 1,
++		SND_SOC_DAILINK_REG(dmic_pin, dmic_codec, platform),
++	},
++	{
++		.name = "dmic16k",
++		.id = 2,
++		.ignore_suspend = 1,
++		.dpcm_capture = 1,
++		.no_pcm = 1,
++		SND_SOC_DAILINK_REG(dmic16k, dmic_codec, platform),
++	},
++#if IS_ENABLED(CONFIG_SND_SOC_HDAC_HDMI)
++	{
++		.name = "iDisp1",
++		.id = 3,
++		.init = ehl_hdmi_init,
++		.dpcm_playback = 1,
++		.no_pcm = 1,
++		SND_SOC_DAILINK_REG(idisp1_pin, idisp1_codec, platform),
++	},
++	{
++		.name = "iDisp2",
++		.id = 4,
++		.init = ehl_hdmi_init,
++		.dpcm_playback = 1,
++		.no_pcm = 1,
++		SND_SOC_DAILINK_REG(idisp2_pin, idisp2_codec, platform),
++	},
++	{
++		.name = "iDisp3",
++		.id = 5,
++		.init = ehl_hdmi_init,
++		.dpcm_playback = 1,
++		.no_pcm = 1,
++		SND_SOC_DAILINK_REG(idisp3_pin, idisp3_codec, platform),
++	},
++	{
++		.name = "iDisp4",
++		.id = 6,
++		.init = ehl_hdmi_init,
++		.dpcm_playback = 1,
++		.no_pcm = 1,
++		SND_SOC_DAILINK_REG(idisp4_pin, idisp4_codec, platform),
++	},
++#endif
+ };
+ 
+-static int
+-ehl_add_dai_link(struct snd_soc_card *card, struct snd_soc_dai_link *link)
+-{
+-	link->platforms->name = pname;
+-	link->nonatomic = 1;
+-
+-	return 0;
+-}
+-
+ /* SoC card */
+ static struct snd_soc_card snd_soc_card_ehl = {
+ 	.name = "ehl-rt5660",
++	.owner = THIS_MODULE,
+ 	.dai_link = ehl_rt5660_msic_dailink,
+ 	.num_links = ARRAY_SIZE(ehl_rt5660_msic_dailink),
+ 	.dapm_widgets = ehl_rt5660_widgets,
+@@ -231,14 +344,25 @@ static struct snd_soc_card snd_soc_card_ehl = {
+ 	.num_dapm_routes = ARRAY_SIZE(ehl_map),
+ 	.controls = ehl_controls,
+ 	.num_controls = ARRAY_SIZE(ehl_controls),
+-	.add_dai_link = ehl_add_dai_link,
+ 	.fully_routed = true,
++	.late_probe = ehl_card_late_probe,
+ };
+ 
+ static int snd_ehl_rt5660_probe(struct platform_device *pdev)
+ {
+-	snd_soc_card_ehl.dev = &pdev->dev;
+-	return devm_snd_soc_register_card(&pdev->dev, &snd_soc_card_ehl);
++	struct snd_soc_acpi_mach *mach;
++	struct snd_soc_card *card = &snd_soc_card_ehl;
++	int ret;
++
++	card->dev = &pdev->dev;
++
++	mach = (&pdev->dev)->platform_data;
++	ret = snd_soc_fixup_dai_links_platform_name(card,
++						    mach->mach_params.platform);
++	if (ret)
++		return ret;
++
++	return devm_snd_soc_register_card(&pdev->dev, card);
+ }
+ 
+ static const struct platform_device_id ehl_board_ids[] = {
+diff --git a/sound/soc/intel/common/soc-acpi-intel-ehl-match.c b/sound/soc/intel/common/soc-acpi-intel-ehl-match.c
+index c368a451d150..5e2437e3d8c0 100644
+--- a/sound/soc/intel/common/soc-acpi-intel-ehl-match.c
++++ b/sound/soc/intel/common/soc-acpi-intel-ehl-match.c
+@@ -1,49 +1,35 @@
+ // SPDX-License-Identifier: GPL-2.0
+-/*
+- * soc-apci-intel-ehl-match.c - tables and support for EHL ACPI enumeration.
+- *
+- * Copyright (c) 2019, Intel Corporation.
+- *
+- */
++//
++// soc-apci-intel-ehl-match.c  --  tables and support for EHL ACPI enumeration.
++//
++// Copyright (C) 2019, Intel Corporation.
+ 
+ #include <sound/soc-acpi.h>
+ #include <sound/soc-acpi-intel-match.h>
+ #include "../skylake/skl.h"
+ 
+-static int imr_alloc = 1;
+-
+-static struct skl_machine_pdata ehl_pdata_fpga = {
+-	.use_tplg_pcm = true,
+-	.imr_alloc = &imr_alloc,
+-};
+-
+ static struct skl_machine_pdata ehl_pdata = {
+ 	.use_tplg_pcm = true,
+ };
+ 
+ struct snd_soc_acpi_mach snd_soc_acpi_intel_ehl_machines[] = {
+-
+-	{
+-		.id = "INT34C2", /* Using KBL RVP with IP FPGA */
+-		.drv_name = "ehl_rt5660",
+-		.fw_filename = "intel/dsp_fw_ehl.bin",
+-		.pdata = &ehl_pdata_fpga,
+-	},
+-
+-	{
+-		.id = "INTC1027", /* EHL board */
+-		.drv_name = "ehl_rt5660",
+-		.fw_filename = "intel/dsp_fw_ehl.bin",
+-		.pdata = &ehl_pdata,
+-	},
+-	{
+-		.id = "10EC5682",
+-		.drv_name = "sof_rt5682",
+-		.sof_fw_filename = "sof-icl.ri",
+-		.sof_tplg_filename = "sof-icl-rt5682.tplg",
++	{	
++	.id = "INT34C2",
++	.drv_name = "ehl_rt274",
++	.fw_filename = "intel/dsp_fw_ehl.bin",
++	.pdata = &ehl_pdata,
++	.sof_fw_filename = "sof-ehl.ri",
++	.sof_tplg_filename = "sof-ehl-rt274.tplg",
+ 	},
++	{ 
++  	.id = "INTC1027",
++        .drv_name = "ehl_rt5660",
++        .fw_filename = "intel/dsp_fw_ehl.bin",
++        .pdata = &ehl_pdata,
++        .sof_fw_filename = "sof-ehl.ri",
++        .sof_tplg_filename = "sof-ehl-rt5660.tplg",
++        },
+ 	{},
+-
+ };
+ EXPORT_SYMBOL_GPL(snd_soc_acpi_intel_ehl_machines);
+ 
+diff --git a/sound/soc/sof/sof-pci-dev.c b/sound/soc/sof/sof-pci-dev.c
+index d66412a77873..5418e044d9bb 100644
+--- a/sound/soc/sof/sof-pci-dev.c
++++ b/sound/soc/sof/sof-pci-dev.c
+@@ -426,7 +426,7 @@ static const struct pci_device_id sof_pci_ids[] = {
+ 		.driver_data = (unsigned long)&tgl_desc},
+ #endif
+ #if IS_ENABLED(CONFIG_SND_SOC_SOF_ELKHARTLAKE)
+-	{ PCI_DEVICE(0x8086, 0x4b55),
++	{ PCI_DEVICE(0x8086, 0x4b58),
+ 		.driver_data = (unsigned long)&ehl_desc},
+ #endif
+ 	{ 0, }
+-- 
+2.17.1
+

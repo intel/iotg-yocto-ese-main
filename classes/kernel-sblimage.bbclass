@@ -5,7 +5,8 @@ fakeroot do_sblimage() {
 	mkdir -p ${WORKDIR}/slimboot
 	echo "${APPEND}" > ${WORKDIR}/slimboot/sbl_cmdline.txt
 	${PYTHON} ${STAGING_DIR_NATIVE}/${libexecdir}/slimboot/Tools/GenContainer.py create -cl CMDL:${WORKDIR}/slimboot/sbl_cmdline.txt \
-		KRNL:${D}/${KERNEL_IMAGEDEST}/${KERNEL_IMAGETYPE}-${KERNEL_VERSION} -o ${WORKDIR}/slimboot/${SBLIMAGE_NAME} \
+		KRNL:${D}/${KERNEL_IMAGEDEST}/${KERNEL_IMAGETYPE}-${KERNEL_VERSION} INRD:${SBLIMAGE_INITRD_PATH} \
+		-o ${WORKDIR}/slimboot/${SBLIMAGE_NAME} \
 		-k ${IAS_KEY_PATH} -t CLASSIC
 	install -m 644 ${WORKDIR}/slimboot/${SBLIMAGE_NAME} ${D}/${KERNEL_IMAGEDEST}/${SBLIMAGE_NAME}
 }

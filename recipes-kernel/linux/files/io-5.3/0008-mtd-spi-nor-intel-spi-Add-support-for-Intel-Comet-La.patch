@@ -1,11 +1,11 @@
-From 68fdd1767732815e8652e509828ba80baa66cbb2 Mon Sep 17 00:00:00 2001
+From 3cf4ed224394b513e9a76df526aeea435d7c1ee0 Mon Sep 17 00:00:00 2001
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 Date: Tue, 7 May 2019 15:02:14 +0300
-Subject: [PATCH 4/9] mtd: spi-nor: intel-spi: Add support for Intel Comet
+Subject: [PATCH 08/12] mtd: spi-nor: intel-spi: Add support for Intel Comet
  Lake-H SPI serial flash
 
-Intel Comet Lake-H has the same SPI serial flash controller as Ice Lake.
-Add Comet Lake-H PCI ID to the driver list of supported devices.
+Intel Comet Lake-H PCH has the same SPI serial flash controller as Comet
+Lake-LP. Add Comet Lake-H PCI ID to the driver list of supported devices.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
@@ -13,14 +13,14 @@ Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/mtd/spi-nor/intel-spi-pci.c b/drivers/mtd/spi-nor/intel-spi-pci.c
-index 3cda8e7..9b1e6ea 100644
+index b83c4ab6..85e7a4d40 100644
 --- a/drivers/mtd/spi-nor/intel-spi-pci.c
 +++ b/drivers/mtd/spi-nor/intel-spi-pci.c
 @@ -61,6 +61,7 @@ static void intel_spi_pci_remove(struct pci_dev *pdev)
  
  static const struct pci_device_id intel_spi_pci_ids[] = {
  	{ PCI_VDEVICE(INTEL, 0x02a4), (unsigned long)&bxt_info },
-+	{ PCI_VDEVICE(INTEL, 0x0684), (unsigned long)&bxt_info },
++	{ PCI_VDEVICE(INTEL, 0x06a4), (unsigned long)&bxt_info },
  	{ PCI_VDEVICE(INTEL, 0x18e0), (unsigned long)&bxt_info },
  	{ PCI_VDEVICE(INTEL, 0x19e0), (unsigned long)&bxt_info },
  	{ PCI_VDEVICE(INTEL, 0x34a4), (unsigned long)&bxt_info },

@@ -1,0 +1,6 @@
+patch audio-asoc-5.4/0001-ALSA-hda-support-EHL-CRB.patch
+patch audio-asoc-5.4/0001-ASoC-EHL-support-EHL-CRB-with-rt5660.patch
+patch audio-asoc-5.4/0001-ASoC-SOF-token-add-tokens-for-PCM-compatible-with-D0.patch
+patch audio-asoc-5.4/0002-ASoC-SOF-imx-Describe-ESAI-parameters-to-be-sent-to-.patch
+patch audio-asoc-5.4/0003-ASoC-SOF-add-flag-to-snd_sof_pcm_stream-for-D0i3-com.patch
+patch audio-asoc-5.4/0004-ASoC-rt5660-update-to-latest.patch

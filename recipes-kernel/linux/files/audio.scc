@@ -1,1 +1,4 @@
-patch audio/0001-pick-up-HDA-changes.patch
+patch audio/0001-ALSA-hda-realtek-Add-support-for-ALC711.patch  
+patch audio/0002-ALSA-hda-Add-Tigerlake-Jasperlake-PCI-ID.patch  
+patch audio/0003-SoC-Intel-hdac_hdmi-add-Tigerlake-support.patch
+patch audio/0004-ASoC-Intel-tgl-add-tgl-rt1308-machine-driver.patch

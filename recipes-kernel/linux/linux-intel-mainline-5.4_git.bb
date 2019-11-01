@@ -31,7 +31,7 @@ do_patch_append(){
 SRC_URI_append = " file://ethernet.scc"
 
 # add patch for audio
-SRC_URI_append = " file://audio.scc"
+SRC_URI_append = " file://audio.scc file://audio-asoc-5.4.scc"
 
 # resctrl patches for 5.4
 SRC_URI_append = " file://resctrl-5.4.scc"

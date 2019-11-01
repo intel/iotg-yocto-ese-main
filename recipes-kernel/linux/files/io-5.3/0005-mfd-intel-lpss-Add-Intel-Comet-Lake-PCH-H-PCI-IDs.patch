@@ -1,7 +1,7 @@
-From 9518eab900cedd0a7534c1a21b6070528b9894b0 Mon Sep 17 00:00:00 2001
+From 0347525ca473a7d9d58c3003b5366c1dbe425866 Mon Sep 17 00:00:00 2001
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Date: Mon, 5 Mar 2018 13:54:17 +0200
-Subject: [PATCH 2/9] mfd: intel-lpss: Add Intel Comet Lake PCH-H PCI IDs
+Subject: [PATCH 05/12] mfd: intel-lpss: Add Intel Comet Lake PCH-H PCI IDs
 
 Intel Comet Lake PCH-H has the same LPSS than Intel Cannon Lake.
 Add the new IDs to the list of supported devices.

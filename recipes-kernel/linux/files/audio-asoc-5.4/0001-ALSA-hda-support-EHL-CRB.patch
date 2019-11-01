@@ -1,0 +1,26 @@
+From 851c78e2994fa4d8a088ea711c89a75a74b36e9c Mon Sep 17 00:00:00 2001
+From: mmohdbo <muhammad.nazif.mohd.borhan@intel.com>
+Date: Sat, 2 Nov 2019 00:53:50 +0800
+Subject: [PATCH] ALSA: hda: support EHL CRB
+
+Signed-off-by: Muhammad Nazif Bin Mohd Borhan <muhammad.nazif.mohd.borhan@intel.com>
+---
+ sound/pci/hda/hda_intel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index 01b33b40cf42..538aa238a6a3 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2403,7 +2403,7 @@ static const struct pci_device_id azx_ids[] = {
+ 	{ PCI_DEVICE(0x8086, 0x38c8),
+ 	  .driver_data = AZX_DRIVER_SKL | AZX_DCAPS_INTEL_SKYLAKE},
+ 	/* Elkhart Lake */
+-	{ PCI_DEVICE(0x8086, 0x4b55),
++	{ PCI_DEVICE(0x8086, 0x4b58),
+ 	  .driver_data = AZX_DRIVER_SKL | AZX_DCAPS_INTEL_SKYLAKE},
+ 	/* Comet Lake */
+ 	{ PCI_DEVICE(0x8086, 0x02c8),
+-- 
+2.17.1
+

@@ -1,0 +1,37 @@
+From 8d7deac32ff34edf6a7ec6c0eb4c0ac0b4264766 Mon Sep 17 00:00:00 2001
+From: Voon Weifeng <weifeng.voon@intel.com>
+Date: Wed, 11 Sep 2019 15:52:32 +0800
+Subject: [PATCH] tc: taprio: increase the sched entry msg size
+
+taprio scheduler entry may have hundres's of windows. Hence, increase
+the sched entry size to MAX_MSG. This is tested to be able to support
+512 entries.
+
+Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+---
+ tc/q_taprio.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/tc/q_taprio.c b/tc/q_taprio.c
+index b5c81a07..6fa7ab1e 100644
+--- a/tc/q_taprio.c
++++ b/tc/q_taprio.c
+@@ -127,11 +127,11 @@ static int add_sched_list(struct list_head *sched_entries, struct nlmsghdr *n)
+ 	list_for_each_entry(e, sched_entries, list) {
+ 		struct rtattr *a;
+ 
+-		a = addattr_nest(n, 1024, TCA_TAPRIO_SCHED_ENTRY);
++		a = addattr_nest(n, MAX_MSG, TCA_TAPRIO_SCHED_ENTRY);
+ 
+-		addattr_l(n, 1024, TCA_TAPRIO_SCHED_ENTRY_CMD, &e->cmd, sizeof(e->cmd));
+-		addattr_l(n, 1024, TCA_TAPRIO_SCHED_ENTRY_GATE_MASK, &e->gatemask, sizeof(e->gatemask));
+-		addattr_l(n, 1024, TCA_TAPRIO_SCHED_ENTRY_INTERVAL, &e->interval, sizeof(e->interval));
++		addattr_l(n, MAX_MSG, TCA_TAPRIO_SCHED_ENTRY_CMD, &e->cmd, sizeof(e->cmd));
++		addattr_l(n, MAX_MSG, TCA_TAPRIO_SCHED_ENTRY_GATE_MASK, &e->gatemask, sizeof(e->gatemask));
++		addattr_l(n, MAX_MSG, TCA_TAPRIO_SCHED_ENTRY_INTERVAL, &e->interval, sizeof(e->interval));
+ 
+ 		addattr_nest_end(n, a);
+ 	}
+-- 
+2.17.1
+
