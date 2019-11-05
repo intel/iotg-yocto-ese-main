@@ -28,10 +28,10 @@ class DMVerityPlugin(SourcePlugin):
         # We rely on the --label parameter and the naming convention
         # in partition.py prepare_rootfs() here to find the already
         # prepared rootfs partition image.
-        pattern = '%s/rootfs_%s.*' % (cr_workdir, part.label)
+        pattern = '%s/rootfs_%s.*' % (cr_workdir, source_params['target_root'])
         rootfs = glob.glob(pattern)
         if len(rootfs) != 1:
-            raise WicError("%s shell pattern does not match exactly one rootfs image (missing --label parameter?): %s" % (pattern, rootfs))
+            raise WicError("%s shell pattern does not match exactly one rootfs image (missing --sourceparams=\"target_root=\" parameter?): %s" % (pattern, rootfs))
         else:
             rootfs = rootfs[0]
         logger.debug("Calculating dm-verity hash for rootfs %s (native %s)." % (rootfs, native_sysroot))
@@ -81,7 +81,7 @@ class DMVerityPlugin(SourcePlugin):
         out = exec_cmd("sed -i s:Image:%s/Image: %s/temp_kmb_os_image.its" % (boot_partition_dir, cr_workdir)) # ":" as delimiter is safer
 
         # Sign the kernel with keys in KEYS_DIR to generate a signed FIT image.
-        ret, out = exec_native_cmd("mkimage -f %s/temp_kmb_os_image.its -k %s sign-fit-img.itb" % (cr_workdir, get_bitbake_var("KEYS_DIR")), native_sysroot)
+        ret, out = exec_native_cmd("uboot-mkimage -f %s/temp_kmb_os_image.its -k %s sign-fit-img.itb" % (cr_workdir, get_bitbake_var("KEYS_DIR")), native_sysroot)
         if ret:
             raise WicError('Create FIT image failed: %s' % out)
         else:

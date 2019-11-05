@@ -5,7 +5,7 @@
 # the distro configuration.
 
 python(){
-        if bb.utils.contains('DISTRO_FEATURES', 'dm-verity', '1', '', d) == "1":
+        if bb.utils.contains('DM_VERITY', 'true', '1', '', d) == "1":
                 d.setVar("INITRAMFS_IMAGE", "initramfs-dm-verity")
                 d.setVar("INITRAMFS_IMAGE_BUNDLE", "1")
                 d.appendVar("IMAGE_FEATURES", " read-only-rootfs")
@@ -18,8 +18,8 @@ python(){
                 if "initramfs" not in d.getVar("PN"):
                         # For wic-based image generation.
                         d.setVar('IMAGE_FSTYPES', d.getVar('IMAGE_FSTYPES') + ' wic')
-                        d.setVar("WKS_FILE", "dm-verity-image-gen.wks")
-                        d.appendVar("WKS_FILE_DEPENDS", " coreutils-native u-boot-mkimage-native cryptsetup-native openssl-native")
+                        d.setVar("WKS_FILE", "dm-verity-image-gen.wks.in")
+                        d.appendVar("WKS_FILE_DEPENDS", " coreutils-native u-boot-tools-native cryptsetup-native openssl-native")
                         d.appendVar("WICVARS", " KEYS_DIR ITS_FILE")
-                        d.appendVar("IMAGE_BOOT_FILES", " Image-initramfs-${MACHINE}.bin;Image")
+                        d.setVar("IMAGE_BOOT_FILES", " Image-initramfs-${MACHINE}.bin;Image")
 }

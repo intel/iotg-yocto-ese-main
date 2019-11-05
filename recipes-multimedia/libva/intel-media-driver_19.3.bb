@@ -10,9 +10,11 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=6aab5363823095ce682b155fef0231f0 \
                     "
 
 SRC_URI = "git://github.com/intel/media-driver.git;protocol=https \
+	   file://0001-VP-Fix-GPU-hang.patch \
+	   file://0001-VP-Fix-Gpu-hang-decode.patch \
 "
 PV = "19.3+git${SRCPV}"
-SRCREV = "e0f615e0ebb550defd89f671dbc81b6abdee75cb"
+SRCREV = "3c73afffc7899c02a3eae9feb01b702b34039840"
 S = "${WORKDIR}/git"
 
 DEPENDS += "libva gmmlib"
