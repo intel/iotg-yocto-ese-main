@@ -38,3 +38,6 @@ SRC_URI_append = " file://resctrl-5.4.scc"
 
 # Programmable Software Engine
 SRC_URI_append = " file://ishtp-5.4.scc"
+
+# IO patches
+SRC_URI_append = " file://io-5.4.scc"
