@@ -1,21 +1,18 @@
-From bedb82b6a3ba84d0625602a0460d2d4c06252e14 Mon Sep 17 00:00:00 2001
-From: Kailang Yang <kailang@realtek.com>
-Date: Thu, 2 May 2019 16:03:26 +0800
-Subject: [PATCH 1/6] ALSA: hda/realtek - Add support for ALC711
+From bda50a9fe246f4ac59dbd36deee8a828626eeb0e Mon Sep 17 00:00:00 2001
+From: Pan Xiuli <xiuli.pan@linux.intel.com>
+Date: Wed, 25 Sep 2019 17:18:00 +0800
+Subject: [PATCH 1/4] ALSA: hda/realtek - Add support for ALC711
 
 Support new codec ALC711.
 
 Signed-off-by: Kailang Yang <kailang@realtek.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-(cherry picked from commit 83629532ce45ef9df1f297b419b9ea112045685d)
-Signed-off-by: Tan, Seng Kai <seng.kai.tan@intel.com>
+Signed-off-by: Pan Xiuli <xiuli.pan@linux.intel.com>
 ---
  sound/pci/hda/patch_realtek.c | 3 +++
  1 file changed, 3 insertions(+)
 
 diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index c1ddfd2fac52..9b0eb1d9acc0 100644
+index b000b36ac3c6..e2ce91a7fbe3 100644
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
 @@ -393,6 +393,7 @@ static void alc_fill_eapd_coef(struct hda_codec *codec)
@@ -26,7 +23,7 @@ index c1ddfd2fac52..9b0eb1d9acc0 100644
  		alc_update_coef_idx(codec, 0x10, 1<<15, 0);
  		break;
  	case 0x10ec0662:
-@@ -7875,6 +7876,7 @@ static int patch_alc269(struct hda_codec *codec)
+@@ -7990,6 +7991,7 @@ static int patch_alc269(struct hda_codec *codec)
  	case 0x10ec0700:
  	case 0x10ec0701:
  	case 0x10ec0703:
@@ -34,7 +31,7 @@ index c1ddfd2fac52..9b0eb1d9acc0 100644
  		spec->codec_variant = ALC269_TYPE_ALC700;
  		spec->gen.mixer_nid = 0; /* ALC700 does not have any loopback mixer path */
  		alc_update_coef_idx(codec, 0x4a, 1 << 15, 0); /* Combo jack auto trigger control */
-@@ -9015,6 +9017,7 @@ static const struct hda_device_id snd_hda_id_realtek[] = {
+@@ -9204,6 +9206,7 @@ static const struct hda_device_id snd_hda_id_realtek[] = {
  	HDA_CODEC_ENTRY(0x10ec0700, "ALC700", patch_alc269),
  	HDA_CODEC_ENTRY(0x10ec0701, "ALC701", patch_alc269),
  	HDA_CODEC_ENTRY(0x10ec0703, "ALC703", patch_alc269),

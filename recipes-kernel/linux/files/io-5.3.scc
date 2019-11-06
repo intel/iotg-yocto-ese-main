@@ -5,4 +5,4 @@ patch io-5.3/0007-spi-pxa2xx-Add-support-for-Intel-Comet-Lake-H.patch
 patch io-5.3/0008-mtd-spi-nor-intel-spi-Add-support-for-Intel-Comet-La.patch
 
 # TGL patch
-patch io-5.3/0001-To-support-pin-control-for-TigerLake_WW42-3.patch
+patch io-5.3/TGL_pinctrl_20191105.patch

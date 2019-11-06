@@ -1,0 +1,2 @@
+patch ethernet-5.4/0001-REVERTME-net-stmmac-Fix-DMA-transfer-mode-WA-Impleme.patch
+patch ethernet-5.4/0002-REVERTME-net-stmmac-Fix-DMA-transfer-mode-WA-in-NP-e.patch

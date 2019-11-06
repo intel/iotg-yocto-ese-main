@@ -1,7 +1,7 @@
-From 1945778ab6ec5ec5bead894c5da56cd8a7bdbe8f Mon Sep 17 00:00:00 2001
+From 129ad0a0b53ad651f58b90b26f9501003189e966 Mon Sep 17 00:00:00 2001
 From: Pan Xiuli <xiuli.pan@linux.intel.com>
 Date: Wed, 24 Jul 2019 22:26:18 +0800
-Subject: [PATCH 4/6] ASoC: Intel: tgl: add tgl-rt1308 machine driver
+Subject: [PATCH 4/4] ASoC: Intel: tgl: add tgl-rt1308 machine driver
 
 New machine driver based on RT1308 + DMIC.
 
@@ -18,10 +18,10 @@ Signed-off-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
  create mode 100644 sound/soc/intel/boards/tgl_rt1308.c
 
 diff --git a/sound/soc/intel/boards/Kconfig b/sound/soc/intel/boards/Kconfig
-index 02b20adead76..133fe9838e74 100644
+index 5c27f7ab4a5f..433957bfbf04 100644
 --- a/sound/soc/intel/boards/Kconfig
 +++ b/sound/soc/intel/boards/Kconfig
-@@ -548,6 +548,23 @@ config SND_SOC_INTEL_SKL_HDA_DSP_GENERIC_MACH
+@@ -398,6 +398,23 @@ config SND_SOC_INTEL_SKL_HDA_DSP_GENERIC_MACH
  
  endif ## SND_SOC_INTEL_SKYLAKE_HDAUDIO_CODEC || SND_SOC_SOF_HDA_AUDIO_CODEC
  
@@ -46,25 +46,23 @@ index 02b20adead76..133fe9838e74 100644
  config SND_SOC_INTEL_SOF_RT5682_MACH
  	tristate "SOF with rt5682 codec in I2S Mode"
 diff --git a/sound/soc/intel/boards/Makefile b/sound/soc/intel/boards/Makefile
-index b0cb4452738c..4f3e260f5ef1 100644
+index 6445f90ea542..9315edf737dd 100644
 --- a/sound/soc/intel/boards/Makefile
 +++ b/sound/soc/intel/boards/Makefile
-@@ -31,6 +31,7 @@ snd-soc-kbl_rt5663_rt5514_max98927-objs := kbl_rt5663_rt5514_max98927.o
+@@ -24,6 +24,7 @@ snd-soc-kbl_rt5663_max98927-objs := kbl_rt5663_max98927.o
+ snd-soc-kbl_rt5663_rt5514_max98927-objs := kbl_rt5663_rt5514_max98927.o
  snd-soc-kbl_rt5660-objs := kbl_rt5660.o
- snd-soc-kblr_rt298-objs := kblr_rt298.o
  snd-soc-skl_rt286-objs := skl_rt286.o
 +snd-soc-tgl-rt1308-objs := tgl_rt1308.o
  snd-soc-skl_hda_dsp-objs := skl_hda_dsp_generic.o skl_hda_dsp_common.o
  snd-skl_nau88l25_max98357a-objs := skl_nau88l25_max98357a.o
  snd-soc-skl_nau88l25_ssm4567-objs := skl_nau88l25_ssm4567.o
-@@ -72,6 +73,7 @@ obj-$(CONFIG_SND_SOC_INTEL_KBLR_RT298_MACH) += snd-soc-kblr_rt298.o
+@@ -55,4 +56,5 @@ obj-$(CONFIG_SND_SOC_INTEL_KBL_RT5660_MACH) += snd-soc-kbl_rt5660.o
  obj-$(CONFIG_SND_SOC_INTEL_SKL_RT286_MACH) += snd-soc-skl_rt286.o
  obj-$(CONFIG_SND_SOC_INTEL_SKL_NAU88L25_MAX98357A_MACH) += snd-skl_nau88l25_max98357a.o
  obj-$(CONFIG_SND_SOC_INTEL_SKL_NAU88L25_SSM4567_MACH) += snd-soc-skl_nau88l25_ssm4567.o
 +obj-$(CONFIG_SND_SOC_INTEL_TGL_RT1308_MACH) += snd-soc-tgl-rt1308.o
  obj-$(CONFIG_SND_SOC_INTEL_SKL_HDA_DSP_GENERIC_MACH) += snd-soc-skl_hda_dsp.o
- obj-$(CONFIG_SND_SOC_INTEL_CNL_RT274_MACH) += snd-soc-cnl-rt274.o
- obj-$(CONFIG_SND_SOC_INTEL_EHL_RT5660_MACH) += snd-soc-ehl-rt5660.o
 diff --git a/sound/soc/intel/boards/tgl_rt1308.c b/sound/soc/intel/boards/tgl_rt1308.c
 new file mode 100644
 index 000000000000..c6b6e4a5215a
