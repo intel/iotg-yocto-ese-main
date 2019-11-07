@@ -1,0 +1,54 @@
+From fda548f578a130f543ebca223bb9c2adc125e9fd Mon Sep 17 00:00:00 2001
+From: Raymond Tan <raymond.tan@intel.com>
+Date: Mon, 21 Oct 2019 16:32:27 +0800
+Subject: [PATCH] serial: 8250_dwlib: Reset DE_POL, RE_POL and program DET &
+ TAT vales
+
+SP330 requires RE_POL to be active-low, thus resetting the default reset
+values of TCR, and only set according to _DSD provided by BIOS.
+
+The DET & TAT values are tuned for SP330 on EHL board. It's fixed for the moment,
+and preferably passed from platform specific structure as ACPI values.
+
+Signed-off-by: Raymond Tan <raymond.tan@intel.com>
+---
+ drivers/tty/serial/8250/8250_dwlib.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/tty/serial/8250/8250_dwlib.c b/drivers/tty/serial/8250/8250_dwlib.c
+index 2280085..41c8b3b 100644
+--- a/drivers/tty/serial/8250/8250_dwlib.c
++++ b/drivers/tty/serial/8250/8250_dwlib.c
+@@ -15,6 +15,8 @@
+ #define DW_UART_TCR	0xac /* Transceiver Control Register (RS485) */
+ #define DW_UART_DE_EN	0xb0 /* Driver Output Enable Register */
+ #define DW_UART_RE_EN	0xb4 /* Receiver Output Enable Register */
++#define DW_UART_DET	0xb8 /* Driver Output Enable Timing Register */
++#define DW_UART_TAT	0xbc /* TurnAround Timing Register */
+ #define DW_UART_DLF	0xc0 /* Divisor Latch Fraction Register */
+ #define DW_UART_RAR	0xc4 /* Receive Address Register */
+ #define DW_UART_TAR	0xc8 /* Transmit Address Register */
+@@ -118,6 +120,9 @@ static int dw8250_rs485_config(struct uart_port *p, struct serial_rs485 *rs485)
+ 		dw8250_writel_ext(p, DW_UART_RE_EN, 0);
+ 	}
+ 
++	/* Resetting the default DE_POL & RE_POL */
++	tcr &= ~(DW_UART_TCR_DE_POL | DW_UART_TCR_RE_POL);
++
+ 	if (device_property_read_bool(p->dev, "snps,de-active-high"))
+ 		tcr |= DW_UART_TCR_DE_POL;
+ 	if (device_property_read_bool(p->dev, "snps,re-active-high"))
+@@ -125,6 +130,10 @@ static int dw8250_rs485_config(struct uart_port *p, struct serial_rs485 *rs485)
+ 
+ 	dw8250_writel_ext(p, DW_UART_TCR, tcr);
+ 
++	/* REVISIT: Using fixed values for now on DET and TAT */
++	dw8250_writel_ext(p, DW_UART_DET, 0xA000A);
++	dw8250_writel_ext(p, DW_UART_TAT, 0x320032);
++
+ 	/*
+ 	 * XXX: Though we could interpret the "RTS" timings as Driver Enable
+ 	 * (DE) assertion/de-assertion timings, initially not supporting that.
+-- 
+2.7.4
+
