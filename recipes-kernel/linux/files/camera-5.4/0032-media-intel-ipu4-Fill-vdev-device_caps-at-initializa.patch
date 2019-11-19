@@ -1,0 +1,70 @@
+From e6fbcbb1f435acef46d256e8883656a61f55415b Mon Sep 17 00:00:00 2001
+From: Tianshu Qiu <tian.shu.qiu@intel.com>
+Date: Tue, 15 Oct 2019 11:58:57 +0800
+Subject: [PATCH 32/33] media: intel-ipu4: Fill vdev device_caps at
+ initialization
+
+Starging from kernel 5.4, v4l2 core checks the device_caps of
+video device during registration. device_caps needs to be set
+at initialization before video device registration.
+
+Change-Id: I4fca4262d8a907c4abb0e660a755be4273d15ac5
+Signed-off-by: Meng Wei <wei.meng@intel.com>
+---
+ drivers/media/pci/intel/ipu-isys-video.c | 20 +++++---------------
+ 1 file changed, 5 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu-isys-video.c b/drivers/media/pci/intel/ipu-isys-video.c
+index ae5dd63fc918..83ff01510f4e 100644
+--- a/drivers/media/pci/intel/ipu-isys-video.c
++++ b/drivers/media/pci/intel/ipu-isys-video.c
+@@ -434,21 +434,7 @@ int ipu_isys_vidioc_querycap(struct file *file, void *fh,
+ 	    | V4L2_CAP_VIDEO_OUTPUT_MPLANE | V4L2_CAP_STREAMING
+ 	    | V4L2_CAP_DEVICE_CAPS;
+ 
+-	cap->device_caps = V4L2_CAP_STREAMING;
+-
+-	switch (av->aq.vbq.type) {
+-	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+-		cap->device_caps |= V4L2_CAP_VIDEO_CAPTURE;
+-		break;
+-	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
+-		cap->device_caps |= V4L2_CAP_VIDEO_CAPTURE_MPLANE;
+-		break;
+-	case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
+-		cap->device_caps |= V4L2_CAP_VIDEO_OUTPUT_MPLANE;
+-		break;
+-	default:
+-		WARN_ON(1);
+-	}
++	cap->device_caps = av->vdev.device_caps;
+ 
+ 	return 0;
+ }
+@@ -2073,19 +2059,23 @@ int ipu_isys_video_init(struct ipu_isys_video *av,
+ 	av->ip.vc = 0;
+ #endif
+ 
++	av->vdev.device_caps = V4L2_CAP_STREAMING;
+ 	if (pad_flags & MEDIA_PAD_FL_SINK) {
+ 		/* data_offset is available only for multi-plane buffers */
+ 		if (av->line_header_length) {
+ 			av->aq.vbq.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+ 			ioctl_ops = &ioctl_ops_mplane;
++			av->vdev.device_caps |= V4L2_CAP_VIDEO_CAPTURE_MPLANE;
+ 		} else {
+ 			av->aq.vbq.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+ 			ioctl_ops = &ioctl_ops_splane;
++			av->vdev.device_caps |= V4L2_CAP_VIDEO_CAPTURE;
+ 		}
+ 		av->vdev.vfl_dir = VFL_DIR_RX;
+ 	} else {
+ 		av->aq.vbq.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+ 		av->vdev.vfl_dir = VFL_DIR_TX;
++		av->vdev.device_caps |= V4L2_CAP_VIDEO_OUTPUT_MPLANE;
+ 	}
+ 	rval = ipu_isys_queue_init(&av->aq);
+ 	if (rval)
+-- 
+2.20.1
+

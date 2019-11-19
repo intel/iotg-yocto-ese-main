@@ -1,0 +1,71 @@
+From e37f8db37f80f526b0296939ca111a084f02bd24 Mon Sep 17 00:00:00 2001
+From: Wanhui Sun <wanhui.sun@intel.com>
+Date: Mon, 11 Mar 2019 19:13:56 +0800
+Subject: [PATCH 13/33] media: Add poll support
+
+Implement poll for events. POLLPRI is used to notify users on incoming
+events.
+
+disable the poll function for build error.
+
+Change-Id: I725cb31829256cde0b13997dd4fd820a208049a6
+Signed-off-by: Chen Meng J <meng.j.chen@intel.com>
+---
+ drivers/media/mc/mc-device.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/drivers/media/mc/mc-device.c b/drivers/media/mc/mc-device.c
+index fe9ace0494e7..b55898734e18 100644
+--- a/drivers/media/mc/mc-device.c
++++ b/drivers/media/mc/mc-device.c
+@@ -500,6 +500,39 @@ static long media_device_ioctl(struct file *filp, unsigned int cmd,
+ 	return ret;
+ }
+ 
++static unsigned int media_device_poll(struct file *filp,
++                                     struct poll_table_struct *wait)
++{
++	/*
++	struct media_device_fh *fh = media_device_fh(filp);
++	struct media_device *mdev = fh->fh.devnode->media_dev;
++	unsigned int poll_events = poll_requested_events(wait);
++	int ret = 0;
++
++	if (poll_events & (POLLIN | POLLOUT))
++	        return POLLERR;
++
++	if (poll_events & POLLPRI) {
++	        unsigned long flags;
++	        bool empty;
++
++	        spin_lock_irqsave(&mdev->req_lock, flags);
++	        empty = list_empty(&fh->kevents.head);
++	        spin_unlock_irqrestore(&mdev->req_lock, flags);
++
++	        if (empty)
++	                poll_wait(filp, &fh->kevents.wait, wait);
++	        else
++	                ret |= POLLPRI;
++	}
++
++	return ret;
++	*/
++
++	printk("media_device_poll func\n");
++	return 0;
++}
++
+ #ifdef CONFIG_COMPAT
+ 
+ struct media_links_enum32 {
+@@ -565,6 +598,7 @@ static const struct media_file_operations media_device_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = media_device_open,
+ 	.ioctl = media_device_ioctl,
++	.poll = media_device_poll,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = media_device_compat_ioctl,
+ #endif /* CONFIG_COMPAT */
+-- 
+2.20.1
+

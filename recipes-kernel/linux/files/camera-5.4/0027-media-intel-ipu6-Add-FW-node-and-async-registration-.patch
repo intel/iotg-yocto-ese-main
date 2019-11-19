@@ -1,0 +1,228 @@
+From 0b1ea3a1414bb186603d477e56cf7ebe4b1ae034 Mon Sep 17 00:00:00 2001
+From: Sun <wanhui.sun@intel.com>
+Date: Wed, 25 Sep 2019 11:33:22 +0800
+Subject: [PATCH 27/33] media: intel-ipu6: Add FW node and async registration
+ support
+
+used to asychronous register subdevices
+
+Change-Id: I3d0a562a0a1daa106c7943c3179fd0a4578bc07b
+Signed-off-by: Meng Wei <wei.meng@intel.com>
+---
+ drivers/media/pci/intel/ipu-isys.c    | 114 ++++++++++++++++++++++++--
+ drivers/media/pci/intel/ipu-isys.h    |   3 +
+ drivers/media/pci/intel/ipu4/Makefile |   2 +
+ drivers/media/pci/intel/ipu6/Makefile |   2 +-
+ 4 files changed, 114 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu-isys.c b/drivers/media/pci/intel/ipu-isys.c
+index 34e0e19256b7..40370e1cf0f1 100644
+--- a/drivers/media/pci/intel/ipu-isys.c
++++ b/drivers/media/pci/intel/ipu-isys.c
+@@ -18,7 +18,14 @@
+ #include <media/v4l2-mc.h>
+ #endif
+ #include <media/v4l2-subdev.h>
+-
++#ifndef IPU_USE_PLATFORMDATA
++#include <media/v4l2-fwnode.h>
++#include <media/v4l2-ctrls.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-event.h>
++#include <media/v4l2-ioctl.h>
++#include <media/v4l2-async.h>
++#endif
+ #include "ipu.h"
+ #include "ipu-bus.h"
+ #include "ipu-cpd.h"
+@@ -34,7 +41,6 @@
+ #include "ipu-platform-buttress-regs.h"
+ 
+ #define ISYS_PM_QOS_VALUE	300
+-
+ /*
+  * The param was passed from module to indicate if port
+  * could be optimized.
+@@ -373,7 +379,7 @@ isys_complete_ext_device_registration(struct ipu_isys *isys,
+ 	v4l2_device_unregister_subdev(sd);
+ 	return rval;
+ }
+-
++#ifdef IPU_USE_PLATFORMDATA
+ static int isys_register_ext_subdev(struct ipu_isys *isys,
+ 				    struct ipu_isys_subdev_info *sd_info)
+ {
+@@ -457,7 +463,7 @@ static void isys_register_ext_subdevs(struct ipu_isys *isys)
+ 	for (sd_info = spdata->subdevs; *sd_info; sd_info++)
+ 		isys_register_ext_subdev(isys, *sd_info);
+ }
+-
++#endif
+ static void isys_unregister_subdevices(struct ipu_isys *isys)
+ {
+ 	const struct ipu_isys_internal_tpg_pdata *tpg =
+@@ -686,6 +692,98 @@ static int isys_register_subdevices(struct ipu_isys *isys)
+ 	return rval;
+ }
+ 
++#ifndef IPU_USE_PLATFORMDATA
++struct sensor_async_subdev {
++	struct v4l2_async_subdev asd;
++	struct ipu_isys_csi2_config csi2;
++};
++
++/* The .bound() notifier callback when a match is found */
++static int isys_notifier_bound(struct v4l2_async_notifier *notifier,
++			       struct v4l2_subdev *sd,
++			       struct v4l2_async_subdev *asd)
++{
++
++	struct ipu_isys *isys = container_of(notifier,
++					struct ipu_isys, notifier);
++
++	struct sensor_async_subdev *s_asd = container_of(asd,
++					struct sensor_async_subdev, asd);
++
++	dev_info(&isys->adev->dev, "bind %s nlanes is %d port is %d\n",
++			sd->name, s_asd->csi2.nlanes, s_asd->csi2.port);
++	isys_complete_ext_device_registration(isys, sd, &s_asd->csi2);
++
++	return v4l2_device_register_subdev_nodes(&isys->v4l2_dev);
++}
++
++static void isys_notifier_unbind(struct v4l2_async_notifier *notifier,
++				 struct v4l2_subdev *sd,
++				 struct v4l2_async_subdev *asd)
++{
++	struct ipu_isys *isys = container_of(notifier,
++					struct ipu_isys, notifier);
++
++	dev_info(&isys->adev->dev, "unbind %s\n", sd->name);
++}
++
++static int isys_notifier_complete(struct v4l2_async_notifier *notifier)
++{
++	struct ipu_isys *isys = container_of(notifier,
++					struct ipu_isys, notifier);
++
++	dev_info(&isys->adev->dev, "All sensor registration completed.\n");
++
++	return 0;
++}
++
++static const struct v4l2_async_notifier_operations isys_async_ops = {
++	.bound = isys_notifier_bound,
++	.unbind = isys_notifier_unbind,
++	.complete = isys_notifier_complete,
++};
++
++static int isys_fwnode_parse(struct device *dev,
++			     struct v4l2_fwnode_endpoint *vep,
++			     struct v4l2_async_subdev *asd)
++{
++	struct sensor_async_subdev *s_asd =
++			container_of(asd, struct sensor_async_subdev, asd);
++
++	s_asd->csi2.port = vep->base.port;
++	s_asd->csi2.nlanes = vep->bus.mipi_csi2.num_data_lanes;
++
++	return 0;
++}
++
++static int isys_notifier_init(struct ipu_isys *isys)
++{
++	int ret;
++
++	v4l2_async_notifier_init(&isys->notifier);
++	ret = v4l2_async_notifier_parse_fwnode_endpoints(
++		&isys->adev->isp->pdev->dev, &isys->notifier,
++		sizeof(struct sensor_async_subdev),
++		isys_fwnode_parse);
++
++	if (ret < 0)
++		return ret;
++
++	if (list_empty(&isys->notifier.asd_list))
++		return -ENODEV;	/* no endpoint */
++
++	isys->notifier.ops = &isys_async_ops;
++	ret = v4l2_async_notifier_register(&isys->v4l2_dev, &isys->notifier);
++	if (ret) {
++		dev_err(&isys->adev->dev,
++			"failed to register async notifier : %d\n", ret);
++		v4l2_async_notifier_cleanup(&isys->notifier);
++	}
++
++	return ret;
++}
++#endif
++
+ static struct media_device_ops isys_mdev_ops = {
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)
+ 	.link_notify = ipu_pipeline_link_notify,
+@@ -742,9 +840,13 @@ static int isys_register_devices(struct ipu_isys *isys)
+ 	rval = isys_register_subdevices(isys);
+ 	if (rval)
+ 		goto out_v4l2_device_unregister;
+-
++#ifndef IPU_USE_PLATFORMDATA
++	rval = isys_notifier_init(isys);
++	if (rval)
++		goto out_isys_unregister_subdevices;
++#else
+ 	isys_register_ext_subdevs(isys);
+-
++#endif
+ 	rval = v4l2_device_register_subdev_nodes(&isys->v4l2_dev);
+ 	if (rval)
+ 		goto out_isys_unregister_subdevices;
+diff --git a/drivers/media/pci/intel/ipu-isys.h b/drivers/media/pci/intel/ipu-isys.h
+index 754e46f33228..2f8b7eb65902 100644
+--- a/drivers/media/pci/intel/ipu-isys.h
++++ b/drivers/media/pci/intel/ipu-isys.h
+@@ -153,6 +153,9 @@ struct ipu_isys {
+ 	spinlock_t listlock;	/* Protect framebuflist */
+ 	struct list_head framebuflist;
+ 	struct list_head framebuflist_fw;
++#ifndef	IPU_USE_PLATFORMDATA
++	struct v4l2_async_notifier notifier;
++#endif
+ };
+ 
+ struct isys_fw_msgs {
+diff --git a/drivers/media/pci/intel/ipu4/Makefile b/drivers/media/pci/intel/ipu4/Makefile
+index d253c0a78dbc..f36ed6fc4b99 100644
+--- a/drivers/media/pci/intel/ipu4/Makefile
++++ b/drivers/media/pci/intel/ipu4/Makefile
+@@ -8,6 +8,7 @@ endif
+ ifdef CONFIG_VIDEO_INTEL_IPU4
+ ccflags-y += -DHAS_DUAL_CMD_CTX_SUPPORT=0 -DIPU_VC_SUPPORT -DIPU_HAS_ISA -DIPU_PSYS_LEGACY
+ ccflags-y += -DIPU_META_DATA_SUPPORT -DI2C_DYNAMIC
++ccflags-y += -DIPU_USE_PLATFORMDATA
+ 
+ intel-ipu4-objs				+= ../ipu.o \
+ 					   ../ipu-bus.o \
+@@ -71,6 +72,7 @@ endif
+ ifdef CONFIG_VIDEO_INTEL_IPU4P
+ ccflags-y += -DHAS_DUAL_CMD_CTX_SUPPORT=0 -DIPU_VC_SUPPORT -DIPU_PSYS_LEGACY -DIPU_HAS_ISA
+ ccflags-y += -DIPU_META_DATA_SUPPORT
++ccflags-y += -DIPU_USE_PLATFORMDATA
+ 
+ intel-ipu4p-objs			+= ../ipu.o \
+ 					   ../ipu-bus.o \
+diff --git a/drivers/media/pci/intel/ipu6/Makefile b/drivers/media/pci/intel/ipu6/Makefile
+index aff7cad9b822..9c5b67a989a8 100644
+--- a/drivers/media/pci/intel/ipu6/Makefile
++++ b/drivers/media/pci/intel/ipu6/Makefile
+@@ -7,7 +7,7 @@ endif
+ 
+ ccflags-y += -DHAS_DUAL_CMD_CTX_SUPPORT=0 -DIPU_VC_SUPPORT -DIPU_HAS_S2M -DIPU_OTF_SUPPORT -DIPU_TPG_FRAME_SYNC -DIPU_PSYS_GPC \
+ 		-DIPU_ISYS_GPC
+-ccflags-y += -DIPU_META_DATA_SUPPORT -DI2C_DYNAMIC
++ccflags-y += -DIPU_META_DATA_SUPPORT -DI2C_DYNAMIC -DIPU_USE_PLATFORMDATA
+ 
+ ifdef CONFIG_VIDEO_INTEL_IPU_MOCK
+ ccflags-y += -DIPU_IRQ_POLL
+-- 
+2.20.1
+

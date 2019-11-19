@@ -1,0 +1,32 @@
+From 4114efd6f0fa2712b4794179e03f7db8a6746611 Mon Sep 17 00:00:00 2001
+From: wu xia <xia.wu@intel.com>
+Date: Wed, 18 Dec 2013 12:33:30 +0200
+Subject: [PATCH 06/33] v4l: Mark setting frame descriptors deprecated
+
+Frame descriptors should be get only.
+
+Change-Id: Idc1b407d86676793cce409994349aa8bccb65cbd
+Signed-off-by: Chen Meng J <meng.j.chen@intel.com>
+---
+ include/media/v4l2-subdev.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index f2748296536f..4d14aaff9883 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -744,6 +744,11 @@ struct v4l2_subdev_pad_ops {
+ #endif /* CONFIG_MEDIA_CONTROLLER */
+ 	int (*get_frame_desc)(struct v4l2_subdev *sd, unsigned int pad,
+ 			      struct v4l2_mbus_frame_desc *fd);
++	/*
++	 * DEPRECATED --- frame descriptors should not be settable
++	 * since they're rather complex. Changing them should be done
++	 * through other interfaces.
++	 */
+ 	int (*set_frame_desc)(struct v4l2_subdev *sd, unsigned int pad,
+ 			      struct v4l2_mbus_frame_desc *fd);
+ };
+-- 
+2.20.1
+

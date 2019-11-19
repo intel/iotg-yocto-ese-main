@@ -1,0 +1,197 @@
+From 5f2335f12b4ba416114ba028e6eb62ae11a31832 Mon Sep 17 00:00:00 2001
+From: Chang Ying <ying.chang@intel.com>
+Date: Fri, 20 Sep 2019 12:14:51 +0800
+Subject: [PATCH 24/33] media: intel-ipu6: specify sensor i2c bus based on BDF
+
+Since i2c adapter id is dynamic, we use adapter PCI BDF
+to associate sensor to adapter.
+
+Change-Id: Ic249c60d32004993aab9473ce76fee253cd5830a
+Signed-off-by: Chang Ying <ying.chang@intel.com>
+---
+ drivers/media/pci/intel/ipu-buttress.c        | 16 ++++++-
+ drivers/media/pci/intel/ipu-buttress.h        |  2 +-
+ drivers/media/pci/intel/ipu-isys.c            |  4 +-
+ drivers/media/pci/intel/ipu6/Makefile         |  2 +-
+ .../media/platform/intel/ipu6-tglrvp-pdata.c  | 43 +++----------------
+ include/media/ipu-isys.h                      |  1 +
+ 6 files changed, 27 insertions(+), 41 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu-buttress.c b/drivers/media/pci/intel/ipu-buttress.c
+index fa7f632c81f3..2c596edff9dd 100644
+--- a/drivers/media/pci/intel/ipu-buttress.c
++++ b/drivers/media/pci/intel/ipu-buttress.c
+@@ -1299,12 +1299,24 @@ static void ipu_buttress_read_psys_fused_freqs(struct ipu_device *isp)
+  * @adapter_id: hardware i2c adapter id, this was fixed in platform data
+  * return: i2c bus id registered in system
+  */
+-int ipu_get_i2c_bus_id(int adapter_id)
++int ipu_get_i2c_bus_id(int adapter_id, char *adapter_bdf, int bdf_len)
+ {
+ 	struct i2c_adapter *adapter;
+ 	char name[32];
+ 	int i = 0;
+ 
++	if (adapter_bdf) {
++		while ((adapter = i2c_get_adapter(i)) != NULL) {
++			struct device *parent = adapter->dev.parent;
++			struct device *pp = parent->parent;
++
++			if (pp && !strncmp(adapter_bdf, dev_name(pp), bdf_len))
++				return i;
++			i++;
++		}
++	}
++
++	i = 0;
+ 	snprintf(name, sizeof(name), "i2c_designware.%d", adapter_id);
+ 	while ((adapter = i2c_get_adapter(i)) != NULL) {
+ 		struct device *parent = adapter->dev.parent;
+@@ -1413,7 +1425,7 @@ static int ipu_buttress_clk_init(struct ipu_device *isp)
+ 		char *dev_id = kstrdup(clkmap->clkdev_data.dev_id, GFP_KERNEL);
+ 		int adapter_id = clkmap->clkdev_data.dev_id[0] - '0';
+ 		char *addr = strpbrk(clkmap->clkdev_data.dev_id, "-");
+-		int bus_id = ipu_get_i2c_bus_id(adapter_id);
++		int bus_id = ipu_get_i2c_bus_id(adapter_id, NULL, 0);
+ 
+ 		snprintf(dev_id, PAGE_SIZE, "%d-%s", bus_id, addr + 1);
+ #endif
+diff --git a/drivers/media/pci/intel/ipu-buttress.h b/drivers/media/pci/intel/ipu-buttress.h
+index f798881dc7cd..8fbd400080ca 100644
+--- a/drivers/media/pci/intel/ipu-buttress.h
++++ b/drivers/media/pci/intel/ipu-buttress.h
+@@ -133,6 +133,6 @@ ipu_buttress_ipc_send_bulk(struct ipu_device *isp,
+ int ipu_buttress_psys_freq_get(void *data, u64 *val);
+ int ipu_buttress_isys_freq_get(void *data, u64 *val);
+ #ifdef I2C_DYNAMIC
+-int ipu_get_i2c_bus_id(int adapter_id);
++int ipu_get_i2c_bus_id(int adapter_id, char *adapter_bdf, int bdf_len);
+ #endif /* I2C_DYNAMIC */
+ #endif /* IPU_BUTTRESS_H */
+diff --git a/drivers/media/pci/intel/ipu-isys.c b/drivers/media/pci/intel/ipu-isys.c
+index d0ceef18f941..34e0e19256b7 100644
+--- a/drivers/media/pci/intel/ipu-isys.c
++++ b/drivers/media/pci/intel/ipu-isys.c
+@@ -384,7 +384,9 @@ static int isys_register_ext_subdev(struct ipu_isys *isys,
+ 	int bus;
+ 
+ #ifdef I2C_DYNAMIC
+-	bus = ipu_get_i2c_bus_id(sd_info->i2c.i2c_adapter_id);
++	bus = ipu_get_i2c_bus_id(sd_info->i2c.i2c_adapter_id,
++			sd_info->i2c.i2c_adapter_bdf,
++			sizeof(sd_info->i2c.i2c_adapter_bdf));
+ 	if (bus < 0) {
+ 		dev_err(&isys->adev->dev, "Failed to find adapter!");
+ 		return -ENOENT;
+diff --git a/drivers/media/pci/intel/ipu6/Makefile b/drivers/media/pci/intel/ipu6/Makefile
+index 483cd0ff194a..aff7cad9b822 100644
+--- a/drivers/media/pci/intel/ipu6/Makefile
++++ b/drivers/media/pci/intel/ipu6/Makefile
+@@ -7,7 +7,7 @@ endif
+ 
+ ccflags-y += -DHAS_DUAL_CMD_CTX_SUPPORT=0 -DIPU_VC_SUPPORT -DIPU_HAS_S2M -DIPU_OTF_SUPPORT -DIPU_TPG_FRAME_SYNC -DIPU_PSYS_GPC \
+ 		-DIPU_ISYS_GPC
+-ccflags-y += -DIPU_META_DATA_SUPPORT
++ccflags-y += -DIPU_META_DATA_SUPPORT -DI2C_DYNAMIC
+ 
+ ifdef CONFIG_VIDEO_INTEL_IPU_MOCK
+ ccflags-y += -DIPU_IRQ_POLL
+diff --git a/drivers/media/platform/intel/ipu6-tglrvp-pdata.c b/drivers/media/platform/intel/ipu6-tglrvp-pdata.c
+index e58edf03a42d..a296cf11c7d0 100644
+--- a/drivers/media/platform/intel/ipu6-tglrvp-pdata.c
++++ b/drivers/media/platform/intel/ipu6-tglrvp-pdata.c
+@@ -24,13 +24,14 @@ static struct ipu_isys_csi2_config ov8856_csi2_cfg_2 = {
+ 	.port = 2,
+ };
+ 
+-static struct ipu_isys_subdev_info ov8856_sd_1_1 = {
++static struct ipu_isys_subdev_info ov8856_sd_1 = {
+ 	.csi2 = &ov8856_csi2_cfg_1,
+ 	.i2c = {
+ 	.board_info = {
+ 		I2C_BOARD_INFO("ov8856", OV8856_I2C_ADDRESS),
+ 	},
+ 	.i2c_adapter_id = 13,
++	.i2c_adapter_bdf = "0000:00:15.3",
+ 	}
+ };
+ 
+@@ -40,45 +41,18 @@ static struct ipu_isys_subdev_info dw9714_sd_1 = {
+ 			I2C_BOARD_INFO("dw9714", DW9714_I2C_ADDRESS),
+ 		},
+ 		.i2c_adapter_id = 13,
++		.i2c_adapter_bdf = "0000:00:15.3",
+ 	}
+ };
+ 
+-static struct ipu_isys_subdev_info ov8856_sd_1_2 = {
+-	.csi2 = &ov8856_csi2_cfg_1,
+-	.i2c = {
+-	.board_info = {
+-		I2C_BOARD_INFO("ov8856", OV8856_I2C_ADDRESS),
+-	},
+-	.i2c_adapter_id = 14,
+-	}
+-};
+-
+-static struct ipu_isys_subdev_info dw9714_sd_2 = {
+-	.i2c = {
+-		.board_info = {
+-			I2C_BOARD_INFO("dw9714", DW9714_I2C_ADDRESS),
+-		},
+-		.i2c_adapter_id = 14,
+-	}
+-};
+-
+-static struct ipu_isys_subdev_info ov8856_sd_2_1 = {
++static struct ipu_isys_subdev_info ov8856_sd_2 = {
+ 	.csi2 = &ov8856_csi2_cfg_2,
+ 	.i2c = {
+ 	.board_info = {
+ 		I2C_BOARD_INFO("ov8856", OV8856_I2C_ADDRESS),
+ 	},
+ 	.i2c_adapter_id = 15,
+-	}
+-};
+-
+-static struct ipu_isys_subdev_info ov8856_sd_2_2 = {
+-	.csi2 = &ov8856_csi2_cfg_2,
+-	.i2c = {
+-	.board_info = {
+-		I2C_BOARD_INFO("ov8856", OV8856_I2C_ADDRESS),
+-	},
+-	.i2c_adapter_id = 16,
++	.i2c_adapter_bdf = "0000:00:19.1",
+ 	}
+ };
+ 
+@@ -88,12 +62,9 @@ static struct ipu_isys_clk_mapping clk_mapping[] = {
+ 
+ static struct ipu_isys_subdev_pdata pdata = {
+ 	.subdevs = (struct ipu_isys_subdev_info *[]) {
+-		&ov8856_sd_1_1,
+-		&ov8856_sd_1_2,
++		&ov8856_sd_1,
+ 		&dw9714_sd_1,
+-		&dw9714_sd_2,
+-		&ov8856_sd_2_1,
+-		&ov8856_sd_2_2,
++		&ov8856_sd_2,
+ 		NULL,
+ 	},
+ 	.clk_map = clk_mapping,
+diff --git a/include/media/ipu-isys.h b/include/media/ipu-isys.h
+index f809ef362152..4d081a35757f 100644
+--- a/include/media/ipu-isys.h
++++ b/include/media/ipu-isys.h
+@@ -17,6 +17,7 @@ struct ipu_isys_csi2_config {
+ struct ipu_isys_subdev_i2c_info {
+ 	struct i2c_board_info board_info;
+ 	int i2c_adapter_id;
++	char i2c_adapter_bdf[32];
+ };
+ 
+ struct ipu_isys_subdev_info {
+-- 
+2.20.1
+

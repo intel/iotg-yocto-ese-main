@@ -1,3 +1,2 @@
-patch io-5.4/0001-ptp-intel-pmc-tgpio-Fix-ptp_clock_event-generation-l.patch
 patch io-5.4/0001-dma-dw-Disable-support-for-Elkhart-Lake-PSE-DMA.patch
 patch io-5.4/0001-serial-8250_dwlib-Reset-DE_POL-RE_POL-and-program-DE.patch

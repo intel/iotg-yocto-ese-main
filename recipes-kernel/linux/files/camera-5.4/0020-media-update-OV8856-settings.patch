@@ -1,0 +1,131 @@
+From de94749d0dcf65b49c3dbfa058ef99ad6d08bcd2 Mon Sep 17 00:00:00 2001
+From: Chen Meng J <meng.j.chen@intel.com>
+Date: Tue, 22 Oct 2019 13:50:09 +0800
+Subject: [PATCH 20/33] media: update OV8856 settings
+
+Change-Id: Ibc11cbf94296ee93e72a149b2f816a7a9f6fe69e
+Signed-off-by: Chen Meng J <meng.j.chen@intel.com>
+---
+ drivers/media/i2c/ov8856.c | 81 ++++----------------------------------
+ 1 file changed, 8 insertions(+), 73 deletions(-)
+
+diff --git a/drivers/media/i2c/ov8856.c b/drivers/media/i2c/ov8856.c
+index 8655842af275..6e45c3d9102f 100644
+--- a/drivers/media/i2c/ov8856.c
++++ b/drivers/media/i2c/ov8856.c
+@@ -1092,72 +1092,6 @@ static int ov8856_identify_module(struct ov8856 *ov8856)
+ 	return 0;
+ }
+ 
+-static int ov8856_check_hwcfg(struct device *dev)
+-{
+-	struct fwnode_handle *ep;
+-	struct fwnode_handle *fwnode = dev_fwnode(dev);
+-	struct v4l2_fwnode_endpoint bus_cfg = {
+-		.bus_type = V4L2_MBUS_CSI2_DPHY
+-	};
+-	u32 mclk;
+-	int ret;
+-	unsigned int i, j;
+-
+-	if (!fwnode)
+-		return -ENXIO;
+-
+-	ret = fwnode_property_read_u32(fwnode, "clock-frequency", &mclk);
+-	if (ret)
+-		return ret;
+-
+-	if (mclk != OV8856_MCLK) {
+-		dev_err(dev, "external clock %d is not supported", mclk);
+-		return -EINVAL;
+-	}
+-
+-	ep = fwnode_graph_get_next_endpoint(fwnode, NULL);
+-	if (!ep)
+-		return -ENXIO;
+-
+-	ret = v4l2_fwnode_endpoint_alloc_parse(ep, &bus_cfg);
+-	fwnode_handle_put(ep);
+-	if (ret)
+-		return ret;
+-
+-	if (bus_cfg.bus.mipi_csi2.num_data_lanes != OV8856_DATA_LANES) {
+-		dev_err(dev, "number of CSI2 data lanes %d is not supported",
+-			bus_cfg.bus.mipi_csi2.num_data_lanes);
+-		ret = -EINVAL;
+-		goto check_hwcfg_error;
+-	}
+-
+-	if (!bus_cfg.nr_of_link_frequencies) {
+-		dev_err(dev, "no link frequencies defined");
+-		ret = -EINVAL;
+-		goto check_hwcfg_error;
+-	}
+-
+-	for (i = 0; i < ARRAY_SIZE(link_freq_menu_items); i++) {
+-		for (j = 0; j < bus_cfg.nr_of_link_frequencies; j++) {
+-			if (link_freq_menu_items[i] ==
+-				bus_cfg.link_frequencies[j])
+-				break;
+-		}
+-
+-		if (j == bus_cfg.nr_of_link_frequencies) {
+-			dev_err(dev, "no link frequency %lld supported",
+-				link_freq_menu_items[i]);
+-			ret = -EINVAL;
+-			goto check_hwcfg_error;
+-		}
+-	}
+-
+-check_hwcfg_error:
+-	v4l2_fwnode_endpoint_free(&bus_cfg);
+-
+-	return ret;
+-}
+-
+ static int ov8856_remove(struct i2c_client *client)
+ {
+ 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+@@ -1177,13 +1111,6 @@ static int ov8856_probe(struct i2c_client *client)
+ 	struct ov8856 *ov8856;
+ 	int ret;
+ 
+-	ret = ov8856_check_hwcfg(&client->dev);
+-	if (ret) {
+-		dev_err(&client->dev, "failed to check HW configuration: %d",
+-			ret);
+-		return ret;
+-	}
+-
+ 	ov8856 = devm_kzalloc(&client->dev, sizeof(*ov8856), GFP_KERNEL);
+ 	if (!ov8856)
+ 		return -ENOMEM;
+@@ -1245,6 +1172,12 @@ static const struct dev_pm_ops ov8856_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(ov8856_suspend, ov8856_resume)
+ };
+ 
++static const struct i2c_device_id ov8856_id_table[] = {
++	{ "ov8856", 0 },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(i2c, ov8856_id_table);
++
+ #ifdef CONFIG_ACPI
+ static const struct acpi_device_id ov8856_acpi_ids[] = {
+ 	{"OVTI8856"},
+@@ -1262,10 +1195,12 @@ static struct i2c_driver ov8856_i2c_driver = {
+ 	},
+ 	.probe_new = ov8856_probe,
+ 	.remove = ov8856_remove,
++	.id_table = ov8856_id_table,
+ };
+ 
+ module_i2c_driver(ov8856_i2c_driver);
+ 
+ MODULE_AUTHOR("Ben Kao <ben.kao@intel.com>");
++MODULE_AUTHOR("Qiu, Tianshu <tian.shu.qiu@intel.com>");
+ MODULE_DESCRIPTION("OmniVision OV8856 sensor driver");
+ MODULE_LICENSE("GPL v2");
+-- 
+2.20.1
+

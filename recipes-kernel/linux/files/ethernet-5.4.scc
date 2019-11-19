@@ -1,2 +1,7 @@
 patch ethernet-5.4/0001-REVERTME-net-stmmac-Fix-DMA-transfer-mode-WA-Impleme.patch
 patch ethernet-5.4/0002-REVERTME-net-stmmac-Fix-DMA-transfer-mode-WA-in-NP-e.patch
+
+patch ethernet-5.4/0001-net-stmmac-fix-missing-max_combined-count-for-EHL-pl.patch
+patch ethernet-5.4/0002-net-stmmac-Fixes-unable-to-turn-on-off-VLAN-strippin.patch
+patch ethernet-5.4/0003-HOTFIX-net-stmmac-added-phy-ingress-and-egress-path-.patch
+

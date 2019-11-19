@@ -30,3 +30,6 @@ SRC_URI_append = " file://graphics-5.3.scc"
 
 # add patch for io
 SRC_URI_append = " file://io-5.3.scc"
+
+# Safety Island
+SRC_URI_append = " file://isi-5.3.scc"

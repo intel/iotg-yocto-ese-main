@@ -1,0 +1,52 @@
+From a6c296497947c624f05ea2b806c64d287965cfdb Mon Sep 17 00:00:00 2001
+From: Tianshu Qiu <tian.shu.qiu@intel.com>
+Date: Thu, 19 Sep 2019 19:11:36 +0800
+Subject: [PATCH 26/33] media: intel-ipu4: psys: Check vma only for IO memory
+
+vma range checking is only valid for IO memory. For
+non-IO memory, vma is not used. This logic is ported
+from get_vaddr_frames() in mm/frame_vector.c.
+
+Change-Id: Ibb8a2465ea85df08aa819440ca522b6233612696
+Signed-off-by: Meng Wei <wei.meng@intel.com>
+---
+ drivers/media/pci/intel/ipu-psys.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu-psys.c b/drivers/media/pci/intel/ipu-psys.c
+index 13fabf95a32f..072badd30cb6 100644
+--- a/drivers/media/pci/intel/ipu-psys.c
++++ b/drivers/media/pci/intel/ipu-psys.c
+@@ -185,14 +185,6 @@ static int ipu_psys_get_userpages(struct ipu_dma_buf_attach *attach)
+ 		goto error_up_read;
+ 	}
+ 
+-	if (vma->vm_end < start + attach->len) {
+-		dev_err(attach->dev,
+-			"vma at %lu is too small for %llu bytes\n",
+-			start, attach->len);
+-		ret = -EFAULT;
+-		goto error_up_read;
+-	}
+-
+ 	/*
+ 	 * For buffers from Gralloc, VM_PFNMAP is expected,
+ 	 * but VM_IO is set. Possibly bug in Gralloc.
+@@ -202,6 +194,14 @@ static int ipu_psys_get_userpages(struct ipu_dma_buf_attach *attach)
+ 	if (attach->vma_is_io) {
+ 		unsigned long io_start = start;
+ 
++		if (vma->vm_end < start + attach->len) {
++			dev_err(attach->dev,
++				"vma at %lu is too small for %llu bytes\n",
++				start, attach->len);
++			ret = -EFAULT;
++			goto error_up_read;
++		}
++
+ 		for (nr = 0; nr < npages; nr++, io_start += PAGE_SIZE) {
+ 			unsigned long pfn;
+ 
+-- 
+2.20.1
+

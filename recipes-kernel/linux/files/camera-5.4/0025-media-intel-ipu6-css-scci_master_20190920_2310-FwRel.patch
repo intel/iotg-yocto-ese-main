@@ -1,0 +1,2111 @@
+From d0652b5cf927a233c0ee2a536efc1003bb005336 Mon Sep 17 00:00:00 2001
+From: icg_intg <icg_intg@intel.com>
+Date: Mon, 23 Sep 2019 10:45:16 +0800
+Subject: [PATCH 25/33] media: intel-ipu6: css: scci_master_20190920_2310
+ FwRelease
+
+New firmware css release.
+
+Change-Id: Icb37e1caad36003b3aefad4ec61b02cd73fece20
+Signed-off-by: Meng Wei <wei.meng@intel.com>
+---
+ .../intel/ipu6/ipu6-css/Makefile.ipu6psys_inc |   3 +-
+ .../intel/ipu6/ipu6-css/Makefile.ipu6psys_src |   2 +-
+ .../isyslib/config/isys/subsystem_ipu6v1.mk   |  99 +++
+ .../ipu6-css/isyslib/config/system_ipu6v1.mk  |  16 +-
+ .../ipu_device_buttress_properties_func.h     |  88 +++
+ .../ipu_device_buttress_properties_struct.h   |  34 +-
+ .../ipu6/ipu6-css/isyslib/isysapi/isysapi.mk  |  19 +-
+ .../isyslib/isysapi/src/ia_css_isys_private.c |   6 +-
+ .../ipu6/ipu6-css/isyslib/trace/trace.mk      |   8 -
+ .../PO_program_group/ia_css_fw_pkg_release.h  |   2 +-
+ .../lib/config/psys/subsystem_ipu6v1.mk       |   7 +-
+ .../psyslib/lib/config/system_ipu6v1.mk       |  16 +-
+ .../lib/cpd/cpd_component/cpd_component.mk    |   3 +
+ .../interface/ia_css_cpd_component_types.h    |  26 +-
+ .../v2/ia_css_cpd_component_types_dep.h       |  45 ++
+ .../ipu_device_buttress_properties_func.h     |  88 +++
+ .../ipu_device_buttress_properties_struct.h   |  34 +-
+ .../ipu6v1/ipu_device_cell_properties_defs.h  |   2 +-
+ .../ipu6_isa_lb_release_notes.md              | 570 +++++++++++++++---
+ .../ipu6_isl_ps_rbm_release_notes.md          | 311 +++++-----
+ .../ia_css_program_group_data_defs.h          |  18 +
+ .../data/src/ia_css_program_group_data_impl.h |   9 +
+ .../ipu6-css/psyslib/lib/psysapi/psysapi.mk   |   6 +-
+ .../ipu6v1/vied_nci_psys_resource_model.h     |   7 +-
+ .../routing_bitmap/src/ia_css_rbm_manifest.c  |   2 +-
+ .../ipu6/ipu6-css/psyslib/lib/trace/trace.mk  |   8 -
+ 26 files changed, 1124 insertions(+), 305 deletions(-)
+ create mode 100644 drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/isys/subsystem_ipu6v1.mk
+ create mode 100644 drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h
+ create mode 100644 drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/v2/ia_css_cpd_component_types_dep.h
+ create mode 100644 drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h
+
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_inc b/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_inc
+index d9d63217ddd6..4192fa45378d 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_inc
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_inc
+@@ -9,6 +9,7 @@ IPU_PSYSLIB_INC = \
+ 	-I$(IPU_PSYSLIB_ROOT)/client_pkg/src \
+ 	-I$(IPU_PSYSLIB_ROOT)/cpd/ \
+ 	-I$(IPU_PSYSLIB_ROOT)/cpd/cpd_component/interface \
++	-I$(IPU_PSYSLIB_ROOT)/cpd/cpd_component/interface/v2 \
+ 	-I$(IPU_PSYSLIB_ROOT)/cpd/cpd_metadata/interface \
+ 	-I$(IPU_PSYSLIB_ROOT)/dai_files/ipu6v1_dai_include_host \
+ 	-I$(IPU_PSYSLIB_ROOT)/dai_files/ipu6v1_dai_include_host/default_system \
+@@ -69,4 +70,4 @@ IPU_PSYSLIB_INC = \
+ 	-I$(IPU_PSYSLIB_ROOT)/vied_nci_tunit/interface \
+ 	-I$(IPU_PSYSLIB_ROOT)/vied_nci_tunit/interface/v2 \
+ 	-I$(IPU_PSYSLIB_ROOT)/vied_parameters/interface \
+-	-I$(IPU_PSYSLIB_ROOT)/vied_parameters/src
++	-I$(IPU_PSYSLIB_ROOT)/vied_parameters/src
+\ No newline at end of file
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_src b/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_src
+index 39fe748d0134..b064502f1ccc 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_src
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/Makefile.ipu6psys_src
+@@ -5,6 +5,7 @@ IPU_PSYSLIB_SRC = \
+ 	$(IPU_PSYSLIB_ROOT_REL)/buffer/src/cpu/ia_css_output_buffer.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/buffer/src/cpu/ia_css_shared_buffer.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/client_pkg/src/ia_css_client_pkg.o \
++	$(IPU_PSYSLIB_ROOT_REL)/dai_files/ipu6v1_dai_include_host/ipu6v1_dai_host_include.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/dev_api_wpt/src/v1/dev_api_wpt.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/dev_api_wpt/src/v1/dev_api_wpt_create.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/dev_api_wpt/src/v1/dev_api_wpt_print.o \
+@@ -31,7 +32,6 @@ IPU_PSYSLIB_SRC = \
+ 	$(IPU_PSYSLIB_ROOT_REL)/reg_dump/src/reg_dump_generic_bridge.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/routing_bitmap/src/ia_css_rbm.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/routing_bitmap/src/ia_css_rbm_manifest.o \
+-	$(IPU_PSYSLIB_ROOT_REL)/dai_files/ipu6v1_dai_include_host/ipu6v1_dai_host_include.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/syscom/src/ia_css_syscom.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/vied_parameters/src/ia_css_terminal.o \
+ 	$(IPU_PSYSLIB_ROOT_REL)/vied_parameters/src/ia_css_terminal_manifest.o
+\ No newline at end of file
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/isys/subsystem_ipu6v1.mk b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/isys/subsystem_ipu6v1.mk
+new file mode 100644
+index 000000000000..a36c42971a96
+--- /dev/null
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/isys/subsystem_ipu6v1.mk
+@@ -0,0 +1,99 @@
++# # #
++# Support for Intel Camera Imaging ISP subsystem.
++# Copyright (c) 2010 - 2018, Intel Corporation.
++#
++# This program is free software; you can redistribute it and/or modify it
++# under the terms and conditions of the GNU General Public License,
++# version 2, as published by the Free Software Foundation.
++#
++# This program is distributed in the hope it will be useful, but WITHOUT
++# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++# more details
++#
++
++############################################################################
++# This file is used to specify versions and properties of ISYS firmware
++# components. Please note that these are subsystem specific. System specific
++# properties should go to system_$IPU_SYSVER.mk. Also the device versions
++# should be defined under "devices" or should be taken from the SDK.
++############################################################################
++
++############################################################################
++# FIRMWARE RELATED VARIABLES
++############################################################################
++
++# It does not work in HSS due to unknown reasons.
++ISYS_USE_ISA_DMA                 = 0
++# Used in ISA module
++ISYS_ISL_DPC_DPC_V2              = 0
++
++# Use DMA for FW load
++FW_LOAD_DMA = 1
++
++# Support dual command context for VTIO - concurrent secure and non-secure streams
++ISYS_HAS_DUAL_CMD_CTX_SUPPORT	= 0
++
++# Specification for Isys server's fixed globals' locations
++REGMEM_OFFSET				= 0	# Starting from 0
++REGMEM_SECURE_OFFSET			= 4096
++REGMEM_SIZE				= 66
++REGMEM_WORD_BYTES			= 4
++FW_LOAD_NO_OF_REQUEST_OFFSET		= 264	# Taken from REGMEM_OFFSET + REGMEM_SIZE*REGMEM_WORD_BYTES
++FW_LOAD_NO_OF_REQUEST_SIZE_BYTES	= 4
++OTF_SUPPORT_OFFSET			= 268	# Taken from FW_LOAD_NO_OF_REQUEST_OFFSET + FW_LOAD_NO_OF_REQUEST_SIZE_BYTES
++# The size is determined by sizeof(otf_communication_t)*2.
++OTF_SUPPORT_SIZE_BYTES			= 48
++ERR_HANDLING_SUPPORT_OFFSET		= 316	# Taken from OTF_SUPPORT_OFFSET + OTF_SUPPORT_SIZE_BYTES
++# The size is determined by sizeof(err_handling_communication_t)*3.
++# We need structs as the number of parallel proc_grp_ctxs available in PSYS, meaning size of disp_local_ctx[]: 3
++ERR_HANDLING_SUPPORT_SIZE_BYTES		= 36
++
++HAS_STR2MMIO_DATA_DUPLICATION_SUPPORT	= 1
++
++HAS_SOCPF_YUV422_MODE_SUPPORT		= 1
++
++# Syscom FW context sizing
++MAX_INPUT_QUEUES			= 28
++MAX_OUTPUT_QUEUES			= 4
++
++HAS_SPC					= 1
++
++# Workarounds:
++
++# Larger than specified frames that complete mid-line
++WA_HSD1209062354		 = 0
++
++############################################################################
++# TESTING RELATED VARIABLES
++############################################################################
++
++ISYS_TPG_GENERATES_SOF_EOF	= 1
++
++# TODO: This define should be entirely removed once it is also set to 0 for glvA0
++# Used in mipi_capture
++ISYS_DISABLE_VERIFY_RECEIVED_SOF_EOF     = 0
++HOST_ACCESS_TO_MIPI_PIXEL_BUFFER         = 0
++
++ISYS_ACCESS_BLOCKER_VERSION      = v3
++ISYS_ERR_HANDLING_VERSION        = v1
++
++AB_CONFIG_ARRAY_SIZE = 25
++
++CELL_PROGRAM_CREATE_ENABLED = 1
++HAS_EQC = 1
++HAS_IBUF = 1
++HAS_ISYS_TRAFFIC_CTRL = 1
++HAS_DMA = 1
++HAS_S2M = 1
++HAS_ISL_DEVICES = 1
++HAS_MIPIBE = 1
++HAS_SOCPF = 1
++HAS_CIO2STREAM = 1
++HAS_SIG2CIO = 1
++HAS_PMA_IF = 1
++HAS_OTF = 1
++HAS_MIPIGEN = 1
++HAS_CSI_RX = 1
++HAS_CSI2PORT_CLOCK = 1
++HAS_PPI2CSI = 1
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/system_ipu6v1.mk b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/system_ipu6v1.mk
+index fa3a43b78fab..8c7929586baa 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/system_ipu6v1.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/config/system_ipu6v1.mk
+@@ -28,6 +28,9 @@ USE_GPREG_DAI  = 1
+ HAS_DEC400                              = 1
+ USE_DEC400                              = 1
+ 
++# Version of DEC400 NCI
++NCI_DEC400_VERSION                 = v2
++
+ # Version of VSI DEC400 utilities (VSI and proprietary together) that we use for validation
+ VSI_DEC400_UTIL_VERSION                 = v2
+ 
+@@ -45,11 +48,8 @@ FW_LOAD_DMA_INSTANCE		= NCI_DMA_EXT0
+ MANIFEST_TOOL_VERSION                   = v3
+ PSYS_SERVER_VERSION                     = v5
+ PSYS_SERVER_EQ_CONFIGURATION_VERSION = v1
+-ifneq ($(XTENSA), 1) #spc
+ PSYS_DISPATCHER_VERSION                 = v1
+-else #xtensa
+-PSYS_DISPATCHER_VERSION                 = v1_xtensa
+-endif
++
+ 
+ ISYS_INIT_DEVICE						= v1
+ PSYS_CON_MGR_TOOL_VERSION               = v2
+@@ -199,7 +199,6 @@ HAS_MBR              = 1
+ HAS_GDC              = 1
+ HAS_STR2MMIO         = 1
+ HAS_PF               = 1
+-HAS_SIG2CIO          = 1
+ HAS_VP				 = 0
+ HAS_PMEM			 = 1
+ ACB_CONTROL_INIT_VER = v2
+@@ -238,6 +237,12 @@ SIM_ENGINE = hivesim
+ XTENSA_ASSERT_SUPPORTED = 0
+ HAS_PROGCTRLINIT_DFM_DMA_SECTIONS = 1
+ CPD_RELEASE_VERSION = v1
++
++# Select CPD Sub-Partition Directory Header Version
++# v1: CSE Layout 1.6
++# v2: CSE Layout 1.7
++CPD_SUB_PARTITION_DIR_HDR_VERSION = v2
++
+ PG_CONTROL_INIT_VERSION = v1
+ CELL_VERSION = v1
+ CELL_PROGRAM_LOAD_VERSION = v1
+@@ -245,6 +250,7 @@ HAS_FW_OTF_SUPPORT = 1
+ HAS_IRQ = 1
+ STIMULI_EOL_MESSAGE_IN_NEW_LINE = 1
+ REGMEM_ACCESS_VERSION = v1
++HAS_STREAM2GEN_LINK = 1
+ ################## PLATFORM TEST VERSIONS ################
+ SYSCOM_TEST_VER = v1
+ REGMEM_TEST_VER = v1
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h
+new file mode 100644
+index 000000000000..1f241452c718
+--- /dev/null
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h
+@@ -0,0 +1,88 @@
++/**
++* Support for Intel Camera Imaging ISP subsystem.
++ * Copyright (c) 2010 - 2018, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++*/
++
++#ifndef __IPU_DEVICE_BUTTRESS_PROPERTIES_FUNC_H
++#define __IPU_DEVICE_BUTTRESS_PROPERTIES_FUNC_H
++
++
++#include "storage_class.h"
++#include "type_support.h"
++#include "assert_support.h"
++#include "ipu_device_buttress_properties_struct.h"
++
++#define IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS 4
++#define IPU_DEVICE_BUTTRESS_REG_SIZE 4 /* Bytes */
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_hptr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_tptr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_sync_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_consumer_sync_addr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_consumer_tptr_addr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_producer_hptr_addr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_str_ifc_cfg_reg_addr(void)
++{
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_STR_IFC_CFG;
++}
++
++
++#endif /* __IPU_DEVICE_BUTTRESS_PROPERTIES_FUNC_H */
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h
+index 2207a6e39b0a..1a1f6232fbef 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h
+@@ -45,6 +45,39 @@ enum ipu_device_buttress_registers {
+ 	IPU_DEVICE_BUTTRESS_PS_SP_SC_ICACHE_BASE_ADDR	= 0x18C,
+ 	IPU_DEVICE_BUTTRESS_SECURITY_CTL		= 0x300,
+ 	IPU_DEVICE_BUTTRESS_SECURE_TOUCH		= 0x318,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET0		= 0x2000,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET1		= 0x2004,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET2		= 0x2008,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET3		= 0x200C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET0		= 0x2010,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET1		= 0x2014,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET2		= 0x2018,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET3		= 0x201C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET0		= 0x2020,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET1		= 0x2024,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET2		= 0x2028,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET3		= 0x202C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET0		= 0x2030,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET1		= 0x2034,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET2		= 0x2038,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET3		= 0x203C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET0		= 0x2040,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET1		= 0x2044,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET2		= 0x2048,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET3		= 0x204C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET0		= 0x2050,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET1		= 0x2054,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET2		= 0x2058,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET3		= 0x205C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_STR_IFC_CFG		= 0x2060,
++
+ 	IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_0		= 0x4000,
+ 	IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_1		= 0x4004,
+ 	IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_2		= 0x4008,
+@@ -225,5 +258,4 @@ enum ipu_device_buttress_ps_domain_status_pos {
+ 
+ #define reg_IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_ENTRY(n)		(IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_0+((n)*4))
+ 
+-
+ #endif /* __IPU_DEVICE_BUTTRESS_PROPERTIES_STRUCT_H */
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/isysapi.mk b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/isysapi.mk
+index be5604fbef27..44e011b85d71 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/isysapi.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/isysapi.mk
+@@ -32,7 +32,9 @@ endif
+ ifeq ($(HAS_IRQ), 1)
+ ISYSAPI_HOST_CPPFLAGS += -DHAS_IRQ=1
+ ISYSAPI_FW_CPPFLAGS += -DHAS_IRQ=1
+-
++else
++ISYSAPI_HOST_CPPFLAGS += -DHAS_IRQ=0
++ISYSAPI_FW_CPPFLAGS += -DHAS_IRQ=0
+ endif
+ 
+ ISYSAPI_HOST_FILES += $(ISYSAPI_SOURCES)/ia_css_isys_public.c
+@@ -85,13 +87,22 @@ endif
+ ISYSAPI_FW_CPPFLAGS += -I$(ISYSAPI_SOURCES)
+ 
+ ifeq ($(ISYS_HAS_DUAL_CMD_CTX_SUPPORT), 1)
+-ISYSAPI_HOST_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=$(ISYS_HAS_DUAL_CMD_CTX_SUPPORT)
+-ISYSAPI_FW_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=$(ISYS_HAS_DUAL_CMD_CTX_SUPPORT)
++ISYSAPI_HOST_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=1
++ISYSAPI_FW_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=1
++else
++ISYSAPI_HOST_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=0
++ISYSAPI_FW_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=0
+ endif
+ 
+-ifeq ($(HAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT), 1)
+ ISYSAPI_HOST_CPPFLAGS += -DHAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT=$(HAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT)
+ ISYSAPI_FW_CPPFLAGS += -DHAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT=$(HAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT)
++
++ifeq ($(HAS_BUTTRESS), 1)
++ISYSAPI_FW_CPPFLAGS += -DHAS_BUTTRESS=1
++ISYSAPI_HOST_CPPFLAGS += -DHAS_BUTTRESS=1
++else
++ISYSAPI_FW_CPPFLAGS += -DHAS_BUTTRESS=0
++ISYSAPI_HOST_CPPFLAGS += -DHAS_BUTTRESS=0
+ endif
+ 
+ ifdef AB_CONFIG_ARRAY_SIZE
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/src/ia_css_isys_private.c b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/src/ia_css_isys_private.c
+index 89b721fc5136..acdb40d5b615 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/src/ia_css_isys_private.c
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/isysapi/src/ia_css_isys_private.c
+@@ -400,7 +400,7 @@ STORAGE_CLASS_INLINE void output_pin_payload_host_to_css(
+ 	output_pin_payload_css->out_buf_id =
+ 			output_pin_payload_host->out_buf_id;
+ 	output_pin_payload_css->addr = output_pin_payload_host->addr;
+-#ifdef HAS_DEC400
++#if HAS_DEC400 == 1
+ 	output_pin_payload_css->compress = output_pin_payload_host->compress;
+ #else
+ 	output_pin_payload_css->compress = 0;
+@@ -427,7 +427,7 @@ STORAGE_CLASS_INLINE void output_pin_info_host_to_css(
+ 	output_pin_info_css->send_irq = output_pin_info_host->send_irq;
+ 	output_pin_info_css->ft = output_pin_info_host->ft;
+ 	output_pin_info_css->link_id = output_pin_info_host->link_id;
+-#ifdef HAS_DEC400
++#if HAS_DEC400 == 1
+ 	output_pin_info_css->reserve_compression = output_pin_info_host->reserve_compression;
+ 	COMPILATION_ERROR_IF(ARRAY_SIZE(output_pin_info_css->ts_offsets) !=
+ 						 ARRAY_SIZE(output_pin_info_host->ts_offsets));
+@@ -604,7 +604,7 @@ STORAGE_CLASS_INLINE void output_pin_payload_css_to_host(
+ 	output_pin_payload_host->out_buf_id =
+ 				output_pin_payload_css->out_buf_id;
+ 	output_pin_payload_host->addr = output_pin_payload_css->addr;
+-#ifdef HAS_DEC400
++#if HAS_DEC400 == 1
+ 	output_pin_payload_host->compress = output_pin_payload_css->compress;
+ #else
+ 	output_pin_payload_host->compress = 0;
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/trace/trace.mk b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/trace/trace.mk
+index 57c2ef2cbacd..5bfcc4b833b8 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/trace/trace.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/isyslib/trace/trace.mk
+@@ -21,14 +21,6 @@ IA_CSS_TRACE_SUPPORT = $${MODULES_DIR}/support
+ IA_CSS_TRACE = $${MODULES_DIR}/trace
+ 
+ 
+-ifdef XTENSA
+-
+-include $(MODULES_DIR)/devices/interface/$(IPU_SYSVER)/xtensa_version.mk
+-ifndef XTENSA_POC
+-USE_XTENSA_TRACE ?= 0
+-endif
+-endif
+-
+ IA_CSS_TRACE_INTERFACE = $(IA_CSS_TRACE)/interface
+ 
+ ifeq ($(USE_XTENSA_TRACE), 1)
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/PO_program_group/ia_css_fw_pkg_release.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/PO_program_group/ia_css_fw_pkg_release.h
+index 8a96e5ab3fa0..6ad9412a04dc 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/PO_program_group/ia_css_fw_pkg_release.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/PO_program_group/ia_css_fw_pkg_release.h
+@@ -11,4 +11,4 @@
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ */
+-#define IA_CSS_FW_PKG_RELEASE  0x20190806
++#define IA_CSS_FW_PKG_RELEASE  0x20190920
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/psys/subsystem_ipu6v1.mk b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/psys/subsystem_ipu6v1.mk
+index 3473bd6f8034..868f5fbf56ee 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/psys/subsystem_ipu6v1.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/psys/subsystem_ipu6v1.mk
+@@ -45,6 +45,9 @@ USE_PSYS_SERVER_PREPARE_DFM_MAP_FILE = 1
+ #use optimize process search
+ USE_ACK_TOKEN_FOR_SAVE_PROC_AND_PG_IDX = 1
+ 
++#enable clock gating at psys server
++ENABLE_CLOCK_GATING_AT_PSYS_SERVER = 1
++
+ # define for VCA_VCR2_FF
+ HAS_VCA_VCR2_FF	= 1
+ 
+@@ -125,7 +128,7 @@ PSYS_SERVER_MAX_NUM_EXEC_PROC_GRP		= 3
+ PSYS_SERVER_MAX_PROCESS_PIPELINING_DEPTH	= 1
+ PSYS_SERVER_MAX_NUMBER_OF_TERMINAL_SECTIONS	= 180
+ PSYS_SERVER_MAX_PROC_GRP_SIZE			= 8900
+-PSYS_SERVER_MAX_MANIFEST_SIZE			= 7572
++PSYS_SERVER_MAX_MANIFEST_SIZE			= 7636
+ PSYS_SERVER_MAX_CLIENT_PKG_SIZE			= 4660
+ 
+ endif
+@@ -149,7 +152,7 @@ PSYS_SERVER_CACHE_0_TPROXY_OPERATION_NUMBER_OF_LOAD_OPERATION_ENTRIES = 700
+ PSYS_SERVER_CACHE_0_TPROXY_OPERATION_NUMBER_OF_STORE_OPERATION_ENTRIES = 10
+ 
+ PSYS_SERVER_CACHE_1_PROC_GRP_SIZE		= 3792
+-PSYS_SERVER_CACHE_1_MANIFEST_SIZE		= 2236
++PSYS_SERVER_CACHE_1_MANIFEST_SIZE		= 2300
+ PSYS_SERVER_CACHE_1_CLIENT_PKG_SIZE		= 768
+ PSYS_SERVER_CACHE_1_BUFFER_SET_SIZE		= 64
+ PSYS_SERVER_CACHE_1_NUMBER_OF_TERMINAL_SECTIONS	= $(PSYS_SERVER_MAX_NUMBER_OF_TERMINAL_SECTIONS)
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/system_ipu6v1.mk b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/system_ipu6v1.mk
+index fa3a43b78fab..8c7929586baa 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/system_ipu6v1.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/config/system_ipu6v1.mk
+@@ -28,6 +28,9 @@ USE_GPREG_DAI  = 1
+ HAS_DEC400                              = 1
+ USE_DEC400                              = 1
+ 
++# Version of DEC400 NCI
++NCI_DEC400_VERSION                 = v2
++
+ # Version of VSI DEC400 utilities (VSI and proprietary together) that we use for validation
+ VSI_DEC400_UTIL_VERSION                 = v2
+ 
+@@ -45,11 +48,8 @@ FW_LOAD_DMA_INSTANCE		= NCI_DMA_EXT0
+ MANIFEST_TOOL_VERSION                   = v3
+ PSYS_SERVER_VERSION                     = v5
+ PSYS_SERVER_EQ_CONFIGURATION_VERSION = v1
+-ifneq ($(XTENSA), 1) #spc
+ PSYS_DISPATCHER_VERSION                 = v1
+-else #xtensa
+-PSYS_DISPATCHER_VERSION                 = v1_xtensa
+-endif
++
+ 
+ ISYS_INIT_DEVICE						= v1
+ PSYS_CON_MGR_TOOL_VERSION               = v2
+@@ -199,7 +199,6 @@ HAS_MBR              = 1
+ HAS_GDC              = 1
+ HAS_STR2MMIO         = 1
+ HAS_PF               = 1
+-HAS_SIG2CIO          = 1
+ HAS_VP				 = 0
+ HAS_PMEM			 = 1
+ ACB_CONTROL_INIT_VER = v2
+@@ -238,6 +237,12 @@ SIM_ENGINE = hivesim
+ XTENSA_ASSERT_SUPPORTED = 0
+ HAS_PROGCTRLINIT_DFM_DMA_SECTIONS = 1
+ CPD_RELEASE_VERSION = v1
++
++# Select CPD Sub-Partition Directory Header Version
++# v1: CSE Layout 1.6
++# v2: CSE Layout 1.7
++CPD_SUB_PARTITION_DIR_HDR_VERSION = v2
++
+ PG_CONTROL_INIT_VERSION = v1
+ CELL_VERSION = v1
+ CELL_PROGRAM_LOAD_VERSION = v1
+@@ -245,6 +250,7 @@ HAS_FW_OTF_SUPPORT = 1
+ HAS_IRQ = 1
+ STIMULI_EOL_MESSAGE_IN_NEW_LINE = 1
+ REGMEM_ACCESS_VERSION = v1
++HAS_STREAM2GEN_LINK = 1
+ ################## PLATFORM TEST VERSIONS ################
+ SYSCOM_TEST_VER = v1
+ REGMEM_TEST_VER = v1
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/cpd_component.mk b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/cpd_component.mk
+index 8ecc3e42e55d..5d2804ba6009 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/cpd_component.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/cpd_component.mk
+@@ -24,5 +24,8 @@ CPD_COMPONENT_SOURCES		= $(CPD_COMPONENT_DIR)/src
+ CPD_COMPONENT_FILES		= $(CPD_COMPONENT_SOURCES)/ia_css_cpd_component_create.c
+ CPD_COMPONENT_FILES		+= $(CPD_COMPONENT_SOURCES)/ia_css_cpd_component.c
+ CPD_COMPONENT_CPPFLAGS		= -I$(CPD_COMPONENT_INTERFACE)
++CPD_COMPONENT_CPPFLAGS		+= -I$(CPD_COMPONENT_INTERFACE)/$(CPD_SUB_PARTITION_DIR_HDR_VERSION)
+ CPD_COMPONENT_CPPFLAGS		+= -I$(CPD_COMPONENT_SOURCES)
+ CPD_COMPONENT_CPPFLAGS		+= -I$(CPD_DIR)
++CPD_COMPONENT_CPPFLAGS		+= -I$(CPD_DIR)/$(CPD_SUB_PARTITION_DIR_HDR_VERSION)
++CPD_COMPONENT_CPPFLAGS		+= -DCPD_SUB_PARTITION_DIR_HDR_VERSION_$(CPD_SUB_PARTITION_DIR_HDR_VERSION)
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/ia_css_cpd_component_types.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/ia_css_cpd_component_types.h
+index f45440c7d922..5e465879d81b 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/ia_css_cpd_component_types.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/ia_css_cpd_component_types.h
+@@ -20,6 +20,7 @@
+  */
+ 
+ #include "type_support.h"
++#include "ia_css_cpd_component_types_dep.h"
+ 
+ #define SIZE_OF_FW_ARCH_VERSION		7
+ #define SIZE_OF_SYSTEM_VERSION		11
+@@ -64,30 +65,9 @@ typedef struct {
+ } ia_css_header_component_t;
+ 
+ /** Module Data Directory  = Directory Header + Directory Entry (0..n)
+- * Layout Version: 1.7 - <CSE Layout 1 7 v.07>
+- * 7.3.2 Sub-Partition Directory Header
++ * Sub-Partition Directory Header
++ * See 'ia_css_cpd_component_types_dep.h'
+  */
+-typedef struct {
+-	/**< Must be 0x44504324 ("$CPD") for this version */
+-	uint32_t	header_marker;
+-	uint32_t	number_of_entries;
+-	/**< Must be 2 for Layout 1.7
+-	 * Note: Layout 2.0, 1.6, 1.5 use header version as 1
+-	 */
+-	uint8_t		header_version;
+-	/**< Must be 1 for this version */
+-	uint8_t		entry_version;
+-	/**< 0x14 (20) for this version */
+-	uint8_t		header_length;
+-	/**< was checksum */
+-	uint8_t		rsvd;
+-	/**< ascii short name for the partition */
+-	uint32_t	sub_partition_name;
+-	/**< CRC32 checksum of entire CPD structure (Header and Entries )
+-	 * (New for Layout 1.7)
+-	 */
+-	uint32_t	crc32_checksum;
+-} ia_css_directory_header_component_t;
+ 
+ /** Module Date Directory Entry
+  * Layout Version: 1.7 - <CSE Layout 1 7 v.07>
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/v2/ia_css_cpd_component_types_dep.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/v2/ia_css_cpd_component_types_dep.h
+new file mode 100644
+index 000000000000..0dc33a488664
+--- /dev/null
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/cpd/cpd_component/interface/v2/ia_css_cpd_component_types_dep.h
+@@ -0,0 +1,45 @@
++/*
++ * Support for Intel Camera Imaging ISP subsystem.
++ * Copyright (c) 2010 - 2016, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++
++#ifndef __IA_CSS_CPD_COMPONENT_TYPES_DEP_H
++#define __IA_CSS_CPD_COMPONENT_TYPES_DEP_H
++
++/** @file
++ * This file contains datastructure related to generation of CPD file
++ */
++
++#include "type_support.h"
++
++/** Module Data Directory  = Directory Header + Directory Entry (0..n)
++ * CSE Layout Version: 1.7 - 7.3.2 Sub-Partition Directory Header
++ */
++typedef struct {
++	/**< Must be 0x44504324 ("$CPD") for this version */
++	uint32_t	header_marker;
++	uint32_t	number_of_entries;
++	/**< Version 2: 0x2 (2) CSE Layout 1.7 */
++	uint8_t		header_version;
++	/**< Must be 1 for this version */
++	uint8_t		entry_version;
++	/**< Version 2: 0x14 (20) CSE Layout 1.7 */
++	uint8_t		header_length;
++	/**< Version 2: was checksum */
++	uint8_t		rsvd;
++	/**< Version 2: ascii short name for the sub-partition */
++	uint32_t	sub_partition_name;
++	/**< Version 2: CRC32 checksum of entire CPD structure (Header and Entries ) */
++	uint32_t	crc32_checksum;
++} ia_css_directory_header_component_t;
++
++#endif /* __IA_CSS_CPD_COMPONENT_TYPES_DEP_H */
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h
+new file mode 100644
+index 000000000000..1f241452c718
+--- /dev/null
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_func.h
+@@ -0,0 +1,88 @@
++/**
++* Support for Intel Camera Imaging ISP subsystem.
++ * Copyright (c) 2010 - 2018, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++*/
++
++#ifndef __IPU_DEVICE_BUTTRESS_PROPERTIES_FUNC_H
++#define __IPU_DEVICE_BUTTRESS_PROPERTIES_FUNC_H
++
++
++#include "storage_class.h"
++#include "type_support.h"
++#include "assert_support.h"
++#include "ipu_device_buttress_properties_struct.h"
++
++#define IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS 4
++#define IPU_DEVICE_BUTTRESS_REG_SIZE 4 /* Bytes */
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_hptr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_tptr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_sync_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_consumer_sync_addr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_consumer_tptr_addr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_producer_hptr_addr_reg_addr(const unsigned int set_number)
++{
++	assert(set_number < IPU_DEVICE_BUTTRESS_STREAM2GEN_NUMBER_OF_SETS);
++
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET0 +
++			(set_number * IPU_DEVICE_BUTTRESS_REG_SIZE);
++}
++
++STORAGE_CLASS_INLINE unsigned int
++ipu_device_buttress_stream2gen_str_ifc_cfg_reg_addr(void)
++{
++	return IPU_DEVICE_BUTTRESS_STREAM2GEN_STR_IFC_CFG;
++}
++
++
++#endif /* __IPU_DEVICE_BUTTRESS_PROPERTIES_FUNC_H */
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h
+index 2207a6e39b0a..1a1f6232fbef 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/interface/ipu6v1/ipu_device_buttress_properties_struct.h
+@@ -45,6 +45,39 @@ enum ipu_device_buttress_registers {
+ 	IPU_DEVICE_BUTTRESS_PS_SP_SC_ICACHE_BASE_ADDR	= 0x18C,
+ 	IPU_DEVICE_BUTTRESS_SECURITY_CTL		= 0x300,
+ 	IPU_DEVICE_BUTTRESS_SECURE_TOUCH		= 0x318,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET0		= 0x2000,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET1		= 0x2004,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET2		= 0x2008,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_HPTR_SET3		= 0x200C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET0		= 0x2010,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET1		= 0x2014,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET2		= 0x2018,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_SYNC_SET3		= 0x201C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET0		= 0x2020,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET1		= 0x2024,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET2		= 0x2028,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_TPTR_SET3		= 0x202C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET0		= 0x2030,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET1		= 0x2034,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET2		= 0x2038,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_SYNC_ADDR_SET3		= 0x203C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET0		= 0x2040,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET1		= 0x2044,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET2		= 0x2048,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_CONSUMER_TPTR_ADDR_SET3		= 0x204C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET0		= 0x2050,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET1		= 0x2054,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET2		= 0x2058,
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_PRODUCER_HPTR_ADDR_SET3		= 0x205C,
++
++	IPU_DEVICE_BUTTRESS_STREAM2GEN_STR_IFC_CFG		= 0x2060,
++
+ 	IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_0		= 0x4000,
+ 	IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_1		= 0x4004,
+ 	IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_2		= 0x4008,
+@@ -225,5 +258,4 @@ enum ipu_device_buttress_ps_domain_status_pos {
+ 
+ #define reg_IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_ENTRY(n)		(IPU_DEVICE_BUTTRESS_FW_BOOT_PARAMS_0+((n)*4))
+ 
+-
+ #endif /* __IPU_DEVICE_BUTTRESS_PROPERTIES_STRUCT_H */
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/psys/ipu6v1/ipu_device_cell_properties_defs.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/psys/ipu6v1/ipu_device_cell_properties_defs.h
+index 866af44080fd..5bcbe03e272b 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/psys/ipu6v1/ipu_device_cell_properties_defs.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/devices/psys/ipu6v1/ipu_device_cell_properties_defs.h
+@@ -17,7 +17,7 @@
+ #define _IPU_DEVICE_CELL_PROPERTIES_DEFS_H_
+ #ifdef XTENSA
+ #define SPC0_REGS_CBUS_ADDRESS 0x118000
+-#define SPC0_DMEM_CBUS_ADDRESS 0x140000
++#define SPC0_DMEM_CBUS_ADDRESS _hrt_master_to_slave_address_host_op0_to_ipu_uc_tile_ps_cioat_dm_sp
+ #else
+ #define SPC0_REGS_CBUS_ADDRESS 0x118000
+ #define SPC0_DMEM_CBUS_ADDRESS 0x100000
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isa_lb/release_notes/ipu6_isa_lb_release_notes.md b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isa_lb/release_notes/ipu6_isa_lb_release_notes.md
+index 730c55cb0785..9dfdafd2f910 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isa_lb/release_notes/ipu6_isa_lb_release_notes.md
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isa_lb/release_notes/ipu6_isa_lb_release_notes.md
+@@ -546,39 +546,44 @@ Terminal ID = 23
+ |     5|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_SEL|        9|              14|           3|Select from LSC:<BR>001 - from LSC,<BR>010 - from Input correction,<BR>100 - from X2B
+ |     6|IPU_DEVICE_GP_ISA_STATIC                |               1|                    IPU_DEVICE_GP_ISA_STATIC_DPC_DEMUX_SEL|        8|              17|           3|Select to B2B:<BR>001 - to LSC,<BR>010 - to B2B,<BR>100 - to X2B
+ |     7|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL|        2|              20|           2|Select to B2B:<BR>01 - from Input Correction,<BR>10 - from B2B
+-|     8|IPU_DEVICE_GP_ISA_STATIC                |               1|  IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK|       45|              22|           2|Stat Input correction Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
+-|     9|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL|        4|              24|           2|Select to B2B:<BR>001 - to LSC,<BR>010 - to DPC,<BR>100 - to X2B
+-|    10|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL|        3|              26|           2|Select to B2B:<BR>01 - from Input Correction,<BR>10 - from B2B
+-|    11|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_LSC_DEMUX_PORT_BLK|       37|              28|           2|X2B Mux LSC Demux port block
+-|    12|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_DPC_DEMUX_PORT_BLK|       38|              30|           2|X2B Mux DPC Demux port block
+-|    13|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK|       39|              32|           2|X2B Mux Input Corr Demux port block
+-|    14|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL|        1|              34|           2|01 - to ISL.S2V,<BR>10 - to PSA
+-|    15|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_SEL|       10|              36|           3|001 - LSC,<BR>010 - X2B,<BR>100 - Input correction
+-|    16|IPU_DEVICE_GP_ISA_STATIC                |               1|                    IPU_DEVICE_GP_ISA_STATIC_X2B_DEMUX_SEL|       11|              39|           3|001 - to LSC,<BR>010 - to DPC,<BR>100 - to B2B
+-|    17|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_SVE_RGBIR_BP_MUX_DEMUX_SEL|       13|              42|           2|01 - Through X2B SVE RGBIR,<BR>10 - Bypass
+-|    18|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_IR_DEPTH_MUX_SEL|       14|              44|           2|01 - X2B SVE RGBIR,<BR>10- X2B MD
+-|    19|IPU_DEVICE_GP_ISA_STATIC                |               1|         IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL|       16|              46|           2|01 - to DOL Mux,<BR>10 - to DOL
+-|    20|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL|       17|              48|           2|01 - Main Input,<BR>10 - DOL
+-|    21|IPU_DEVICE_GP_ISA_STATIC                |               1|    IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK|       54|              50|           2|Main Input DOL Demux port block
+-|    22|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL|       15|              52|           3|001 - External; <BR>010 - DPC extracted; <BR>100 - X2B extracted
+-|    23|IPU_DEVICE_GP_ISA_STATIC                |               1|              IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG|       25|              55|           4|PAF stream sync configuration
+-|    24|IPU_DEVICE_GP_ISA_STATIC                |               1|               IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK|       26|              59|           2|PAF Mux GDDPC port block
+-|    25|IPU_DEVICE_GP_ISA_STATIC                |               1|          IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK|       27|              61|           2|PAF Mux Input ISA port block
+-|    26|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK|       28|              63|           2|PAF Mux X2B port block
+-|    27|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       31|              65|           2|LSC Mux Input Corr Demux port block
+-|    28|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       32|              67|           2|DPC Mux Input Corr Demux port block
+-|    29|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_X2B_DEMUX_PORT_BLK|       36|              69|           2|LSC Mux X2B Demux port block
+-|    30|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_DPC_DEMUX_PORT_BLK|       35|              71|           2|DPC Mux LSC Demux port block
+-|    31|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_X2B_DEMUX_PORT_BLK|       34|              73|           2|DPC Mux X2B Demux port block
+-|    32|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_LSC_DEMUX_PORT_BLK|       40|              75|           2|B2B Mux LSC Demux port block
+-|    33|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_LSC_DEMUX_PORT_BLK|       33|              77|           2|DPC Mux LSC Demux port block
+-|    34|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_DPC_DEMUX_PORT_BLK|       42|              79|           2|B2B Mux DPC Demux port block
+-|    35|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK|       41|              81|           2|B2B Mux X2B Demux port block
+-|    36|IPU_DEVICE_GP_PSA                       |               0|                           IPU_DEVICE_GP_PSA_3_VCSC_BP_MUX|        5|              83|           2|VSCS BP mux:<BR>01 – VCSC output is chosen, 10 – BNLM output is chosen
+-|    37|IPU_DEVICE_GP_PSA                       |               0|                       IPU_DEVICE_GP_PSA_2_STILLS_MODE_MUX|        1|              85|           2|Still mode mux:<BR>01 – to XNR, 10 – WB/DM
+-|    38|IPU_DEVICE_GP_PSA                       |               0|                      IPU_DEVICE_GP_PSA_3_VCSC_TO_GLTM_BLK|       10|              87|           2|VCSC pixel stream to GLTM block:<BR>01 – UNBLOCK,<BR>10 – BLOCK
+-|    39|IPU_DEVICE_GP_PSA                       |               0|                      IPU_DEVICE_GP_PSA_3_BNLM_TO_GLTM_BLK|       11|              89|           2|BNLM pixel stream to GLTM block:<BR>01 – UNBLOCK,<BR>10 – BLOCK
+-|    40|IPU_DEVICE_GP_PSA                       |               0|                       IPU_DEVICE_GP_LBFF_V2S_1_OUTPUT_MUX|        6|              91|           3|BNLM input mux:<BR>001 – V2S_1 output,<BR>010 – ISA downscaled stream,<BR>100 – ISA orig stream
++|     8|IPU_DEVICE_GP_ISA_STATIC                |               1|          IPU_DEVICE_GP_ISA_STATIC_AWBMUX_B2B_MUX_PORT_BLK|       22|              22|           2|Stat B2B AWB Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|     9|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_AWBMUX_INPUT_CORR_PORT_BLK|       19|              24|           2|Stat Input correction AWB Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    10|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL|        4|              26|           2|Select to B2B:<BR>001 - to LSC,<BR>010 - to DPC,<BR>100 - to X2B
++|    11|IPU_DEVICE_GP_ISA_STATIC                |               1|           IPU_DEVICE_GP_ISA_STATIC_AFMUX_B2B_MUX_PORT_BLK|       24|              28|           2|Stat B2B AF Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    12|IPU_DEVICE_GP_ISA_STATIC                |               1|        IPU_DEVICE_GP_ISA_STATIC_AFMUX_INPUT_CORR_PORT_BLK|       21|              30|           2|Stat Input correction AF Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    13|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL|        3|              32|           2|Select to B2B:<BR>01 - from Input Correction,<BR>10 - from B2B
++|    14|IPU_DEVICE_GP_ISA_STATIC                |               1|           IPU_DEVICE_GP_ISA_STATIC_AEMUX_B2B_MUX_PORT_BLK|       23|              34|           2|Stat B2B AE Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    15|IPU_DEVICE_GP_ISA_STATIC                |               1|        IPU_DEVICE_GP_ISA_STATIC_AEMUX_INPUT_CORR_PORT_BLK|       20|              36|           2|Stat Input correction AE Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    16|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_LSC_DEMUX_PORT_BLK|       37|              38|           2|X2B Mux LSC Demux port block
++|    17|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_DPC_DEMUX_PORT_BLK|       38|              40|           2|X2B Mux DPC Demux port block
++|    18|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK|       39|              42|           2|X2B Mux Input Corr Demux port block
++|    19|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL|        1|              44|           2|01 - to ISL.S2V,<BR>10 - to PSA
++|    20|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_SEL|       10|              46|           3|001 - LSC,<BR>010 - X2B,<BR>100 - Input correction
++|    21|IPU_DEVICE_GP_ISA_STATIC                |               1|                    IPU_DEVICE_GP_ISA_STATIC_X2B_DEMUX_SEL|       11|              49|           3|001 - to LSC,<BR>010 - to DPC,<BR>100 - to B2B
++|    22|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_SVE_RGBIR_BP_MUX_DEMUX_SEL|       13|              52|           2|01 - Through X2B SVE RGBIR,<BR>10 - Bypass
++|    23|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_IR_DEPTH_MUX_SEL|       14|              54|           2|01 - X2B SVE RGBIR,<BR>10- X2B MD
++|    24|IPU_DEVICE_GP_ISA_STATIC                |               1|         IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL|       16|              56|           2|01 - to DOL Mux,<BR>10 - to DOL
++|    25|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL|       17|              58|           2|01 - Main Input,<BR>10 - DOL
++|    26|IPU_DEVICE_GP_ISA_STATIC                |               1|    IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK|       54|              60|           2|Main Input DOL Demux port block
++|    27|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL|       15|              62|           3|001 - External; <BR>010 - DPC extracted; <BR>100 - X2B extracted
++|    28|IPU_DEVICE_GP_ISA_STATIC                |               1|              IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG|       25|              65|           4|PAF stream sync configuration
++|    29|IPU_DEVICE_GP_ISA_STATIC                |               1|               IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK|       26|              69|           2|PAF Mux GDDPC port block
++|    30|IPU_DEVICE_GP_ISA_STATIC                |               1|          IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK|       27|              71|           2|PAF Mux Input ISA port block
++|    31|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK|       28|              73|           2|PAF Mux X2B port block
++|    32|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       31|              75|           2|LSC Mux Input Corr Demux port block
++|    33|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       32|              77|           2|DPC Mux Input Corr Demux port block
++|    34|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_X2B_DEMUX_PORT_BLK|       36|              79|           2|LSC Mux X2B Demux port block
++|    35|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_DPC_DEMUX_PORT_BLK|       35|              81|           2|DPC Mux LSC Demux port block
++|    36|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_X2B_DEMUX_PORT_BLK|       34|              83|           2|DPC Mux X2B Demux port block
++|    37|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_LSC_DEMUX_PORT_BLK|       40|              85|           2|B2B Mux LSC Demux port block
++|    38|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_LSC_DEMUX_PORT_BLK|       33|              87|           2|DPC Mux LSC Demux port block
++|    39|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_DPC_DEMUX_PORT_BLK|       42|              89|           2|B2B Mux DPC Demux port block
++|    40|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK|       41|              91|           2|B2B Mux X2B Demux port block
++|    41|IPU_DEVICE_GP_PSA                       |               0|                           IPU_DEVICE_GP_PSA_3_VCSC_BP_MUX|        5|              93|           2|VSCS BP mux:<BR>01 – VCSC output is chosen, 10 – BNLM output is chosen
++|    42|IPU_DEVICE_GP_PSA                       |               0|                       IPU_DEVICE_GP_PSA_2_STILLS_MODE_MUX|        1|              95|           2|Still mode mux:<BR>01 – to XNR, 10 – WB/DM
++|    43|IPU_DEVICE_GP_PSA                       |               0|                      IPU_DEVICE_GP_PSA_3_VCSC_TO_GLTM_BLK|       10|              97|           2|VCSC pixel stream to GLTM block:<BR>01 – UNBLOCK,<BR>10 – BLOCK
++|    44|IPU_DEVICE_GP_PSA                       |               0|                      IPU_DEVICE_GP_PSA_3_BNLM_TO_GLTM_BLK|       11|              99|           2|BNLM pixel stream to GLTM block:<BR>01 – UNBLOCK,<BR>10 – BLOCK
++|    45|IPU_DEVICE_GP_PSA                       |               0|                       IPU_DEVICE_GP_LBFF_V2S_1_OUTPUT_MUX|        6|             101|           3|BNLM input mux:<BR>001 – V2S_1 output,<BR>010 – ISA downscaled stream,<BR>100 – ISA orig stream
+ 
+ 
+ 
+@@ -593,17 +598,13 @@ Each rule represents a certain feature/sensor/input/output selection (not a comp
+ 
+ Select one of the following rules to setup the route to PSA:
+ 
+-Link to source 
++Link to source
+ [isa_lb.manifest_private.hpp](../src/isa_lb.manifest_private.hpp)
+ 
+ ```cpp
+-    /* Basic ISA only video & still -> DDR */
++    /* Basic ISA video & still -> DDR */
+ 	_rbm_manifest_cpp_class.add_rule({
+ 			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL)           , 0},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                      , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK)  , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                       , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                       , 1},
+ 			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL)       , 0},
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_LBFF_V2S_1_OUTPUT_MUX)       , 0},
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_VCSC_BP_MUX),      1 },
+@@ -612,13 +613,9 @@ Link to source
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_BNLM_TO_GLTM_BLK), 0 },
+ 	});
+ 
+-	/* Basic ISA still -> direct connection to PSA still */
++	/* Basic still -> PSA still */
+ 	_rbm_manifest_cpp_class.add_rule({
+ 			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL)           , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                      , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK)  , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                       , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                       , 1},
+ 			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL)       , 0},
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_LBFF_V2S_1_OUTPUT_MUX)       , 2},
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_VCSC_BP_MUX),      0 },
+@@ -627,13 +624,9 @@ Link to source
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_BNLM_TO_GLTM_BLK), 1 },
+ 	});
+ 
+-	/* Basic ISA video -> direct connection to PSA video */
++	/* Basic video -> PSA video */
+ 	_rbm_manifest_cpp_class.add_rule({
+ 			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL)           , 0},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                      , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK)  , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                       , 1},
+-			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                       , 1},
+ 			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL)       , 1},
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_LBFF_V2S_1_OUTPUT_MUX)       , 1},
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_VCSC_BP_MUX),      1 },
+@@ -641,6 +634,44 @@ Link to source
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_VCSC_TO_GLTM_BLK), 1 },
+ 			{NVP(IPU_DEVICE_GP_PSA), NVP(IPU_DEVICE_GP_PSA_3_BNLM_TO_GLTM_BLK), 0 },
+ 	});
++	/* Non RGB-IR/SVE statistics */
++	_rbm_manifest_cpp_class.add_rule({
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                      , 1},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_B2B_MUX_PORT_BLK)          , 0},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_INPUT_CORR_PORT_BLK)       , 1},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                       , 1},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_B2B_MUX_PORT_BLK)           , 0},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_INPUT_CORR_PORT_BLK)        , 1},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                       , 1},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_B2B_MUX_PORT_BLK)           , 0},
++			{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_INPUT_CORR_PORT_BLK)        , 1},
++	});
++	/* RGB-IR/SVE statistics */
++	_rbm_manifest_cpp_class.add_rule({
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_B2B_MUX_PORT_BLK)          , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_INPUT_CORR_PORT_BLK)       , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                       , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_B2B_MUX_PORT_BLK)           , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_INPUT_CORR_PORT_BLK)        , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                       , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_B2B_MUX_PORT_BLK)           , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_INPUT_CORR_PORT_BLK)        , 1},
++	});
++Select one of the following rules to enable/disable DOL:
++	/* DOL Disabled */
++	_rbm_manifest_cpp_class.add_rule({
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	1},
++	});
++
++	/* DOL Enabled */
++	_rbm_manifest_cpp_class.add_rule({
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	0},
++	});
+ 
+ Select one of the following rules to setup the sensor type:
+ 	/* BAYER Sensor. LSC->DPC->B2B */
+@@ -721,21 +752,6 @@ Select one of the following rules to setup the sensor type:
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK),	1},
+ 	});
+ 
+-Select one of the following rules to enable/disable DOL:
+-	/* DOL Disabled */
+-	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	1},
+-	});
+-
+-	/* DOL Enabled */
+-	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	0},
+-	});
+-
+ Select one of the following rules to setup PAF mode:
+ 	/* PAF_MD_INTERLEAVED */
+ 	_rbm_manifest_cpp_class.add_rule({
+@@ -790,6 +806,8 @@ Select one of the following rules to setup PAF mode:
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		1},
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
+ 	});
++
++
+ The following blockers can be blocked/unblocked according the pipe that you run:
+ Note: try to block unused path to avoid pipe back pressure when you run different pipes sequentially.
+ 	_rbm_manifest_cpp_class.add_rule({
+@@ -881,16 +899,6 @@ Note: try to block unused path to avoid pipe back pressure when you run differen
+ 	});
+ ```
+ 
+-Use cases:
+-
+-|Use case                            | routing_bitmap                  |
+-|------------------------------------|---------------------------------|
+-|Bayer sensor ISA still only         | 0x2CD2D54D4265A91AAAAAAA454899A |
+-|Bayer sensor ISA video scaled_b only| 0x2CD2D54D4265A91A6AAAAA454896A |
+-|Bayer sensor ISA video full only    | 0x2CD2D54D4265A919AAAAAA454896A |
+-|Bayer sensor ISA + PSA still        | 0x9332D54D4265A91AAAAAAA464899A |
+-|Bayer sensor ISA + PSA video        | 0x4CD2D54D4265A92A9AAAAA454896A |
+-
+ 
+ # Compression
+ 
+@@ -1380,7 +1388,7 @@ There are three types of structures used by this ISA_LB:
+ 
+ 
+ 
+-##### routing_bitmap=0x24CCB55350996A46AAA46489
++##### routing_bitmap=0x9332D54D4265A91AA69A646489
+ <table id="rbm">
+   <tr>
+ 	<th><div>LBFF_V2S_1_OUTPUT_MUX</div></th>
+@@ -1413,9 +1421,14 @@ There are three types of structures used by this ISA_LB:
+ 	<th><div>X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>AEMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AEMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AE_MUX_SEL</div></th>
++	<th><div>AFMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AFMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AF_MUX_SEL</div></th>
+-	<th><div>3A_STAT_INPUT_CORR_MUX_PORT_BLK</div></th>
++	<th><div>AWBMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AWBMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AWB_MUX_SEL</div></th>
+ 	<th><div>DPC_DEMUX_SEL</div></th>
+ 	<th><div>DPC_MUX_SEL</div></th>
+@@ -1456,9 +1469,14 @@ There are three types of structures used by this ISA_LB:
+ 	<td>10</td>			<!-- X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_DPC_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- AEMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AEMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AE_MUX_SEL  -->
++	<td>10</td>			<!-- AFMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AFMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AF_MUX_SEL  -->
+-	<td>10</td>			<!-- 3A_STAT_INPUT_CORR_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AWBMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AWBMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AWB_MUX_SEL  -->
+ 	<td>010</td>			<!-- DPC_DEMUX_SEL  -->
+ 	<td>001</td>			<!-- DPC_MUX_SEL  -->
+@@ -1752,7 +1770,389 @@ There are three types of structures used by this ISA_LB:
+ 
+ 
+ 
+-##### routing_bitmap=0x24CCB55350996A46AAA46489
++##### routing_bitmap=0x9332D54D4265A91AA69A646489
++<table id="rbm">
++  <tr>
++	<th><div>LBFF_V2S_1_OUTPUT_MUX</div></th>
++	<th><div>PSA_3_BNLM_TO_GLTM_BLK</div></th>
++	<th><div>PSA_3_VCSC_TO_GLTM_BLK</div></th>
++	<th><div>PSA_2_STILLS_MODE_MUX</div></th>
++	<th><div>PSA_3_VCSC_BP_MUX</div></th>
++	<th><div>B2B_MUX_X2B_DEMUX_PORT_BLK</div></th>
++	<th><div>B2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
++	<th><div>DPC_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>B2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>DPC_MUX_X2B_DEMUX_PORT_BLK</div></th>
++	<th><div>LSC_MUX_DPC_DEMUX_PORT_BLK</div></th>
++	<th><div>LSC_MUX_X2B_DEMUX_PORT_BLK</div></th>
++	<th><div>DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
++	<th><div>LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
++	<th><div>PAF_X2B_PORT_BLK</div></th>
++	<th><div>PAF_ISA_STREAM_PORT_BLK</div></th>
++	<th><div>PAF_GDDPC_PORT_BLK</div></th>
++	<th><div>PAF_STREAM_SYNC_CFG</div></th>
++	<th><div>PAF_SRC_SEL</div></th>
++	<th><div>MAIN_INPUT_DOL_DEMUX_PORT_BLK</div></th>
++	<th><div>DOL_MUX_SEL</div></th>
++	<th><div>MAIN_INPUT_DOL_DEMUX_SEL</div></th>
++	<th><div>IR_DEPTH_MUX_SEL</div></th>
++	<th><div>SVE_RGBIR_BP_MUX_DEMUX_SEL</div></th>
++	<th><div>X2B_DEMUX_SEL</div></th>
++	<th><div>X2B_MUX_SEL</div></th>
++	<th><div>ISA_SCALED_A_OUT_DEMUX_SEL</div></th>
++	<th><div>X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
++	<th><div>X2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
++	<th><div>X2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>AEMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AEMUX_B2B_MUX_PORT_BLK</div></th>
++	<th><div>AE_MUX_SEL</div></th>
++	<th><div>AFMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AFMUX_B2B_MUX_PORT_BLK</div></th>
++	<th><div>AF_MUX_SEL</div></th>
++	<th><div>AWBMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AWBMUX_B2B_MUX_PORT_BLK</div></th>
++	<th><div>AWB_MUX_SEL</div></th>
++	<th><div>DPC_DEMUX_SEL</div></th>
++	<th><div>DPC_MUX_SEL</div></th>
++	<th><div>ISA_ORIG_OUT_DEMUX_SEL</div></th>
++	<th><div>B2B_MUX_SEL</div></th>
++	<th><div>LSC_DEMUX_SEL</div></th>
++	<th><div>LSC_MUX_SEL</div></th>
++	<th><div>ISA_INPUT_CORR_DEMUX_SEL</div></th>
++  </tr>
++  <tr>
++	<td>100</td>			<!-- LBFF_V2S_1_OUTPUT_MUX  -->
++	<td>10</td>			<!-- PSA_3_BNLM_TO_GLTM_BLK  -->
++	<td>01</td>			<!-- PSA_3_VCSC_TO_GLTM_BLK  -->
++	<td>10</td>			<!-- PSA_2_STILLS_MODE_MUX  -->
++	<td>01</td>			<!-- PSA_3_VCSC_BP_MUX  -->
++	<td>10</td>			<!-- B2B_MUX_X2B_DEMUX_PORT_BLK  -->
++	<td>01</td>			<!-- B2B_MUX_DPC_DEMUX_PORT_BLK  -->
++	<td>01</td>			<!-- DPC_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- B2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- DPC_MUX_X2B_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- LSC_MUX_DPC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- LSC_MUX_X2B_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
++	<td>01</td>			<!-- LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- PAF_X2B_PORT_BLK  -->
++	<td>10</td>			<!-- PAF_ISA_STREAM_PORT_BLK  -->
++	<td>10</td>			<!-- PAF_GDDPC_PORT_BLK  -->
++	<td>0001</td>			<!-- PAF_STREAM_SYNC_CFG  -->
++	<td>001</td>			<!-- PAF_SRC_SEL  -->
++	<td>10</td>			<!-- MAIN_INPUT_DOL_DEMUX_PORT_BLK  -->
++	<td>01</td>			<!-- DOL_MUX_SEL  -->
++	<td>01</td>			<!-- MAIN_INPUT_DOL_DEMUX_SEL  -->
++	<td>10</td>			<!-- IR_DEPTH_MUX_SEL  -->
++	<td>10</td>			<!-- SVE_RGBIR_BP_MUX_DEMUX_SEL  -->
++	<td>100</td>			<!-- X2B_DEMUX_SEL  -->
++	<td>100</td>			<!-- X2B_MUX_SEL  -->
++	<td>01</td>			<!-- ISA_SCALED_A_OUT_DEMUX_SEL  -->
++	<td>10</td>			<!-- X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- X2B_MUX_DPC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- X2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- AEMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AEMUX_B2B_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AE_MUX_SEL  -->
++	<td>10</td>			<!-- AFMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AFMUX_B2B_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AF_MUX_SEL  -->
++	<td>10</td>			<!-- AWBMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AWBMUX_B2B_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AWB_MUX_SEL  -->
++	<td>010</td>			<!-- DPC_DEMUX_SEL  -->
++	<td>001</td>			<!-- DPC_MUX_SEL  -->
++	<td>10</td>			<!-- ISA_ORIG_OUT_DEMUX_SEL  -->
++	<td>010</td>			<!-- B2B_MUX_SEL  -->
++	<td>010</td>			<!-- LSC_DEMUX_SEL  -->
++	<td>001</td>			<!-- LSC_MUX_SEL  -->
++	<td>001</td>			<!-- ISA_INPUT_CORR_DEMUX_SEL  -->
++  </tr>
++</table>
++
++#### Test ID: ipu6_isa_lb_still_1024x768_espa_O_P1_bypass_10bpp_GRBG_ate_in_out_compress_use_both_toolkit
++**description:** Test compression of PSA output.
++
++**usecase:** stills
++
++**compression:** (Format, Resolution/stride, bpp/bpe)
++	Input:    BAYER,  1024x768/2048,     10/16.
++	Output:   YUV420, 384x192/512,       8/8.
++
++
++|Inputs              |Active
++|:-------------------|---:
++|KERNEL_ID_GET_PAF   |<span style="color:red">No</span>
++|KERNEL_ID_GET_MEDIUM|<span style="color:red">No</span>
++|KERNEL_ID_GET_SHORT |<span style="color:red">No</span>
++|KERNEL_ID_GET_HIGH  |<span style="color:green">Yes</span>
++
++<br></br>
++
++|Outputs                               |Active
++|:-------------------------------------|---:
++|KERNEL_ID_CACHED_PARAMETER_OUT_AE_STAT|<span style="color:red">No</span>
++|KERNEL_ID_PUT                         |<span style="color:green">Yes</span>
++|KERNEL_ID_SPT_PAF                     |<span style="color:red">No</span>
++|KERNEL_ID_SPT_3A_STAT_AWB             |<span style="color:red">No</span>
++|KERNEL_ID_SPT_3A_STAT_AF              |<span style="color:red">No</span>
++|KERNEL_ID_PUT_IR_DEPTH                |<span style="color:red">No</span>
++|KERNEL_ID_PUT_VIDEO_FULL              |<span style="color:red">No</span>
++|KERNEL_ID_PUT_YUV_B                   |<span style="color:red">No</span>
++|KERNEL_ID_PUT_BAYER                   |<span style="color:red">No</span>
++|KERNEL_ID_PUT_SIS_B                   |<span style="color:red">No</span>
++|KERNEL_ID_PUT_SIS_A                   |<span style="color:red">No</span>
++
++##### kernel_bitmask=0x04017800060408400CFB117FFE1FF8
++
++<table id="keb">
++  <tr>
++	<th><div>KERNEL_ID_GET_PAF</div></th>
++	<th><div>KERNEL_ID_GET_MEDIUM</div></th>
++	<th><div>KERNEL_ID_GET_SHORT</div></th>
++	<th><div>KERNEL_ID_CACHED_PARAMETER_OUT_AE_STAT</div></th>
++	<th><div>KERNEL_ID_PUT</div></th>
++	<th><div>KERNEL_ID_SPT_PAF</div></th>
++	<th><div>KERNEL_ID_SPT_3A_STAT_AWB</div></th>
++	<th><div>KERNEL_ID_SPT_3A_STAT_AF</div></th>
++	<th><div>KERNEL_ID_PUT_IR_DEPTH</div></th>
++	<th><div>KERNEL_ID_PUT_VIDEO_FULL</div></th>
++	<th><div>KERNEL_ID_PUT_YUV_B</div></th>
++	<th><div>KERNEL_ID_PUT_BAYER</div></th>
++	<th><div>KERNEL_ID_PUT_SIS_B</div></th>
++	<th><div>KERNEL_ID_PUT_SIS_A</div></th>
++	<th><div>KERNEL_ID_LSC_GRID</div></th>
++	<th><div>KERNEL_ID_BLC_GRID</div></th>
++	<th><div>KERNEL_ID_GET_HIGH</div></th>
++	<th><div>KERNEL_ID_PROGRAM_CONTROL_INIT</div></th>
++	<th><div>KERNEL_ID_PROGRAM_INIT</div></th>
++	<th><div>KERNEL_ID_CACHED_PARAMETER_IN</div></th>
++	<th><div>KERNEL_ID_PAF</div></th>
++	<th><div>KERNEL_ID_X2B_RGBIR</div></th>
++	<th><div>KERNEL_ID_X2B_SVE</div></th>
++	<th><div>KERNEL_ID_PIXEL_FORMATTER_MEDIUM</div></th>
++	<th><div>KERNEL_ID_PIXEL_FORMATTER_SHORT</div></th>
++	<th><div>KERNEL_ID_ICA_PCLN_HDR_MEDIUM</div></th>
++	<th><div>KERNEL_ID_ICA_BLC_GLOBAL_MEDIUM</div></th>
++	<th><div>KERNEL_ID_ICA_INL_MEDIUM</div></th>
++	<th><div>KERNEL_ID_ICA_PCLN_HDR_SHORT</div></th>
++	<th><div>KERNEL_ID_ICA_BLC_GLOBAL_SHORT</div></th>
++	<th><div>KERNEL_ID_ICA_INL_SHORT</div></th>
++	<th><div>KERNEL_ID_X2B_MD</div></th>
++	<th><div>KERNEL_ID_DOL</div></th>
++	<th><div>KERNEL_ID_PADDER_ISA_SCALED_B</div></th>
++	<th><div>KERNEL_ID_PADDER_ISA_SCALED_A</div></th>
++	<th><div>KERNEL_ID_PADDER_ISA_FULL</div></th>
++	<th><div>KERNEL_ID_PADDER_ISA_ORIG</div></th>
++	<th><div>KERNEL_ID_PIXEL_FORMATTER_HIGH</div></th>
++	<th><div>KERNEL_ID_PIFCONV_SIS_B</div></th>
++	<th><div>KERNEL_ID_PIFCONV_SIS_A</div></th>
++	<th><div>KERNEL_ID_SIS_B</div></th>
++	<th><div>KERNEL_ID_SIS_A</div></th>
++	<th><div>KERNEL_ID_STRMCROP_SIS_B</div></th>
++	<th><div>KERNEL_ID_STRMCROP_SIS_A</div></th>
++	<th><div>KERNEL_ID_ESPA_B2B</div></th>
++	<th><div>KERNEL_ID_ESPA_SIS_B</div></th>
++	<th><div>KERNEL_ID_ESPA_SIS_A</div></th>
++	<th><div>KERNEL_ID_ESPA_IR_DEPTH</div></th>
++	<th><div>KERNEL_ID_ESPA_FULL_OUT</div></th>
++	<th><div>KERNEL_ID_ESPA_SCALED_B</div></th>
++	<th><div>KERNEL_ID_ESPA_SCALED_A</div></th>
++	<th><div>KERNEL_ID_ESPA_ORIG_OUT</div></th>
++	<th><div>KERNEL_ID_PIFCONV_ISA_IR_DEPTH</div></th>
++	<th><div>KERNEL_ID_PIFCONV_ISA_FULL_OUT</div></th>
++	<th><div>KERNEL_ID_PIFCONV_ISA_SCALED_B</div></th>
++	<th><div>KERNEL_ID_PIFCONV_ISA_SCALED_A</div></th>
++	<th><div>KERNEL_ID_PIFCONV_ISA_ORIG</div></th>
++	<th><div>KERNEL_ID_AF_STAT</div></th>
++	<th><div>KERNEL_ID_AE_CCM_STAT</div></th>
++	<th><div>KERNEL_ID_AE_STAT</div></th>
++	<th><div>KERNEL_ID_AWB_STAT</div></th>
++	<th><div>KERNEL_ID_R2I_DS_B</div></th>
++	<th><div>KERNEL_ID_R2I_DS_A</div></th>
++	<th><div>KERNEL_ID_R2I_SIE_GTM</div></th>
++	<th><div>KERNEL_ID_R2I_SIE_USM</div></th>
++	<th><div>KERNEL_ID_R2I_SIE_CSC</div></th>
++	<th><div>KERNEL_ID_R2I_SIE_CCM</div></th>
++	<th><div>KERNEL_ID_B2B_LCA</div></th>
++	<th><div>KERNEL_ID_B2B_WBA</div></th>
++	<th><div>KERNEL_ID_B2R_BNR</div></th>
++	<th><div>KERNEL_ID_B2R_DEMOSAIC</div></th>
++	<th><div>KERNEL_ID_GDDPC_PEXT_SAM</div></th>
++	<th><div>KERNEL_ID_GDDPC_PEXT</div></th>
++	<th><div>KERNEL_ID_GDDPC_PEXT_PEXT</div></th>
++	<th><div>KERNEL_ID_LSC_HDR</div></th>
++	<th><div>KERNEL_ID_PCLN_HDR</div></th>
++	<th><div>KERNEL_ID_BLC_GRID_OB_FF</div></th>
++	<th><div>KERNEL_ID_ICA_BLC_GLOBAL</div></th>
++	<th><div>KERNEL_ID_ICA_INL</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_GAMMASTAR_GRID</div></th>
++	<th><div>KERNEL_ID_DVS_STATS_L2</div></th>
++	<th><div>KERNEL_ID_DVS_STATS_L1</div></th>
++	<th><div>KERNEL_ID_DVS_STATS_L0</div></th>
++	<th><div>KERNEL_ID_STREAM_CROP_PSA_H</div></th>
++	<th><div>KERNEL_ID_ACM_GLIM</div></th>
++	<th><div>KERNEL_ID_ESPA_V2S_PSA_1</div></th>
++	<th><div>KERNEL_ID_ESPA</div></th>
++	<th><div>KERNEL_ID_XNR_VLF_SE</div></th>
++	<th><div>KERNEL_ID_XNR_VLF</div></th>
++	<th><div>KERNEL_ID_XNR_LFE</div></th>
++	<th><div>KERNEL_ID_XNR_LF_SE</div></th>
++	<th><div>KERNEL_ID_XNR_LF</div></th>
++	<th><div>KERNEL_ID_XNR_MF_SE</div></th>
++	<th><div>KERNEL_ID_XNR_MF</div></th>
++	<th><div>KERNEL_ID_XNR_HF_SE</div></th>
++	<th><div>KERNEL_ID_XNR_HF</div></th>
++	<th><div>KERNEL_ID_XNR_VHF</div></th>
++	<th><div>KERNEL_ID_GLTM</div></th>
++	<th><div>KERNEL_ID_VCSC</div></th>
++	<th><div>KERNEL_ID_DVS_DVS</div></th>
++	<th><div>KERNEL_ID_DVS_YBIN</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_YUV1_IEFD</div></th>
++	<th><div>KERNEL_ID_YUV1_SPLITTER</div></th>
++	<th><div>KERNEL_ID_GTC_GTM</div></th>
++	<th><div>KERNEL_ID_GTC_CSC_CDS</div></th>
++	<th><div>KERNEL_ID_GAMMASTAR</div></th>
++	<th><div>KERNEL_ID_VCA_VCR2</div></th>
++	<th><div>KERNEL_ID_ACM_ACM</div></th>
++	<th><div>KERNEL_ID_ACM_CCM</div></th>
++	<th><div>KERNEL_ID_DEMOSAIC_DEMOSAIC</div></th>
++	<th><div>KERNEL_ID_RYNR_BNLM</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++	<th><div>KERNEL_ID_SPARE</div></th>
++  </tr>
++  <tr>
++	<td>0</td>			<!-- KERNEL_ID_GET_PAF  -->
++	<td>0</td>			<!-- KERNEL_ID_GET_MEDIUM  -->
++	<td>0</td>			<!-- KERNEL_ID_GET_SHORT  -->
++	<td>0</td>			<!-- KERNEL_ID_CACHED_PARAMETER_OUT_AE_STAT  -->
++	<td>1</td>			<!-- KERNEL_ID_PUT  -->
++	<td>0</td>			<!-- KERNEL_ID_SPT_PAF  -->
++	<td>0</td>			<!-- KERNEL_ID_SPT_3A_STAT_AWB  -->
++	<td>0</td>			<!-- KERNEL_ID_SPT_3A_STAT_AF  -->
++	<td>0</td>			<!-- KERNEL_ID_PUT_IR_DEPTH  -->
++	<td>0</td>			<!-- KERNEL_ID_PUT_VIDEO_FULL  -->
++	<td>0</td>			<!-- KERNEL_ID_PUT_YUV_B  -->
++	<td>0</td>			<!-- KERNEL_ID_PUT_BAYER  -->
++	<td>0</td>			<!-- KERNEL_ID_PUT_SIS_B  -->
++	<td>0</td>			<!-- KERNEL_ID_PUT_SIS_A  -->
++	<td>1</td>			<!-- KERNEL_ID_LSC_GRID  -->
++	<td>0</td>			<!-- KERNEL_ID_BLC_GRID  -->
++	<td>1</td>			<!-- KERNEL_ID_GET_HIGH  -->
++	<td>1</td>			<!-- KERNEL_ID_PROGRAM_CONTROL_INIT  -->
++	<td>1</td>			<!-- KERNEL_ID_PROGRAM_INIT  -->
++	<td>1</td>			<!-- KERNEL_ID_CACHED_PARAMETER_IN  -->
++	<td>0</td>			<!-- KERNEL_ID_PAF  -->
++	<td>0</td>			<!-- KERNEL_ID_X2B_RGBIR  -->
++	<td>0</td>			<!-- KERNEL_ID_X2B_SVE  -->
++	<td>0</td>			<!-- KERNEL_ID_PIXEL_FORMATTER_MEDIUM  -->
++	<td>0</td>			<!-- KERNEL_ID_PIXEL_FORMATTER_SHORT  -->
++	<td>0</td>			<!-- KERNEL_ID_ICA_PCLN_HDR_MEDIUM  -->
++	<td>0</td>			<!-- KERNEL_ID_ICA_BLC_GLOBAL_MEDIUM  -->
++	<td>0</td>			<!-- KERNEL_ID_ICA_INL_MEDIUM  -->
++	<td>0</td>			<!-- KERNEL_ID_ICA_PCLN_HDR_SHORT  -->
++	<td>0</td>			<!-- KERNEL_ID_ICA_BLC_GLOBAL_SHORT  -->
++	<td>0</td>			<!-- KERNEL_ID_ICA_INL_SHORT  -->
++	<td>0</td>			<!-- KERNEL_ID_X2B_MD  -->
++	<td>0</td>			<!-- KERNEL_ID_DOL  -->
++	<td>0</td>			<!-- KERNEL_ID_PADDER_ISA_SCALED_B  -->
++	<td>0</td>			<!-- KERNEL_ID_PADDER_ISA_SCALED_A  -->
++	<td>0</td>			<!-- KERNEL_ID_PADDER_ISA_FULL  -->
++	<td>1</td>			<!-- KERNEL_ID_PADDER_ISA_ORIG  -->
++	<td>1</td>			<!-- KERNEL_ID_PIXEL_FORMATTER_HIGH  -->
++	<td>0</td>			<!-- KERNEL_ID_PIFCONV_SIS_B  -->
++	<td>0</td>			<!-- KERNEL_ID_PIFCONV_SIS_A  -->
++	<td>0</td>			<!-- KERNEL_ID_SIS_B  -->
++	<td>0</td>			<!-- KERNEL_ID_SIS_A  -->
++	<td>0</td>			<!-- KERNEL_ID_STRMCROP_SIS_B  -->
++	<td>0</td>			<!-- KERNEL_ID_STRMCROP_SIS_A  -->
++	<td>1</td>			<!-- KERNEL_ID_ESPA_B2B  -->
++	<td>0</td>			<!-- KERNEL_ID_ESPA_SIS_B  -->
++	<td>0</td>			<!-- KERNEL_ID_ESPA_SIS_A  -->
++	<td>0</td>			<!-- KERNEL_ID_ESPA_IR_DEPTH  -->
++	<td>0</td>			<!-- KERNEL_ID_ESPA_FULL_OUT  -->
++	<td>0</td>			<!-- KERNEL_ID_ESPA_SCALED_B  -->
++	<td>0</td>			<!-- KERNEL_ID_ESPA_SCALED_A  -->
++	<td>1</td>			<!-- KERNEL_ID_ESPA_ORIG_OUT  -->
++	<td>0</td>			<!-- KERNEL_ID_PIFCONV_ISA_IR_DEPTH  -->
++	<td>0</td>			<!-- KERNEL_ID_PIFCONV_ISA_FULL_OUT  -->
++	<td>0</td>			<!-- KERNEL_ID_PIFCONV_ISA_SCALED_B  -->
++	<td>0</td>			<!-- KERNEL_ID_PIFCONV_ISA_SCALED_A  -->
++	<td>1</td>			<!-- KERNEL_ID_PIFCONV_ISA_ORIG  -->
++	<td>0</td>			<!-- KERNEL_ID_AF_STAT  -->
++	<td>0</td>			<!-- KERNEL_ID_AE_CCM_STAT  -->
++	<td>0</td>			<!-- KERNEL_ID_AE_STAT  -->
++	<td>0</td>			<!-- KERNEL_ID_AWB_STAT  -->
++	<td>0</td>			<!-- KERNEL_ID_R2I_DS_B  -->
++	<td>0</td>			<!-- KERNEL_ID_R2I_DS_A  -->
++	<td>0</td>			<!-- KERNEL_ID_R2I_SIE_GTM  -->
++	<td>0</td>			<!-- KERNEL_ID_R2I_SIE_USM  -->
++	<td>0</td>			<!-- KERNEL_ID_R2I_SIE_CSC  -->
++	<td>0</td>			<!-- KERNEL_ID_R2I_SIE_CCM  -->
++	<td>1</td>			<!-- KERNEL_ID_B2B_LCA  -->
++	<td>1</td>			<!-- KERNEL_ID_B2B_WBA  -->
++	<td>0</td>			<!-- KERNEL_ID_B2R_BNR  -->
++	<td>0</td>			<!-- KERNEL_ID_B2R_DEMOSAIC  -->
++	<td>1</td>			<!-- KERNEL_ID_GDDPC_PEXT_SAM  -->
++	<td>1</td>			<!-- KERNEL_ID_GDDPC_PEXT  -->
++	<td>1</td>			<!-- KERNEL_ID_GDDPC_PEXT_PEXT  -->
++	<td>1</td>			<!-- KERNEL_ID_LSC_HDR  -->
++	<td>1</td>			<!-- KERNEL_ID_PCLN_HDR  -->
++	<td>0</td>			<!-- KERNEL_ID_BLC_GRID_OB_FF  -->
++	<td>1</td>			<!-- KERNEL_ID_ICA_BLC_GLOBAL  -->
++	<td>1</td>			<!-- KERNEL_ID_ICA_INL  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>1</td>			<!-- KERNEL_ID_GAMMASTAR_GRID  -->
++	<td>0</td>			<!-- KERNEL_ID_DVS_STATS_L2  -->
++	<td>0</td>			<!-- KERNEL_ID_DVS_STATS_L1  -->
++	<td>0</td>			<!-- KERNEL_ID_DVS_STATS_L0  -->
++	<td>1</td>			<!-- KERNEL_ID_STREAM_CROP_PSA_H  -->
++	<td>0</td>			<!-- KERNEL_ID_ACM_GLIM  -->
++	<td>1</td>			<!-- KERNEL_ID_ESPA_V2S_PSA_1  -->
++	<td>1</td>			<!-- KERNEL_ID_ESPA  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_VLF_SE  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_VLF  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_LFE  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_LF_SE  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_LF  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_MF_SE  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_MF  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_HF_SE  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_HF  -->
++	<td>1</td>			<!-- KERNEL_ID_XNR_VHF  -->
++	<td>1</td>			<!-- KERNEL_ID_GLTM  -->
++	<td>1</td>			<!-- KERNEL_ID_VCSC  -->
++	<td>0</td>			<!-- KERNEL_ID_DVS_DVS  -->
++	<td>0</td>			<!-- KERNEL_ID_DVS_YBIN  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>1</td>			<!-- KERNEL_ID_YUV1_IEFD  -->
++	<td>1</td>			<!-- KERNEL_ID_YUV1_SPLITTER  -->
++	<td>1</td>			<!-- KERNEL_ID_GTC_GTM  -->
++	<td>1</td>			<!-- KERNEL_ID_GTC_CSC_CDS  -->
++	<td>1</td>			<!-- KERNEL_ID_GAMMASTAR  -->
++	<td>1</td>			<!-- KERNEL_ID_VCA_VCR2  -->
++	<td>1</td>			<!-- KERNEL_ID_ACM_ACM  -->
++	<td>1</td>			<!-- KERNEL_ID_ACM_CCM  -->
++	<td>1</td>			<!-- KERNEL_ID_DEMOSAIC_DEMOSAIC  -->
++	<td>1</td>			<!-- KERNEL_ID_RYNR_BNLM  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++	<td>0</td>			<!-- KERNEL_ID_SPARE  -->
++  </tr>
++</table>
++
++
++
++##### routing_bitmap=0x9332D54D4265A91AA69A646489
+ <table id="rbm">
+   <tr>
+ 	<th><div>LBFF_V2S_1_OUTPUT_MUX</div></th>
+@@ -1785,9 +2185,14 @@ There are three types of structures used by this ISA_LB:
+ 	<th><div>X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>AEMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AEMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AE_MUX_SEL</div></th>
++	<th><div>AFMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AFMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AF_MUX_SEL</div></th>
+-	<th><div>3A_STAT_INPUT_CORR_MUX_PORT_BLK</div></th>
++	<th><div>AWBMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AWBMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AWB_MUX_SEL</div></th>
+ 	<th><div>DPC_DEMUX_SEL</div></th>
+ 	<th><div>DPC_MUX_SEL</div></th>
+@@ -1828,9 +2233,14 @@ There are three types of structures used by this ISA_LB:
+ 	<td>10</td>			<!-- X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_DPC_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- AEMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AEMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AE_MUX_SEL  -->
++	<td>10</td>			<!-- AFMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AFMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AF_MUX_SEL  -->
+-	<td>10</td>			<!-- 3A_STAT_INPUT_CORR_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AWBMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AWBMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AWB_MUX_SEL  -->
+ 	<td>010</td>			<!-- DPC_DEMUX_SEL  -->
+ 	<td>001</td>			<!-- DPC_MUX_SEL  -->
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isl_ps_rbm/release_notes/ipu6_isl_ps_rbm_release_notes.md b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isl_ps_rbm/release_notes/ipu6_isl_ps_rbm_release_notes.md
+index d87240308272..7569db21fe98 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isl_ps_rbm/release_notes/ipu6_isl_ps_rbm_release_notes.md
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/pg/ipu6_isl_ps_rbm/release_notes/ipu6_isl_ps_rbm_release_notes.md
+@@ -501,34 +501,39 @@ There is two type of structures used by this ISL_PS_RBM:
+ |     5|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_SEL|        9|              14|           3|Select from LSC:<BR>001 - from LSC,<BR>010 - from Input correction,<BR>100 - from X2B
+ |     6|IPU_DEVICE_GP_ISA_STATIC                |               1|                    IPU_DEVICE_GP_ISA_STATIC_DPC_DEMUX_SEL|        8|              17|           3|Select to B2B:<BR>001 - to LSC,<BR>010 - to B2B,<BR>100 - to X2B
+ |     7|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL|        2|              20|           2|Select to B2B:<BR>01 - from Input Correction,<BR>10 - from B2B
+-|     8|IPU_DEVICE_GP_ISA_STATIC                |               1|  IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK|       45|              22|           2|Stat Input correction Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
+-|     9|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL|        4|              24|           2|Select to B2B:<BR>001 - to LSC,<BR>010 - to DPC,<BR>100 - to X2B
+-|    10|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL|        3|              26|           2|Select to B2B:<BR>01 - from Input Correction,<BR>10 - from B2B
+-|    11|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_LSC_DEMUX_PORT_BLK|       37|              28|           2|X2B Mux LSC Demux port block
+-|    12|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_DPC_DEMUX_PORT_BLK|       38|              30|           2|X2B Mux DPC Demux port block
+-|    13|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK|       39|              32|           2|X2B Mux Input Corr Demux port block
+-|    14|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL|        1|              34|           2|01 - to ISL.S2V,<BR>10 - to PSA
+-|    15|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_SEL|       10|              36|           3|001 - LSC,<BR>010 - X2B,<BR>100 - Input correction
+-|    16|IPU_DEVICE_GP_ISA_STATIC                |               1|                    IPU_DEVICE_GP_ISA_STATIC_X2B_DEMUX_SEL|       11|              39|           3|001 - to LSC,<BR>010 - to DPC,<BR>100 - to B2B
+-|    17|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_SVE_RGBIR_BP_MUX_DEMUX_SEL|       13|              42|           2|01 - Through X2B SVE RGBIR,<BR>10 - Bypass
+-|    18|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_IR_DEPTH_MUX_SEL|       14|              44|           2|01 - X2B SVE RGBIR,<BR>10- X2B MD
+-|    19|IPU_DEVICE_GP_ISA_STATIC                |               1|         IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL|       16|              46|           2|01 - to DOL Mux,<BR>10 - to DOL
+-|    20|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL|       17|              48|           2|01 - Main Input,<BR>10 - DOL
+-|    21|IPU_DEVICE_GP_ISA_STATIC                |               1|    IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK|       54|              50|           2|Main Input DOL Demux port block
+-|    22|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL|       15|              52|           3|001 - External; <BR>010 - DPC extracted; <BR>100 - X2B extracted
+-|    23|IPU_DEVICE_GP_ISA_STATIC                |               1|              IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG|       25|              55|           4|PAF stream sync configuration
+-|    24|IPU_DEVICE_GP_ISA_STATIC                |               1|               IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK|       26|              59|           2|PAF Mux GDDPC port block
+-|    25|IPU_DEVICE_GP_ISA_STATIC                |               1|          IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK|       27|              61|           2|PAF Mux Input ISA port block
+-|    26|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK|       28|              63|           2|PAF Mux X2B port block
+-|    27|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       31|              65|           2|LSC Mux Input Corr Demux port block
+-|    28|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       32|              67|           2|DPC Mux Input Corr Demux port block
+-|    29|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_X2B_DEMUX_PORT_BLK|       36|              69|           2|LSC Mux X2B Demux port block
+-|    30|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_DPC_DEMUX_PORT_BLK|       35|              71|           2|DPC Mux LSC Demux port block
+-|    31|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_X2B_DEMUX_PORT_BLK|       34|              73|           2|DPC Mux X2B Demux port block
+-|    32|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_LSC_DEMUX_PORT_BLK|       40|              75|           2|B2B Mux LSC Demux port block
+-|    33|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_LSC_DEMUX_PORT_BLK|       33|              77|           2|DPC Mux LSC Demux port block
+-|    34|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_DPC_DEMUX_PORT_BLK|       42|              79|           2|B2B Mux DPC Demux port block
+-|    35|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK|       41|              81|           2|B2B Mux X2B Demux port block
++|     8|IPU_DEVICE_GP_ISA_STATIC                |               1|          IPU_DEVICE_GP_ISA_STATIC_AWBMUX_B2B_MUX_PORT_BLK|       22|              22|           2|Stat B2B AWB Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|     9|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_AWBMUX_INPUT_CORR_PORT_BLK|       19|              24|           2|Stat Input correction AWB Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    10|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL|        4|              26|           2|Select to B2B:<BR>001 - to LSC,<BR>010 - to DPC,<BR>100 - to X2B
++|    11|IPU_DEVICE_GP_ISA_STATIC                |               1|           IPU_DEVICE_GP_ISA_STATIC_AFMUX_B2B_MUX_PORT_BLK|       24|              28|           2|Stat B2B AF Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    12|IPU_DEVICE_GP_ISA_STATIC                |               1|        IPU_DEVICE_GP_ISA_STATIC_AFMUX_INPUT_CORR_PORT_BLK|       21|              30|           2|Stat Input correction AF Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    13|IPU_DEVICE_GP_ISA_STATIC                |               1|                       IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL|        3|              32|           2|Select to B2B:<BR>01 - from Input Correction,<BR>10 - from B2B
++|    14|IPU_DEVICE_GP_ISA_STATIC                |               1|           IPU_DEVICE_GP_ISA_STATIC_AEMUX_B2B_MUX_PORT_BLK|       23|              34|           2|Stat B2B AE Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    15|IPU_DEVICE_GP_ISA_STATIC                |               1|        IPU_DEVICE_GP_ISA_STATIC_AEMUX_INPUT_CORR_PORT_BLK|       20|              36|           2|Stat Input correction AE Mux port block:<BR>01 - UNBLOCK<BR>10 - BLOCK
++|    16|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_LSC_DEMUX_PORT_BLK|       37|              38|           2|X2B Mux LSC Demux port block
++|    17|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_DPC_DEMUX_PORT_BLK|       38|              40|           2|X2B Mux DPC Demux port block
++|    18|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK|       39|              42|           2|X2B Mux Input Corr Demux port block
++|    19|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL|        1|              44|           2|01 - to ISL.S2V,<BR>10 - to PSA
++|    20|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_SEL|       10|              46|           3|001 - LSC,<BR>010 - X2B,<BR>100 - Input correction
++|    21|IPU_DEVICE_GP_ISA_STATIC                |               1|                    IPU_DEVICE_GP_ISA_STATIC_X2B_DEMUX_SEL|       11|              49|           3|001 - to LSC,<BR>010 - to DPC,<BR>100 - to B2B
++|    22|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_SVE_RGBIR_BP_MUX_DEMUX_SEL|       13|              52|           2|01 - Through X2B SVE RGBIR,<BR>10 - Bypass
++|    23|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_IR_DEPTH_MUX_SEL|       14|              54|           2|01 - X2B SVE RGBIR,<BR>10- X2B MD
++|    24|IPU_DEVICE_GP_ISA_STATIC                |               1|         IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL|       16|              56|           2|01 - to DOL Mux,<BR>10 - to DOL
++|    25|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL|       17|              58|           2|01 - Main Input,<BR>10 - DOL
++|    26|IPU_DEVICE_GP_ISA_STATIC                |               1|    IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK|       54|              60|           2|Main Input DOL Demux port block
++|    27|IPU_DEVICE_GP_ISA_STATIC                |               1|                      IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL|       15|              62|           3|001 - External; <BR>010 - DPC extracted; <BR>100 - X2B extracted
++|    28|IPU_DEVICE_GP_ISA_STATIC                |               1|              IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG|       25|              65|           4|PAF stream sync configuration
++|    29|IPU_DEVICE_GP_ISA_STATIC                |               1|               IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK|       26|              69|           2|PAF Mux GDDPC port block
++|    30|IPU_DEVICE_GP_ISA_STATIC                |               1|          IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK|       27|              71|           2|PAF Mux Input ISA port block
++|    31|IPU_DEVICE_GP_ISA_STATIC                |               1|                 IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK|       28|              73|           2|PAF Mux X2B port block
++|    32|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       31|              75|           2|LSC Mux Input Corr Demux port block
++|    33|IPU_DEVICE_GP_ISA_STATIC                |               1|IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK|       32|              77|           2|DPC Mux Input Corr Demux port block
++|    34|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_X2B_DEMUX_PORT_BLK|       36|              79|           2|LSC Mux X2B Demux port block
++|    35|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_DPC_DEMUX_PORT_BLK|       35|              81|           2|DPC Mux LSC Demux port block
++|    36|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_X2B_DEMUX_PORT_BLK|       34|              83|           2|DPC Mux X2B Demux port block
++|    37|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_LSC_DEMUX_PORT_BLK|       40|              85|           2|B2B Mux LSC Demux port block
++|    38|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_LSC_DEMUX_PORT_BLK|       33|              87|           2|DPC Mux LSC Demux port block
++|    39|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_DPC_DEMUX_PORT_BLK|       42|              89|           2|B2B Mux DPC Demux port block
++|    40|IPU_DEVICE_GP_ISA_STATIC                |               1|       IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK|       41|              91|           2|B2B Mux X2B Demux port block
+ 
+ 
+ ![ipu6_isl_ps_rbm_pipe_drawing](images/ipu6_isl_ps_rbm_routing.png)
+@@ -541,17 +546,35 @@ The following drawing shows ISA IP possible data flows (taken from ISA HAS).
+ The RBM is a set of feature/sensor/output configuration.
+ Base rule hold all stream blocks which are set (1) in all data flows.
+ 
+-For Example:
+-DOL_Disabled+BAYER(sensor)+PAF_Disabled:
+ ```cpp
+-	/* Basic */
++	/* Basic with AWB statistics taken from B2B Mux. */
+ 	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL),	0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL)      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL)  , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                 , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_B2B_MUX_PORT_BLK)     , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_INPUT_CORR_PORT_BLK)  , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                  , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_B2B_MUX_PORT_BLK)      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_INPUT_CORR_PORT_BLK)   , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                  , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_B2B_MUX_PORT_BLK)      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_INPUT_CORR_PORT_BLK)   , 1},
++	});
++
++	/* Basic with AWB statistics taken from Input correction Mux. */
++	_rbm_manifest_cpp_class.add_rule({
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL)      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL)  , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL)                 , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_B2B_MUX_PORT_BLK)     , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AWBMUX_INPUT_CORR_PORT_BLK)  , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL)                  , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_B2B_MUX_PORT_BLK)      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AFMUX_INPUT_CORR_PORT_BLK)   , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL)                  , 1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_B2B_MUX_PORT_BLK)      , 0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC), NVP(IPU_DEVICE_GP_ISA_STATIC_AEMUX_INPUT_CORR_PORT_BLK)   , 1},
+ 	});
+ 
+ 	/* DOL Disabled */
+@@ -561,6 +584,13 @@ DOL_Disabled+BAYER(sensor)+PAF_Disabled:
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	1},
+ 	});
+ 
++	/* DOL Enabled */
++	_rbm_manifest_cpp_class.add_rule({
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	0},
++	});
++
+ 	/* BAYER Sensor. LSC->DPC->B2B */
+ 	_rbm_manifest_cpp_class.add_rule({
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_INPUT_CORR_DEMUX_SEL),		0},
+@@ -587,34 +617,30 @@ DOL_Disabled+BAYER(sensor)+PAF_Disabled:
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK),	1},
+ 	});
+ 
+-	/* PAF_DISABLED */
+-	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK),		1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
+-	});
+-```
+-
+-
+-DOL_Disabled+MD(sensor)+PAF_Disabled:
+-```cpp
+-	/* Basic */
+-	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL),	0},
+-	});
+-
+-	/* DOL Disabled */
++	/* SVE/RGBIR/MD+SVE Sensor. DPC->MD->SVE/RGBIR->LSC->B2B */
+ 	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_INPUT_CORR_DEMUX_SEL),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_SEL),			2},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_DEMUX_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_LSC_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_SEL),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_DEMUX_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_SEL),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_DEMUX_SEL),			2},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_SVE_RGBIR_BP_MUX_DEMUX_SEL),	0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_IR_DEPTH_MUX_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_DPC_DEMUX_PORT_BLK),	0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK),1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK),1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK),0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_X2B_DEMUX_PORT_BLK),	0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_DPC_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_X2B_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_LSC_DEMUX_PORT_BLK),	0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_LSC_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_DPC_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK),	1},
+ 	});
+ 
+ 	/* MD Sensor. LSC->MD->DPC->B2B */
+@@ -643,63 +669,49 @@ DOL_Disabled+MD(sensor)+PAF_Disabled:
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK),	1},
+ 	});
+ 
+-	/* PAF_DISABLED */
++	/* PAF_MD_INTERLEAVED */
+ 	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			2},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		1},
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK),		1},
+ 		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			0},
+ 	});
+-```
+-
+ 
+-DOL_Disabled+SVE(sensor)+PAF_Disabled:
+-DOL_Disabled+RGBIR(sensor)+PAF_Disabled:
+-DOL_Disabled+MD&SVE(sensor)+PAF_Disabled:
+-```cpp
+-	/* Basic */
++	/* PAF_T3_NON_INTERLEAVED */
+ 	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_ORIG_OUT_DEMUX_SEL),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_3A_STAT_INPUT_CORR_MUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AWB_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AF_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_AE_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_SCALED_A_OUT_DEMUX_SEL),	0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		3},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK),		0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
+ 	});
+ 
+-	/* DOL Disabled */
++	/* PAF_T3_INTERLEAVED */
+ 	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_SEL),		0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DOL_MUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_MAIN_INPUT_DOL_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK),		0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
+ 	});
+ 
++	/* PAF_T2_NON_INTERLEAVED */
++	_rbm_manifest_cpp_class.add_rule({
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		3},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
++	});
+ 
+-	/* SVE/RGBIR/MD+SVE Sensor. DPC->MD->SVE/RGBIR->LSC->B2B */
++	/* PAF_T2_INTERLEAVED */
+ 	_rbm_manifest_cpp_class.add_rule({
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_ISA_INPUT_CORR_DEMUX_SEL),		1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_SEL),			2},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_DEMUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_LSC_DEMUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_DEMUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_SEL),			1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_DEMUX_SEL),			2},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_SVE_RGBIR_BP_MUX_DEMUX_SEL),	0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_IR_DEPTH_MUX_SEL),			0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_DPC_DEMUX_PORT_BLK),	0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK),1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_INPUT_CORR_DEMUX_PORT_BLK),1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_INPUT_CORR_DEMUX_PORT_BLK),0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_X2B_DEMUX_PORT_BLK),	0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_LSC_MUX_DPC_DEMUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_X2B_DEMUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_LSC_DEMUX_PORT_BLK),	0},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_DPC_MUX_LSC_DEMUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_DPC_DEMUX_PORT_BLK),	1},
+-		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_B2B_MUX_X2B_DEMUX_PORT_BLK),	1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_SRC_SEL),			0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_STREAM_SYNC_CFG),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_GDDPC_PORT_BLK),		1},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_ISA_STREAM_PORT_BLK),		0},
++		{NVP(IPU_DEVICE_GP_ISA_STATIC),	NVP(IPU_DEVICE_GP_ISA_STATIC_PAF_X2B_PORT_BLK),			1},
+ 	});
+ 
+ 	/* PAF_DISABLED */
+@@ -712,41 +724,6 @@ DOL_Disabled+MD&SVE(sensor)+PAF_Disabled:
+ 	});
+ ```
+ 
+-All 1 line rules represent a mux/demux/blocker that can be configure with all possible options with the other features.
+-The RBM string will be calculated as a mix the relevant rules.
+-
+-Examples:
+-
+-## BAYER Flow with DOL/PAF Disabled ##
+-## Still only output ##
+-routing_bitmap=0x12D54D4265A91AAAAA954548955
+-## Video_a only output ##
+-routing_bitmap=0x12D54D4265A91A9AAA954548965
+-## Video_b only output ##
+-routing_bitmap=0x12D54D4265A91A6AAA954548965
+-## Video_full only output ##
+-routing_bitmap=0x12D54D4265A919AAAA954548965
+-
+-## MD Flow with DOL/PAF Disabled ##
+-## Still only output ##
+-routing_bitmap=0x134D4D4265A45AAA6A955150955
+-## Video_a only output ##
+-routing_bitmap=0x134D4D4265A45A9A6A955150965
+-## Video_b only output ##
+-routing_bitmap=0x134D4D4265A45A6A6A955150965
+-## Video_full only output ##
+-routing_bitmap=0x134D4D4265A459AA6A955150965
+-
+-## SVE/RGBIR/MD+SVE Flow with DOL/PAF Disabled ##
+-## Still only output ##
+-routing_bitmap=0x1534B542655296A9AA958926255
+-## Video_a only output ##
+-routing_bitmap=0x1534B54265529699AA958926265
+-## Video_b only output ##
+-routing_bitmap=0x1534B54265529669AA958926265
+-## Video_full only output ##
+-routing_bitmap=0x1534B542655295A9AA958926265
+-
+ 
+ # Compression
+ 
+@@ -1019,7 +996,7 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 
+ 
+ 
+-##### routing_bitmap=0x4B55350996A46AAA45489
++##### routing_bitmap=0x12D54D4265A91AA69A645489
+ <table id="rbm">
+   <tr>
+ 	<th><div>B2B_MUX_X2B_DEMUX_PORT_BLK</div></th>
+@@ -1047,9 +1024,14 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 	<th><div>X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>AEMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AEMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AE_MUX_SEL</div></th>
++	<th><div>AFMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AFMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AF_MUX_SEL</div></th>
+-	<th><div>3A_STAT_INPUT_CORR_MUX_PORT_BLK</div></th>
++	<th><div>AWBMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AWBMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AWB_MUX_SEL</div></th>
+ 	<th><div>DPC_DEMUX_SEL</div></th>
+ 	<th><div>DPC_MUX_SEL</div></th>
+@@ -1085,9 +1067,14 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 	<td>10</td>			<!-- X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_DPC_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- AEMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AEMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AE_MUX_SEL  -->
++	<td>10</td>			<!-- AFMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AFMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AF_MUX_SEL  -->
+-	<td>10</td>			<!-- 3A_STAT_INPUT_CORR_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AWBMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AWBMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AWB_MUX_SEL  -->
+ 	<td>010</td>			<!-- DPC_DEMUX_SEL  -->
+ 	<td>001</td>			<!-- DPC_MUX_SEL  -->
+@@ -1300,7 +1287,7 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 
+ 
+ 
+-##### routing_bitmap=0x4B55350996A46AAA45489
++##### routing_bitmap=0x12D54D4265A91AA69A645489
+ <table id="rbm">
+   <tr>
+ 	<th><div>B2B_MUX_X2B_DEMUX_PORT_BLK</div></th>
+@@ -1328,9 +1315,14 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 	<th><div>X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>AEMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AEMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AE_MUX_SEL</div></th>
++	<th><div>AFMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AFMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AF_MUX_SEL</div></th>
+-	<th><div>3A_STAT_INPUT_CORR_MUX_PORT_BLK</div></th>
++	<th><div>AWBMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AWBMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AWB_MUX_SEL</div></th>
+ 	<th><div>DPC_DEMUX_SEL</div></th>
+ 	<th><div>DPC_MUX_SEL</div></th>
+@@ -1366,9 +1358,14 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 	<td>10</td>			<!-- X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_DPC_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- AEMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AEMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AE_MUX_SEL  -->
++	<td>10</td>			<!-- AFMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AFMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AF_MUX_SEL  -->
+-	<td>10</td>			<!-- 3A_STAT_INPUT_CORR_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AWBMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AWBMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AWB_MUX_SEL  -->
+ 	<td>010</td>			<!-- DPC_DEMUX_SEL  -->
+ 	<td>001</td>			<!-- DPC_MUX_SEL  -->
+@@ -1582,7 +1579,7 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 
+ 
+ 
+-##### routing_bitmap=0x4B55350996A46AAA45489
++##### routing_bitmap=0x12D54D4265A91AA69A645489
+ <table id="rbm">
+   <tr>
+ 	<th><div>B2B_MUX_X2B_DEMUX_PORT_BLK</div></th>
+@@ -1610,9 +1607,14 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 	<th><div>X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_DPC_DEMUX_PORT_BLK</div></th>
+ 	<th><div>X2B_MUX_LSC_DEMUX_PORT_BLK</div></th>
++	<th><div>AEMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AEMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AE_MUX_SEL</div></th>
++	<th><div>AFMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AFMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AF_MUX_SEL</div></th>
+-	<th><div>3A_STAT_INPUT_CORR_MUX_PORT_BLK</div></th>
++	<th><div>AWBMUX_INPUT_CORR_PORT_BLK</div></th>
++	<th><div>AWBMUX_B2B_MUX_PORT_BLK</div></th>
+ 	<th><div>AWB_MUX_SEL</div></th>
+ 	<th><div>DPC_DEMUX_SEL</div></th>
+ 	<th><div>DPC_MUX_SEL</div></th>
+@@ -1648,9 +1650,14 @@ The aggregate tile status buffer size for all planes will then be the sum of the
+ 	<td>10</td>			<!-- X2B_MUX_INPUT_CORR_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_DPC_DEMUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- X2B_MUX_LSC_DEMUX_PORT_BLK  -->
++	<td>10</td>			<!-- AEMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AEMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AE_MUX_SEL  -->
++	<td>10</td>			<!-- AFMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AFMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AF_MUX_SEL  -->
+-	<td>10</td>			<!-- 3A_STAT_INPUT_CORR_MUX_PORT_BLK  -->
++	<td>10</td>			<!-- AWBMUX_INPUT_CORR_PORT_BLK  -->
++	<td>01</td>			<!-- AWBMUX_B2B_MUX_PORT_BLK  -->
+ 	<td>10</td>			<!-- AWB_MUX_SEL  -->
+ 	<td>010</td>			<!-- DPC_DEMUX_SEL  -->
+ 	<td>001</td>			<!-- DPC_MUX_SEL  -->
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/interface/ia_css_program_group_data_defs.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/interface/ia_css_program_group_data_defs.h
+index 3c77a210bfbc..e835f453724c 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/interface/ia_css_program_group_data_defs.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/interface/ia_css_program_group_data_defs.h
+@@ -218,6 +218,24 @@ typedef enum ia_css_frame_format_type {
+ 	/** MSB aligned version of P012*/
+ 	IA_CSS_DATA_FORMAT_P012_MSB,
+ 
++	/* Each tile is stored in consecutive addresses in DDR.
++	 * The scanning walking order within a tile is raster order
++	 * (line-by-line).
++	 */
++	/* NV12 is a semi-planar (two planes) format: A plane of 8 bit Y samples
++	 * followed by an interleaved 8 bit U/V
++	 * samples plane.
++	 */
++	IA_CSS_DATA_FORMAT_NV12_TILE,
++	/*P010 is similar to NV12, but with 10 bit values,
++	 * each stored in a 16b container (msb aligned, 6 lsb are zero).
++	 */
++	IA_CSS_DATA_FORMAT_P010_TILE,
++	/* P012 is similar to P010, but with 12 bit values,
++	 * each stored in a 16b containers (msb aligned, 4 lsb are zero).
++	 */
++	IA_CSS_DATA_FORMAT_P012_TILE,
++
+ 	IA_CSS_N_FRAME_FORMAT_TYPES
+ } ia_css_frame_format_type_t;
+ 
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/src/ia_css_program_group_data_impl.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/src/ia_css_program_group_data_impl.h
+index 1b8e0fcb3765..894c10172acc 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/src/ia_css_program_group_data_impl.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/data/src/ia_css_program_group_data_impl.h
+@@ -319,6 +319,15 @@ int ia_css_frame_descriptor_print(
+ 	IA_CSS_TRACE_1(PSYSAPI_DATA, INFO,
+ 		"\t%4d ]\n", frame_descriptor->plane_offsets[i]);
+ 
++	IA_CSS_TRACE_1(PSYSAPI_DATA, INFO,
++		"\tts_offsets[%d]: [\n", frame_plane_count);
++	for (i = 0; i < (int)frame_plane_count - 1; i++) {
++		IA_CSS_TRACE_1(PSYSAPI_DATA, INFO,
++			"\t%4d,\n", frame_descriptor->ts_offsets[i]);
++	}
++	IA_CSS_TRACE_1(PSYSAPI_DATA, INFO,
++		"\t%4d ]\n", frame_descriptor->ts_offsets[i]);
++
+ 	IA_CSS_TRACE_1(PSYSAPI_DATA, INFO,
+ 		"\tdimension[%d] = {\n", IA_CSS_N_DATA_DIMENSION);
+ 	for (i = 0; i < (int)IA_CSS_N_DATA_DIMENSION - 1; i++) {
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/psysapi.mk b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/psysapi.mk
+index ccf3543ae16b..d74460f5712b 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/psysapi.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/psysapi.mk
+@@ -117,12 +117,12 @@ PSYSAPI_RESOURCE_MODEL_FILES = $(PSYSAPI_DIR)/resource_model/$(PSYS_RESOURCE_MOD
+ PSYSAPI_RESOURCE_MODEL_FILES += $(PSYSAPI_DIR)/sim/src/vied_nci_psys_system.c
+ 
+ ifeq ($(PSYS_HAS_DUAL_CMD_CTX_SUPPORT), 1)
+-PSYSAPI_HOST_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=$(PSYS_HAS_DUAL_CMD_CTX_SUPPORT)
++PSYSAPI_HOST_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=1
++else
++PSYSAPI_HOST_CPPFLAGS += -DHAS_DUAL_CMD_CTX_SUPPORT=0
+ endif
+ 
+-ifeq ($(HAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT), 1)
+ PSYSAPI_HOST_CPPFLAGS += -DHAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT=$(HAS_BUTTRESS_FW_BOOT_PARAM_SUPPORT)
+-endif
+ 
+ ifeq ($(HAS_VP), 1)
+ PSYSAPI_HOST_CPPFLAGS += -DHAS_VP
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/resource_model/ipu6v1/vied_nci_psys_resource_model.h b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/resource_model/ipu6v1/vied_nci_psys_resource_model.h
+index e46de96c8525..0cc51b096b65 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/resource_model/ipu6v1/vied_nci_psys_resource_model.h
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/psysapi/resource_model/ipu6v1/vied_nci_psys_resource_model.h
+@@ -25,11 +25,10 @@
+ 
+ /* Defines for the routing bitmap in the program group manifest.
+  */
+-#define VIED_NCI_RBM_MAX_MUX_COUNT			42
+-#define VIED_NCI_RBM_MAX_VALIDATION_RULE_COUNT		14
++#define VIED_NCI_RBM_MAX_MUX_COUNT			46
++#define VIED_NCI_RBM_MAX_VALIDATION_RULE_COUNT		16
+ #define VIED_NCI_RBM_MAX_TERMINAL_DESC_COUNT		4
+ #define N_PADDING_UINT8_IN_RBM_MANIFEST			2
+-#define	VIED_NCI_DEVICE_ID_DDR_DMEM_DDR_DUMMY VIED_NCI_PSA_ACC_XNR_ID
+ 
+ /* The amount of padding bytes needed to make
+  * ia_css_process_s/ia_css_process_ext_s/
+@@ -81,8 +80,6 @@ typedef enum {
+ 
+ #define VIED_NCI_N_CELL_ID (VIED_NCI_BB_ACC_TNR_ID + 1)
+ 
+-#define VIED_NCI_DEVICE_ID_DDR_DMEM_DDR_DUMMY VIED_NCI_PSA_ACC_XNR_ID
+-
+ /*
+  * In several places we don't need to size the look up tables for the full amount of cells
+  * because they are only used for the VP and SP cells and not for the accelerator cells.
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/routing_bitmap/src/ia_css_rbm_manifest.c b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/routing_bitmap/src/ia_css_rbm_manifest.c
+index 3f6b05b4889b..70fd15e13f2c 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/routing_bitmap/src/ia_css_rbm_manifest.c
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/routing_bitmap/src/ia_css_rbm_manifest.c
+@@ -161,7 +161,7 @@ ia_css_rbm_manifest_check_rbm_validity(
+ 		if (rules[i].expected_value == 1) {
+ 			final_rbm = ia_css_rbm_union(final_rbm, rules[i].match);
+ 		} else {
+-			IA_CSS_TRACE_1(RBM, INFO, "ia_css_rbm_manifest_check_rbm_validity: failes on rule %d\n", i);
++			IA_CSS_TRACE_1(RBM, INFO, "ia_css_rbm_manifest_check_rbm_validity: fails on rule %d\n", i);
+ 			return false;
+ 		}
+ 	}
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/trace/trace.mk b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/trace/trace.mk
+index 57c2ef2cbacd..5bfcc4b833b8 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/trace/trace.mk
++++ b/drivers/media/pci/intel/ipu6/ipu6-css/psyslib/lib/trace/trace.mk
+@@ -21,14 +21,6 @@ IA_CSS_TRACE_SUPPORT = $${MODULES_DIR}/support
+ IA_CSS_TRACE = $${MODULES_DIR}/trace
+ 
+ 
+-ifdef XTENSA
+-
+-include $(MODULES_DIR)/devices/interface/$(IPU_SYSVER)/xtensa_version.mk
+-ifndef XTENSA_POC
+-USE_XTENSA_TRACE ?= 0
+-endif
+-endif
+-
+ IA_CSS_TRACE_INTERFACE = $(IA_CSS_TRACE)/interface
+ 
+ ifeq ($(USE_XTENSA_TRACE), 1)
+-- 
+2.20.1
+

@@ -1,0 +1,36 @@
+From 3175929d8f2c7b5b9fa6469f80cb52ca295b0154 Mon Sep 17 00:00:00 2001
+From: Tianshu Qiu <tian.shu.qiu@intel.com>
+Date: Fri, 18 Oct 2019 15:56:16 +0800
+Subject: [PATCH 33/33] media: intel-ipu4: Fix isys querycap operation
+
+capabilities and device_caps fields are filled by
+V4L2 core. No need to set them in driver.
+
+Change-Id: I4d9b399aa2ddd2bab6bce7fedfc49e34fe8e00e0
+Signed-off-by: Tianshu Qiu <tian.shu.qiu@intel.com>
+---
+ drivers/media/pci/intel/ipu-isys-video.c | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu-isys-video.c b/drivers/media/pci/intel/ipu-isys-video.c
+index 83ff01510f4e..f108672fef44 100644
+--- a/drivers/media/pci/intel/ipu-isys-video.c
++++ b/drivers/media/pci/intel/ipu-isys-video.c
+@@ -428,14 +428,6 @@ int ipu_isys_vidioc_querycap(struct file *file, void *fh,
+ 	strlcpy(cap->card, av->isys->media_dev.model, sizeof(cap->card));
+ 	snprintf(cap->bus_info, sizeof(cap->bus_info), "PCI:%s",
+ 		 av->isys->media_dev.bus_info);
+-
+-	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE
+-	    | V4L2_CAP_VIDEO_CAPTURE_MPLANE
+-	    | V4L2_CAP_VIDEO_OUTPUT_MPLANE | V4L2_CAP_STREAMING
+-	    | V4L2_CAP_DEVICE_CAPS;
+-
+-	cap->device_caps = av->vdev.device_caps;
+-
+ 	return 0;
+ }
+ 
+-- 
+2.20.1
+
