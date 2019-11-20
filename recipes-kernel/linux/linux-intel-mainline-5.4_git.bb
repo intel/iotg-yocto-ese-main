@@ -28,10 +28,10 @@ do_patch_append(){
 }
 
 # add patch for ethernet
-SRC_URI_append = " file://ethernet.scc file://ethernet-5.4.scc"
+SRC_URI_append = " file://ethernet-5.4.scc"
 
 # add patch for audio
-SRC_URI_append = " file://audio.scc"
+SRC_URI_append = " file://audio-5.4.scc"
 
 # resctrl patches for 5.4
 SRC_URI_append = " file://resctrl-5.4.scc"

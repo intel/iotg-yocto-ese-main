@@ -1,0 +1,2 @@
+patch audio-5.4/0001-SoC-Intel-hdac_hdmi-add-Tigerlake-support.patch
+patch audio-5.4/0002-ASoC-Intel-tgl-add-tgl-rt1308-machine-driver.patch

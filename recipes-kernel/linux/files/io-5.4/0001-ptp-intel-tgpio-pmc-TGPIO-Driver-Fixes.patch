@@ -1,0 +1,636 @@
+From b74740fb17b357b0bca5543966a7f5fa23e7cb62 Mon Sep 17 00:00:00 2001
+From: Christopher Hall <christopher.s.hall@intel.com>
+Date: Mon, 14 Oct 2019 11:55:29 -0700
+Subject: [PATCH] ptp/intel-tgpio-pmc: TGPIO Driver Fixes
+
+Add ART<->TSC.ns translation
+Removed User-space Input Polling Code
+Added pin flags that disable read() on pins that are not interrupt
+	capable
+Added support for rising/falling edge selection on input, default to both
+Added frequency adjustment support
+Fix edge-timestamp polling
+
+Signed-off-by: Christopher Hall <christopher.s.hall@intel.com>
+---
+ arch/x86/include/asm/tsc.h        |   3 +
+ arch/x86/kernel/tsc.c             |  63 +++++++--
+ drivers/ptp/ptp-intel-pmc-tgpio.c | 220 +++++++++++++++++-------------
+ drivers/ptp/ptp_chardev.c         |  35 ++---
+ drivers/ptp/ptp_clock.c           |  14 ++
+ include/uapi/linux/ptp_clock.h    |  22 ++-
+ 6 files changed, 230 insertions(+), 127 deletions(-)
+
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 7ee2e58bfbfe..f44c92fe3cd5 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -35,6 +35,9 @@ extern struct system_counterval_t convert_art_ns_to_tsc(u64 art_ns);
+ extern struct timespec64 get_tsc_ns_now(struct system_counterval_t
+ 					*system_counter);
+ extern u64 convert_tsc_ns_to_art(struct timespec64 *tsc_ns);
++extern u64 convert_tsc_ns_to_art_duration(struct timespec64 *tsc_ns);
++extern struct timespec64 convert_art_to_tsc_ns(u64 art);
++extern struct timespec64 convert_art_to_tsc_ns_duration(u64 art);
+ 
+ extern void tsc_early_init(void);
+ extern void tsc_init(void);
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 9caac0d0ae63..c5815c70e6ba 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -1215,7 +1215,7 @@ int unsynchronized_tsc(void)
+ /*
+  * Convert ART to TSC given numerator/denominator found in detect_art()
+  */
+-struct system_counterval_t convert_art_to_tsc(u64 art)
++static struct system_counterval_t _convert_art_to_tsc(u64 art, bool dur)
+ {
+ 	u64 tmp, res, rem;
+ 
+@@ -1225,23 +1225,24 @@ struct system_counterval_t convert_art_to_tsc(u64 art)
+ 	tmp = rem * art_to_tsc_numerator;
+ 
+ 	do_div(tmp, art_to_tsc_denominator);
+-	res += tmp + art_to_tsc_offset;
++	if (!dur)
++		res += tmp + art_to_tsc_offset;
+ 
+ 	return (struct system_counterval_t) {.cs = art_related_clocksource,
+ 			.cycles = res};
+ }
++
++struct system_counterval_t convert_art_to_tsc(u64 art) {
++	return _convert_art_to_tsc(art, false);
++}
+ EXPORT_SYMBOL(convert_art_to_tsc);
+ 
+-struct timespec64 get_tsc_ns_now(struct system_counterval_t *system_counter) {
++static
++struct timespec64 get_tsc_ns(struct system_counterval_t *system_counter) {
+ 	u64 tmp, res, rem;
+ 	u64 cycles;
+ 
+-	cycles = clocksource_tsc.read(NULL);
+-	if (system_counter != NULL) {
+-		system_counter->cycles = cycles;
+-		system_counter->cs = art_related_clocksource;
+-	}
+-
++	cycles = system_counter->cycles;
+ 	rem = do_div(cycles, tsc_khz);
+ 
+ 	res = cycles * USEC_PER_SEC;
+@@ -1254,8 +1255,38 @@ struct timespec64 get_tsc_ns_now(struct system_counterval_t *system_counter) {
+ 
+ 	return (struct timespec64) {.tv_sec = res, .tv_nsec = rem};
+ }
++
++struct timespec64 get_tsc_ns_now(struct system_counterval_t *system_counter) {
++	struct system_counterval_t counterval;
++
++	if (system_counter == NULL)
++		system_counter = &counterval;
++
++	system_counter->cycles = clocksource_tsc.read(NULL);
++	system_counter->cs = art_related_clocksource;
++
++	return get_tsc_ns(system_counter);
++}
+ EXPORT_SYMBOL(get_tsc_ns_now);
+ 
++struct timespec64 convert_art_to_tsc_ns(u64 art) {
++	struct system_counterval_t counterval;
++
++	counterval = _convert_art_to_tsc(art, false);
++
++	return get_tsc_ns(&counterval);
++}
++EXPORT_SYMBOL(convert_art_to_tsc_ns);
++
++struct timespec64 convert_art_to_tsc_ns_duration(u64 art) {
++	struct system_counterval_t counterval;
++
++	counterval = _convert_art_to_tsc(art, true);
++
++	return get_tsc_ns(&counterval);
++}
++EXPORT_SYMBOL(convert_art_to_tsc_ns_duration);
++
+ static u64 convert_tsc_ns_to_tsc(struct timespec64 *tsc_ns) {
+ 	u64 tmp, res, rem;
+ 	u64 cycles;
+@@ -1273,12 +1304,13 @@ static u64 convert_tsc_ns_to_tsc(struct timespec64 *tsc_ns) {
+ }
+ 
+ 
+-u64 convert_tsc_ns_to_art(struct timespec64 *tsc_ns) {
++static u64 _convert_tsc_ns_to_art(struct timespec64 *tsc_ns, bool dur) {
+ 	u64 tmp, res, rem;
+ 	u64 cycles;
+ 
+ 	cycles = convert_tsc_ns_to_tsc( tsc_ns );
+-	cycles -= art_to_tsc_offset;
++	if (!dur)
++		cycles -= art_to_tsc_offset;
+ 
+ 	rem = do_div(cycles, art_to_tsc_numerator);
+ 
+@@ -1289,8 +1321,17 @@ u64 convert_tsc_ns_to_art(struct timespec64 *tsc_ns) {
+ 
+ 	return res + tmp;
+ }
++
++u64 convert_tsc_ns_to_art(struct timespec64 *tsc_ns) {
++	return _convert_tsc_ns_to_art(tsc_ns, false);
++}
+ EXPORT_SYMBOL(convert_tsc_ns_to_art);
+ 
++u64 convert_tsc_ns_to_art_duration(struct timespec64 *tsc_ns) {
++	return _convert_tsc_ns_to_art(tsc_ns, true);
++}
++EXPORT_SYMBOL(convert_tsc_ns_to_art_duration);
++
+ /**
+  * convert_art_ns_to_tsc() - Convert ART in nanoseconds to TSC.
+  * @art_ns: ART (Always Running Timer) in unit of nanoseconds
+diff --git a/drivers/ptp/ptp-intel-pmc-tgpio.c b/drivers/ptp/ptp-intel-pmc-tgpio.c
+index 994c7fb74cae..dd7c65802471 100644
+--- a/drivers/ptp/ptp-intel-pmc-tgpio.c
++++ b/drivers/ptp/ptp-intel-pmc-tgpio.c
+@@ -51,10 +51,6 @@ struct intel_pmc_tgpio {
+ 	struct mutex		lock;
+ 	struct device		*dev;
+ 	void __iomem		*base;
+-
+-	struct task_struct	*event_thread;
+-	bool			input;
+-	u64				prev_ec;
+ };
+ #define to_intel_pmc_tgpio(i)	(container_of((i), struct intel_pmc_tgpio, info))
+ 
+@@ -126,11 +122,12 @@ static inline void intel_pmc_tgpio_writel(void __iomem *base, u32 offset, u32 va
+ }
+ 
+ static struct ptp_pin_desc intel_pmc_tgpio_pin_config[] = {
+-	{					\
+-		.name	= "pin0",		\
+-		.index	= 0,			\
+-		.func	= PTP_PF_NONE,		\
+-		.chan	= 0,			\
++	{									\
++		.name	= "pin0",						\
++		.index	= 0,							\
++		.func	= PTP_PF_NONE,						\
++		.chan	= 0,							\
++		.flags	= PTP_PINDESC_INPUTDISABLE | PTP_PINDESC_COUNTVALID,	\
+ 	}
+ };
+ 
+@@ -152,79 +149,43 @@ static int intel_pmc_tgpio_settime64(struct ptp_clock_info *info,
+ 	return -EOPNOTSUPP;
+ }
+ 
+-static int intel_pmc_tgpio_event_thread(void *_tgpio)
+-{
+-	struct intel_pmc_tgpio	*tgpio = _tgpio;
+-	u64 reg;
+-
+-	while (!kthread_should_stop()) {
+-		bool input;
+-		int i;
+-
+-		mutex_lock(&tgpio->lock);
+-		input = tgpio->input;
+-		mutex_unlock(&tgpio->lock);
+-
+-		if (!input)
+-			schedule();
+-
+-		reg = intel_pmc_tgpio_readq(tgpio->base, TGPIOEC31_0);
+-		if (tgpio->prev_ec != reg) {
+-			struct ptp_clock_event event;
+-
+-			event.type = PTP_CLOCK_EXTTS;
+-			event.index = 0;
+-			event.timestamp = intel_pmc_tgpio_readq(tgpio->base,
+-					TGPIOTCV31_0);
+-
+-			ptp_clock_event(tgpio->clock, &event);
+-
+-			mutex_lock(&tgpio->lock);
+-			tgpio->prev_ec = reg;
+-			mutex_unlock(&tgpio->lock);
+-		}
+-		schedule_timeout_interruptible(10);
+-	}
+-
+-	return 0;
+-}
+-
+ static int intel_pmc_tgpio_config_input(struct intel_pmc_tgpio *tgpio,
+ 		struct ptp_extts_request *extts, int on)
+ {
+ 	u32			ctrl;
+-	bool			input;
+ 
+ 	ctrl = intel_pmc_tgpio_readl(tgpio->base, TGPIOCTL);
+ 	ctrl &= ~TGPIOCTL_EN;
+ 	intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
+ 
++	ctrl = intel_pmc_tgpio_readl(tgpio->base, TGPIOCTL);
+ 	if (on) {
+-		ctrl |= TGPIOCTL_DIR;
++		int rising_cap, falling_cap;
+ 
+-		if (extts->flags & PTP_RISING_EDGE &&
+-				extts->flags & PTP_FALLING_EDGE)
+-			ctrl |= TGPIOCTL_EP_TOGGLE_EDGE;
+-		else if (extts->flags & PTP_RISING_EDGE)
++		ctrl &= ~TGPIOCTL_EP;
++
++		rising_cap = extts->flags & PTP_RISING_EDGE;
++		falling_cap = extts->flags & PTP_FALLING_EDGE;
++
++		/* By default capture rising and falling edges */
++		if(rising_cap && !falling_cap)
+ 			ctrl |= TGPIOCTL_EP_RISING_EDGE;
+-		else if (extts->flags & PTP_FALLING_EDGE)
++		else if(!rising_cap && falling_cap)
+ 			ctrl |= TGPIOCTL_EP_FALLING_EDGE;
++		else
++			ctrl |= TGPIOCTL_EP_TOGGLE_EDGE;
++
++		ctrl |= TGPIOCTL_DIR;
+ 
+ 		/* gotta program all other bits before EN bit is set */
+ 		intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
++
+ 		ctrl |= TGPIOCTL_EN;
+-		input = true;
+ 	} else {
+-		ctrl &= ~(TGPIOCTL_DIR | TGPIOCTL_EN);
+-		input = false;
++		ctrl &= ~TGPIOCTL_EN;
+ 	}
+ 
+ 	intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
+-	tgpio->input = input;
+-	tgpio->prev_ec = 0;
+-
+-	if (input)
+-		wake_up_process(tgpio->event_thread);
+ 
+ 	return 0;
+ }
+@@ -232,30 +193,99 @@ static int intel_pmc_tgpio_config_input(struct intel_pmc_tgpio *tgpio,
+ #define ptp_clock_time_to_ts64(x) ((struct timespec64){.tv_sec = (x).sec, \
+ 						       .tv_nsec = (x).nsec})
+ 
++#define FREQ_CHANGE_WINDOW		((NSEC_PER_SEC/1000000)*200/*us*/)
++#define FREQ_CHANGE_PERIOD_THRESH	((NSEC_PER_SEC/1000)*20/*ms*/)
++
+ static int intel_pmc_tgpio_config_output(struct intel_pmc_tgpio *tgpio,
+ 		struct ptp_perout_request *perout, int on)
+ {
+ 	u32			ctrl;
+-	u64			art;
++	u64			new_start, new_period, tmp;
++	struct timespec64	ts_tmp;
++	struct timespec64	period;
++
++	/* These flags don't make sense together */
++	if(perout->flags & PTP_PEROUT_ONE_SHOT &&
++	   perout->flags & PTP_PEROUT_FREQ_ADJ)
++		return -EINVAL;
+ 
+ 	ctrl = intel_pmc_tgpio_readl(tgpio->base, TGPIOCTL);
+-	if (on) {
+-		struct timespec64 period = ptp_clock_time_to_ts64
+-			(perout->period);
+-		struct timespec64 start = ptp_clock_time_to_ts64
+-			(perout->start);
+-
+-		art = convert_tsc_ns_to_art(&start);
+-		intel_pmc_tgpio_writel(tgpio->base, TGPIOCOMPV63_32,
+-				art >> 32);
+-		intel_pmc_tgpio_writel(tgpio->base, TGPIOCOMPV31_0,
+-				art & 0xFFFFFFFF);
+-
+-		art = convert_tsc_ns_to_art(&period);
+-		intel_pmc_tgpio_writeq(tgpio->base, TGPIOPIV63_32,
+-				art >> 32);
+-		intel_pmc_tgpio_writeq(tgpio->base, TGPIOPIV31_0,
+-				art & 0xFFFFFFFF);
++
++	/* If there is a request to adjust frequency, check that the HW is
++	 * actually running: periodic mode enabled */
++	if (perout->flags & PTP_PEROUT_FREQ_ADJ &&
++	    !((ctrl & TGPIOCTL_EN) && (ctrl & TGPIOCTL_PM)))
++		return -EINVAL;
++
++	if (!(perout->flags & PTP_PEROUT_FREQ_ADJ)) {
++		ctrl &= ~TGPIOCTL_EN;
++		intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
++		ctrl = intel_pmc_tgpio_readl(tgpio->base, TGPIOCTL);
++	}
++
++	ts_tmp = ptp_clock_time_to_ts64(perout->start);
++	new_start = convert_tsc_ns_to_art(&ts_tmp);
++	ts_tmp = ptp_clock_time_to_ts64(perout->period);
++	new_period = convert_tsc_ns_to_art_duration(&ts_tmp);
++
++	if (perout->flags & PTP_PEROUT_FREQ_ADJ) {
++		tmp = intel_pmc_tgpio_readl(tgpio->base, TGPIOPIV63_32);
++		tmp <<= 32;
++		tmp |= intel_pmc_tgpio_readl(tgpio->base, TGPIOPIV31_0);
++		period = convert_art_to_tsc_ns_duration(tmp);
++	}
++
++	/* Since the period must be written in 2 32-bit words, make sure we
++	   don't write while the hardware is updating */
++	if (perout->flags & PTP_PEROUT_FREQ_ADJ &&
++	    timespec64_to_ktime(period) > FREQ_CHANGE_PERIOD_THRESH &&
++	    (intel_pmc_tgpio_readl(tgpio->base, TGPIOPIV63_32) ||
++	     new_period >> 32)) {
++		u64 start;
++		u32 start_lo1, start_lo2;
++		struct timespec64 start_tsc;
++		struct timespec64 tsc_now, tsc_tmp;
++		ktime_t diff;
++
++		tsc_tmp = get_tsc_ns_now(NULL);
++		start_lo2 =
++			intel_pmc_tgpio_readl(tgpio->base, TGPIOCOMPV31_0);
++		do {
++			tsc_now = tsc_tmp;
++			start_lo1 = start_lo2;
++			start = intel_pmc_tgpio_readl(tgpio->base,
++					TGPIOCOMPV63_32);
++			tsc_tmp = get_tsc_ns_now(NULL);
++			start_lo2 = intel_pmc_tgpio_readl(tgpio->base,
++					TGPIOCOMPV31_0);
++		} while (start_lo1 != start_lo2);
++		start <<= 32;
++		start |= start_lo1;
++
++		start_tsc = convert_art_to_tsc_ns(start);
++		diff = timespec64_to_ktime(timespec64_sub(start_tsc, tsc_now));
++		if(diff < FREQ_CHANGE_WINDOW)
++			return -EAGAIN;
++	}
++
++	if (on || perout->flags & PTP_PEROUT_ONE_SHOT) {
++		if (!(perout->flags & PTP_PEROUT_FREQ_ADJ)) {
++			intel_pmc_tgpio_writel(tgpio->base, TGPIOCOMPV31_0,
++					new_start & 0xFFFFFFFF);
++			intel_pmc_tgpio_writel(tgpio->base, TGPIOCOMPV63_32,
++					new_start >> 32);
++		}
++
++		if (!(perout->flags & PTP_PEROUT_ONE_SHOT)) {
++			intel_pmc_tgpio_writel(tgpio->base, TGPIOPIV31_0,
++					new_period & 0xFFFFFFFF);
++			intel_pmc_tgpio_writel(tgpio->base, TGPIOPIV63_32,
++					new_period >> 32);
++		}
++
++		/* We only use toggle edge */
++		ctrl &= ~TGPIOCTL_EP;
++		ctrl |= TGPIOCTL_EP_TOGGLE_EDGE;
+ 
+ 		ctrl &= ~TGPIOCTL_DIR;
+ 		if (perout->flags & PTP_PEROUT_ONE_SHOT)
+@@ -267,9 +297,11 @@ static int intel_pmc_tgpio_config_output(struct intel_pmc_tgpio *tgpio,
+ 		intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
+ 
+ 		ctrl |= TGPIOCTL_EN;
+-		intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
++
++		if (!(perout->flags & PTP_PEROUT_FREQ_ADJ))
++			intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
+ 	} else {
+-		ctrl &= ~(TGPIOCTL_EN | TGPIOCTL_PM);
++		ctrl &= ~(TGPIOCTL_PM | TGPIOCTL_EN);
+ 		intel_pmc_tgpio_writel(tgpio->base, TGPIOCTL, ctrl);
+ 	}
+ 
+@@ -317,29 +349,28 @@ static int intel_pmc_tgpio_getcrosststamp(struct ptp_clock_info *info,
+ 			NULL, cts);
+ }
+ 
++#define ts64_to_ptp_clock_time(x) ((struct ptp_clock_time){.sec = (x).tv_sec, \
++			.nsec = (x).tv_nsec})
++
+ static int intel_pmc_tgpio_counttstamp(struct ptp_clock_info *info,
+ 		struct ptp_event_count_tstamp *count)
+ {
+ 	struct intel_pmc_tgpio	*tgpio = to_intel_pmc_tgpio(info);
+-	u32 dt_hi_tmp;
+ 	u32 dt_hi;
+ 	u32 dt_lo;
++	struct timespec64 dt_ts;
+ 
+-	dt_hi_tmp = intel_pmc_tgpio_readl(tgpio->base, TGPIOTCV63_32);
++	/* Reading lower 32-bit word of Time Capture Value (TCV) loads */
++	/* the event time and event count capture */
+ 	dt_lo = intel_pmc_tgpio_readl(tgpio->base, TGPIOTCV31_0);
++	dt_hi = intel_pmc_tgpio_readl(tgpio->base, TGPIOTCV63_32);
++	dt_ts = convert_art_to_tsc_ns(((u64)dt_hi << 32) | dt_lo);
+ 
+ 	count->event_count = intel_pmc_tgpio_readl(tgpio->base, TGPIOECCV63_32);
+ 	count->event_count <<= 32;
+ 	count->event_count |= intel_pmc_tgpio_readl(tgpio->base, TGPIOECCV31_0);
+ 
+-	dt_hi = intel_pmc_tgpio_readl(tgpio->base, TGPIOTCV63_32);
+-
+-	if (dt_hi_tmp != dt_hi && dt_lo & 0x80000000)
+-		count->device_time.sec = dt_hi_tmp;
+-	else
+-		count->device_time.sec = dt_hi;
+-
+-	count->device_time.nsec = dt_lo;
++	count->device_time = ts64_to_ptp_clock_time(dt_ts);
+ 
+ 	return 0;
+ }
+@@ -399,17 +430,10 @@ static int intel_pmc_tgpio_probe(struct platform_device *pdev)
+ 	mutex_init(&tgpio->lock);
+ 	platform_set_drvdata(pdev, tgpio);
+ 
+-	tgpio->event_thread = kthread_create(intel_pmc_tgpio_event_thread,
+-			tgpio, dev_name(tgpio->dev));
+-	if (IS_ERR(tgpio->event_thread))
+-		return PTR_ERR(tgpio->event_thread);
+-
+ 	tgpio->clock = ptp_clock_register(&tgpio->info, &pdev->dev);
+ 	if (IS_ERR(tgpio->clock))
+ 		return PTR_ERR(tgpio->clock);
+ 
+-	wake_up_process(tgpio->event_thread);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
+index d16be5314cb3..fe6f9b79aed2 100644
+--- a/drivers/ptp/ptp_chardev.c
++++ b/drivers/ptp/ptp_chardev.c
+@@ -12,6 +12,7 @@
+ #include <linux/timekeeping.h>
+ 
+ #include <linux/nospec.h>
++#include <linux/string.h>
+ 
+ #include "ptp_private.h"
+ 
+@@ -106,6 +107,18 @@ int ptp_open(struct posix_clock *pc, fmode_t fmode)
+ 	return 0;
+ }
+ 
++/* Returns -1 if any reserved fields are non-zero */
++static inline int check_rsv_field(unsigned int *field, size_t size)
++{
++	unsigned int *iter;
++	int ret = 0;
++
++	for(iter = field; iter < field+size && ret == 0; ++iter)
++		ret = *field == 0 ? 0 : -1;
++
++	return ret;
++}
++
+ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
+ {
+ 	struct ptp_clock *ptp = container_of(pc, struct ptp_clock, clock);
+@@ -329,17 +342,12 @@ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
+ 			err = -EFAULT;
+ 			break;
+ 		}
+-		if ((pd.rsv[0] || pd.rsv[1] || pd.rsv[2]
+-				|| pd.rsv[3] || pd.rsv[4])
+-			&& cmd == PTP_PIN_GETFUNC2) {
++		if (check_rsv_field(pd.rsv, sizeof(pd.rsv)/sizeof(pd.rsv[0])
++				&& cmd == PTP_PIN_GETFUNC2)) {
+ 			err = -EINVAL;
+ 			break;
+ 		} else if (cmd == PTP_PIN_GETFUNC) {
+-			pd.rsv[0] = 0;
+-			pd.rsv[1] = 0;
+-			pd.rsv[2] = 0;
+-			pd.rsv[3] = 0;
+-			pd.rsv[4] = 0;
++			memset(pd.rsv, 0, sizeof(pd.rsv));
+ 		}
+ 		pin_index = pd.index;
+ 		if (pin_index >= ops->n_pins) {
+@@ -361,17 +369,12 @@ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
+ 			err = -EFAULT;
+ 			break;
+ 		}
+-		if ((pd.rsv[0] || pd.rsv[1] || pd.rsv[2]
+-				|| pd.rsv[3] || pd.rsv[4])
+-			&& cmd == PTP_PIN_SETFUNC2) {
++		if (check_rsv_field(pd.rsv, sizeof(pd.rsv)/sizeof(pd.rsv[0])
++				    && cmd == PTP_PIN_SETFUNC2)) {
+ 			err = -EINVAL;
+ 			break;
+ 		} else if (cmd == PTP_PIN_SETFUNC) {
+-			pd.rsv[0] = 0;
+-			pd.rsv[1] = 0;
+-			pd.rsv[2] = 0;
+-			pd.rsv[3] = 0;
+-			pd.rsv[4] = 0;
++			memset(pd.rsv, 0, sizeof(pd.rsv));
+ 		}
+ 		pin_index = pd.index;
+ 		if (pin_index >= ops->n_pins) {
+diff --git a/drivers/ptp/ptp_clock.c b/drivers/ptp/ptp_clock.c
+index e60eab7f8a61..9388a414d1b3 100644
+--- a/drivers/ptp/ptp_clock.c
++++ b/drivers/ptp/ptp_clock.c
+@@ -189,6 +189,18 @@ static void ptp_aux_kworker(struct kthread_work *work)
+ 		kthread_queue_delayed_work(ptp->kworker, &ptp->aux_work, delay);
+ }
+ 
++static bool check_for_readability(struct ptp_pin_desc *pin_desc, size_t size)
++{
++	int i;
++	unsigned flags = PTP_PINDESC_INPUTDISABLE;
++
++	for(i = 0; i < size; ++i ) {
++		flags &= pin_desc[i].flags;
++	}
++
++	return flags == 0;
++}
++
+ /* public interface */
+ 
+ struct ptp_clock *ptp_clock_register(struct ptp_clock_info *info,
+@@ -212,6 +224,8 @@ struct ptp_clock *ptp_clock_register(struct ptp_clock_info *info,
+ 		goto no_slot;
+ 	}
+ 
++	ptp->defunct = !check_for_readability(info->pin_config, info->n_pins);
++
+ 	ptp->clock.ops = ptp_clock_ops;
+ 	ptp->clock.release = delete_ptp_clock;
+ 	ptp->info = info;
+diff --git a/include/uapi/linux/ptp_clock.h b/include/uapi/linux/ptp_clock.h
+index 91721dbf1e4c..f6db6d4fe2a2 100644
+--- a/include/uapi/linux/ptp_clock.h
++++ b/include/uapi/linux/ptp_clock.h
+@@ -32,6 +32,18 @@
+ #define PTP_RISING_EDGE    (1<<1)
+ #define PTP_FALLING_EDGE   (1<<2)
+ 
++/*
++ * Bits of the ptp_pin_desc.flags field:
++ */
++#define PTP_PINDESC_INPUTDISABLE	(1<<0)
++#define PTP_PINDESC_COUNTVALID		(1<<1)
++
++/*
++ * Pin description flags (read only) for PTP_PIN_GETFUNC2
++ */
++#define PTP_PINDESC_VALID_FLAGS	(PTP_PINDESC_INPUTDISABLE |	\
++				 PTP_PINDESC_COUNTVALID)
++
+ /*
+  * flag fields valid for the new PTP_EXTTS_REQUEST2 ioctl.
+  */
+@@ -51,11 +63,13 @@
+  * Bits of the ptp_perout_request.flags field:
+  */
+ #define PTP_PEROUT_ONE_SHOT (1<<0)
++#define PTP_PEROUT_FREQ_ADJ (1<<1)
+ 
+ /*
+  * flag fields valid for the new PTP_PEROUT_REQUEST2 ioctl.
+  */
+-#define PTP_PEROUT_VALID_FLAGS	(PTP_PEROUT_ONE_SHOT)
++#define PTP_PEROUT_VALID_FLAGS	(PTP_PEROUT_ONE_SHOT |	\
++				 PTP_PEROUT_FREQ_ADJ)
+ 
+ /*
+  * No flags are valid for the original PTP_PEROUT_REQUEST ioctl
+@@ -173,10 +187,14 @@ struct ptp_pin_desc {
+ 	 * PTP_EXTTS_REQUEST and PTP_PEROUT_REQUEST ioctls.
+ 	 */
+ 	unsigned int chan;
++	/*
++	 * Per pin capability flag
++	 */
++	unsigned int flags;
+ 	/*
+ 	 * Reserved for future use.
+ 	 */
+-	unsigned int rsv[5];
++	unsigned int rsv[4];
+ };
+ 
+ #define PTP_CLK_MAGIC '='
+-- 
+2.21.0
+

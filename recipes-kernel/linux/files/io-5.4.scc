@@ -1,2 +1,3 @@
 patch io-5.4/0001-dma-dw-Disable-support-for-Elkhart-Lake-PSE-DMA.patch
 patch io-5.4/0001-serial-8250_dwlib-Reset-DE_POL-RE_POL-and-program-DE.patch
+patch io-5.4/0001-ptp-intel-tgpio-pmc-TGPIO-Driver-Fixes.patch
