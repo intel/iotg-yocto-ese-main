@@ -1,0 +1,40 @@
+From 0d43ca351adc4b9500299e1cb119e5012dd43562 Mon Sep 17 00:00:00 2001
+From: "Tan, Raymond" <raymond.tan@intel.com>
+Date: Thu, 28 Nov 2019 14:42:49 +0800
+Subject: [PATCH] ptp: Clear RIS after masking for interrupts
+
+Potential race condition where RIS set by HW due to input events prior to
+enabling the MIS, and when we enable MIS through MSC, there will be pending
+interrupts in RIS waiting to be cleared.
+Spec suggests we clear the corresponding RIS through ICR everytime we enable MIS,
+but we found out if we were to clear RIS before enabling MIS, the minimum
+input events interval is 1us.
+However, if we were to clear the RIS after we enable MIS, the input events interval
+is 200ns. To have better interval support of the input events, the following
+flow is to be used.
+
+Signed-off-by: Tan, Raymond <raymond.tan@intel.com>
+---
+ drivers/ptp/ptp-intel-tgpio.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/ptp/ptp-intel-tgpio.c b/drivers/ptp/ptp-intel-tgpio.c
+index 5d962eb..5f0a1ea 100644
+--- a/drivers/ptp/ptp-intel-tgpio.c
++++ b/drivers/ptp/ptp-intel-tgpio.c
+@@ -451,7 +451,12 @@ static irqreturn_t intel_tgpio_irq_thread(int irq, void *_tgpio)
+ 		ptp_clock_event(tgpio->clock, &event);
+ 	}
+ 
++	/*
++	 * Clear RIS (Raw Interrupt Status) after we mask the MIS for any
++	 * pending interrupts in RIS through ICR register.
++	 */
+ 	intel_tgpio_writel(tgpio->base, TGPIOMSC, tgpio->irq_mask);
++	intel_tgpio_writel(tgpio->base, TGPIOICR, tgpio->irq_mask);
+ 	spin_unlock(&tgpio->lock);
+ 
+ 	return IRQ_HANDLED;
+-- 
+2.7.4
+

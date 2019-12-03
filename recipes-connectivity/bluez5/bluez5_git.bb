@@ -80,4 +80,5 @@ NOINST_TOOLS_BT ?= " \
     ${@bb.utils.contains('PACKAGECONFIG', 'btpclient', 'tools/btpclient', '', d)} \
 "
 
-
+PACKAGES_append = " ${PN}-zsh-completion"
+FILES_${PN}-zsh-completion = "${datadir}/zsh/site-functions"

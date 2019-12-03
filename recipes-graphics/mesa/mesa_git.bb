@@ -9,8 +9,6 @@ require ./mesa_wa.inc
 
 inherit manpages update-alternatives
 
-DEPENDS += "xrandr"
-
 mesa_url ?= "git://gitlab.freedesktop.org/mesa/mesa;branch=master;protocol=https"
 ## Upstream free-destkop mesa master Mon Jun 10 14:23:34 2019 -0700
 mesa_srcrev ?= "608257cf82f49109c8f1a2bab1d6e30fa14f9ba7"
@@ -37,10 +35,10 @@ do_install_append() {
 
 # mesa driver settings (should be in mesa-megadriver)
 do_install_append() {
-	install -m 755 -d ${D}/etc/profile.d
+	install -m 755 -d ${D}${sysconfdir}/profile.d
 	if [ -n "${MESA_FORCE_DRIVER}" ]; then
-		echo 'export MESA_LOADER_DRIVER_OVERRIDE=${MESA_FORCE_DRIVER}' > ${D}/etc/profile.d/mesa_driver.sh
+		echo 'export MESA_LOADER_DRIVER_OVERRIDE=${MESA_FORCE_DRIVER}' > ${D}${sysconfdir}/profile.d/mesa_driver.sh
 	else
-		: > ${D}/etc/profile.d/mesa_driver.sh
+		: > ${D}${sysconfdir}/profile.d/mesa_driver.sh
 	fi
 }

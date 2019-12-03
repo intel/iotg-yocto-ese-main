@@ -12,7 +12,8 @@ SRC_URI = "\
 	file://0001-Fix-ITT-include-directory-path.patch \
 	file://0001-enable-10bit-render-support-in-wayland.patch \
         "
-SRCREV = "f87a709646f1af1aafcf8e5fe14baf01ddb39678"
+SRCREV = "170e8f96eab5ded2f5431b9ebcb18191c6ad9c27"
+PV = "19.3+git${SRCPV}"
 
 DEPENDS += "libdrm libva itt"
 

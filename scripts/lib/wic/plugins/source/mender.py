@@ -3,6 +3,8 @@ import logging
 import os
 import shutil
 import subprocess
+import time
+import datetime
 from distutils.dir_util import copy_tree
 
 from wic import WicError
@@ -32,10 +34,14 @@ class menderio_boot(SourcePlugin):
         grub_modules = "all_video boot blscfg btrfs cat configfile cryptodisk echo efi_netfs efifwsetup efinet ext2"
         grub_modules += " fat font gcry_rijndael gcry_rsa gcry_serpent gcry_sha256 gcry_twofish gcry_whirlpool gfxmenu gfxterm gzio halt hfsplus http increment iso9660 jpeg loadenv loopback linux lvm lsefi lsefimmap"
         grub_modules += " mdraid09 mdraid1x minicmd net normal part_apple part_msdos part_gpt password_pbkdf2 png reboot search search_fs_uuid search_fs_file"
-        grub_modules += " search_label serial sleep syslinuxcfg test tftp verify version video xfs"
+        grub_modules += " search_label serial sleep syslinuxcfg test tftp version video xfs"
         grub_modules += " backtrace chain usb usbserial_common usbserial_pl2303 usbserial_ftdi usbserial_usbdebug"
         grub_modules += " hashsum"
         grub_modules += " cpio newc f2fs squash4 efienv memdisk eval"
+        # Removed in 2.04
+        # grub_modules += " verify"
+        # New in 2.04
+        grub_modules += " shim_lock tpm"
 
         libdir = get_bitbake_var("STAGING_LIBDIR")
         if not libdir:
@@ -224,6 +230,8 @@ fi
     eval kernelroot=('${'rootfs${mender_boot_part}'}')
 """
 
+        # build date
+        build_date = "echo 'Image built on %u (%s)'\n" % (time.time(), datetime.datetime.utcnow())
         # menu entries
         grubefi_conf += "menuentry 'boot %s' {\n" % source_params['boot_name']
 
@@ -239,6 +247,7 @@ fi
         if initrd:
             grubefi_conf += "  echo 'Loading initial ramdisk %s'\n" % initrd
             grubefi_conf += "  initrdefi ${kernelroot}/boot/%s\n" % initrd
+            grubefi_conf += build_date
 
         grubefi_conf += "}\n"
 
@@ -256,6 +265,7 @@ fi
                 if initrd_spec:
                     grubefi_conf += "  echo 'Loading initial ramdisk %s'\n" % initrd_spec
                     grubefi_conf += "  initrdefi ${kernelroot}/boot/%s\n" % initrd_spec
+                    grubefi_conf += build_date
                 grubefi_conf += "}\n"
 
         # fwsetup

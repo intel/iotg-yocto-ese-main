@@ -38,3 +38,8 @@ genpref(){
 	${genpref_cmdline} src/genpref > src/preferences
 	cd -
 }
+
+ALTERNATIVE_${PN} = "x-session-manager"
+ALTERNATIVE_TARGET[x-session-manager] = "${bindir}/icewm-session"
+ALTERNATIVE_PRIORITY = "200"
+inherit update-alternatives

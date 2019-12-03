@@ -27,12 +27,6 @@ do_patch_append(){
 	fi
 }
 
-# add patch for ethernet
-SRC_URI_append = " file://ethernet-5.4.scc"
-
-# add patch for audio
-SRC_URI_append = " file://audio-5.4.scc"
-
 # resctrl patches for 5.4
 SRC_URI_append = " file://resctrl-5.4.scc"
 
@@ -47,3 +41,9 @@ SRC_URI_append = " file://isi-5.4.scc"
 
 # camera from 5.3
 SRC_URI_append = " file://camera-5.4.scc"
+
+# add patch for io-mmu
+SRC_URI_append = " file://iommu-5.4.scc"
+
+# audio patches
+SRC_URI_append = " file://audio-5.4.scc"

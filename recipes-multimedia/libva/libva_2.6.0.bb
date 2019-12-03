@@ -19,7 +19,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=2e48940f94acb0af582e5ef03537800f"
 
 SRC_URI = "git://github.com/01org/libva.git;protocol=https;nobranch=1"
 
-SRCREV = "95eb8cf469367b532b391042fa0e77ca513ac94e"
+SRCREV = "09c8c2e20b7763fc44299172dbb16061b57f9c71"
 
 DEPENDS = "libdrm virtual/mesa virtual/libgles1 virtual/libgles2 virtual/egl wayland-native"
 
@@ -46,3 +46,5 @@ FILES_${PN}-tpi =+ "${libdir}/libva-tpi*${SOLIBS}"
 FILES_${PN}-glx =+ "${libdir}/libva-glx*${SOLIBS}"
 FILES_${PN}-egl =+ "${libdir}/libva-egl*${SOLIBS}"
 FILES_${PN}-wayland =+ "${libdir}/libva-wayland*${SOLIBS}"
+
+BBCLASSEXTEND = "native"

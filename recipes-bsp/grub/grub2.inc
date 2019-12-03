@@ -251,11 +251,11 @@ EXTRA_OECONF = "--with-platform=${GRUBPLATFORM} \
                 --disable-werror \
                 --with-utils=host \
 		"HOST_CFLAGS=${BUILD_CFLAGS}" \
-		"HOST_CPPFLAGS=-I{B}" \
+		"HOST_CPPFLAGS=-I${B}" \
 		"HOST_LDFLAGS=${BUILD_LDFLAGS}" \
 		"TARGET_CFLAGS=${CFLAGS}" \
-		"TARGET_CPPFLAGS=-I{B}" \
-		"TARGET_LDFLAGS=-I{LDFLAGS}" \
+		"TARGET_CPPFLAGS=-I${B}" \
+		"TARGET_LDFLAGS=${LDFLAGS}" \
 "
 
 PACKAGECONFIG ??= ""

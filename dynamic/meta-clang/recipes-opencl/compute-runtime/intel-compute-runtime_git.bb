@@ -20,7 +20,7 @@ PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"
 
-DEPENDS += " intel-graphics-compiler intel-graphics-compiler-native intel-compute-runtime-native gmmlib clang"
+DEPENDS += " intel-graphics-compiler intel-graphics-compiler-native intel-compute-runtime-native gmmlib clang libva"
 RDEPENDS_${PN} += " intel-graphics-compiler gmmlib ( >= 19.3.2 )"
 
 inherit cmake pkgconfig
