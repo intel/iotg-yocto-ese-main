@@ -1,5 +1,4 @@
 #!/bin/sh
-# Copyright (C) 2011 O.S. Systems Software LTDA.
 # Licensed on MIT
 
 udevd --daemon
@@ -33,42 +32,6 @@ wait_file() {
     fi
 }
 
-find_part_nofatal=""
-find_part() {
-    name="$1"
-    hint="$(grep ${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
-    if [ -z "find_part_nofatal" -a -z "${hint}" ]; then
-        say "Cannot find ${name}"
-        fail
-    fi
-
-    type="$( echo "${hint}" | cut -d= -f1 )"
-    value="$( echo "${hint}" | cut -d= -f2 )"
-
-    if [ "${type}" == "LABEL" ]; then
-        echo "/dev/disk/by-label/${value}"
-        return
-    fi
-
-    if [ "${type}" == "PARTLABEL" ]; then
-        echo "/dev/disk/by-partlabel/${value}"
-        return
-    fi
-
-    if [ "${type}" == "PARTUUID" ]; then
-        echo "/dev/disk/by-partuuid/${value}"
-        return
-    fi
-
-    if [ "${type}" == "UUID" ]; then
-        echo "/dev/disk/by-uuid/${value}"
-        return
-    fi
-
-    # unknown?
-    echo "${hint}"
-}
-
 check_mount() {
     source="$1"
     wait_file "$1"
@@ -89,7 +52,7 @@ data_enabled() {
 data_run() {
     realroot="${ROOTFS_DIR}"
     # mount data partition
-    data_part="$( find_part mender.data )"
+    data_part="/dev/disk/by-partlabel/data"
     check_mount "${data_part}" "${realroot}/data" -o rw || fail
     say "data done"
 

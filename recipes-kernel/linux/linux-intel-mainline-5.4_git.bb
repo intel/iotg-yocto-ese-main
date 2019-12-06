@@ -47,3 +47,6 @@ SRC_URI_append = " file://iommu-5.4.scc"
 
 # audio patches
 SRC_URI_append = " file://audio-5.4.scc"
+
+# ethernet patches
+SRC_URI_append = " file://ethernet-5.4.scc"

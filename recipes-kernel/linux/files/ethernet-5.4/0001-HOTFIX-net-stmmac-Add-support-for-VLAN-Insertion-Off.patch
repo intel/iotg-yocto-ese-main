@@ -1,0 +1,35 @@
+From 26b24f5c6bea11d032776b578bea5106eec5f7d1 Mon Sep 17 00:00:00 2001
+From: "Tan, Tee Min" <tee.min.tan@intel.com>
+Date: Thu, 21 Nov 2019 10:19:42 +0800
+Subject: [PATCH 1/9] HOTFIX: net: stmmac: Add support for VLAN Insertion
+ Offload in GMAC5
+
+Expand dwmac5_desc_ops with .set_sarc, .set_vlan_tag and .set_vlan
+that introduced recently in Mainline for dwmac4_desc_ops.
+
+This patch eventually will squash to: ("net: stmmac: introduce
+Enhanced Tx Descriptor for Time-Based Scheduling")
+
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
+Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c b/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c
+index 7b8f93c0ff06..68d6ca41d276 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c
+@@ -630,6 +630,9 @@ const struct stmmac_desc_ops dwmac5_desc_ops = {
+ 	.get_addr = dwmac4_get_addr,
+ 	.set_addr = dwmac4_set_addr,
+ 	.clear = dwmac4_clear,
++	.set_sarc = dwmac4_set_sarc,
++	.set_vlan_tag = dwmac4_set_vlan_tag,
++	.set_vlan = dwmac4_set_vlan,
+ };
+ 
+ const struct stmmac_mode_ops dwmac4_ring_mode_ops = {
+-- 
+2.20.1
+

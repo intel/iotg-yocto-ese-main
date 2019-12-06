@@ -284,3 +284,7 @@ do_llvm_fixup(){
 		done
 	fi
 }
+
+GALLIUMDRIVERS_append_x86 = ",virgl,iris"
+GALLIUMDRIVERS_append_x86-64 = ",virgl,iris"
+
