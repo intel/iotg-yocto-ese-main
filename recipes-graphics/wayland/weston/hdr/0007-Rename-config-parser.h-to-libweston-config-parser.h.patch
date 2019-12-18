@@ -1,0 +1,264 @@
+From d1449ae0f57df89fa7811622b3edf9b34387dcae Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Thu, 4 Apr 2019 14:27:31 +0300
+Subject: [PATCH 07/45] Rename config-parser.h to libweston/config-parser.h
+
+It is a public installed header used by libweston.h.
+
+See "Rename compositor.h to libweston/libweston.h" for rationale.
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ clients/desktop-shell.c                       | 2 +-
+ clients/editor.c                              | 2 +-
+ clients/ivi-shell-user-interface.c            | 2 +-
+ clients/terminal.c                            | 2 +-
+ clients/window.h                              | 2 +-
+ desktop-shell/shell.c                         | 2 +-
+ {shared => include/libweston}/config-parser.h | 0
+ include/libweston/libweston.h                 | 2 +-
+ include/libweston/meson.build                 | 1 +
+ libweston/compositor-x11.c                    | 1 -
+ libweston/meson.build                         | 1 -
+ shared/cairo-util.c                           | 4 ++--
+ shared/config-parser.c                        | 2 +-
+ shared/meson.build                            | 2 +-
+ shared/option-parser.c                        | 2 +-
+ tests/config-parser-test.c                    | 2 +-
+ tests/weston-test-desktop-shell.c             | 2 +-
+ tools/zunitc/src/zunitc_impl.c                | 2 +-
+ 18 files changed, 16 insertions(+), 17 deletions(-)
+ rename {shared => include/libweston}/config-parser.h (100%)
+
+diff --git a/clients/desktop-shell.c b/clients/desktop-shell.c
+index 0dc0f0ba..8e4fae94 100644
+--- a/clients/desktop-shell.c
++++ b/clients/desktop-shell.c
+@@ -43,7 +43,7 @@
+ #include <wayland-client.h>
+ #include "window.h"
+ #include "shared/cairo-util.h"
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/xalloc.h"
+ #include "shared/zalloc.h"
+diff --git a/clients/editor.c b/clients/editor.c
+index 8f9eb632..03e6b491 100644
+--- a/clients/editor.c
++++ b/clients/editor.c
+@@ -38,7 +38,7 @@
+ 
+ #include <pango/pangocairo.h>
+ 
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/xalloc.h"
+ #include "window.h"
+diff --git a/clients/ivi-shell-user-interface.c b/clients/ivi-shell-user-interface.c
+index a38d6af8..44baa542 100644
+--- a/clients/ivi-shell-user-interface.c
++++ b/clients/ivi-shell-user-interface.c
+@@ -38,7 +38,7 @@
+ #include <wayland-cursor.h>
+ #include <wayland-client-protocol.h>
+ #include "shared/cairo-util.h"
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/os-compatibility.h"
+ #include "shared/xalloc.h"
+diff --git a/clients/terminal.c b/clients/terminal.c
+index ebc5bbe2..f7546ede 100644
+--- a/clients/terminal.c
++++ b/clients/terminal.c
+@@ -44,7 +44,7 @@
+ 
+ #include <wayland-client.h>
+ 
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/xalloc.h"
+ #include "window.h"
+diff --git a/clients/window.h b/clients/window.h
+index fde5c2f0..03a1fe67 100644
+--- a/clients/window.h
++++ b/clients/window.h
+@@ -31,7 +31,7 @@
+ #include <xkbcommon/xkbcommon.h>
+ #include <wayland-client.h>
+ #include <cairo.h>
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/zalloc.h"
+ #include "shared/platform.h"
+ 
+diff --git a/desktop-shell/shell.c b/desktop-shell/shell.c
+index 93b1c70b..270c9543 100644
+--- a/desktop-shell/shell.c
++++ b/desktop-shell/shell.c
+@@ -39,7 +39,7 @@
+ #include "shell.h"
+ #include "compositor/weston.h"
+ #include "weston-desktop-shell-server-protocol.h"
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+ #include "libweston-desktop/libweston-desktop.h"
+diff --git a/shared/config-parser.h b/include/libweston/config-parser.h
+similarity index 100%
+rename from shared/config-parser.h
+rename to include/libweston/config-parser.h
+diff --git a/include/libweston/libweston.h b/include/libweston/libweston.h
+index e4ebc71d..7632382c 100644
+--- a/include/libweston/libweston.h
++++ b/include/libweston/libweston.h
+@@ -42,7 +42,7 @@ extern "C" {
+ #include <wayland-server.h>
+ 
+ #include <libweston/matrix.h>
+-#include "config-parser.h"
++#include <libweston/config-parser.h>
+ #include "zalloc.h"
+ #include <libweston/timeline-object.h>
+ 
+diff --git a/include/libweston/meson.build b/include/libweston/meson.build
+index e631e1d1..659e135b 100644
+--- a/include/libweston/meson.build
++++ b/include/libweston/meson.build
+@@ -1,4 +1,5 @@
+ install_headers(
++	'config-parser.h',
+ 	'libweston.h',
+ 	'matrix.h',
+ 	'plugin-registry.h',
+diff --git a/libweston/compositor-x11.c b/libweston/compositor-x11.c
+index a62fe80c..3fdeb114 100644
+--- a/libweston/compositor-x11.c
++++ b/libweston/compositor-x11.c
+@@ -52,7 +52,6 @@
+ 
+ #include <libweston/libweston.h>
+ #include <libweston/backend-x11.h>
+-#include "shared/config-parser.h"
+ #include "shared/helpers.h"
+ #include "shared/image-loader.h"
+ #include "shared/timespec-util.h"
+diff --git a/libweston/meson.build b/libweston/meson.build
+index f508bd90..07d76f22 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -57,7 +57,6 @@ srcs_libweston = [
+ ]
+ 
+ install_headers(
+-	'../shared/config-parser.h',
+ 	'../shared/zalloc.h',
+ 	subdir: dir_include_libweston
+ )
+diff --git a/shared/cairo-util.c b/shared/cairo-util.c
+index d71e0ed4..8507b4cb 100644
+--- a/shared/cairo-util.c
++++ b/shared/cairo-util.c
+@@ -37,7 +37,7 @@
+ 
+ #include "shared/helpers.h"
+ #include "image-loader.h"
+-#include "config-parser.h"
++#include <libweston/config-parser.h>
+ 
+ #ifdef HAVE_PANGO
+ #include <pango/pangocairo.h>
+@@ -541,7 +541,7 @@ theme_render_frame(struct theme *t,
+ 		text_height = logical.height;
+ 		if (text_width < logical.width)
+ 		  pango_layout_set_width (title_layout, text_width * PANGO_SCALE);
+-		
++
+ #else
+ 		cairo_text_extents_t extents;
+ 		cairo_font_extents_t font_extents;
+diff --git a/shared/config-parser.c b/shared/config-parser.c
+index 35f09f00..297b0f70 100644
+--- a/shared/config-parser.c
++++ b/shared/config-parser.c
+@@ -39,7 +39,7 @@
+ #include <errno.h>
+ 
+ #include <wayland-util.h>
+-#include "config-parser.h"
++#include <libweston/config-parser.h>
+ #include "helpers.h"
+ #include "string-helpers.h"
+ 
+diff --git a/shared/meson.build b/shared/meson.build
+index c3fd932a..eb897c10 100644
+--- a/shared/meson.build
++++ b/shared/meson.build
+@@ -10,7 +10,7 @@ deps_libshared = dep_wayland_client
+ lib_libshared = static_library(
+ 	'shared',
+ 	srcs_libshared,
+-	include_directories: include_directories('..'),
++	include_directories: [ include_directories('..'), public_inc ],
+ 	dependencies: deps_libshared,
+ 	pic: true,
+ 	install: false
+diff --git a/shared/option-parser.c b/shared/option-parser.c
+index 0f93464c..795195f5 100644
+--- a/shared/option-parser.c
++++ b/shared/option-parser.c
+@@ -33,7 +33,7 @@
+ #include <assert.h>
+ #include <errno.h>
+ 
+-#include "config-parser.h"
++#include <libweston/config-parser.h>
+ #include "string-helpers.h"
+ 
+ static bool
+diff --git a/tests/config-parser-test.c b/tests/config-parser-test.c
+index 1cdffffc..44ee7359 100644
+--- a/tests/config-parser-test.c
++++ b/tests/config-parser-test.c
+@@ -33,7 +33,7 @@
+ #include <errno.h>
+ #include <unistd.h>
+ 
+-#include "config-parser.h"
++#include <libweston/config-parser.h>
+ 
+ #include "shared/helpers.h"
+ #include "zunitc/zunitc.h"
+diff --git a/tests/weston-test-desktop-shell.c b/tests/weston-test-desktop-shell.c
+index c780316d..b580ffd6 100644
+--- a/tests/weston-test-desktop-shell.c
++++ b/tests/weston-test-desktop-shell.c
+@@ -37,7 +37,7 @@
+ #include <sys/types.h>
+ 
+ #include "compositor/weston.h"
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "libweston-desktop/libweston-desktop.h"
+ 
+diff --git a/tools/zunitc/src/zunitc_impl.c b/tools/zunitc/src/zunitc_impl.c
+index 58a5b174..72f08df6 100644
+--- a/tools/zunitc/src/zunitc_impl.c
++++ b/tools/zunitc/src/zunitc_impl.c
+@@ -46,7 +46,7 @@
+ #include "zuc_event_listener.h"
+ #include "zuc_junit_reporter.h"
+ 
+-#include "shared/config-parser.h"
++#include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/zalloc.h"
+ 
+-- 
+2.21.0
+

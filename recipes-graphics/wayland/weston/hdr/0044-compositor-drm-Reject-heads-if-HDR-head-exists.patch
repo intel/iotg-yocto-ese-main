@@ -1,0 +1,44 @@
+From 8b99c63826f1862a4e88d635ac51fd7b379bd323 Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harish.krupo.kps@intel.com>
+Date: Tue, 23 Apr 2019 10:05:17 +0530
+Subject: [PATCH 44/45] compositor-drm: Reject heads if HDR head exists
+
+Don't attach a head to an output which has a head with HDR capabilities.
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+---
+ libweston/compositor-drm.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/libweston/compositor-drm.c b/libweston/compositor-drm.c
+index b4eb8289..37c8b829 100644
+--- a/libweston/compositor-drm.c
++++ b/libweston/compositor-drm.c
+@@ -5893,6 +5893,7 @@ drm_output_attach_head(struct weston_output *output_base,
+ 		       struct weston_head *head_base)
+ {
+ 	struct drm_backend *b = to_drm_backend(output_base->compositor);
++	struct drm_head *head = NULL;
+ 
+ 	if (wl_list_length(&output_base->head_list) >= MAX_CLONED_CONNECTORS)
+ 		return -1;
+@@ -5900,6 +5901,16 @@ drm_output_attach_head(struct weston_output *output_base,
+ 	if (!output_base->enabled)
+ 		return 0;
+ 
++	/* If we already have a head attached to this output and if the head has
++	 * HDR capabilities, then don't attach any other head */
++
++	if (wl_list_length(&output_base->head_list) == 1) {
++		head = to_drm_head(container_of(output_base->head_list.next,
++						struct weston_head, output_link));
++		if (head->hdr_md)
++			return -1;
++	}
++
+ 	/* XXX: ensure the configuration will work.
+ 	 * This is actually impossible without major infrastructure
+ 	 * work. */
+-- 
+2.21.0
+

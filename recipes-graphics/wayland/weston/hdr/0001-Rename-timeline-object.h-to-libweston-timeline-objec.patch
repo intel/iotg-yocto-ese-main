@@ -1,0 +1,130 @@
+From 6657734b79c7750687f47a12f80c1bf54d7553a3 Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Thu, 28 Mar 2019 16:35:56 +0200
+Subject: [PATCH 01/45] Rename timeline-object.h to libweston/timeline-object.h
+
+This patch sets up the stage for similarly renaming compositor.h which will
+justify this. That patch will be big, so moving timeline-object.h first makes
+it easy to see the changes to the build and install directives.
+
+This and all the following moves essentially break the API, so libweston major
+is bumped.
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ include/libweston/meson.build                      | 4 ++++
+ {libweston => include/libweston}/timeline-object.h | 0
+ include/meson.build                                | 1 +
+ libweston/compositor.h                             | 2 +-
+ libweston/meson.build                              | 5 ++---
+ meson.build                                        | 6 +++++-
+ 6 files changed, 13 insertions(+), 5 deletions(-)
+ create mode 100644 include/libweston/meson.build
+ rename {libweston => include/libweston}/timeline-object.h (100%)
+ create mode 100644 include/meson.build
+
+diff --git a/include/libweston/meson.build b/include/libweston/meson.build
+new file mode 100644
+index 00000000..5cc7bc5b
+--- /dev/null
++++ b/include/libweston/meson.build
+@@ -0,0 +1,4 @@
++install_headers(
++	'timeline-object.h',
++	subdir: dir_include_libweston_install
++)
+diff --git a/libweston/timeline-object.h b/include/libweston/timeline-object.h
+similarity index 100%
+rename from libweston/timeline-object.h
+rename to include/libweston/timeline-object.h
+diff --git a/include/meson.build b/include/meson.build
+new file mode 100644
+index 00000000..ef8298fb
+--- /dev/null
++++ b/include/meson.build
+@@ -0,0 +1 @@
++subdir('libweston')
+diff --git a/libweston/compositor.h b/libweston/compositor.h
+index a5223c28..16ad495b 100644
+--- a/libweston/compositor.h
++++ b/libweston/compositor.h
+@@ -44,7 +44,7 @@ extern "C" {
+ #include "matrix.h"
+ #include "config-parser.h"
+ #include "zalloc.h"
+-#include "timeline-object.h"
++#include <libweston/timeline-object.h>
+ 
+ struct weston_geometry {
+ 	int32_t x, y;
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 33ab970e..34141ed2 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -59,7 +59,6 @@ srcs_libweston = [
+ install_headers(
+ 	'compositor.h',
+ 	'plugin-registry.h',
+-	'timeline-object.h',
+ 	'windowed-output-api.h',
+ 	'../shared/config-parser.h',
+ 	'../shared/matrix.h',
+@@ -78,7 +77,7 @@ endif
+ lib_weston = shared_library(
+ 	'weston-@0@'.format(libweston_major),
+ 	srcs_libweston,
+-	include_directories: include_directories('..', '../shared'),
++	include_directories: [ include_directories('..', '../shared'), public_inc ],
+ 	link_args: [ '-export-dynamic' ],
+ 	install: true,
+ 	version: '0.0.@0@'.format(libweston_revision),
+@@ -88,7 +87,7 @@ lib_weston = shared_library(
+ 
+ dep_libweston = declare_dependency(
+ 	link_with: lib_weston,
+-	include_directories: include_directories('.'),
++	include_directories: [ include_directories('.'), public_inc ],
+ 	dependencies: deps_libweston
+ )
+ 
+diff --git a/meson.build b/meson.build
+index 2155b7b1..ab54bf70 100644
+--- a/meson.build
++++ b/meson.build
+@@ -10,7 +10,7 @@ project('weston',
+ 	license: 'MIT/Expat',
+ )
+ 
+-libweston_major = 6
++libweston_major = 7
+ 
+ # libweston_revision is manufactured to follow the autotools build's
+ # library file naming, thanks to libtool
+@@ -32,6 +32,7 @@ dir_bin = join_paths(dir_prefix, get_option('bindir'))
+ dir_data = join_paths(dir_prefix, get_option('datadir'))
+ dir_include = join_paths(dir_prefix, get_option('includedir'))
+ dir_include_libweston = 'libweston-@0@'.format(libweston_major)
++dir_include_libweston_install = join_paths(dir_include_libweston, 'libweston')
+ dir_lib = join_paths(dir_prefix, get_option('libdir'))
+ dir_libexec = join_paths(dir_prefix, get_option('libexecdir'))
+ dir_module_weston = join_paths(dir_lib, 'weston')
+@@ -41,6 +42,8 @@ dir_lib_pc = join_paths(dir_lib, 'pkgconfig')
+ dir_man = join_paths(dir_prefix, get_option('mandir'))
+ dir_protocol_libweston = 'weston/protocols' # XXX: this should be 'libweston'
+ 
++public_inc = include_directories('include')
++
+ pkgconfig = import('pkgconfig')
+ 
+ libweston_version_h = configuration_data()
+@@ -150,6 +153,7 @@ dep_libdrm = dependency('libdrm', version: '>= 2.4.68')
+ dep_libdrm_headers = dep_libdrm.partial_dependency(compile_args: true)
+ dep_threads = dependency('threads')
+ 
++subdir('include')
+ subdir('protocol')
+ subdir('shared')
+ subdir('libweston')
+-- 
+2.21.0
+

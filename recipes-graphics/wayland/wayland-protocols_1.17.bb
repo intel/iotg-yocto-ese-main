@@ -20,3 +20,9 @@ inherit allarch autotools pkgconfig
 
 PACKAGES = "${PN}"
 FILES_${PN} += "${datadir}/pkgconfig/wayland-protocols.pc"
+
+SRC_URI_append = " \
+  file://0001-hdr-metadata-Add-protocol-for-static-HDR-metadata.patch \
+  file://0002-colorspace-Add-protocol-for-setting-surface-s-colors.patch \
+"
+

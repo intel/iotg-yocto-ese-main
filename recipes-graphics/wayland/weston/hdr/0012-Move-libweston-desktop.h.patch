@@ -1,0 +1,217 @@
+From be78ea568bc268d2dee04af28c354b486ae96494 Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Thu, 4 Apr 2019 16:02:14 +0300
+Subject: [PATCH 12/45] Move libweston-desktop.h
+
+This too is a public installed header.
+
+The public headers are moved under a new top-level directory include/ to make
+them clearly stand out as special (public API).
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ desktop-shell/shell.c                                        | 2 +-
+ .../libweston-desktop}/libweston-desktop.h                   | 0
+ include/meson.build                                          | 5 +++++
+ ivi-shell/ivi-layout-private.h                               | 2 +-
+ ivi-shell/ivi-shell.h                                        | 2 +-
+ libweston-desktop/client.c                                   | 2 +-
+ libweston-desktop/libweston-desktop.c                        | 2 +-
+ libweston-desktop/meson.build                                | 2 --
+ libweston-desktop/seat.c                                     | 2 +-
+ libweston-desktop/surface.c                                  | 2 +-
+ libweston-desktop/wl-shell.c                                 | 2 +-
+ libweston-desktop/xdg-shell-v6.c                             | 2 +-
+ libweston-desktop/xdg-shell.c                                | 2 +-
+ libweston-desktop/xwayland.c                                 | 2 +-
+ tests/weston-test-desktop-shell.c                            | 2 +-
+ 15 files changed, 17 insertions(+), 14 deletions(-)
+ rename {libweston-desktop => include/libweston-desktop}/libweston-desktop.h (100%)
+
+diff --git a/desktop-shell/shell.c b/desktop-shell/shell.c
+index 270c9543..33fda6d0 100644
+--- a/desktop-shell/shell.c
++++ b/desktop-shell/shell.c
+@@ -42,7 +42,7 @@
+ #include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+-#include "libweston-desktop/libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ 
+ #define DEFAULT_NUM_WORKSPACES 1
+ #define DEFAULT_WORKSPACE_CHANGE_ANIMATION_LENGTH 200
+diff --git a/libweston-desktop/libweston-desktop.h b/include/libweston-desktop/libweston-desktop.h
+similarity index 100%
+rename from libweston-desktop/libweston-desktop.h
+rename to include/libweston-desktop/libweston-desktop.h
+diff --git a/include/meson.build b/include/meson.build
+index ef8298fb..1ea6dd3d 100644
+--- a/include/meson.build
++++ b/include/meson.build
+@@ -1 +1,6 @@
+ subdir('libweston')
++
++install_headers(
++	'libweston-desktop/libweston-desktop.h',
++	subdir: join_paths(dir_include_libweston, 'libweston-desktop')
++)
+diff --git a/ivi-shell/ivi-layout-private.h b/ivi-shell/ivi-layout-private.h
+index 4b6cd6a3..1898a177 100644
+--- a/ivi-shell/ivi-layout-private.h
++++ b/ivi-shell/ivi-layout-private.h
+@@ -30,7 +30,7 @@
+ 
+ #include <libweston/libweston.h>
+ #include "ivi-layout-export.h"
+-#include "libweston-desktop/libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ 
+ struct ivi_layout_view {
+ 	struct wl_list link;	/* ivi_layout::view_list */
+diff --git a/ivi-shell/ivi-shell.h b/ivi-shell/ivi-shell.h
+index 8762113b..d7f1cdbd 100644
+--- a/ivi-shell/ivi-shell.h
++++ b/ivi-shell/ivi-shell.h
+@@ -30,7 +30,7 @@
+ #include <stdint.h>
+ 
+ #include <libweston/libweston.h>
+-#include "libweston-desktop/libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ 
+ struct ivi_shell
+ {
+diff --git a/libweston-desktop/client.c b/libweston-desktop/client.c
+index 8188d333..56413f71 100644
+--- a/libweston-desktop/client.c
++++ b/libweston-desktop/client.c
+@@ -28,7 +28,7 @@
+ #include <libweston/libweston.h>
+ #include <libweston/zalloc.h>
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ 
+ struct weston_desktop_client {
+diff --git a/libweston-desktop/libweston-desktop.c b/libweston-desktop/libweston-desktop.c
+index decce52a..5d0a4a79 100644
+--- a/libweston-desktop/libweston-desktop.c
++++ b/libweston-desktop/libweston-desktop.c
+@@ -32,7 +32,7 @@
+ #include <libweston/zalloc.h>
+ #include "helpers.h"
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ 
+ 
+diff --git a/libweston-desktop/meson.build b/libweston-desktop/meson.build
+index 837d4edd..455f17b3 100644
+--- a/libweston-desktop/meson.build
++++ b/libweston-desktop/meson.build
+@@ -25,8 +25,6 @@ dep_lib_desktop = declare_dependency(
+ 	dependencies: dep_libweston
+ )
+ 
+-install_headers('libweston-desktop.h', subdir: dir_include_libweston)
+-
+ pkgconfig.generate(
+ 	lib_desktop,
+ 	filebase: 'libweston-desktop-@0@'.format(libweston_major),
+diff --git a/libweston-desktop/seat.c b/libweston-desktop/seat.c
+index 0c5b50da..b92546df 100644
+--- a/libweston-desktop/seat.c
++++ b/libweston-desktop/seat.c
+@@ -33,7 +33,7 @@
+ #include <libweston/libweston.h>
+ #include <libweston/zalloc.h>
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ #include "shared/timespec-util.h"
+ 
+diff --git a/libweston-desktop/surface.c b/libweston-desktop/surface.c
+index 09b4176b..433f08ae 100644
+--- a/libweston-desktop/surface.c
++++ b/libweston-desktop/surface.c
+@@ -31,7 +31,7 @@
+ #include <libweston/libweston.h>
+ #include <libweston/zalloc.h>
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ 
+ struct weston_desktop_view {
+diff --git a/libweston-desktop/wl-shell.c b/libweston-desktop/wl-shell.c
+index 6361097e..9efec89b 100644
+--- a/libweston-desktop/wl-shell.c
++++ b/libweston-desktop/wl-shell.c
+@@ -33,7 +33,7 @@
+ #include <libweston/libweston.h>
+ #include <libweston/zalloc.h>
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ 
+ #define WD_WL_SHELL_PROTOCOL_VERSION 1
+diff --git a/libweston-desktop/xdg-shell-v6.c b/libweston-desktop/xdg-shell-v6.c
+index 383867a0..955fccad 100644
+--- a/libweston-desktop/xdg-shell-v6.c
++++ b/libweston-desktop/xdg-shell-v6.c
+@@ -35,7 +35,7 @@
+ #include <libweston/zalloc.h>
+ #include "xdg-shell-unstable-v6-server-protocol.h"
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ 
+ #define WD_XDG_SHELL_PROTOCOL_VERSION 1
+diff --git a/libweston-desktop/xdg-shell.c b/libweston-desktop/xdg-shell.c
+index 8e0a6ac4..d1fc2ec1 100644
+--- a/libweston-desktop/xdg-shell.c
++++ b/libweston-desktop/xdg-shell.c
+@@ -35,7 +35,7 @@
+ #include <libweston/zalloc.h>
+ #include "xdg-shell-server-protocol.h"
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ 
+ /************************************************************************************
+diff --git a/libweston-desktop/xwayland.c b/libweston-desktop/xwayland.c
+index ee319b31..711c8a30 100644
+--- a/libweston-desktop/xwayland.c
++++ b/libweston-desktop/xwayland.c
+@@ -33,7 +33,7 @@
+ #include <libweston/libweston.h>
+ #include <libweston/zalloc.h>
+ 
+-#include "libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ #include "internal.h"
+ #include "xwayland/xwayland-internal-interface.h"
+ 
+diff --git a/tests/weston-test-desktop-shell.c b/tests/weston-test-desktop-shell.c
+index b580ffd6..c88455c4 100644
+--- a/tests/weston-test-desktop-shell.c
++++ b/tests/weston-test-desktop-shell.c
+@@ -39,7 +39,7 @@
+ #include "compositor/weston.h"
+ #include <libweston/config-parser.h>
+ #include "shared/helpers.h"
+-#include "libweston-desktop/libweston-desktop.h"
++#include <libweston-desktop/libweston-desktop.h>
+ 
+ struct desktest_shell {
+ 	struct wl_listener compositor_destroy_listener;
+-- 
+2.21.0
+

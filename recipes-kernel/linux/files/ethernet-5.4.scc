@@ -1,9 +1,5 @@
-patch ethernet-5.4/0001-HOTFIX-net-stmmac-Add-support-for-VLAN-Insertion-Off.patch
-patch ethernet-5.4/0002-HOTFIX-net-stmmac-fixes-VLAN-promiscuous-issues-due-.patch
-patch ethernet-5.4/0003-HOTFIX-net-stmmac-add-enhanced-descriptor-support-to.patch
-patch ethernet-5.4/0004-HOTFIX-net-stmmac-fix-incorrect-GMAC_VLAN_TAG-regist.patch
-patch ethernet-5.4/0005-net-phy-Add-phy-EEE-support-for-88E2110-PHY.patch
-patch ethernet-5.4/0006-net-networkproxy-Fix-unable-to-get-mDNS-handling-dec.patch
-patch ethernet-5.4/0007-net-stmmac-call-stmmac_rx_zc-directly-in-msi_intr_rx.patch
-patch ethernet-5.4/0008-net-stmmac-Fixed-MDIO-bus-access-race-condition.patch
-patch ethernet-5.4/0009-net-stmmac-enable-safety-features-for-EHL.patch
+patch ethernet-5.4/0001-net-phy-Add-phy-EEE-support-for-88E2110-PHY.patch
+patch ethernet-5.4/0002-net-networkproxy-Fix-unable-to-get-mDNS-handling-dec.patch
+patch ethernet-5.4/0003-net-stmmac-call-stmmac_rx_zc-directly-in-msi_intr_rx.patch
+patch ethernet-5.4/0004-net-stmmac-Fixed-MDIO-bus-access-race-condition.patch
+patch ethernet-5.4/0005-net-stmmac-enable-safety-features-for-EHL.patch

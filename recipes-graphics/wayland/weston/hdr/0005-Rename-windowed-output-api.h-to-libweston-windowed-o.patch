@@ -1,0 +1,103 @@
+From 84dc5f51f07c6bea7818b82d91f93a8a04fa4fcf Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Fri, 29 Mar 2019 17:14:29 +0200
+Subject: [PATCH 05/45] Rename windowed-output-api.h to
+ libweston/windowed-output-api.h
+
+See "Rename compositor.h to libweston/libweston.h" for rationale.
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ compositor/main.c                                      | 2 +-
+ include/libweston/meson.build                          | 1 +
+ {libweston => include/libweston}/windowed-output-api.h | 0
+ libweston/compositor-headless.c                        | 2 +-
+ libweston/compositor-wayland.c                         | 2 +-
+ libweston/compositor-x11.c                             | 2 +-
+ libweston/meson.build                                  | 1 -
+ 7 files changed, 5 insertions(+), 5 deletions(-)
+ rename {libweston => include/libweston}/windowed-output-api.h (100%)
+
+diff --git a/compositor/main.c b/compositor/main.c
+index f591b341..28c13d84 100644
+--- a/compositor/main.c
++++ b/compositor/main.c
+@@ -61,7 +61,7 @@
+ #include <libweston/backend-fbdev.h>
+ #include <libweston/backend-x11.h>
+ #include <libweston/backend-wayland.h>
+-#include "windowed-output-api.h"
++#include <libweston/windowed-output-api.h>
+ #include "weston-debug.h"
+ #include "../remoting/remoting-plugin.h"
+ 
+diff --git a/include/libweston/meson.build b/include/libweston/meson.build
+index 2e0dfc16..f6b55feb 100644
+--- a/include/libweston/meson.build
++++ b/include/libweston/meson.build
+@@ -2,6 +2,7 @@ install_headers(
+ 	'libweston.h',
+ 	'plugin-registry.h',
+ 	'timeline-object.h',
++	'windowed-output-api.h',
+ 	subdir: dir_include_libweston_install
+ )
+ 
+diff --git a/libweston/windowed-output-api.h b/include/libweston/windowed-output-api.h
+similarity index 100%
+rename from libweston/windowed-output-api.h
+rename to include/libweston/windowed-output-api.h
+diff --git a/libweston/compositor-headless.c b/libweston/compositor-headless.c
+index 2b3137a2..04c33d15 100644
+--- a/libweston/compositor-headless.c
++++ b/libweston/compositor-headless.c
+@@ -39,7 +39,7 @@
+ #include "linux-explicit-synchronization.h"
+ #include "pixman-renderer.h"
+ #include "presentation-time-server-protocol.h"
+-#include "windowed-output-api.h"
++#include <libweston/windowed-output-api.h>
+ 
+ struct headless_backend {
+ 	struct weston_backend base;
+diff --git a/libweston/compositor-wayland.c b/libweston/compositor-wayland.c
+index 9881712a..7e2fee17 100644
+--- a/libweston/compositor-wayland.c
++++ b/libweston/compositor-wayland.c
+@@ -58,7 +58,7 @@
+ #include "xdg-shell-client-protocol.h"
+ #include "presentation-time-server-protocol.h"
+ #include "linux-dmabuf.h"
+-#include "windowed-output-api.h"
++#include <libweston/windowed-output-api.h>
+ 
+ #define WINDOW_TITLE "Weston Compositor"
+ 
+diff --git a/libweston/compositor-x11.c b/libweston/compositor-x11.c
+index 903cf137..a62fe80c 100644
+--- a/libweston/compositor-x11.c
++++ b/libweston/compositor-x11.c
+@@ -63,7 +63,7 @@
+ #include "presentation-time-server-protocol.h"
+ #include "linux-dmabuf.h"
+ #include "linux-explicit-synchronization.h"
+-#include "windowed-output-api.h"
++#include <libweston/windowed-output-api.h>
+ 
+ #define DEFAULT_AXIS_STEP_DISTANCE 10
+ 
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 47b5d22c..0d6ec612 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -57,7 +57,6 @@ srcs_libweston = [
+ ]
+ 
+ install_headers(
+-	'windowed-output-api.h',
+ 	'../shared/config-parser.h',
+ 	'../shared/matrix.h',
+ 	'../shared/zalloc.h',
+-- 
+2.21.0
+

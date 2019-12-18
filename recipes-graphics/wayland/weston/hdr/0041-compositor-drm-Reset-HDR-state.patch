@@ -1,0 +1,49 @@
+From 0104e5f50bd430fa9b56fd4c8990d3ea66cb24ab Mon Sep 17 00:00:00 2001
+From: Shashank Sharma <shashank.sharma@intel.com>
+Date: Thu, 28 Mar 2019 21:26:33 +0530
+Subject: [PATCH 41/45] compositor-drm: Reset HDR state
+
+This patch handles a special situation, which is resetting
+of HDR state. Consider this case, when HDR playback stops,
+and now we are moving back to SDR desktop view. In this case,
+we need to reset the HDR properties and color corrections
+applied on the connector state.
+
+This patch detects if this view is end of HDR sesstion, and
+resets the connector state.
+
+Signed-off-by: Shashank Sharma <shashank.sharma@intel.com>
+---
+ libweston/compositor-drm.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/libweston/compositor-drm.c b/libweston/compositor-drm.c
+index 85ac046d..2d1ac77e 100644
+--- a/libweston/compositor-drm.c
++++ b/libweston/compositor-drm.c
+@@ -4185,6 +4185,22 @@ drm_get_first_hdr_surface(struct weston_output *output_base)
+ 	return NULL;
+ }
+ 
++static void
++drm_head_reset_color_state(struct drm_backend *b,
++		struct weston_output *output_base)
++{
++	struct weston_head *w_head = weston_output_get_first_head(output_base);
++	struct drm_head *head = to_drm_head(w_head);
++	struct drm_conn_color_state *cs;
++
++	if (!head)
++		return;
++
++	cs = &head->color_state;
++	memset(cs, 0, sizeof(*cs));
++	cs->changed = 1;
++}
++
+ static void
+ drm_assign_planes(struct weston_output *output_base, void *repaint_data)
+ {
+-- 
+2.21.0
+

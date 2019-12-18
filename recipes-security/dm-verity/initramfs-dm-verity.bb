@@ -13,7 +13,7 @@ IMAGE_FSTYPES = "${INITRAMFS_FSTYPES}"
 # busybox: Linux shell and other basic utilities needed by initramfs
 # initramfs-module-udev: Used to detect boot devices automatically
 # lvm2: Used by udev daemon for udev rules and other dependencies
-PACKAGE_INSTALL = "initramfs-framework-dm-verity initramfs-module-data busybox initramfs-module-udev lvm2"
+PACKAGE_INSTALL = "initramfs-framework-dm-verity busybox initramfs-module-udev lvm2"
 
 # busybox-udhcpc busybox-udhcpd busybox-dbg busybox-syslog are not needed,
 # unless bitbake finds dependencies on these packages

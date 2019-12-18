@@ -16,7 +16,7 @@ kconf non-hardware console.cfg
 kconf non-hardware filesystems.cfg
 kconf non-hardware debug-format.cfg
 
-kconf non-hardware apparmor.cfg
+kconf non-hardware lsm.cfg
 kconf hardware tcc.cfg
 kconf non-hardware test.cfg
 kconf non-hardware fw.cfg

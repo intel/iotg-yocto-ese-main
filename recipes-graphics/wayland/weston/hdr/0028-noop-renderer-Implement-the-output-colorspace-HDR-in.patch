@@ -1,0 +1,30 @@
+From 0d6ffdea2b81133af5b2e8d2a5c1b567234c1ada Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harish.krupo.kps@intel.com>
+Date: Mon, 11 Mar 2019 19:39:55 +0530
+Subject: [PATCH 28/45] noop-renderer: Implement the output colorspace / HDR
+ interface
+
+NULL implementations for now.
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+---
+ libweston/noop-renderer.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/libweston/noop-renderer.c b/libweston/noop-renderer.c
+index aef93002..716cbda4 100644
+--- a/libweston/noop-renderer.c
++++ b/libweston/noop-renderer.c
+@@ -116,6 +116,9 @@ noop_renderer_init(struct weston_compositor *ec)
+ 	renderer->attach = noop_renderer_attach;
+ 	renderer->surface_set_color = noop_renderer_surface_set_color;
+ 	renderer->destroy = noop_renderer_destroy;
++	renderer->set_output_colorspace = NULL;
++	renderer->set_output_hdr_metadata = NULL;
++
+ 	ec->renderer = renderer;
+ 
+ 	return 0;
+-- 
+2.21.0
+

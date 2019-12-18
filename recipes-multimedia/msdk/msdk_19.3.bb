@@ -42,7 +42,29 @@ EXTRA_OECMAKE += "-DMFX_INCLUDE=${S}/api/include -DBUILD_SAMPLES=ON -DENABLE_ITT
 # compiled code should not be in datadir
 do_install_append(){
 	mv ${D}${datadir}/mfx/samples ${D}${libdir}/mfx/samples
+
+	install -d -m 755 ${D}/usr/share/${PN}/src/sample_encode/include
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_encode/src
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_decode/include
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_decode/src
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_vpp/include
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_vpp/src
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_multi_trancode/include
+        install -d -m 755 ${D}/usr/share/${PN}/src/sample_multi_trancode/src
+
+
+
+     	install  -m 644 ${S}/samples/sample_encode/include/* ${D}/usr/share/${PN}/src/sample_encode/include 
+	install -m 644 ${S}/samples/sample_encode/src/* ${D}/usr/share/${PN}/src/sample_encode/src
+     	install -m 644 ${S}/samples/sample_decode/include/* ${D}/usr/share/${PN}/src/sample_decode/include
+     	install -m 644 ${S}/samples/sample_decode/src/* ${D}/usr/share/${PN}/src/sample_decode/src
+     	install -m 644 ${S}/samples/sample_vpp/include/* ${D}/usr/share/${PN}/src/sample_vpp/include
+     	install -m 644 ${S}/samples/sample_vpp/src/* ${D}/usr/share/${PN}/src/sample_vpp/src
+     	install -m 644 ${S}/samples/sample_multi_transcode/include/* ${D}/usr/share/${PN}/src/sample_multi_trancode/include
+     	install -m 644 ${S}/samples/sample_multi_transcode/src/* ${D}/usr/share/${PN}/src/sample_multi_trancode/src
+
 }
 
 FILES_${PN}-staticdev += "${libdir}/mfx/samples/*.a"
 FILES_${PN} += "${libdir}/mfx/*.so ${datadir}/mfx/plugins.cfg ${libdir}/mfx/samples"
+FILES_${PN}-dev += "/usr/share/${PN}/src"

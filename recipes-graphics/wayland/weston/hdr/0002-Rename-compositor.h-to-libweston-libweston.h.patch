@@ -1,0 +1,1205 @@
+From 3d0722c16e24cbab9ba23516731cbeb682c8f777 Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Thu, 28 Mar 2019 16:28:47 +0200
+Subject: [PATCH 02/45] Rename compositor.h to libweston/libweston.h
+
+The main idea is to make libweston users use the form
+
+ #include <libweston/libweston.h>
+
+instead of the plain
+
+ #include <compositor.h>
+
+which is prone to name conflicts. This is reflected both in the installed
+files, and the internal header search paths so that Weston would use the exact
+same form as an external project using libweston would.
+
+The public headers are moved under a new top-level directory include/ to make
+them clearly stand out as special (public API).
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ compositor/cms-colord.c                                 | 2 +-
+ compositor/cms-helper.c                                 | 2 +-
+ compositor/cms-helper.h                                 | 2 +-
+ compositor/cms-static.c                                 | 2 +-
+ compositor/main.c                                       | 2 +-
+ compositor/screen-share.c                               | 2 +-
+ compositor/systemd-notify.c                             | 2 +-
+ compositor/text-backend.c                               | 2 +-
+ compositor/weston-screenshooter.c                       | 2 +-
+ compositor/weston.h                                     | 2 +-
+ compositor/xwayland.c                                   | 2 +-
+ desktop-shell/shell.h                                   | 2 +-
+ fullscreen-shell/fullscreen-shell.c                     | 2 +-
+ libweston/compositor.h => include/libweston/libweston.h | 0
+ include/libweston/meson.build                           | 1 +
+ ivi-shell/ivi-layout-export.h                           | 2 +-
+ ivi-shell/ivi-layout-private.h                          | 2 +-
+ ivi-shell/ivi-layout.c                                  | 2 +-
+ ivi-shell/ivi-shell.h                                   | 2 +-
+ libweston-desktop/client.c                              | 2 +-
+ libweston-desktop/internal.h                            | 2 +-
+ libweston-desktop/libweston-desktop.c                   | 2 +-
+ libweston-desktop/libweston-desktop.h                   | 2 +-
+ libweston-desktop/seat.c                                | 2 +-
+ libweston-desktop/surface.c                             | 2 +-
+ libweston-desktop/wl-shell.c                            | 2 +-
+ libweston-desktop/xdg-shell-v6.c                        | 2 +-
+ libweston-desktop/xdg-shell.c                           | 2 +-
+ libweston-desktop/xwayland.c                            | 2 +-
+ libweston/animation.c                                   | 2 +-
+ libweston/bindings.c                                    | 2 +-
+ libweston/clipboard.c                                   | 2 +-
+ libweston/compositor-drm.c                              | 2 +-
+ libweston/compositor-drm.h                              | 2 +-
+ libweston/compositor-fbdev.c                            | 2 +-
+ libweston/compositor-fbdev.h                            | 2 +-
+ libweston/compositor-headless.c                         | 2 +-
+ libweston/compositor-headless.h                         | 2 +-
+ libweston/compositor-rdp.c                              | 2 +-
+ libweston/compositor-rdp.h                              | 2 +-
+ libweston/compositor-wayland.c                          | 2 +-
+ libweston/compositor-wayland.h                          | 2 +-
+ libweston/compositor-x11.c                              | 2 +-
+ libweston/compositor-x11.h                              | 2 +-
+ libweston/compositor.c                                  | 2 +-
+ libweston/data-device.c                                 | 2 +-
+ libweston/dbus.c                                        | 2 +-
+ libweston/dbus.h                                        | 2 +-
+ libweston/gl-renderer.h                                 | 2 +-
+ libweston/input.c                                       | 2 +-
+ libweston/launcher-direct.c                             | 2 +-
+ libweston/launcher-impl.h                               | 2 +-
+ libweston/launcher-logind.c                             | 2 +-
+ libweston/launcher-util.c                               | 2 +-
+ libweston/launcher-util.h                               | 2 +-
+ libweston/launcher-weston-launch.c                      | 2 +-
+ libweston/libinput-device.c                             | 2 +-
+ libweston/libinput-device.h                             | 2 +-
+ libweston/libinput-seat.c                               | 2 +-
+ libweston/libinput-seat.h                               | 2 +-
+ libweston/linux-dmabuf.c                                | 2 +-
+ libweston/linux-explicit-synchronization.c              | 2 +-
+ libweston/log.c                                         | 2 +-
+ libweston/meson.build                                   | 1 -
+ libweston/noop-renderer.c                               | 2 +-
+ libweston/pixman-renderer.h                             | 2 +-
+ libweston/plugin-registry.c                             | 2 +-
+ libweston/screenshooter.c                               | 2 +-
+ libweston/spring-tool.c                                 | 2 +-
+ libweston/timeline.c                                    | 2 +-
+ libweston/touch-calibration.c                           | 2 +-
+ libweston/vaapi-recorder.c                              | 2 +-
+ libweston/weston-debug.c                                | 2 +-
+ libweston/zoom.c                                        | 2 +-
+ remoting/remoting-plugin.h                              | 2 +-
+ tests/ivi-layout-internal-test.c                        | 2 +-
+ tests/ivi-layout-test-plugin.c                          | 2 +-
+ tests/plugin-registry-test.c                            | 2 +-
+ tests/surface-global-test.c                             | 2 +-
+ tests/surface-screenshot-test.c                         | 2 +-
+ tests/surface-test.c                                    | 2 +-
+ tests/weston-test.c                                     | 2 +-
+ xwayland/dnd.c                                          | 2 +-
+ xwayland/window-manager.c                               | 2 +-
+ xwayland/xwayland.h                                     | 2 +-
+ 85 files changed, 83 insertions(+), 83 deletions(-)
+ rename libweston/compositor.h => include/libweston/libweston.h (100%)
+
+diff --git a/compositor/cms-colord.c b/compositor/cms-colord.c
+index b68e4921..d68e377d 100644
+--- a/compositor/cms-colord.c
++++ b/compositor/cms-colord.c
+@@ -33,7 +33,7 @@
+ #include <string.h>
+ #include <colord.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston.h"
+ #include "cms-helper.h"
+ #include "shared/helpers.h"
+diff --git a/compositor/cms-helper.c b/compositor/cms-helper.c
+index 1784c46d..bc56a9dc 100644
+--- a/compositor/cms-helper.c
++++ b/compositor/cms-helper.c
+@@ -34,7 +34,7 @@
+ #include <lcms2.h>
+ #endif
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "cms-helper.h"
+ 
+ #ifdef HAVE_LCMS
+diff --git a/compositor/cms-helper.h b/compositor/cms-helper.h
+index 402652e6..4a5b711e 100644
+--- a/compositor/cms-helper.h
++++ b/compositor/cms-helper.h
+@@ -28,7 +28,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ /* General overview on how to be a CMS plugin:
+  *
+diff --git a/compositor/cms-static.c b/compositor/cms-static.c
+index e24501b6..2f357c41 100644
+--- a/compositor/cms-static.c
++++ b/compositor/cms-static.c
+@@ -28,7 +28,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "cms-helper.h"
+ #include "shared/helpers.h"
+ #include "weston.h"
+diff --git a/compositor/main.c b/compositor/main.c
+index c3206783..ad2cedcf 100644
+--- a/compositor/main.c
++++ b/compositor/main.c
+@@ -47,7 +47,7 @@
+ #include <linux/limits.h>
+ 
+ #include "weston.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "../shared/os-compatibility.h"
+ #include "../shared/helpers.h"
+ #include "../shared/string-helpers.h"
+diff --git a/compositor/screen-share.c b/compositor/screen-share.c
+index 33de2b1f..69689d73 100644
+--- a/compositor/screen-share.c
++++ b/compositor/screen-share.c
+@@ -40,7 +40,7 @@
+ 
+ #include <wayland-client.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston.h"
+ #include "shared/helpers.h"
+ #include "shared/os-compatibility.h"
+diff --git a/compositor/systemd-notify.c b/compositor/systemd-notify.c
+index e53a9d28..b2dcce1f 100644
+--- a/compositor/systemd-notify.c
++++ b/compositor/systemd-notify.c
+@@ -33,7 +33,7 @@
+ #include "shared/helpers.h"
+ #include "shared/string-helpers.h"
+ #include "shared/zalloc.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston.h"
+ 
+ struct systemd_notifier {
+diff --git a/compositor/text-backend.c b/compositor/text-backend.c
+index 03019584..722dcb2c 100644
+--- a/compositor/text-backend.c
++++ b/compositor/text-backend.c
+@@ -33,7 +33,7 @@
+ #include <unistd.h>
+ #include <time.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston.h"
+ #include "text-input-unstable-v1-server-protocol.h"
+ #include "input-method-unstable-v1-server-protocol.h"
+diff --git a/compositor/weston-screenshooter.c b/compositor/weston-screenshooter.c
+index 13dea3f1..55fbf8df 100644
+--- a/compositor/weston-screenshooter.c
++++ b/compositor/weston-screenshooter.c
+@@ -28,7 +28,7 @@
+ #include <stdint.h>
+ #include <linux/input.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston.h"
+ #include "weston-screenshooter-server-protocol.h"
+ #include "shared/helpers.h"
+diff --git a/compositor/weston.h b/compositor/weston.h
+index 5a2225d1..84bc6706 100644
+--- a/compositor/weston.h
++++ b/compositor/weston.h
+@@ -30,7 +30,7 @@
+ extern "C" {
+ #endif
+ 
+-#include <compositor.h>
++#include <libweston/libweston.h>
+ 
+ void
+ screenshooter_create(struct weston_compositor *ec);
+diff --git a/compositor/xwayland.c b/compositor/xwayland.c
+index 61580c7c..36d5cf31 100644
+--- a/compositor/xwayland.c
++++ b/compositor/xwayland.c
+@@ -29,7 +29,7 @@
+ #include <signal.h>
+ #include <sys/socket.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "xwayland/xwayland-api.h"
+ #include "shared/helpers.h"
+diff --git a/desktop-shell/shell.h b/desktop-shell/shell.h
+index fb8c2bf0..bbf56265 100644
+--- a/desktop-shell/shell.h
++++ b/desktop-shell/shell.h
+@@ -27,7 +27,7 @@
+ #include <stdint.h>
+ #include <time.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "xwayland/xwayland-api.h"
+ 
+ #include "weston-desktop-shell-server-protocol.h"
+diff --git a/fullscreen-shell/fullscreen-shell.c b/fullscreen-shell/fullscreen-shell.c
+index 99e9dbbc..6c04cf3d 100644
+--- a/fullscreen-shell/fullscreen-shell.c
++++ b/fullscreen-shell/fullscreen-shell.c
+@@ -33,7 +33,7 @@
+ #include <string.h>
+ #include <assert.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "fullscreen-shell-unstable-v1-server-protocol.h"
+ #include "shared/helpers.h"
+diff --git a/libweston/compositor.h b/include/libweston/libweston.h
+similarity index 100%
+rename from libweston/compositor.h
+rename to include/libweston/libweston.h
+diff --git a/include/libweston/meson.build b/include/libweston/meson.build
+index 5cc7bc5b..74480838 100644
+--- a/include/libweston/meson.build
++++ b/include/libweston/meson.build
+@@ -1,4 +1,5 @@
+ install_headers(
++	'libweston.h',
+ 	'timeline-object.h',
+ 	subdir: dir_include_libweston_install
+ )
+diff --git a/ivi-shell/ivi-layout-export.h b/ivi-shell/ivi-layout-export.h
+index 77b06de9..b5e92c04 100644
+--- a/ivi-shell/ivi-layout-export.h
++++ b/ivi-shell/ivi-layout-export.h
+@@ -59,7 +59,7 @@ extern "C" {
+ #include <limits.h>
+ 
+ #include "stdbool.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "plugin-registry.h"
+ 
+ #define IVI_SUCCEEDED (0)
+diff --git a/ivi-shell/ivi-layout-private.h b/ivi-shell/ivi-layout-private.h
+index c054130b..4b6cd6a3 100644
+--- a/ivi-shell/ivi-layout-private.h
++++ b/ivi-shell/ivi-layout-private.h
+@@ -28,7 +28,7 @@
+ 
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "ivi-layout-export.h"
+ #include "libweston-desktop/libweston-desktop.h"
+ 
+diff --git a/ivi-shell/ivi-layout.c b/ivi-shell/ivi-layout.c
+index 2c450f31..bf0bccc7 100644
+--- a/ivi-shell/ivi-layout.c
++++ b/ivi-shell/ivi-layout.c
+@@ -62,7 +62,7 @@
+ #include <stdint.h>
+ 
+ #include "compositor/weston.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "ivi-shell.h"
+ #include "ivi-layout-export.h"
+ #include "ivi-layout-private.h"
+diff --git a/ivi-shell/ivi-shell.h b/ivi-shell/ivi-shell.h
+index 3aeddcab..8762113b 100644
+--- a/ivi-shell/ivi-shell.h
++++ b/ivi-shell/ivi-shell.h
+@@ -29,7 +29,7 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "libweston-desktop/libweston-desktop.h"
+ 
+ struct ivi_shell
+diff --git a/libweston-desktop/client.c b/libweston-desktop/client.c
+index 29c3c986..a3e9a31e 100644
+--- a/libweston-desktop/client.c
++++ b/libweston-desktop/client.c
+@@ -25,7 +25,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ 
+ #include "libweston-desktop.h"
+diff --git a/libweston-desktop/internal.h b/libweston-desktop/internal.h
+index ce853ba9..e4ab2701 100644
+--- a/libweston-desktop/internal.h
++++ b/libweston-desktop/internal.h
+@@ -24,7 +24,7 @@
+ #ifndef WESTON_DESKTOP_INTERNAL_H
+ #define WESTON_DESKTOP_INTERNAL_H
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ struct weston_desktop_seat;
+ struct weston_desktop_client;
+diff --git a/libweston-desktop/libweston-desktop.c b/libweston-desktop/libweston-desktop.c
+index 49cd2102..a22f67d4 100644
+--- a/libweston-desktop/libweston-desktop.c
++++ b/libweston-desktop/libweston-desktop.c
+@@ -28,7 +28,7 @@
+ #include <wayland-server.h>
+ #include <assert.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ #include "helpers.h"
+ 
+diff --git a/libweston-desktop/libweston-desktop.h b/libweston-desktop/libweston-desktop.h
+index a0fb9381..3e7ac738 100644
+--- a/libweston-desktop/libweston-desktop.h
++++ b/libweston-desktop/libweston-desktop.h
+@@ -24,7 +24,7 @@
+ #ifndef WESTON_DESKTOP_H
+ #define WESTON_DESKTOP_H
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include <pixman.h>
+ #include <stdbool.h>
+ 
+diff --git a/libweston-desktop/seat.c b/libweston-desktop/seat.c
+index ae1c5e9f..1c2380dc 100644
+--- a/libweston-desktop/seat.c
++++ b/libweston-desktop/seat.c
+@@ -30,7 +30,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ 
+ #include "libweston-desktop.h"
+diff --git a/libweston-desktop/surface.c b/libweston-desktop/surface.c
+index cbfa5ee0..eec9806d 100644
+--- a/libweston-desktop/surface.c
++++ b/libweston-desktop/surface.c
+@@ -28,7 +28,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ 
+ #include "libweston-desktop.h"
+diff --git a/libweston-desktop/wl-shell.c b/libweston-desktop/wl-shell.c
+index 37720acb..0067b63a 100644
+--- a/libweston-desktop/wl-shell.c
++++ b/libweston-desktop/wl-shell.c
+@@ -30,7 +30,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ 
+ #include "libweston-desktop.h"
+diff --git a/libweston-desktop/xdg-shell-v6.c b/libweston-desktop/xdg-shell-v6.c
+index b6cb599c..80c3f087 100644
+--- a/libweston-desktop/xdg-shell-v6.c
++++ b/libweston-desktop/xdg-shell-v6.c
+@@ -31,7 +31,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ #include "xdg-shell-unstable-v6-server-protocol.h"
+ 
+diff --git a/libweston-desktop/xdg-shell.c b/libweston-desktop/xdg-shell.c
+index 58a1ecdb..d5bed385 100644
+--- a/libweston-desktop/xdg-shell.c
++++ b/libweston-desktop/xdg-shell.c
+@@ -31,7 +31,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ #include "xdg-shell-server-protocol.h"
+ 
+diff --git a/libweston-desktop/xwayland.c b/libweston-desktop/xwayland.c
+index 4b4407b9..ea9ff34e 100644
+--- a/libweston-desktop/xwayland.c
++++ b/libweston-desktop/xwayland.c
+@@ -30,7 +30,7 @@
+ 
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "zalloc.h"
+ 
+ #include "libweston-desktop.h"
+diff --git a/libweston/animation.c b/libweston/animation.c
+index c2f8b9ba..a81a8c19 100644
+--- a/libweston/animation.c
++++ b/libweston/animation.c
+@@ -35,7 +35,7 @@
+ #include <unistd.h>
+ #include <fcntl.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+ 
+diff --git a/libweston/bindings.c b/libweston/bindings.c
+index d9e280e4..68c07a22 100644
+--- a/libweston/bindings.c
++++ b/libweston/bindings.c
+@@ -29,7 +29,7 @@
+ #include <stdlib.h>
+ #include <linux/input.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+ 
+diff --git a/libweston/clipboard.c b/libweston/clipboard.c
+index f37508cb..c8296b01 100644
+--- a/libweston/clipboard.c
++++ b/libweston/clipboard.c
+@@ -33,7 +33,7 @@
+ #include <unistd.h>
+ #include <sys/uio.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "shared/helpers.h"
+ 
+ struct clipboard_source {
+diff --git a/libweston/compositor-drm.c b/libweston/compositor-drm.c
+index c1101105..cbe088fa 100644
+--- a/libweston/compositor-drm.c
++++ b/libweston/compositor-drm.c
+@@ -50,7 +50,7 @@
+ #include <gbm.h>
+ #include <libudev.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor-drm.h"
+ #include "weston-debug.h"
+ #include "shared/helpers.h"
+diff --git a/libweston/compositor-drm.h b/libweston/compositor-drm.h
+index 71a306fd..76c84c8a 100644
+--- a/libweston/compositor-drm.h
++++ b/libweston/compositor-drm.h
+@@ -28,7 +28,7 @@
+ #ifndef WESTON_COMPOSITOR_DRM_H
+ #define WESTON_COMPOSITOR_DRM_H
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "plugin-registry.h"
+ 
+ #ifdef  __cplusplus
+diff --git a/libweston/compositor-fbdev.c b/libweston/compositor-fbdev.c
+index 6031be52..a31ee999 100644
+--- a/libweston/compositor-fbdev.c
++++ b/libweston/compositor-fbdev.c
+@@ -45,7 +45,7 @@
+ #include <libudev.h>
+ 
+ #include "shared/helpers.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor-fbdev.h"
+ #include "launcher-util.h"
+ #include "pixman-renderer.h"
+diff --git a/libweston/compositor-fbdev.h b/libweston/compositor-fbdev.h
+index 29c21828..4dbdce72 100644
+--- a/libweston/compositor-fbdev.h
++++ b/libweston/compositor-fbdev.h
+@@ -32,7 +32,7 @@ extern "C" {
+ 
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #define WESTON_FBDEV_BACKEND_CONFIG_VERSION 2
+ 
+diff --git a/libweston/compositor-headless.c b/libweston/compositor-headless.c
+index 5a0e46c8..098e08e9 100644
+--- a/libweston/compositor-headless.c
++++ b/libweston/compositor-headless.c
+@@ -33,7 +33,7 @@
+ #include <sys/time.h>
+ #include <stdbool.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor-headless.h"
+ #include "shared/helpers.h"
+ #include "linux-explicit-synchronization.h"
+diff --git a/libweston/compositor-headless.h b/libweston/compositor-headless.h
+index 039b50e3..ee116ec3 100644
+--- a/libweston/compositor-headless.h
++++ b/libweston/compositor-headless.h
+@@ -32,7 +32,7 @@ extern "C" {
+ 
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #define WESTON_HEADLESS_BACKEND_CONFIG_VERSION 2
+ 
+diff --git a/libweston/compositor-rdp.c b/libweston/compositor-rdp.c
+index 871a0a3e..8ece5e97 100644
+--- a/libweston/compositor-rdp.c
++++ b/libweston/compositor-rdp.c
+@@ -98,7 +98,7 @@
+ 
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor-rdp.h"
+ #include "pixman-renderer.h"
+ 
+diff --git a/libweston/compositor-rdp.h b/libweston/compositor-rdp.h
+index bd0a6a90..ebdd72f2 100644
+--- a/libweston/compositor-rdp.h
++++ b/libweston/compositor-rdp.h
+@@ -30,7 +30,7 @@
+ extern "C" {
+ #endif
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "plugin-registry.h"
+ 
+ #define WESTON_RDP_OUTPUT_API_NAME "weston_rdp_output_api_v1"
+diff --git a/libweston/compositor-wayland.c b/libweston/compositor-wayland.c
+index e1485ca6..4e225715 100644
+--- a/libweston/compositor-wayland.c
++++ b/libweston/compositor-wayland.c
+@@ -44,7 +44,7 @@
+ #include <wayland-egl.h>
+ #endif
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor-wayland.h"
+ #include "gl-renderer.h"
+ #include "weston-egl-ext.h"
+diff --git a/libweston/compositor-wayland.h b/libweston/compositor-wayland.h
+index d5c29f0a..7fe513a7 100644
+--- a/libweston/compositor-wayland.h
++++ b/libweston/compositor-wayland.h
+@@ -26,7 +26,7 @@
+ #ifndef WESTON_COMPOSITOR_WAYLAND_H
+ #define WESTON_COMPOSITOR_WAYLAND_H
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #ifdef  __cplusplus
+ extern "C" {
+diff --git a/libweston/compositor-x11.c b/libweston/compositor-x11.c
+index 922e3c80..d8513b59 100644
+--- a/libweston/compositor-x11.c
++++ b/libweston/compositor-x11.c
+@@ -50,7 +50,7 @@
+ 
+ #include <xkbcommon/xkbcommon.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor-x11.h"
+ #include "shared/config-parser.h"
+ #include "shared/helpers.h"
+diff --git a/libweston/compositor-x11.h b/libweston/compositor-x11.h
+index 8989fc26..1556e8e7 100644
+--- a/libweston/compositor-x11.h
++++ b/libweston/compositor-x11.h
+@@ -32,7 +32,7 @@ extern "C" {
+ 
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #define WESTON_X11_BACKEND_CONFIG_VERSION 2
+ 
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index d87522e7..90f01016 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -55,7 +55,7 @@
+ 
+ #include "timeline.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston-debug.h"
+ #include "linux-dmabuf.h"
+ #include "viewporter-server-protocol.h"
+diff --git a/libweston/data-device.c b/libweston/data-device.c
+index e3dbee3e..b0fb7760 100644
+--- a/libweston/data-device.c
++++ b/libweston/data-device.c
+@@ -32,7 +32,7 @@
+ #include <stdio.h>
+ #include <assert.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+ 
+diff --git a/libweston/dbus.c b/libweston/dbus.c
+index 36815dbd..d2530aca 100644
+--- a/libweston/dbus.c
++++ b/libweston/dbus.c
+@@ -44,7 +44,7 @@
+ #include <unistd.h>
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "dbus.h"
+ 
+ /*
+diff --git a/libweston/dbus.h b/libweston/dbus.h
+index 9bbfa380..639946ce 100644
+--- a/libweston/dbus.h
++++ b/libweston/dbus.h
+@@ -31,7 +31,7 @@
+ #include <errno.h>
+ #include <wayland-server.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #ifdef HAVE_DBUS
+ 
+diff --git a/libweston/gl-renderer.h b/libweston/gl-renderer.h
+index 202702b5..24af9256 100644
+--- a/libweston/gl-renderer.h
++++ b/libweston/gl-renderer.h
+@@ -27,7 +27,7 @@
+ 
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #ifdef ENABLE_EGL
+ 
+diff --git a/libweston/input.c b/libweston/input.c
+index 6579592b..93ac0f6c 100644
+--- a/libweston/input.c
++++ b/libweston/input.c
+@@ -41,7 +41,7 @@
+ #include "shared/helpers.h"
+ #include "shared/os-compatibility.h"
+ #include "shared/timespec-util.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "relative-pointer-unstable-v1-server-protocol.h"
+ #include "pointer-constraints-unstable-v1-server-protocol.h"
+ #include "input-timestamps-unstable-v1-server-protocol.h"
+diff --git a/libweston/launcher-direct.c b/libweston/launcher-direct.c
+index e0ce6d63..e5f1bcfb 100644
+--- a/libweston/launcher-direct.c
++++ b/libweston/launcher-direct.c
+@@ -26,7 +26,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #include <errno.h>
+ #include <fcntl.h>
+diff --git a/libweston/launcher-impl.h b/libweston/launcher-impl.h
+index b601baa9..4161caff 100644
+--- a/libweston/launcher-impl.h
++++ b/libweston/launcher-impl.h
+@@ -25,7 +25,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ struct weston_launcher;
+ 
+diff --git a/libweston/launcher-logind.c b/libweston/launcher-logind.c
+index 34e6e5ca..bcbde16c 100644
+--- a/libweston/launcher-logind.c
++++ b/libweston/launcher-logind.c
+@@ -38,7 +38,7 @@
+ #include <systemd/sd-login.h>
+ #include <unistd.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "dbus.h"
+ #include "launcher-impl.h"
+ 
+diff --git a/libweston/launcher-util.c b/libweston/launcher-util.c
+index 41ac7950..5cbb0abb 100644
+--- a/libweston/launcher-util.c
++++ b/libweston/launcher-util.c
+@@ -26,7 +26,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #include "launcher-util.h"
+ #include "launcher-impl.h"
+diff --git a/libweston/launcher-util.h b/libweston/launcher-util.h
+index 242e1cc8..dd7b7702 100644
+--- a/libweston/launcher-util.h
++++ b/libweston/launcher-util.h
+@@ -28,7 +28,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ struct weston_launcher;
+ 
+diff --git a/libweston/launcher-weston-launch.c b/libweston/launcher-weston-launch.c
+index 65beb325..c811a500 100644
+--- a/libweston/launcher-weston-launch.c
++++ b/libweston/launcher-weston-launch.c
+@@ -44,7 +44,7 @@
+ #include <linux/kd.h>
+ #include <linux/major.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "weston-launch.h"
+ #include "launcher-impl.h"
+ 
+diff --git a/libweston/libinput-device.c b/libweston/libinput-device.c
+index e25df144..140e87a4 100644
+--- a/libweston/libinput-device.c
++++ b/libweston/libinput-device.c
+@@ -38,7 +38,7 @@
+ #include <assert.h>
+ #include <libinput.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "libinput-device.h"
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+diff --git a/libweston/libinput-device.h b/libweston/libinput-device.h
+index 6147a513..d3fc645d 100644
+--- a/libweston/libinput-device.h
++++ b/libweston/libinput-device.h
+@@ -33,7 +33,7 @@
+ #include <libinput.h>
+ #include <stdbool.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ enum evdev_device_seat_capability {
+ 	EVDEV_SEAT_POINTER = (1 << 0),
+diff --git a/libweston/libinput-seat.c b/libweston/libinput-seat.c
+index 6625daff..9d3887bc 100644
+--- a/libweston/libinput-seat.c
++++ b/libweston/libinput-seat.c
+@@ -34,7 +34,7 @@
+ #include <libinput.h>
+ #include <libudev.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "launcher-util.h"
+ #include "libinput-seat.h"
+ #include "libinput-device.h"
+diff --git a/libweston/libinput-seat.h b/libweston/libinput-seat.h
+index 8c6a5bf7..315980dc 100644
+--- a/libweston/libinput-seat.h
++++ b/libweston/libinput-seat.h
+@@ -31,7 +31,7 @@
+ 
+ #include <libudev.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ struct libinput_device;
+ 
+diff --git a/libweston/linux-dmabuf.c b/libweston/linux-dmabuf.c
+index 148c61fb..5f7515b5 100644
+--- a/libweston/linux-dmabuf.c
++++ b/libweston/linux-dmabuf.c
+@@ -30,7 +30,7 @@
+ #include <unistd.h>
+ #include <sys/types.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "linux-dmabuf.h"
+ #include "linux-dmabuf-unstable-v1-server-protocol.h"
+ 
+diff --git a/libweston/linux-explicit-synchronization.c b/libweston/linux-explicit-synchronization.c
+index 99e30a1f..ec2f015e 100644
+--- a/libweston/linux-explicit-synchronization.c
++++ b/libweston/linux-explicit-synchronization.c
+@@ -28,7 +28,7 @@
+ #include <assert.h>
+ #include <inttypes.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "linux-explicit-synchronization.h"
+ #include "linux-explicit-synchronization-unstable-v1-server-protocol.h"
+ #include "linux-sync-file.h"
+diff --git a/libweston/log.c b/libweston/log.c
+index d9bdbf8c..6b9840de 100644
+--- a/libweston/log.c
++++ b/libweston/log.c
+@@ -34,7 +34,7 @@
+ 
+ #include <wayland-util.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ static int
+ default_log_handler(const char *fmt, va_list ap);
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 34141ed2..8bc67d84 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -57,7 +57,6 @@ srcs_libweston = [
+ ]
+ 
+ install_headers(
+-	'compositor.h',
+ 	'plugin-registry.h',
+ 	'windowed-output-api.h',
+ 	'../shared/config-parser.h',
+diff --git a/libweston/noop-renderer.c b/libweston/noop-renderer.c
+index 6eed40ee..aef93002 100644
+--- a/libweston/noop-renderer.c
++++ b/libweston/noop-renderer.c
+@@ -28,7 +28,7 @@
+ #include <stdint.h>
+ #include <stdlib.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ static int
+ noop_renderer_read_pixels(struct weston_output *output,
+diff --git a/libweston/pixman-renderer.h b/libweston/pixman-renderer.h
+index 7a5f7290..83a43010 100644
+--- a/libweston/pixman-renderer.h
++++ b/libweston/pixman-renderer.h
+@@ -25,7 +25,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ int
+ pixman_renderer_init(struct weston_compositor *ec);
+diff --git a/libweston/plugin-registry.c b/libweston/plugin-registry.c
+index 48c42200..63d89145 100644
+--- a/libweston/plugin-registry.c
++++ b/libweston/plugin-registry.c
+@@ -29,7 +29,7 @@
+ #include <string.h>
+ #include <stdlib.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "plugin-registry.h"
+ 
+ struct weston_plugin_api {
+diff --git a/libweston/screenshooter.c b/libweston/screenshooter.c
+index 2bde4f1d..5199d2cb 100644
+--- a/libweston/screenshooter.c
++++ b/libweston/screenshooter.c
+@@ -34,7 +34,7 @@
+ #include <unistd.h>
+ #include <sys/uio.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "shared/helpers.h"
+ #include "shared/timespec-util.h"
+ 
+diff --git a/libweston/spring-tool.c b/libweston/spring-tool.c
+index a6ce055d..b032d737 100644
+--- a/libweston/spring-tool.c
++++ b/libweston/spring-tool.c
+@@ -28,7 +28,7 @@
+ 
+ #include "config.h"
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "shared/timespec-util.h"
+ 
+ WL_EXPORT void
+diff --git a/libweston/timeline.c b/libweston/timeline.c
+index f5a39cba..2e7d8981 100644
+--- a/libweston/timeline.c
++++ b/libweston/timeline.c
+@@ -33,7 +33,7 @@
+ #include <assert.h>
+ 
+ #include "timeline.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "file-util.h"
+ 
+ struct timeline_log {
+diff --git a/libweston/touch-calibration.c b/libweston/touch-calibration.c
+index 6e09fe02..d6f21604 100644
+--- a/libweston/touch-calibration.c
++++ b/libweston/touch-calibration.c
+@@ -33,7 +33,7 @@
+ #include "shared/string-helpers.h"
+ #include "shared/zalloc.h"
+ #include "shared/timespec-util.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #include "weston-touch-calibration-server-protocol.h"
+ 
+diff --git a/libweston/vaapi-recorder.c b/libweston/vaapi-recorder.c
+index 7d6d8cc9..0a743570 100644
+--- a/libweston/vaapi-recorder.c
++++ b/libweston/vaapi-recorder.c
+@@ -45,7 +45,7 @@
+ #include <va/va_enc_h264.h>
+ #include <va/va_vpp.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "vaapi-recorder.h"
+ 
+ #define NAL_REF_IDC_NONE        0
+diff --git a/libweston/weston-debug.c b/libweston/weston-debug.c
+index b1349bc3..0536562a 100644
+--- a/libweston/weston-debug.c
++++ b/libweston/weston-debug.c
+@@ -28,7 +28,7 @@
+ 
+ #include "weston-debug.h"
+ #include "helpers.h"
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ 
+ #include "weston-debug-server-protocol.h"
+ 
+diff --git a/libweston/zoom.c b/libweston/zoom.c
+index b89264f7..8d513c39 100644
+--- a/libweston/zoom.c
++++ b/libweston/zoom.c
+@@ -30,7 +30,7 @@
+ #include <stdlib.h>
+ #include <stdbool.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "text-cursor-position-server-protocol.h"
+ #include "shared/helpers.h"
+ 
+diff --git a/remoting/remoting-plugin.h b/remoting/remoting-plugin.h
+index 9a7ca365..bfad20d5 100644
+--- a/remoting/remoting-plugin.h
++++ b/remoting/remoting-plugin.h
+@@ -28,7 +28,7 @@
+ #ifndef REMOTING_PLUGIN_H
+ #define REMOTING_PLUGIN_H
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "plugin-registry.h"
+ 
+ #define WESTON_REMOTING_API_NAME	"weston_remoting_api_v1"
+diff --git a/tests/ivi-layout-internal-test.c b/tests/ivi-layout-internal-test.c
+index 1054d970..9a552681 100644
+--- a/tests/ivi-layout-internal-test.c
++++ b/tests/ivi-layout-internal-test.c
+@@ -32,7 +32,7 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "ivi-shell/ivi-layout-export.h"
+ #include "ivi-shell/ivi-layout-private.h"
+diff --git a/tests/ivi-layout-test-plugin.c b/tests/ivi-layout-test-plugin.c
+index aa88a712..276dcb64 100644
+--- a/tests/ivi-layout-test-plugin.c
++++ b/tests/ivi-layout-test-plugin.c
+@@ -34,7 +34,7 @@
+ #include <assert.h>
+ #include <limits.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "weston-test-server-protocol.h"
+ #include "ivi-test.h"
+diff --git a/tests/plugin-registry-test.c b/tests/plugin-registry-test.c
+index 738ccd31..30faa85d 100644
+--- a/tests/plugin-registry-test.c
++++ b/tests/plugin-registry-test.c
+@@ -27,7 +27,7 @@
+ 
+ #include <assert.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "plugin-registry.h"
+ 
+diff --git a/tests/surface-global-test.c b/tests/surface-global-test.c
+index 59d4152d..548f5523 100644
+--- a/tests/surface-global-test.c
++++ b/tests/surface-global-test.c
+@@ -28,7 +28,7 @@
+ #include <assert.h>
+ #include <stdint.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ 
+ static void
+diff --git a/tests/surface-screenshot-test.c b/tests/surface-screenshot-test.c
+index 908022de..3c6aa06c 100644
+--- a/tests/surface-screenshot-test.c
++++ b/tests/surface-screenshot-test.c
+@@ -33,7 +33,7 @@
+ #include <errno.h>
+ #include <linux/input.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "file-util.h"
+ 
+diff --git a/tests/surface-test.c b/tests/surface-test.c
+index 0661cc95..1dce42b8 100644
+--- a/tests/surface-test.c
++++ b/tests/surface-test.c
+@@ -28,7 +28,7 @@
+ #include <stdio.h>
+ #include <assert.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ 
+ static void
+diff --git a/tests/weston-test.c b/tests/weston-test.c
+index 12ef54ee..08be2588 100644
+--- a/tests/weston-test.c
++++ b/tests/weston-test.c
+@@ -32,7 +32,7 @@
+ #include <unistd.h>
+ #include <string.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "weston-test-server-protocol.h"
+ 
+diff --git a/xwayland/dnd.c b/xwayland/dnd.c
+index bb3b8cc6..0324a616 100644
+--- a/xwayland/dnd.c
++++ b/xwayland/dnd.c
+@@ -37,7 +37,7 @@
+ #include <signal.h>
+ #include <X11/Xcursor/Xcursor.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "xwayland.h"
+ 
+ #include "cairo-util.h"
+diff --git a/xwayland/window-manager.c b/xwayland/window-manager.c
+index 77260b0f..f5ca5ed9 100644
+--- a/xwayland/window-manager.c
++++ b/xwayland/window-manager.c
+@@ -41,7 +41,7 @@
+ #include <X11/Xcursor/Xcursor.h>
+ #include <linux/input.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "xwayland.h"
+ #include "xwayland-internal-interface.h"
+ 
+diff --git a/xwayland/xwayland.h b/xwayland/xwayland.h
+index 507d534d..15041011 100644
+--- a/xwayland/xwayland.h
++++ b/xwayland/xwayland.h
+@@ -30,7 +30,7 @@
+ #include <xcb/composite.h>
+ #include <cairo/cairo-xcb.h>
+ 
+-#include "compositor.h"
++#include <libweston/libweston.h>
+ #include "compositor/weston.h"
+ #include "xwayland-api.h"
+ #include "weston-debug.h"
+-- 
+2.21.0
+

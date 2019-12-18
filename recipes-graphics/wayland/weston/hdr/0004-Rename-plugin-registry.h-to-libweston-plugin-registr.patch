@@ -1,0 +1,171 @@
+From b4fae4d36c196f1ba1330cb3a174f45681dda690 Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Fri, 29 Mar 2019 17:07:34 +0200
+Subject: [PATCH 04/45] Rename plugin-registry.h to libweston/plugin-registry.h
+
+See "Rename compositor.h to libweston/libweston.h" for rationale.
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ include/libweston/backend-drm.h                    | 2 +-
+ include/libweston/backend-rdp.h                    | 2 +-
+ include/libweston/meson.build                      | 1 +
+ {libweston => include/libweston}/plugin-registry.h | 0
+ ivi-shell/ivi-layout-export.h                      | 2 +-
+ libweston/compositor.c                             | 2 +-
+ libweston/meson.build                              | 1 -
+ libweston/plugin-registry.c                        | 2 +-
+ libweston/windowed-output-api.h                    | 2 +-
+ remoting/remoting-plugin.h                         | 2 +-
+ tests/plugin-registry-test.c                       | 2 +-
+ xwayland/xwayland-api.h                            | 2 +-
+ 12 files changed, 10 insertions(+), 10 deletions(-)
+ rename {libweston => include/libweston}/plugin-registry.h (100%)
+
+diff --git a/include/libweston/backend-drm.h b/include/libweston/backend-drm.h
+index 76c84c8a..f6647e28 100644
+--- a/include/libweston/backend-drm.h
++++ b/include/libweston/backend-drm.h
+@@ -29,7 +29,7 @@
+ #define WESTON_COMPOSITOR_DRM_H
+ 
+ #include <libweston/libweston.h>
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ #ifdef  __cplusplus
+ extern "C" {
+diff --git a/include/libweston/backend-rdp.h b/include/libweston/backend-rdp.h
+index ebdd72f2..7a63643f 100644
+--- a/include/libweston/backend-rdp.h
++++ b/include/libweston/backend-rdp.h
+@@ -31,7 +31,7 @@ extern "C" {
+ #endif
+ 
+ #include <libweston/libweston.h>
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ #define WESTON_RDP_OUTPUT_API_NAME "weston_rdp_output_api_v1"
+ 
+diff --git a/include/libweston/meson.build b/include/libweston/meson.build
+index 6e1aee7e..2e0dfc16 100644
+--- a/include/libweston/meson.build
++++ b/include/libweston/meson.build
+@@ -1,5 +1,6 @@
+ install_headers(
+ 	'libweston.h',
++	'plugin-registry.h',
+ 	'timeline-object.h',
+ 	subdir: dir_include_libweston_install
+ )
+diff --git a/libweston/plugin-registry.h b/include/libweston/plugin-registry.h
+similarity index 100%
+rename from libweston/plugin-registry.h
+rename to include/libweston/plugin-registry.h
+diff --git a/ivi-shell/ivi-layout-export.h b/ivi-shell/ivi-layout-export.h
+index b5e92c04..740e1ac0 100644
+--- a/ivi-shell/ivi-layout-export.h
++++ b/ivi-shell/ivi-layout-export.h
+@@ -60,7 +60,7 @@ extern "C" {
+ 
+ #include "stdbool.h"
+ #include <libweston/libweston.h>
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ #define IVI_SUCCEEDED (0)
+ #define IVI_FAILED (-1)
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index 90f01016..c67349b1 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -69,7 +69,7 @@
+ #include "shared/timespec-util.h"
+ #include "git-version.h"
+ #include "version.h"
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ #include "pixel-formats.h"
+ 
+ #define DEFAULT_REPAINT_WINDOW 7 /* milliseconds */
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 250d64fa..47b5d22c 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -57,7 +57,6 @@ srcs_libweston = [
+ ]
+ 
+ install_headers(
+-	'plugin-registry.h',
+ 	'windowed-output-api.h',
+ 	'../shared/config-parser.h',
+ 	'../shared/matrix.h',
+diff --git a/libweston/plugin-registry.c b/libweston/plugin-registry.c
+index 63d89145..f5ec6fa5 100644
+--- a/libweston/plugin-registry.c
++++ b/libweston/plugin-registry.c
+@@ -30,7 +30,7 @@
+ #include <stdlib.h>
+ 
+ #include <libweston/libweston.h>
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ struct weston_plugin_api {
+ 	struct wl_list link;     /**< in weston_compositor::plugin_api_list */
+diff --git a/libweston/windowed-output-api.h b/libweston/windowed-output-api.h
+index 388413f3..be4dec67 100644
+--- a/libweston/windowed-output-api.h
++++ b/libweston/windowed-output-api.h
+@@ -30,7 +30,7 @@
+ extern "C" {
+ #endif
+ 
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ struct weston_compositor;
+ struct weston_output;
+diff --git a/remoting/remoting-plugin.h b/remoting/remoting-plugin.h
+index bfad20d5..8c82ac71 100644
+--- a/remoting/remoting-plugin.h
++++ b/remoting/remoting-plugin.h
+@@ -29,7 +29,7 @@
+ #define REMOTING_PLUGIN_H
+ 
+ #include <libweston/libweston.h>
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ #define WESTON_REMOTING_API_NAME	"weston_remoting_api_v1"
+ 
+diff --git a/tests/plugin-registry-test.c b/tests/plugin-registry-test.c
+index 30faa85d..4ffc69e5 100644
+--- a/tests/plugin-registry-test.c
++++ b/tests/plugin-registry-test.c
+@@ -29,7 +29,7 @@
+ 
+ #include <libweston/libweston.h>
+ #include "compositor/weston.h"
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ static void
+ dummy_func(void)
+diff --git a/xwayland/xwayland-api.h b/xwayland/xwayland-api.h
+index 317533ef..ff71fddd 100644
+--- a/xwayland/xwayland-api.h
++++ b/xwayland/xwayland-api.h
+@@ -32,7 +32,7 @@ extern "C" {
+ 
+ #include <unistd.h>
+ 
+-#include "plugin-registry.h"
++#include <libweston/plugin-registry.h>
+ 
+ struct weston_compositor;
+ struct weston_xwayland;
+-- 
+2.21.0
+

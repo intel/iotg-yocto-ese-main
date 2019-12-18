@@ -1,0 +1,428 @@
+From 3ddc0430cc6d17a0b2631ccc43b0ddee33ca1c5c Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harish.krupo.kps@intel.com>
+Date: Mon, 24 Dec 2018 16:38:13 +0530
+Subject: [PATCH 21/45] Implement the hdr-metadata-unstable-v1 protocol
+
+This is just a placeholder to get data from clients to test our HDR
+stack. The actual protocol is being discussed here:
+https://patchwork.freedesktop.org/series/57657/
+The protocol is to set the colorspace details of the surface. The HDR
+metadata would also be part of that protocol.
+
+v2: Use the common color primary definitions (Pekka)
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+---
+ include/libweston/hdr_metadata_defs.h |  74 ++++++++++
+ include/libweston/libweston.h         |   5 +
+ libweston/compositor-drm.c            |   4 +
+ libweston/compositor.c                |  13 ++
+ libweston/hdr_metadata.c              | 204 ++++++++++++++++++++++++++
+ libweston/meson.build                 |   3 +
+ protocol/meson.build                  |   1 +
+ 7 files changed, 304 insertions(+)
+ create mode 100644 include/libweston/hdr_metadata_defs.h
+ create mode 100644 libweston/hdr_metadata.c
+
+diff --git a/include/libweston/hdr_metadata_defs.h b/include/libweston/hdr_metadata_defs.h
+new file mode 100644
+index 00000000..d9312866
+--- /dev/null
++++ b/include/libweston/hdr_metadata_defs.h
+@@ -0,0 +1,74 @@
++/*
++ * Copyright © 2018 Intel Corporation
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files (the
++ * "Software"), to deal in the Software without restriction, including
++ * without limitation the rights to use, copy, modify, merge, publish,
++ * distribute, sublicense, and/or sell copies of the Software, and to
++ * permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial
++ * portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#ifndef WESTON_HDR_METADATA_DEFS_H
++#define WESTON_HDR_METADATA_DEFS_H
++
++#include <stdint.h>
++#include <libweston/colorspace.h>
++
++#ifdef  __cplusplus
++extern "C" {
++#endif
++
++enum hdr_metadata_type {
++	HDR_METADATA_TYPE1,
++	HDR_METADATA_TYPE2,
++};
++
++enum hdr_metadata_eotf {
++	WESTON_EOTF_TRADITIONAL_GAMMA_SDR,
++	WESTON_EOTF_TRADITIONAL_GAMMA_HDR,
++	WESTON_EOTF_ST2084,
++	WESTON_EOTF_HLG,
++};
++
++struct weston_hdr_metadata_dynamic {
++	uint8_t size;
++	uint8_t *metadata;
++};
++
++struct weston_hdr_metadata_static {
++	struct color_primaries primaries;
++	double max_luminance;
++	double min_luminance;
++	uint32_t max_cll;
++	uint32_t max_fall;
++	uint8_t eotf;
++};
++
++struct weston_hdr_metadata {
++	enum hdr_metadata_type metadata_type;
++	union {
++		struct weston_hdr_metadata_static static_metadata;
++		struct weston_hdr_metadata_dynamic dynamic_metadata;
++	} metadata;
++};
++
++#ifdef  __cplusplus
++}
++#endif
++
++#endif
+diff --git a/include/libweston/libweston.h b/include/libweston/libweston.h
+index 96583187..53dc15c8 100644
+--- a/include/libweston/libweston.h
++++ b/include/libweston/libweston.h
+@@ -45,6 +45,7 @@ extern "C" {
+ #include <libweston/config-parser.h>
+ #include <libweston/zalloc.h>
+ #include <libweston/timeline-object.h>
++#include <libweston/hdr_metadata_defs.h>
+ 
+ struct weston_geometry {
+ 	int32_t x, y;
+@@ -1389,6 +1390,7 @@ struct weston_surface_state {
+ 
+ 	/* zwp_surface_synchronization_v1.get_release */
+ 	struct weston_buffer_release_reference buffer_release_ref;
++	struct weston_hdr_metadata *hdr_metadata;
+ };
+ 
+ struct weston_surface_activation_data {
+@@ -1518,6 +1520,8 @@ struct weston_surface {
+ 	struct wl_resource *synchronization_resource;
+ 	int acquire_fence_fd;
+ 	struct weston_buffer_release_reference buffer_release_ref;
++	struct wl_resource *hdr_surface_resource;
++	struct weston_hdr_metadata *hdr_metadata;
+ };
+ 
+ struct weston_subsurface {
+@@ -2388,6 +2392,7 @@ weston_debug_compositor_destroy(struct weston_compositor *compositor);
+ void
+ weston_buffer_send_server_error(struct weston_buffer *buffer,
+ 				      const char *msg);
++int weston_hdr_metadata_setup(struct weston_compositor *compositor);
+ 
+ #ifdef  __cplusplus
+ }
+diff --git a/libweston/compositor-drm.c b/libweston/compositor-drm.c
+index 136acb74..2ab5bd51 100644
+--- a/libweston/compositor-drm.c
++++ b/libweston/compositor-drm.c
+@@ -7559,6 +7559,10 @@ drm_backend_create(struct weston_compositor *compositor,
+ 				   " synchronization support failed.\n");
+ 	}
+ 
++	if (weston_hdr_metadata_setup(compositor) < 0)
++		weston_log("Error: initializing hdr metadata "
++			   "support failed.\n");
++
+ 	ret = weston_plugin_api_register(compositor, WESTON_DRM_OUTPUT_API_NAME,
+ 					 &api, sizeof(api));
+ 
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index f83a5a10..77917a0a 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -3372,6 +3372,19 @@ weston_surface_commit_state(struct weston_surface *surface,
+ 			    &state->feedback_list);
+ 	wl_list_init(&state->feedback_list);
+ 
++	//Apply colorspace and HDR metadata state
++	if (surface->pending.hdr_metadata) {
++		if (!surface->hdr_metadata)
++			surface->hdr_metadata =
++				zalloc(sizeof(struct weston_hdr_metadata));
++		memcpy(surface->hdr_metadata,
++		       surface->pending.hdr_metadata,
++		       sizeof(struct weston_hdr_metadata));
++	} else if (surface->hdr_metadata) {
++		free(surface->hdr_metadata);
++		surface->hdr_metadata = NULL;
++	}
++
+ 	wl_signal_emit(&surface->commit_signal, surface);
+ }
+ 
+diff --git a/libweston/hdr_metadata.c b/libweston/hdr_metadata.c
+new file mode 100644
+index 00000000..f3bd39af
+--- /dev/null
++++ b/libweston/hdr_metadata.c
+@@ -0,0 +1,204 @@
++/*
++ * Copyright © 2018 Intel Corporation
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files (the
++ * "Software"), to deal in the Software without restriction, including
++ * without limitation the rights to use, copy, modify, merge, publish,
++ * distribute, sublicense, and/or sell copies of the Software, and to
++ * permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial
++ * portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#include "config.h"
++
++#include <string.h>
++
++#include <libweston/libweston.h>
++#include <libweston/hdr_metadata_defs.h>
++#include "hdr-metadata-unstable-v1-server-protocol.h"
++
++#define STATIC_METADATA(x) data->metadata.static_metadata.x
++
++static void
++hdr_surface_set_metadata(struct wl_client *client,
++			 struct wl_resource *surface_resource,
++			 wl_fixed_t display_primary_r_x,
++			 wl_fixed_t display_primary_r_y,
++			 wl_fixed_t display_primary_g_x,
++			 wl_fixed_t display_primary_g_y,
++			 wl_fixed_t display_primary_b_x,
++			 wl_fixed_t display_primary_b_y,
++			 wl_fixed_t white_point_x,
++			 wl_fixed_t white_point_y,
++			 wl_fixed_t max_luminance,
++			 wl_fixed_t min_luminance,
++			 uint32_t max_cll,
++			 uint32_t max_fall)
++{
++	struct weston_surface *surface =
++		wl_resource_get_user_data(surface_resource);
++
++	struct weston_hdr_metadata *data = surface->pending.hdr_metadata;
++	data->metadata_type = HDR_METADATA_TYPE1;
++	STATIC_METADATA(primaries.r.x) = wl_fixed_to_double(display_primary_r_x);
++	STATIC_METADATA(primaries.r.y) = wl_fixed_to_double(display_primary_r_y);
++	STATIC_METADATA(primaries.g.x) = wl_fixed_to_double(display_primary_g_x);
++	STATIC_METADATA(primaries.g.y) = wl_fixed_to_double(display_primary_g_y);
++	STATIC_METADATA(primaries.b.x) = wl_fixed_to_double(display_primary_b_x);
++	STATIC_METADATA(primaries.b.y) = wl_fixed_to_double(display_primary_b_y);
++	STATIC_METADATA(primaries.white_point.x) = wl_fixed_to_double(white_point_x);
++	STATIC_METADATA(primaries.white_point.y) = wl_fixed_to_double(white_point_y);
++	STATIC_METADATA(max_luminance) = wl_fixed_to_double(max_luminance);
++	STATIC_METADATA(min_luminance) = wl_fixed_to_double(min_luminance);
++	STATIC_METADATA(max_cll) = max_cll;
++	STATIC_METADATA(max_fall) = max_fall;
++}
++
++static void
++hdr_surface_set_eotf(struct wl_client *client,
++		     struct wl_resource *surface_resource,
++		     uint32_t eotf)
++{
++	enum hdr_metadata_eotf internal_eotf = WESTON_EOTF_TRADITIONAL_GAMMA_SDR;
++	struct weston_surface *surface =
++		wl_resource_get_user_data(surface_resource);
++
++	struct weston_hdr_metadata *data = surface->pending.hdr_metadata;
++
++
++	switch (eotf) {
++	case ZWP_HDR_SURFACE_V1_EOTF_ST_2084_PQ:
++		internal_eotf = WESTON_EOTF_ST2084;
++		break;
++	case ZWP_HDR_SURFACE_V1_EOTF_HLG:
++		internal_eotf = WESTON_EOTF_HLG;
++		break;
++	}
++
++	data->metadata_type = HDR_METADATA_TYPE1;
++	STATIC_METADATA(eotf) = internal_eotf;
++}
++
++static void
++hdr_surface_destroy(struct wl_client *client,
++		    struct wl_resource *resource)
++{
++	wl_resource_destroy(resource);
++}
++
++static const struct zwp_hdr_surface_v1_interface
++zwp_hdr_surface_implementation = {
++	.destroy = hdr_surface_destroy,
++	.set = hdr_surface_set_metadata,
++	.set_eotf = hdr_surface_set_eotf,
++};
++
++
++static void
++hdr_metadata_destroy_request(struct wl_client *client,
++			     struct wl_resource *resource)
++{
++	wl_resource_destroy(resource);
++}
++
++static void
++destroy_hdr_surface(struct wl_resource *resource)
++{
++	struct weston_surface *surface =
++		wl_resource_get_user_data(resource);
++
++	if (!surface)
++		return;
++
++	surface->hdr_surface_resource = NULL;
++	if (surface->pending.hdr_metadata)
++		free(surface->pending.hdr_metadata);
++	surface->pending.hdr_metadata = NULL;
++}
++
++static void
++hdr_metadata_get_hdr_surface(struct wl_client *client,
++			     struct wl_resource *hdr_metadata,
++			     uint32_t id,
++			     struct wl_resource *surface_resource)
++{
++	int version = wl_resource_get_version(hdr_metadata);
++	struct weston_surface *surface =
++		wl_resource_get_user_data(surface_resource);
++
++	struct wl_resource *resource;
++
++	if (surface->hdr_surface_resource) {
++		wl_resource_post_error(hdr_metadata,
++				       ZWP_HDR_METADATA_V1_ERROR_HDR_SURFACE_EXISTS,
++				       "a hdr surface for that surface already exists");
++		return;
++	}
++
++	resource = wl_resource_create(client, &zwp_hdr_surface_v1_interface,
++				      version, id);
++	if (resource == NULL) {
++		wl_client_post_no_memory(client);
++		return;
++	}
++
++	wl_resource_set_implementation(resource, &zwp_hdr_surface_implementation,
++				       surface, destroy_hdr_surface);
++
++	surface->hdr_surface_resource = resource;
++	surface->pending.hdr_metadata =
++		zalloc(sizeof(struct weston_hdr_metadata));
++
++	if (!surface->pending.hdr_metadata) {
++		wl_client_post_no_memory(client);
++		return;
++	}
++}
++
++static const struct zwp_hdr_metadata_v1_interface
++zwp_hdr_metadata_implementation = {
++	.destroy = hdr_metadata_destroy_request,
++	.get_hdr_surface = hdr_metadata_get_hdr_surface,
++};
++
++static void
++bind_hdr_metadata(struct wl_client *client,
++		void *data, uint32_t version, uint32_t id)
++{
++	struct wl_resource *resource;
++	resource = wl_resource_create(client, &zwp_hdr_metadata_v1_interface,
++				      version, id);
++	if (resource == NULL) {
++		wl_client_post_no_memory(client);
++		return;
++	}
++
++	wl_resource_set_implementation(resource,
++				       &zwp_hdr_metadata_implementation,
++				       NULL, NULL);
++}
++
++WL_EXPORT int
++weston_hdr_metadata_setup(struct weston_compositor *compositor)
++{
++	if (!wl_global_create(compositor->wl_display,
++			      &zwp_hdr_metadata_v1_interface, 1,
++			      compositor, bind_hdr_metadata))
++		return -1;
++
++	return 0;
++}
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 24eb044f..3b956c95 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -27,6 +27,7 @@ srcs_libweston = [
+ 	'touch-calibration.c',
+ 	'weston-debug.c',
+ 	'zoom.c',
++	'hdr_metadata.c',
+ 	'../shared/matrix.c',
+ 	'../shared/colorspace.c',
+ 	linux_dmabuf_unstable_v1_protocol_c,
+@@ -55,6 +56,8 @@ srcs_libweston = [
+ 	viewporter_server_protocol_h,
+ 	weston_debug_protocol_c,
+ 	weston_debug_server_protocol_h,
++	hdr_metadata_unstable_v1_protocol_c,
++	hdr_metadata_unstable_v1_server_protocol_h,
+ ]
+ 
+ if get_option('renderer-gl')
+diff --git a/protocol/meson.build b/protocol/meson.build
+index 34026ff9..e2691839 100644
+--- a/protocol/meson.build
++++ b/protocol/meson.build
+@@ -37,6 +37,7 @@ generated_protocols = [
+ 	[ 'xdg-output', 'v1' ],
+ 	[ 'xdg-shell', 'v6' ],
+ 	[ 'xdg-shell', 'stable' ],
++	[ 'hdr-metadata', 'v1' ],
+ ]
+ 
+ foreach proto: generated_protocols
+-- 
+2.21.0
+

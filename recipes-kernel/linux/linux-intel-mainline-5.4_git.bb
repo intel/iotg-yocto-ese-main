@@ -33,9 +33,6 @@ SRC_URI_append = " file://resctrl-5.4.scc"
 # Programmable Software Engine
 SRC_URI_append = " file://ishtp-5.4.scc"
 
-# IO patches
-SRC_URI_append = " file://io-5.4.scc"
-
 # Safety Island
 SRC_URI_append = " file://isi-5.4.scc"
 
@@ -48,5 +45,11 @@ SRC_URI_append = " file://iommu-5.4.scc"
 # audio patches
 SRC_URI_append = " file://audio-5.4.scc"
 
+# graphic patches
+SRC_URI_append = " file://graphics-5.4.scc"
+
+# IO patches
+SRC_URI_append = " file://io-5.4.scc"
+
 # ethernet patches
-SRC_URI_append = " file://ethernet-5.4.scc"
+SRC_UIR_append = " file://ethernet-5.4.scc"

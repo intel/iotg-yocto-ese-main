@@ -1,0 +1,58 @@
+From 79860e8f1b5144a3913505794b611cfe009bcc0f Mon Sep 17 00:00:00 2001
+From: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Date: Fri, 6 Dec 2019 19:35:43 -0800
+Subject: [PATCH 45/45] Fix compilation error associated with libweston
+ dependency
+
+Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+---
+ libweston/meson.build | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 2369484f..029fbcf8 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -89,6 +89,19 @@ dep_libweston = declare_dependency(
+ 	dependencies: deps_libweston
+ )
+ 
++# XXX: We should be able to use dep_libweston.partial_dependency() instead
++# of this, but a Meson bug makes it not work. It will be fixed with
++# https://github.com/mesonbuild/meson/pull/5167
++# in hopefully Meson 0.51.
++dep_libweston_h = declare_dependency(
++	include_directories: [ include_directories('.'), public_inc ],
++	dependencies: [
++		dep_pixman.partial_dependency(compile_args: true),
++		dep_xkbcommon.partial_dependency(compile_args: true),
++		dep_wayland_server.partial_dependency(compile_args: true)
++	]
++)
++
+ pkgconfig.generate(
+ 	lib_weston,
+ 	filebase: 'libweston-@0@'.format(libweston_major),
+@@ -116,10 +129,7 @@ srcs_session_helper = [
+ 	'launcher-util.c',
+ 	'launcher-weston-launch.c',
+ ]
+-deps_session_helper = [
+-	# for compositor.h needing pixman.h
+-	dep_pixman.partial_dependency(compile_args: true)
+-]
++deps_session_helper = [ dep_libweston_h ]
+ 
+ if get_option('backend-drm')
+ 	deps_session_helper += dep_libdrm
+@@ -358,6 +368,7 @@ if get_option('backend-x11')
+ 	endif
+ 
+ 	deps_x11 = [
++		dep_libweston,
+ 		dep_x11_xcb,
+ 		dep_lib_cairo_shared,
+ 		dep_pixman,
+-- 
+2.21.0
+

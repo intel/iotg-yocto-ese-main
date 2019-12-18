@@ -1,0 +1,331 @@
+From 64cdd998634dff1416b915074c50b14550174837 Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harish.krupo.kps@intel.com>
+Date: Wed, 3 Apr 2019 10:43:30 +0530
+Subject: [PATCH 34/45] gl-shaders: Add tone mapping shaders
+
+This commit adds the following tone mapping shaders:
+
+HDR->HDR:
+========
+The tone mapping employs linear luminance scaling based on the maximum
+display luminance. It appies the scaling as follows:
+
+Range = content_max_luma - content_min_luma
+out_luma = disp_max_luma * ( in_luma - content_min_luma / Range)
+
+SDR->HDR:
+========
+The current implementation of SDR to HDR tone mapping shader uses a
+gamma function and produces a maximum output of 1000.0 nits.
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+
+HDR->SDR:
+========
+The HDR to SDR luminance mapping is applied using the hable tone mapping
+operator.
+Reference: http://filmicworlds.com/blog/filmic-tonemapping-operators/
+
+Luminance Scaling:
+=================
+This patch also adds shaders to scale/normalize luminance based on the
+encoded eotf/oetf curve.
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+---
+ libweston/renderer-gl/gl-renderer-private.h |  12 ++
+ libweston/renderer-gl/gl-shaders.c          | 185 +++++++++++++++++++-
+ 2 files changed, 196 insertions(+), 1 deletion(-)
+
+diff --git a/libweston/renderer-gl/gl-renderer-private.h b/libweston/renderer-gl/gl-renderer-private.h
+index 8b41872e..a0864e5b 100644
+--- a/libweston/renderer-gl/gl-renderer-private.h
++++ b/libweston/renderer-gl/gl-renderer-private.h
+@@ -60,13 +60,22 @@ enum gl_shader_gamma_variant {
+ 	SHADER_GAMMA_HLG,
+ };
+ 
++enum gl_shader_tone_map_variant {
++	SHADER_TONE_MAP_NONE = 0,
++	SHADER_TONE_MAP_HDR_TO_SDR,
++	SHADER_TONE_MAP_SDR_TO_HDR,
++	SHADER_TONE_MAP_HDR_TO_HDR,
++};
++
+ struct gl_shader_requirements
+ {
+ 	enum gl_shader_texture_variant variant;
+ 	bool debug;
+ 	bool csc_matrix;
+ 	enum gl_shader_degamma_variant degamma;
++	enum gl_shader_gamma_variant nl_variant;
+ 	enum gl_shader_gamma_variant gamma;
++	enum gl_shader_tone_map_variant tone_mapping;
+ };
+ 
+ struct gl_shader {
+@@ -78,6 +87,9 @@ struct gl_shader {
+ 	GLint alpha_uniform;
+ 	GLint color_uniform;
+ 	GLint csc_uniform;
++	GLint display_max_luminance;
++	GLint content_max_luminance;
++	GLint content_min_luminance;
+ 	struct wl_list link; /* gl_renderer::shader_list */
+ };
+ 
+diff --git a/libweston/renderer-gl/gl-shaders.c b/libweston/renderer-gl/gl-shaders.c
+index 11eca084..a4aab678 100644
+--- a/libweston/renderer-gl/gl-shaders.c
++++ b/libweston/renderer-gl/gl-shaders.c
+@@ -246,6 +246,146 @@ static const char oetf_shader[] =
+ static const char csc_shader[] =
+ 	"    gl_FragColor.rgb = clamp((csc * gl_FragColor.rgb), 0.0, 1.0);\n"
+ 	;
++
++static const char hdr_uniforms[] =
++	"uniform float display_max_luminance;\n"
++	"uniform float content_max_luminance;\n"
++	"uniform float content_min_luminance;\n"
++	;
++
++#define LUMINANCE_FROM_RGB					\
++	"    // These are ITU 2100 recommendations\n"		\
++	"    float kr = 0.2627;\n"				\
++	"    float kb = 0.0593;\n"				\
++	"    float kg = 1.0 - kr - kb;\n"			\
++	"    float luma = dot(color, vec3(kr, kg, kb));\n"	\
++
++/* Luminance scaling */
++
++static const char sl_srgb[] =
++	"vec3 ScaleLuminance(vec3 color) {\n"
++	"    return color * display_max_luminance;\n"
++	"}\n"
++	"\n"
++	;
++
++static const char sl_pq[] =
++	"vec3 ScaleLuminance(vec3 color) {\n"
++	"    return color * 10000.0;\n"
++	"}\n"
++	"\n"
++	;
++
++static const char sl_hlg[] =
++	"vec3 ScaleLuminance(vec3 color) {\n"
++	LUMINANCE_FROM_RGB
++	"    return color * 1000.0 * pow(luma, 0.2);\n"
++	"}\n"
++	"\n"
++	;
++
++/* Luminance Normalization */
++
++static const char nl_srgb[] =
++	"vec3 NormalizeLuminance(vec3 color) {\n"
++	"    return color / display_max_luminance;\n"
++	"}\n"
++	"\n"
++	;
++
++static const char nl_pq[] =
++	"vec3 NormalizeLuminance(vec3 color) {\n"
++	"    return color / 10000.0;\n"
++	"}\n"
++	"\n"
++	;
++
++static const char nl_hlg[] =
++	"vec3 NormalizeLuminance(vec3 color) {\n"
++	LUMINANCE_FROM_RGB
++	"    return (color / 1000.0) * pow(luma, -0.2);\n"
++	"}\n"
++	"\n"
++	;
++
++static const char sl_shader[] =
++	"    gl_FragColor.rgb = ScaleLuminance(gl_FragColor.rgb);\n"
++	;
++
++static const char nl_shader[] =
++	"    gl_FragColor.rgb = NormalizeLuminance(gl_FragColor.rgb);\n"
++	;
++
++/* Tone mapping Shaders */
++
++static const char hdr_shader[] =
++	"    gl_FragColor.rgb = tone_mapping(gl_FragColor.rgb);\n"
++	;
++
++/* No tone mapping */
++static const char noop_tm[] =
++	"vec3 tone_mapping(vec3 color) {\n"
++	"    return color;\n"
++	"}\n"
++	"\n"
++	;
++
++/* HDR->SDR */
++static const char hdr_to_sdr_tm[] =
++	"vec3 hable_curve(vec3 c) {\n"
++	"    float A = 0.15;\n"
++	"    float B = 0.50;\n"
++	"    float C = 0.10;\n"
++	"    float D = 0.20;\n"
++	"    float E = 0.02;\n"
++	"    float F = 0.30;\n"
++	"    vec3 numerator = (c * (A * c + C * B) + D * E);\n"
++	"    vec3 denominator = (c * (A * c + B) + D * F);\n"
++	"    c = (numerator / denominator) - E / F;\n"
++	"    return c;\n"
++	"}\n"
++	"\n"
++	"vec3 tone_mapping(vec3 color) {\n"
++	"    float W = 11.2;\n"
++	"    float exposure = 100.0;\n"
++	"    color *= exposure;\n"
++	"    color = hable_curve(color);\n"
++	"    float white = hable_curve(vec3(W, 0, 0)).x;\n"
++	"    color /= white;\n"
++	"    return color;\n"
++	"}\n"
++	"\n"
++	;
++
++static const char sdr_to_hdr_tm[] =
++	"vec3 tone_mapping(vec3 color) {\n"
++	LUMINANCE_FROM_RGB
++	"    highp float tone_mapped_luma = 0.0;"
++	"\n"
++	"    if (luma > 5.0) {\n"
++	"        tone_mapped_luma = luma / display_max_luminance;\n"
++	"        tone_mapped_luma = pow(tone_mapped_luma, 1.5);\n"
++	"        tone_mapped_luma *= display_max_luminance;\n"
++	"        color *= tone_mapped_luma / luma;\n"
++	"    }\n"
++	"    return color;\n"
++	"}\n"
++	"\n"
++	;
++
++static const char hdr_to_hdr_tm[] =
++	"vec3 tone_mapping(vec3 color) {\n"
++	"    float range = content_max_luminance - content_min_luminance;\n"
++	LUMINANCE_FROM_RGB
++	"    float tone_mapped_luma = luma - content_min_luminance;\n"
++	"    tone_mapped_luma /= range;\n"
++	"    tone_mapped_luma *= display_max_luminance;\n"
++	"    color *= tone_mapped_luma / luma;\n"
++	"    return color;\n"
++	"}\n"
++	"\n"
++	;
++
+ struct gl_shader_source {
+ 	const char *parts[64];
+ 	uint32_t len;
+@@ -266,16 +406,21 @@ generate_fs_hdr_shader(struct gl_shader_source *shader_source,
+ 	if (requirements->csc_matrix)
+ 		gl_shader_source_add(shader_source, "uniform mat3 csc;\n");
+ 
++	gl_shader_source_add(shader_source, hdr_uniforms);
++
+ 	// Choose the EOTF
+ 	switch (requirements->degamma) {
+ 	case SHADER_DEGAMMA_SRGB:
+ 		gl_shader_source_add(shader_source, eotf_srgb);
++		gl_shader_source_add(shader_source, sl_srgb);
+ 		break;
+ 	case SHADER_DEGAMMA_PQ:
+ 		gl_shader_source_add(shader_source, eotf_pq);
++		gl_shader_source_add(shader_source, sl_pq);
+ 		break;
+ 	case SHADER_DEGAMMA_HLG:
+ 		gl_shader_source_add(shader_source, eotf_hlg);
++		gl_shader_source_add(shader_source, sl_hlg);
+ 		break;
+ 	default:
+ 		gl_shader_source_add(shader_source, eotf_default);
+@@ -283,32 +428,64 @@ generate_fs_hdr_shader(struct gl_shader_source *shader_source,
+ 	}
+ 
+ 	// Choose the OETF
+-	switch (requirements->gamma) {
++	switch (requirements->gamma | requirements->nl_variant) {
+ 	case SHADER_GAMMA_SRGB:
+ 		gl_shader_source_add(shader_source, oetf_srgb);
++		gl_shader_source_add(shader_source, nl_srgb);
+ 		break;
+ 	case SHADER_GAMMA_PQ:
+ 		gl_shader_source_add(shader_source, oetf_pq);
++		gl_shader_source_add(shader_source, nl_pq);
+ 		break;
+ 	case SHADER_GAMMA_HLG:
+ 		gl_shader_source_add(shader_source, oetf_hlg);
++		gl_shader_source_add(shader_source, nl_hlg);
+ 		break;
+ 	default:
+ 		gl_shader_source_add(shader_source, oetf_default);
+ 		break;
+ 	}
++
++	// Pick the tone mapping shader variant
++	switch (requirements->tone_mapping) {
++	case SHADER_TONE_MAP_NONE:
++		gl_shader_source_add(shader_source, noop_tm);
++		break;
++	case SHADER_TONE_MAP_HDR_TO_SDR:
++		gl_shader_source_add(shader_source, hdr_to_sdr_tm);
++		break;
++	case SHADER_TONE_MAP_SDR_TO_HDR:
++		gl_shader_source_add(shader_source, sdr_to_hdr_tm);
++		break;
++	case SHADER_TONE_MAP_HDR_TO_HDR:
++		gl_shader_source_add(shader_source, hdr_to_hdr_tm);
++		break;
++	}
+ }
+ 
+ static void
+ generate_hdr_process_shader(struct gl_shader_source *shader_source,
+ 			    struct gl_shader_requirements *requirements)
+ {
++	uint32_t need_range_increment =
++		(requirements->tone_mapping == SHADER_TONE_MAP_HDR_TO_HDR) ||
++		(requirements->tone_mapping == SHADER_TONE_MAP_SDR_TO_HDR);
++
+ 	if (requirements->degamma)
+ 		gl_shader_source_add(shader_source, eotf_shader);
+ 
+ 	if (requirements->csc_matrix)
+ 		gl_shader_source_add(shader_source, csc_shader);
+ 
++	if (requirements->degamma && need_range_increment)
++		gl_shader_source_add(shader_source, sl_shader);
++
++	if (requirements->tone_mapping)
++		gl_shader_source_add(shader_source, hdr_shader);
++
++	if (requirements->nl_variant)
++		gl_shader_source_add(shader_source, nl_shader);
++
+ 	if (requirements->gamma)
+ 		gl_shader_source_add(shader_source, oetf_shader);
+ 
+@@ -534,6 +711,12 @@ gl_shader_create(struct gl_shader_generator *sg,
+ 	shader->alpha_uniform = glGetUniformLocation(shader->program, "alpha");
+ 	shader->color_uniform = glGetUniformLocation(shader->program, "color");
+ 	shader->csc_uniform = glGetUniformLocation(shader->program, "csc");
++	shader->display_max_luminance =
++		glGetUniformLocation(shader->program, "display_max_luminance");
++	shader->content_max_luminance =
++		glGetUniformLocation(shader->program, "content_max_luminance");
++	shader->content_min_luminance =
++		glGetUniformLocation(shader->program, "content_min_luminance");
+ 
+ 	return shader;
+ }
+-- 
+2.21.0
+

@@ -1,0 +1,29 @@
+From b22bcaf9c1027e23814e9e0f585a9b055faae208 Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harish.krupo.kps@intel.com>
+Date: Mon, 11 Mar 2019 19:40:11 +0530
+Subject: [PATCH 29/45] pixman-renderer: Implement the output colorspace / HDR
+ interface
+
+NULL implementations for now.
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+---
+ libweston/pixman-renderer.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/libweston/pixman-renderer.c b/libweston/pixman-renderer.c
+index 8677023c..ecca4df8 100644
+--- a/libweston/pixman-renderer.c
++++ b/libweston/pixman-renderer.c
+@@ -881,6 +881,8 @@ pixman_renderer_init(struct weston_compositor *ec)
+ 		pixman_renderer_surface_get_content_size;
+ 	renderer->base.surface_copy_content =
+ 		pixman_renderer_surface_copy_content;
++	renderer->base.set_output_colorspace = NULL;
++	renderer->base.set_output_hdr_metadata = NULL;
+ 	ec->renderer = &renderer->base;
+ 	ec->capabilities |= WESTON_CAP_ROTATION_ANY;
+ 	ec->capabilities |= WESTON_CAP_CAPTURE_YFLIP;
+-- 
+2.21.0
+

@@ -1,0 +1,96 @@
+From 4d2f8f54af74328c9ca5800326b72c705ed353bb Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Thu, 4 Apr 2019 15:41:02 +0300
+Subject: [PATCH 10/45] Rename version.h to libweston/version.h
+
+This is an installed public header, and without the subdir would surely
+conflict with something else.
+
+include/libweston/meson.build is necessary for putting the generated header in
+the right subdirectory so that '#include <libweston/version.h>' can work.
+
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+---
+ compositor/main.c                             |  2 +-
+ include/libweston/meson.build                 | 12 ++++++++++++
+ {libweston => include/libweston}/version.h.in |  0
+ libweston/compositor.c                        |  2 +-
+ meson.build                                   | 11 -----------
+ 5 files changed, 14 insertions(+), 13 deletions(-)
+ rename {libweston => include/libweston}/version.h.in (100%)
+
+diff --git a/compositor/main.c b/compositor/main.c
+index 28c13d84..83b9f375 100644
+--- a/compositor/main.c
++++ b/compositor/main.c
+@@ -52,7 +52,7 @@
+ #include "../shared/helpers.h"
+ #include "../shared/string-helpers.h"
+ #include "git-version.h"
+-#include "version.h"
++#include <libweston/version.h>
+ #include "weston.h"
+ 
+ #include <libweston/backend-drm.h>
+diff --git a/include/libweston/meson.build b/include/libweston/meson.build
+index 340cd255..8e8f8160 100644
+--- a/include/libweston/meson.build
++++ b/include/libweston/meson.build
+@@ -17,3 +17,15 @@ backend_wayland_h =  files('backend-wayland.h')
+ backend_x11_h =      files('backend-x11.h')
+ 
+ xwayland_api_h = files('xwayland-api.h')
++
++libweston_version_h = configuration_data()
++libweston_version_h.set('WESTON_VERSION_MAJOR', version_weston_arr[0])
++libweston_version_h.set('WESTON_VERSION_MINOR', version_weston_arr[1])
++libweston_version_h.set('WESTON_VERSION_MICRO', version_weston_arr[2])
++libweston_version_h.set('WESTON_VERSION', version_weston)
++version_h = configure_file(
++	input: 'version.h.in',
++	output: 'version.h',
++	configuration: libweston_version_h
++)
++install_headers(version_h, subdir: dir_include_libweston_install)
+diff --git a/libweston/version.h.in b/include/libweston/version.h.in
+similarity index 100%
+rename from libweston/version.h.in
+rename to include/libweston/version.h.in
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index c67349b1..f83a5a10 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -68,7 +68,7 @@
+ #include "shared/string-helpers.h"
+ #include "shared/timespec-util.h"
+ #include "git-version.h"
+-#include "version.h"
++#include <libweston/version.h>
+ #include <libweston/plugin-registry.h>
+ #include "pixel-formats.h"
+ 
+diff --git a/meson.build b/meson.build
+index ab54bf70..5712b542 100644
+--- a/meson.build
++++ b/meson.build
+@@ -46,17 +46,6 @@ public_inc = include_directories('include')
+ 
+ pkgconfig = import('pkgconfig')
+ 
+-libweston_version_h = configuration_data()
+-libweston_version_h.set('WESTON_VERSION_MAJOR', version_weston_arr[0])
+-libweston_version_h.set('WESTON_VERSION_MINOR', version_weston_arr[1])
+-libweston_version_h.set('WESTON_VERSION_MICRO', version_weston_arr[2])
+-libweston_version_h.set('WESTON_VERSION', version_weston)
+-version_h = configure_file(
+-	input: 'libweston/version.h.in',
+-	output: 'version.h',
+-	configuration: libweston_version_h
+-)
+-install_headers(version_h, subdir: dir_include_libweston)
+ git_version_h = vcs_tag(
+ 	input: 'libweston/git-version.h.meson',
+ 	output: 'git-version.h',
+-- 
+2.21.0
+

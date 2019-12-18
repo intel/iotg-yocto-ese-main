@@ -1,0 +1,188 @@
+From 1456a70e5295beab52843cf1b8c07957f041742b Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harishkrupo@gmail.com>
+Date: Thu, 18 Apr 2019 21:45:48 +0530
+Subject: [PATCH 19/45] gl-shaders: Add debug scope to print generated shader
+
+Signed-off-by: Harish Krupo <harishkrupo@gmail.com>
+---
+ libweston/renderer-gl/gl-renderer-private.h | 11 +++-
+ libweston/renderer-gl/gl-renderer.c         |  7 ++-
+ libweston/renderer-gl/gl-shaders.c          | 60 +++++++++++++++++----
+ 3 files changed, 67 insertions(+), 11 deletions(-)
+
+diff --git a/libweston/renderer-gl/gl-renderer-private.h b/libweston/renderer-gl/gl-renderer-private.h
+index c9ac88ec..a970e2aa 100644
+--- a/libweston/renderer-gl/gl-renderer-private.h
++++ b/libweston/renderer-gl/gl-renderer-private.h
+@@ -61,6 +61,8 @@ struct gl_shader {
+ 	struct wl_list link; /* gl_renderer::shader_list */
+ };
+ 
++struct gl_shader_generator;
++
+ void
+ gl_shader_requirements_init(struct gl_shader_requirements *requirements);
+ 
+@@ -68,6 +70,13 @@ void
+ gl_shader_destroy(struct gl_shader *shader);
+ 
+ struct gl_shader *
+-gl_shader_create(struct gl_shader_requirements *requirements);
++gl_shader_create(struct gl_shader_generator *sg,
++		 struct gl_shader_requirements *requirements);
++
++struct gl_shader_generator *
++gl_shader_generator_create(struct weston_compositor *compositor);
++
++void
++gl_shader_generator_destroy(struct gl_shader_generator *sg);
+ 
+ #endif
+diff --git a/libweston/renderer-gl/gl-renderer.c b/libweston/renderer-gl/gl-renderer.c
+index 6dea3aa7..f40ea33e 100644
+--- a/libweston/renderer-gl/gl-renderer.c
++++ b/libweston/renderer-gl/gl-renderer.c
+@@ -261,6 +261,7 @@ struct gl_renderer {
+ 	struct wl_list shader_list;
+ 
+ 	bool supports_half_float_texture;
++	struct gl_shader_generator *sg;
+ };
+ 
+ enum timeline_render_point_type {
+@@ -856,7 +857,7 @@ use_gl_program(struct gl_renderer *gr,
+ 	}
+ 
+ 	if (!shader) {
+-		shader = gl_shader_create(&reqs);
++		shader = gl_shader_create(gr->sg, &reqs);
+ 		if (!shader) {
+ 			weston_log("warning: failed to generate gl program\n");
+ 			return;
+@@ -3307,6 +3308,8 @@ gl_renderer_destroy(struct weston_compositor *ec)
+ 	if (gr->fan_binding)
+ 		weston_binding_destroy(gr->fan_binding);
+ 
++	gl_shader_generator_destroy(gr->sg);
++
+ 	free(gr);
+ }
+ 
+@@ -3706,6 +3709,8 @@ gl_renderer_display_create(struct weston_compositor *ec, EGLenum platform,
+ 		goto fail_with_error;
+ 	}
+ 
++	gr->sg = gl_shader_generator_create(ec);
++
+ 	return 0;
+ 
+ fail_with_error:
+diff --git a/libweston/renderer-gl/gl-shaders.c b/libweston/renderer-gl/gl-shaders.c
+index 0946f910..0c90a737 100644
+--- a/libweston/renderer-gl/gl-shaders.c
++++ b/libweston/renderer-gl/gl-shaders.c
+@@ -32,6 +32,11 @@
+ #include <libweston/libweston.h>
+ #include "gl-renderer-private.h"
+ #include "shared/helpers.h"
++#include "weston-debug.h"
++
++struct gl_shader_generator {
++	struct weston_debug_scope *debug;
++};
+ 
+ static const char vertex_shader[] =
+ 	"uniform mat4 proj;\n"
+@@ -211,11 +216,33 @@ generate_fs_variants(struct gl_shader_source *shader_source,
+ }
+ 
+ static void
+-generate_fragment_shader(struct gl_shader_source *shader_source,
+-			 struct gl_shader_requirements *requirements)
++log_shader(struct gl_shader_generator *sg,
++	   struct gl_shader_source *shader_source)
+ {
++	char *str;
++	FILE *fp;
++	size_t len;
+ 	uint32_t i;
+ 
++	fp = open_memstream(&str, &len);
++	assert(fp);
++
++	fprintf(fp, "Generated shader length: %d, shader:\n", shader_source->len);
++	for(i = 0; i < shader_source->len; i++) {
++		fprintf(fp, "%s", shader_source->parts[i]);
++	}
++	fprintf(fp, "\n");
++	fclose(fp);
++
++	weston_debug_scope_printf(sg->debug, "%s", str);
++	free(str);
++}
++
++static void
++generate_fragment_shader(struct gl_shader_generator *sg,
++			 struct gl_shader_source *shader_source,
++			 struct gl_shader_requirements *requirements)
++{
+ 	/* Write the header and required uniforms */
+ 	generate_fs_uniforms(shader_source, requirements);
+ 
+@@ -230,11 +257,7 @@ generate_fragment_shader(struct gl_shader_source *shader_source,
+ 
+ 	gl_shader_source_add(shader_source, fragment_brace);
+ 
+-	weston_log("Generated shader length: %d, shader:\n", shader_source->len);
+-	for(i = 0; i < shader_source->len; i++) {
+-		weston_log_continue("%s", shader_source->parts[i]);
+-	}
+-	weston_log_continue("\n");
++	log_shader(sg, shader_source);
+ }
+ 
+ void
+@@ -278,7 +301,8 @@ compile_shader(GLenum type, int count, const char **sources)
+ }
+ 
+ struct gl_shader *
+-gl_shader_create(struct gl_shader_requirements *requirements)
++gl_shader_create(struct gl_shader_generator *sg,
++		 struct gl_shader_requirements *requirements)
+ {
+ 	struct gl_shader *shader = NULL;
+ 	char msg[512];
+@@ -298,7 +322,7 @@ gl_shader_create(struct gl_shader_requirements *requirements)
+ 	vertex_source[0] = vertex_shader;
+ 
+ 	fragment_source.len = 0;
+-	generate_fragment_shader(&fragment_source, requirements);
++	generate_fragment_shader(sg, &fragment_source, requirements);
+ 
+ 	shader->vertex_shader = compile_shader(GL_VERTEX_SHADER, 1,
+ 					       vertex_source);
+@@ -330,3 +354,21 @@ gl_shader_create(struct gl_shader_requirements *requirements)
+ 
+ 	return shader;
+ }
++
++struct gl_shader_generator *
++gl_shader_generator_create(struct weston_compositor *compositor)
++{
++	struct gl_shader_generator *sg = zalloc(sizeof *sg);
++	sg->debug = weston_compositor_add_debug_scope(compositor, "gl-shader-generator",
++						      "Debug messages from GL renderer",
++						      NULL, NULL);
++	return sg;
++}
++
++void
++gl_shader_generator_destroy(struct gl_shader_generator *sg)
++{
++	weston_debug_scope_destroy(sg->debug);
++	sg->debug = NULL;
++	free(sg);
++}
+-- 
+2.21.0
+
