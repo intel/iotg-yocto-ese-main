@@ -1,0 +1,32 @@
+From ac90223b37027ffc76b8af282fc51f35de35e683 Mon Sep 17 00:00:00 2001
+From: "Wong, Vincent Por Yin" <vincent.por.yin.wong@intel.com>
+Date: Mon, 23 Dec 2019 15:32:00 +0800
+Subject: [PATCH 09/13] net: stmmac: skip stmmac_tstamp_interrupt in
+ stmmac_msi_intr_rx
+
+stmmac_tstamp_interrupt() is used for retrieving externally-triggered
+timestamps. This is monitored in stmmac_common_interrupts and isn't
+required in stmmac_msi_intr_rx().
+
+Signed-off-by: Wong, Vincent Por Yin <vincent.por.yin.wong@intel.com>
+Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index c81d3a3a281a..5ae8d1d27b43 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -5147,8 +5147,6 @@ static irqreturn_t stmmac_msi_intr_rx(int irq, void *data)
+ 		stmmac_napi_check(priv, chan, DMA_DIR_RX);
+ 	}
+ 
+-	stmmac_tstamp_interrupt(priv, priv);
+-
+ 	return IRQ_HANDLED;
+ }
+ 
+-- 
+2.20.1
+

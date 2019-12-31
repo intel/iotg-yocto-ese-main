@@ -3,3 +3,16 @@ patch ethernet-5.4/0002-net-networkproxy-Fix-unable-to-get-mDNS-handling-dec.pat
 patch ethernet-5.4/0003-net-stmmac-call-stmmac_rx_zc-directly-in-msi_intr_rx.patch
 patch ethernet-5.4/0004-net-stmmac-Fixed-MDIO-bus-access-race-condition.patch
 patch ethernet-5.4/0005-net-stmmac-enable-safety-features-for-EHL.patch
+patch ethernet-5.4-set-2/0001-net-phy-Add-phy-EEE-support-for-88E2110-PHY.patch
+patch ethernet-5.4-set-2/0002-net-networkproxy-Fix-unable-to-get-mDNS-handling-dec.patch
+patch ethernet-5.4-set-2/0003-net-stmmac-call-stmmac_rx_zc-directly-in-msi_intr_rx.patch
+patch ethernet-5.4-set-2/0004-net-stmmac-Fixed-MDIO-bus-access-race-condition.patch
+patch ethernet-5.4-set-2/0005-net-stmmac-enable-safety-features-for-EHL.patch
+patch ethernet-5.4-set-2/0006-net-stmmac-add-TGL-ingress-and-egress-phy-latency.patch
+patch ethernet-5.4-set-2/0007-net-stmmac-set-EHL-PTP-clock-rate-to-204.86Mhz.patch
+patch ethernet-5.4-set-2/0008-net-stmmac-restructure-Rx-Tx-hardware-timestamping-f.patch
+patch ethernet-5.4-set-2/0009-net-stmmac-skip-stmmac_tstamp_interrupt-in-stmmac_ms.patch
+patch ethernet-5.4-set-2/0010-net-stmmac-add-checks-for-AF_XDP-ZC-Launch-Time.patch
+patch ethernet-5.4-set-2/0011-net-stmmac-introduce-AF_XDP-ZC-RX-HW-timestamps.patch
+patch ethernet-5.4-set-2/0012-REVERTME-net-stmmac-introduce-AF_XDP-ZC-TX-HW-timest.patch
+patch ethernet-5.4-set-2/0013-REVERTME-samples-bpf-example-to-read-AF_XDP-RX-HW-ti.patch

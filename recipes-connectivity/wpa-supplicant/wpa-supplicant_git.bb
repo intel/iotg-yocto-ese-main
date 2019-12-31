@@ -6,7 +6,7 @@ LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYING;md5=279b4f5abb9c153c285221855ddb78cc \
                     file://README;beginline=1;endline=56;md5=e7d3dbb01f75f0b9799e192731d1e1ff \
                     file://wpa_supplicant/wpa_supplicant.c;beginline=1;endline=12;md5=0a8b56d3543498b742b9c0e94cc2d18b"
-DEPENDS = "dbus libnl"
+DEPENDS = "dbus libnl openssl"
 RRECOMMENDS_${PN} = "wpa-supplicant-passphrase wpa-supplicant-cli"
 
 PACKAGECONFIG ??= "gnutls"
@@ -18,21 +18,21 @@ inherit pkgconfig systemd
 SYSTEMD_SERVICE_${PN} = "wpa_supplicant.service wpa_supplicant-nl80211@.service wpa_supplicant-wired@.service"
 SYSTEMD_AUTO_ENABLE = "disable"
 
-SRC_URI = "http://w1.fi/releases/wpa_supplicant-${PV}.tar.gz  \
+PV_append = "+git${SRCPV}"
+
+SRC_URI = "git://w1.fi/srv/git/hostap.git \
            file://defconfig \
            file://wpa-supplicant.sh \
            file://wpa_supplicant.conf \
            file://wpa_supplicant.conf-sane \
            file://99_wpa_supplicant \
-           file://0001-replace-systemd-install-Alias-with-WantedBy.patch \
 	   file://wpa-supplicant-Handle-long-P2P-Device-Interface-name.patch \
           "
-SRC_URI[md5sum] = "0af5998c5d924e985cab16b9a1c77904"
-SRC_URI[sha256sum] = "a689336a12a99151b9de5e25bfccadb88438f4f4438eb8db331cd94346fd3d96"
+SRCREV = "099224c18e26161560f8313bced13930fdb832af"
 
 CVE_PRODUCT = "wpa_supplicant"
 
-S = "${WORKDIR}/wpa_supplicant-${PV}"
+S = "${WORKDIR}/git"
 
 PACKAGES_prepend = "wpa-supplicant-passphrase wpa-supplicant-cli "
 FILES_wpa-supplicant-passphrase = "${bindir}/wpa_passphrase"
@@ -43,6 +43,8 @@ CONFFILES_${PN} += "${sysconfdir}/wpa_supplicant.conf"
 do_configure () {
 	${MAKE} -C wpa_supplicant clean
 	install -m 0755 ${WORKDIR}/defconfig wpa_supplicant/.config
+	echo "CFLAGS +=\"-I${STAGING_INCDIR}/libnl3\"" >> wpa_supplicant/.config
+	echo "DRV_CFLAGS +=\"-I${STAGING_INCDIR}/libnl3\"" >> wpa_supplicant/.config
 	
 	if echo "${PACKAGECONFIG}" | grep -qw "openssl"; then
         	ssl=openssl
