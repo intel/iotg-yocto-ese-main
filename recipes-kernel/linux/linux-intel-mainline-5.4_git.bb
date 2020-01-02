@@ -52,4 +52,4 @@ SRC_URI_append = " file://graphics-5.4.scc"
 SRC_URI_append = " file://io-5.4.scc"
 
 # ethernet patches
-SRC_UIR_append = " file://ethernet-5.4.scc"
+SRC_URI_append = " file://ethernet-5.4.scc"

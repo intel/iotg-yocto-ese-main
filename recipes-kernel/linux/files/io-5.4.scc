@@ -1,1 +1,2 @@
 patch io-5.4/0001-ptp-Clear-RIS-after-masking-for-interrupts.patch
+patch io-5.4/0001-net-Bug-fixes-for-intel-vnic-driver.patch
