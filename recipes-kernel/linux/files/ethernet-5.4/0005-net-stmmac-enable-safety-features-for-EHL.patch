@@ -1,12 +1,13 @@
-From 73777e91eaf98120a30f41fb011f8651e8accd87 Mon Sep 17 00:00:00 2001
+From 2062174c18b88297451085bd848e37370a36a72c Mon Sep 17 00:00:00 2001
 From: Voon Weifeng <weifeng.voon@intel.com>
 Date: Wed, 4 Dec 2019 09:22:13 +0800
-Subject: [PATCH 05/13] net: stmmac: enable safety features for EHL
+Subject: [PATCH 05/17] net: stmmac: enable safety features for EHL
 
 Besides setting has_safety_feat=1 for EHL, MTL ECC Error Address Status
 Override(MEEAO) bit is set by default.
 
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
  drivers/net/ethernet/stmicro/stmmac/dwmac5.c     | 1 +
  drivers/net/ethernet/stmicro/stmmac/dwmac5.h     | 1 +
@@ -58,5 +59,5 @@ index 7212e9886824..73fd820ee348 100644
  	plat->max_combined = 4;
  
 -- 
-2.20.1
+1.9.1
 

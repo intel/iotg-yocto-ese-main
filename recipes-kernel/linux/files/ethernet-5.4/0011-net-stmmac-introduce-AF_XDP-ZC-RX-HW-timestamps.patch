@@ -1,7 +1,7 @@
-From c30ecb0a567a8ffb4b051b528990b4d66b4b1508 Mon Sep 17 00:00:00 2001
+From e537c9af9edaf8ffd573d51a532e7ed2b7f0b104 Mon Sep 17 00:00:00 2001
 From: "Wong, Vincent Por Yin" <vincent.por.yin.wong@intel.com>
 Date: Thu, 26 Dec 2019 11:35:50 +0800
-Subject: [PATCH 11/13] net: stmmac: introduce AF_XDP ZC RX HW timestamps
+Subject: [PATCH 11/17] net: stmmac: introduce AF_XDP ZC RX HW timestamps
 
 Users can requests for timestamps by requesting HWTSTAMP_FILTER_ALL.
 The timestamp is passed up the stack via xdp_buff's data_meta field.
@@ -9,10 +9,11 @@ This is applicable to AF_XDP ZC only for now.
 
 Signed-off-by: Wong, Vincent Por Yin <vincent.por.yin.wong@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac.h  |  1 +
- .../net/ethernet/stmicro/stmmac/stmmac_main.c |  1 +
- .../net/ethernet/stmicro/stmmac/stmmac_xsk.c  | 45 ++++++++++++++++---
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h      |  1 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  1 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_xsk.c  | 45 +++++++++++++++++++----
  3 files changed, 40 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
@@ -28,10 +29,10 @@ index c5745dc5a717..5e16e4cf77da 100644
  	/* RX Queue */
  	struct stmmac_rx_queue rx_queue[MTL_MAX_RX_QUEUES];
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 5ae8d1d27b43..531de736dfb4 100644
+index 047df4abe469..73c6c3a4611d 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -680,6 +680,7 @@ static int stmmac_hwtstamp_set(struct net_device *dev, struct ifreq *ifr)
+@@ -683,6 +683,7 @@ static int stmmac_hwtstamp_set(struct net_device *dev, struct ifreq *ifr)
  		case HWTSTAMP_FILTER_ALL:
  			/* time stamp any incoming packet */
  			config.rx_filter = HWTSTAMP_FILTER_ALL;
@@ -132,5 +133,5 @@ index d20d3bc9e4e5..cbbecb63afd5 100644
  		 * to SW.
  		 */
 -- 
-2.20.1
+1.9.1
 

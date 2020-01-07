@@ -1,13 +1,14 @@
-From 55723f60887c6797fa60f7f5220ba4ee338a1e57 Mon Sep 17 00:00:00 2001
+From 06c5e9e3d74c32be4251cc7c308f97dac2911f23 Mon Sep 17 00:00:00 2001
 From: "Wong, Vee Khee" <vee.khee.wong@intel.com>
 Date: Wed, 4 Dec 2019 08:42:30 +0800
-Subject: [PATCH 04/13] net: stmmac: Fixed MDIO bus access race condition
+Subject: [PATCH 04/17] net: stmmac: Fixed MDIO bus access race condition
 
 Switched from mii->read() to mdiobus_read() as the later contain race
 condition checks. This avoid unexpected results due to race condition.
 
 Signed-off-by: Wong, Vee Khee <vee.khee.wong@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
  drivers/net/ethernet/stmicro/stmmac/stmmac_hwtstamp.c | 11 +++++++----
  1 file changed, 7 insertions(+), 4 deletions(-)
@@ -38,5 +39,5 @@ index 43ebc7da1389..9ce5c1580cf4 100644
  	*art_time = ns;
  }
 -- 
-2.20.1
+1.9.1
 

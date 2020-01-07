@@ -1,2 +1,7 @@
 patch io-5.4/0001-ptp-Clear-RIS-after-masking-for-interrupts.patch
 patch io-5.4/0001-net-Bug-fixes-for-intel-vnic-driver.patch
+
+patch io-5.4/rs485/0001-serial-8250_dwlib-Basic-RS485-support.patch
+patch io-5.4/rs485/0002-serial-Preliminary-support-for-9-bit-transfer-mode-w.patch
+patch io-5.4/rs485/0003-serial-8250_dwlib-Support-for-9-bit-transfer-mode.patch
+patch io-5.4/rs485/0004-serial-8250-dwlib-Unsetting-default-DE_POL-and-RE_PO.patch

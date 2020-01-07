@@ -1,7 +1,7 @@
-From 589bdf9af24367cda2221dad51db1b0667015837 Mon Sep 17 00:00:00 2001
+From 7271315bbf0892fde7c68b1b19fd0a338c77fc5b Mon Sep 17 00:00:00 2001
 From: Ong Boon Leong <boon.leong.ong@intel.com>
 Date: Thu, 28 Nov 2019 16:04:21 +0800
-Subject: [PATCH 08/13] net: stmmac: restructure Rx & Tx hardware timestamping
+Subject: [PATCH 08/17] net: stmmac: restructure Rx & Tx hardware timestamping
  functions
 
 We rearrange the functions for getting Rx & Tx time-stampings for
@@ -9,16 +9,17 @@ skb so that these functions can also be reused for XDP later.
 
 Signed-off-by: Ong Boon Leong <boon.leong.ong@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac.h  |  4 +-
- .../net/ethernet/stmicro/stmmac/stmmac_main.c | 45 +++++++++----------
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h      |  4 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 45 +++++++++++------------
  2 files changed, 25 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
 index 5648e1761a48..c5745dc5a717 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-@@ -399,7 +399,9 @@ int stmmac_queue_pair_enable(struct stmmac_priv *priv, u16 qid);
+@@ -399,7 +399,9 @@ int stmmac_xmit_xdp_tx_queue(struct xdp_buff *xdp,
  int stmmac_queue_pair_disable(struct stmmac_priv *priv, u16 qid);
  void stmmac_rx_vlan(struct net_device *dev, struct sk_buff *skb);
  void stmmac_get_rx_hwtstamp(struct stmmac_priv *priv, struct dma_desc *p,
@@ -30,7 +31,7 @@ index 5648e1761a48..c5745dc5a717 100644
  			      u64 tx_time);
  #if IS_ENABLED(CONFIG_STMMAC_SELFTESTS)
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index f4f3abbdf153..c81d3a3a281a 100644
+index d62618249f01..8321da79f1b7 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 @@ -419,15 +419,14 @@ bool stmmac_eee_init(struct stmmac_priv *priv)
@@ -95,7 +96,7 @@ index f4f3abbdf153..c81d3a3a281a 100644
  	struct dma_desc *desc = p;
  	u64 adjust = 0;
  	u64 ns = 0;
-@@ -514,9 +504,7 @@ void stmmac_get_rx_hwtstamp(struct stmmac_priv *priv, struct dma_desc *p,
+@@ -517,9 +507,7 @@ void stmmac_get_rx_hwtstamp(struct stmmac_priv *priv, struct dma_desc *p,
  
  		ns -= adjust;
  		netdev_dbg(priv->dev, "get valid RX hw timestamp %llu\n", ns);
@@ -106,7 +107,7 @@ index f4f3abbdf153..c81d3a3a281a 100644
  	} else  {
  		netdev_dbg(priv->dev, "cannot get RX hw timestamp\n");
  	}
-@@ -2255,8 +2243,17 @@ static int stmmac_tx_clean(struct stmmac_priv *priv, int budget, u32 queue)
+@@ -2258,8 +2246,17 @@ static int stmmac_tx_clean(struct stmmac_priv *priv, int budget, u32 queue)
  					break;
  				}
  			}
@@ -126,7 +127,7 @@ index f4f3abbdf153..c81d3a3a281a 100644
  		}
  
  		if (likely(tx_q->tx_skbuff_dma[entry].buf)) {
-@@ -4472,6 +4469,7 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
+@@ -4475,6 +4472,7 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
  				    priv->dma_rx_size, true);
  	}
  	while (count < limit) {
@@ -134,7 +135,7 @@ index f4f3abbdf153..c81d3a3a281a 100644
  		unsigned int hlen = 0, prev_len = 0;
  		enum pkt_hash_types hash_type;
  		struct stmmac_rx_buffer *buf;
-@@ -4678,8 +4676,9 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
+@@ -4681,8 +4679,9 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
  			goto read_again;
  
  		/* Got entire packet into SKB. Finish it. */
@@ -147,5 +148,5 @@ index f4f3abbdf153..c81d3a3a281a 100644
  		/* Use HW to strip VLAN header before fallback to SW. */
  		ret = stmmac_rx_hw_vlan(priv, priv->dev,
 -- 
-2.20.1
+1.9.1
 

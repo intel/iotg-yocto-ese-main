@@ -1,20 +1,20 @@
-From fa76c7cd31b29fa595951407da989b9d730b4d68 Mon Sep 17 00:00:00 2001
+From 28bee6e3ff5c62f74d242f47e7cb26e3b6fc2ea8 Mon Sep 17 00:00:00 2001
 From: Voon Weifeng <weifeng.voon@intel.com>
 Date: Mon, 9 Dec 2019 16:02:57 +0800
-Subject: [PATCH 06/13] net: stmmac: add TGL ingress and egress phy latency
+Subject: [PATCH 06/17] net: stmmac: add TGL ingress and egress phy latency
 
 Added Marvell PHY 88E2110 path latency for TGL platform data to reduce
 the link propagation delay during gPTP clock sync.
 
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  3 +++
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |  6 ++++++
  drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c  | 10 ++++++++++
  include/linux/stmmac.h                            |  2 ++
- 3 files changed, 15 insertions(+)
+ 3 files changed, 18 insertions(+)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 9b7719500151..f4f3abbdf153 100644
+index 9b7719500151..d62618249f01 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 @@ -458,6 +458,9 @@ static void stmmac_get_tx_hwtstamp(struct stmmac_priv *priv,
@@ -27,6 +27,16 @@ index 9b7719500151..f4f3abbdf153 100644
  		}
  
  		ns += adjust;
+@@ -507,6 +510,9 @@ void stmmac_get_rx_hwtstamp(struct stmmac_priv *priv, struct dma_desc *p,
+ 		case SPEED_1000:
+ 			adjust = priv->plat->phy_rx_latency_1000;
+ 			break;
++		case SPEED_2500:
++			adjust = priv->plat->phy_rx_latency_2500;
++			break;
+ 		}
+ 
+ 		ns -= adjust;
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
 index 73fd820ee348..a38ef4b4180d 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
@@ -65,5 +75,5 @@ index 9fcaff572cb7..bde0a10a4eba 100644
  	u64 phy_rx_latency_100;
  	u64 phy_rx_latency_10;
 -- 
-2.20.1
+1.9.1
 

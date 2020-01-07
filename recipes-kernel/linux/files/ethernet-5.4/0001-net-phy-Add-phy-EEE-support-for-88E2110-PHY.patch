@@ -1,13 +1,14 @@
-From e43ad3d01b4cd0578872a0ad94db29f4f28bafa9 Mon Sep 17 00:00:00 2001
+From fef38ca2ada3cdb9c3b5cf5d76c796e0e86c9eb6 Mon Sep 17 00:00:00 2001
 From: "Tan, Thuan HuiX" <thuan.huix.tan@intel.com>
 Date: Fri, 29 Nov 2019 09:51:20 +0800
-Subject: [PATCH 01/13] net: phy: Add phy EEE support for 88E2110 PHY
+Subject: [PATCH 01/17] net: phy: Add phy EEE support for 88E2110 PHY
 
 This patch add m88e2110_config_init for 88E2110 PHY.
 Set the 88E2110 PHY EEE enable bit using phy_modify_mmd().
 
 Signed-off-by: Tan, Thuan HuiX <thuan.huix.tan@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
  drivers/net/phy/marvell10g.c | 23 ++++++++++++++++++++++-
  1 file changed, 22 insertions(+), 1 deletion(-)
@@ -51,7 +52,7 @@ index 6a36c3e00c4a..0d7ce35db5f4 100644
  static int mv3310_get_features(struct phy_device *phydev)
  {
  	int ret, val;
-@@ -560,7 +581,7 @@ static struct phy_driver mv3310_drivers[] = {
+@@ -560,7 +581,7 @@ static int m88e2110_loopback(struct phy_device *phydev, bool enable)
  		.suspend	= mv3310_suspend,
  		.resume		= mv3310_resume,
  		.soft_reset	= m88e2110_soft_reset,
@@ -61,5 +62,5 @@ index 6a36c3e00c4a..0d7ce35db5f4 100644
  		.aneg_done	= genphy_c45_aneg_done,
  		.read_status	= mv3310_read_status,
 -- 
-2.20.1
+1.9.1
 

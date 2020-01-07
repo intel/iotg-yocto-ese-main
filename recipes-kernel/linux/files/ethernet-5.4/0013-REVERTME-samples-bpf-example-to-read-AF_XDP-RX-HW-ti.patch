@@ -1,11 +1,12 @@
-From 27b097bb0447d0a52bb6f803b1ac16878aa2a302 Mon Sep 17 00:00:00 2001
+From 4d0b9a045aa6080abbb4a2e188a0684e764c86aa Mon Sep 17 00:00:00 2001
 From: "Wong, Vincent Por Yin" <vincent.por.yin.wong@intel.com>
 Date: Thu, 26 Dec 2019 13:47:57 +0800
-Subject: [PATCH 13/13] REVERTME: samples: bpf: example to read AF_XDP RX HW
+Subject: [PATCH 13/17] REVERTME: samples: bpf: example to read AF_XDP RX HW
  timestamps for stmmac only
 
 Signed-off-by: Wong, Vincent Por Yin <vincent.por.yin.wong@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
  samples/bpf/xdpsock_user.c | 10 +++++-----
  1 file changed, 5 insertions(+), 5 deletions(-)
@@ -48,5 +49,5 @@ index e960b3e5c670..ad4d8967b8bf 100644
  		*xsk_ring_prod__fill_addr(&xsk->umem->fq, idx_fq++) = orig;
  	}
 -- 
-2.20.1
+1.9.1
 

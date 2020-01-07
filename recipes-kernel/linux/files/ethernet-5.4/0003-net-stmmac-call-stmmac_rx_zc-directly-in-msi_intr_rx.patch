@@ -1,7 +1,7 @@
-From 5d3d41a0b15f7b540b2c0304b203dfcb73ed7af0 Mon Sep 17 00:00:00 2001
+From 744ed0b3a9b88eb2ef750f3b85f6ac157c5665dd Mon Sep 17 00:00:00 2001
 From: "Wong, Vincent Por Yin" <vincent.por.yin.wong@intel.com>
 Date: Sat, 23 Nov 2019 19:20:14 +0800
-Subject: [PATCH 03/13] net: stmmac: call stmmac_rx_zc() directly in
+Subject: [PATCH 03/17] net: stmmac: call stmmac_rx_zc() directly in
  msi_intr_rx
 
 Call stmmac_rx_zc() directly in the ISR to further reduce
@@ -12,6 +12,7 @@ sufficiently fast.
 
 Signed-off-by: Wong, Vincent Por Yin <vincent.por.yin.wong@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 12 +++++++++++-
  1 file changed, 11 insertions(+), 1 deletion(-)
@@ -40,5 +41,5 @@ index 03cde1422abe..9b7719500151 100644
  	stmmac_tstamp_interrupt(priv, priv);
  
 -- 
-2.20.1
+1.9.1
 

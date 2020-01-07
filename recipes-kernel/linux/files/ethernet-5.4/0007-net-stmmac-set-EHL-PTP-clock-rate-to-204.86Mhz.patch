@@ -1,13 +1,14 @@
-From d67b7c0eaa91e3439648a3af67ecad921a68ebed Mon Sep 17 00:00:00 2001
+From d08d168f423d01f0dd341aebce67cd27682c4dc2 Mon Sep 17 00:00:00 2001
 From: "Tan, Tee Min" <tee.min.tan@intel.com>
 Date: Sun, 1 Dec 2019 13:42:08 +0800
-Subject: [PATCH 07/13] net: stmmac: set EHL PTP clock rate to 204.86Mhz
+Subject: [PATCH 07/17] net: stmmac: set EHL PTP clock rate to 204.86Mhz
 
 EHL's PCH GBE clocksource is not exactly 200Mhz. Change clock rate
 to 204.86Mhz in order to have the accurate 1-sec PPS output.
 
 Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 Signed-off-by: Voon Weifeng <weifeng.voon@intel.com>
+Signed-off-by: Tan, Tee Min <tee.min.tan@intel.com>
 ---
  drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -26,5 +27,5 @@ index a38ef4b4180d..60254afc2c82 100644
  	return ehl_common_data(pdev, plat);
  }
 -- 
-2.20.1
+1.9.1
 
