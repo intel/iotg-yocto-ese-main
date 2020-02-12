@@ -1,9 +1,9 @@
 DESCRIPTION = "Slim Bootloader is an open-source boot firmware solution"
 SRC_URI = "git://github.com/slimbootloader/slimbootloader;protocol=https"
-SRCREV = "28c003976385d77b3a46414372deb1630a9c680e"
+SRCREV = "8bbef289f3f18e961deae4510d2f378afe7d2d33"
 PV = "0.0.0+git${SRCPV}"
 LICENSE = "BSD-2-Clause-Patent"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=ef7fba7be2819ac13aaf5d0f842ce5d9"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=d1ed89007e7aa232a4dc1c59b6c9efc4"
 S = "${WORKDIR}/git"
 inherit python3native
 DEPENDS += "${PYTHON_PN}-cryptography ${PYTHON_PN}-idna"

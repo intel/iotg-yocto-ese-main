@@ -63,6 +63,11 @@ find_part() {
         return
     fi
 
+    if [ "${type}" == "ID" ]; then
+        echo "/dev/disk/by-id/${value}"
+        return
+    fi
+
     # unknown?
     echo "${hint}"
 }

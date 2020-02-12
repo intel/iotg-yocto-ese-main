@@ -20,6 +20,6 @@ python(){
                         d.setVar('IMAGE_FSTYPES', d.getVar('IMAGE_FSTYPES') + ' wic')
                         d.setVar("WKS_FILE", "dm-verity-image-gen.wks.in")
                         d.appendVar("WKS_FILE_DEPENDS", " coreutils-native u-boot-tools-native cryptsetup-native openssl-native")
-                        d.appendVar("WICVARS", " KEYS_DIR ITS_FILE")
+                        d.appendVar("WICVARS", " KEYS_DIR ITS_FILE DM_VERITY")
                         d.setVar("IMAGE_BOOT_FILES", " Image-initramfs-${MACHINE}.bin;Image")
 }

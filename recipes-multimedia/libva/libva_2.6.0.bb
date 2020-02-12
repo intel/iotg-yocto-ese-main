@@ -19,7 +19,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=2e48940f94acb0af582e5ef03537800f"
 
 SRC_URI = "git://github.com/01org/libva.git;protocol=https;nobranch=1"
 
-SRCREV = "09c8c2e20b7763fc44299172dbb16061b57f9c71"
+SRCREV = "5f693d9e603e0e83928cec67c30b6ac902d7aa85"
 
 DEPENDS = "libdrm virtual/mesa virtual/libgles1 virtual/libgles2 virtual/egl wayland-native"
 

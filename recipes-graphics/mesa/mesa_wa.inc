@@ -10,7 +10,7 @@ HOMEPAGE = "http://mesa3d.org"
 BUGTRACKER = "https://bugs.freedesktop.org"
 SECTION = "x11"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://docs/license.html;md5=3a4999caf82cc503ac8b9e37c235782e"
+LIC_FILES_CHKSUM = "file://docs/license.html;md5=c1843d93c460bbf778d6037ce324f9f7"
 
 PE = "2"
 
@@ -41,7 +41,7 @@ PLATFORMS ??= "${@bb.utils.filter('PACKAGECONFIG', 'x11 wayland', d)} \
 
 export YOCTO_ALTERNATE_EXE_PATH = "${STAGING_LIBDIR}/llvm${MESA_LLVM_RELEASE}/llvm-config"
 export YOCTO_ALTERNATE_MULTILIB_NAME = "${base_libdir}"
-export LLVM_CONFIG = "${STAGING_BINDIR_NATIVE}/llvm-config${MESA_LLVM_RELEASE}"
+export LLVM_CONFIG = "${STAGING_BINDIR_NATIVE}/llvm-config"
 export WANT_LLVM_RELEASE = "${MESA_LLVM_RELEASE}"
 
 MESA_LLVM_RELEASE ?= "${LLVMVERSION}"
@@ -273,6 +273,7 @@ RPROVIDES_mesa-megadriver = "mesa"
 # fix hardcoded llvm version
 do_configure_prepend(){
 	sed -e 's@llvm-config8.0.0@${LLVM_CONFIG}@g' -i "${WORKDIR}/meson.cross"
+	sed -e 's@llvm-config9.0.0@${LLVM_CONFIG}@g' -i "${WORKDIR}/meson.cross"
 }
 
 # fix multilib

@@ -1,8 +1,6 @@
 require gstreamer1.0-plugins.inc
 
 SRC_URI_append = "\
-    file://0003-riff-add-missing-include-directories-when-calling-in.patch \
-    file://0004-rtsp-drop-incorrect-reference-to-gstreamer-sdp-in-Ma.patch \
 "
 
 LICENSE = "GPLv2+ & LGPLv2+"
@@ -25,24 +23,26 @@ PACKAGECONFIG ??= " \
 "
 
 X11DEPENDS = "virtual/libx11 libsm libxrender libxv"
-X11ENABLEOPTS = "--enable-x --enable-xvideo --enable-xshm"
-X11DISABLEOPTS = "--disable-x --disable-xvideo --disable-xshm"
+X11ENABLEOPTS = "-Dx=enabled -Dxvideo=enabled -Dxshm=enabled"
+X11DISABLEOPTS = "-Dx=disabled -Dxvideo=disabled -Dxshm=disabled"
 
-PACKAGECONFIG[alsa]         = "--enable-alsa,--disable-alsa,alsa-lib"
-PACKAGECONFIG[cdparanoia]   = "--enable-cdparanoia,--disable-cdparanoia,cdparanoia"
-PACKAGECONFIG[egl]          = "--enable-egl,--disable-egl,virtual/egl"
-PACKAGECONFIG[gio-unix-2.0] = "--enable-gio_unix_2_0,--disable-gio_unix_2_0,glib-2.0"
-PACKAGECONFIG[gles2]        = "--enable-gles2,--disable-gles2,virtual/libgles2"
-PACKAGECONFIG[ivorbis]      = "--enable-ivorbis,--disable-ivorbis,tremor"
-PACKAGECONFIG[ogg]          = "--enable-ogg,--disable-ogg,libogg"
-PACKAGECONFIG[opengl]       = "--enable-opengl,--disable-opengl,virtual/libgl libglu"
-PACKAGECONFIG[opus]         = "--enable-opus,--disable-opus,libopus"
-PACKAGECONFIG[pango]        = "--enable-pango,--disable-pango,pango"
-PACKAGECONFIG[theora]       = "--enable-theora,--disable-theora,libtheora"
-PACKAGECONFIG[visual]       = "--enable-libvisual,--disable-libvisual,libvisual"
-PACKAGECONFIG[vorbis]       = "--enable-vorbis,--disable-vorbis,libvorbis"
+
+
+PACKAGECONFIG[alsa]         = "-Dalsa=enabled,-Dalsa=disabled,alsa-lib"
+PACKAGECONFIG[cdparanoia]   = "-Dcdparanoia=enabled,-Dcdparanoia=disabled,cdparanoia"
+PACKAGECONFIG[egl]          = "-Dgl_platform=egl,-Dgl_platform=disabled,gegl"
+PACKAGECONFIG[gio-unix-2.0] = "-Dgio_unix_2_0=enabled,-Dgio_unix_2_0=disabled,glib-2.0"
+PACKAGECONFIG[gles2]        = "-Dgles2=enabled,-Dgles2=disabled,virtual/libgles2"
+PACKAGECONFIG[vorbis]       = "-Dvorbis=enabled,-Dvorbis=disabled,libvorbis"
+PACKAGECONFIG[tremor]       = "-Dtremor=enabled,-Dtremor=disabled,tremor"
+PACKAGECONFIG[ogg]          = "-Dogg=enabled,-Dogg=disabled,libogg"
+PACKAGECONFIG[opengl]       = "-Dopengl=enabled,-Dopengl=disabled,virtual/libgl libglu"
+PACKAGECONFIG[opus]         = "-Dopus=enabled,-Dopus=disabled,opus"
+PACKAGECONFIG[pango]        = "-Dpango=enabled,-Dpango=disabled,pango"
+PACKAGECONFIG[theora]       = "-Dtheora=enabled,-Dtheora=disabled,libtheora"
+PACKAGECONFIG[visual]       = "-Dlibvisual=enabled,-Dlibvisual=disabled,libvisual"
 PACKAGECONFIG[x11]          = "${X11ENABLEOPTS},${X11DISABLEOPTS},${X11DEPENDS}"
-PACKAGECONFIG[wayland]      = "--enable-wayland,--disable-wayland,wayland-native wayland wayland-protocols wayland-scanner"
+PACKAGECONFIG[wayland]      = "-Dgl_winsys=wayland,-Dgl_winsys=auto"
 
 EXTRA_OECONF += " \
     --enable-zlib \

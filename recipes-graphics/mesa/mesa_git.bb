@@ -11,7 +11,7 @@ inherit manpages update-alternatives
 
 mesa_url ?= "git://gitlab.freedesktop.org/mesa/mesa;branch=master;protocol=https"
 ## Upstream free-destkop mesa master Mon Jun 10 14:23:34 2019 -0700
-mesa_srcrev ?= "608257cf82f49109c8f1a2bab1d6e30fa14f9ba7"
+mesa_srcrev ?= "d8a3501f1b2ef2d66091cc1e9c4ede3fb1b0da10"
 mesa_pv ?= "19.1.0+git${SRCPV}"
 
 SRC_URI = "${mesa_url}"

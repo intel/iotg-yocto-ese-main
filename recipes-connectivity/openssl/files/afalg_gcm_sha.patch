@@ -1,0 +1,1624 @@
+diff --git a/engines/e_afalg.c b/engines/e_afalg.c
+index 7f62d77..82f6cde 100644
+--- a/engines/e_afalg.c
++++ b/engines/e_afalg.c
+@@ -16,11 +16,15 @@
+ #include <unistd.h>
+ 
+ #include <openssl/engine.h>
++#include <openssl/crypto.h>
+ #include <openssl/async.h>
+ #include <openssl/err.h>
++#include <openssl/sha.h>
+ #include "internal/nelem.h"
+ 
+ #include <sys/socket.h>
++#include <sys/param.h>
++#include <sys/sysctl.h>
+ #include <linux/version.h>
+ #define K_MAJ   4
+ #define K_MIN1  1
+@@ -56,12 +60,15 @@ void engine_load_afalg_int(void)
+ #  ifndef SPLICE_F_GIFT
+ #   define SPLICE_F_GIFT    (0x08)
+ #  endif
++#  define PAGE_SIZE (sysconf(_SC_PAGESIZE))
+ # endif
+ 
+ # define ALG_AES_IV_LEN 16
+ # define ALG_IV_LEN(len) (sizeof(struct af_alg_iv) + (len))
+ # define ALG_OP_TYPE     unsigned int
+ # define ALG_OP_LEN      (sizeof(ALG_OP_TYPE))
++# define ALG_AADLEN_TYPE  size_t
++# define ALG_AAD_LEN      (sizeof(ALG_OP_TYPE))
+ 
+ # ifdef OPENSSL_NO_DYNAMIC_ENGINE
+ void engine_load_afalg_int(void);
+@@ -69,15 +76,16 @@ void engine_load_afalg_int(void);
+ 
+ /* Local Linkage Functions */
+ static int afalg_init_aio(afalg_aio *aio);
+-static int afalg_fin_cipher_aio(afalg_aio *ptr, int sfd,
++static int afalg_fin_cipher_aio(EVP_CIPHER_CTX *ctx, int sfd,
+                                 unsigned char *buf, size_t len);
+ static int afalg_create_sk(afalg_ctx *actx, const char *ciphertype,
+                                 const char *ciphername);
+ static int afalg_destroy(ENGINE *e);
+ static int afalg_init(ENGINE *e);
+ static int afalg_finish(ENGINE *e);
+-static const EVP_CIPHER *afalg_aes_cbc(int nid);
+-static cbc_handles *get_cipher_handle(int nid);
++static int afalg_cipher_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
++static const EVP_CIPHER *afalg_aes_cipher(int nid);
++static aes_handles *get_cipher_handle(int nid);
+ static int afalg_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
+                          const int **nids, int nid);
+ static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+@@ -87,6 +95,22 @@ static int afalg_do_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+ static int afalg_cipher_cleanup(EVP_CIPHER_CTX *ctx);
+ static int afalg_chk_platform(void);
+ 
++/* Message Digest Local Linkage Functions */
++static int afalg_fin_digest_aio(afalg_aio *aio, int sfd,
++                                const void *data, size_t count);
++static int afalg_start_digest_sk(afalg_ctx *actx,
++                                 const void *data, size_t count);
++static int afalg_digest_init(EVP_MD_CTX *ctx);
++static int afalg_do_digest_update(EVP_MD_CTX *ctx,
++                                  const void *data, size_t count);
++static int afalg_do_digest_final(EVP_MD_CTX *ctx,
++                                 unsigned char *md);
++static int afalg_digest_cleanup(EVP_MD_CTX *ctx);
++static md_handles *get_digest_handle(int nid);
++static const EVP_MD *afalg_msg_digest(int nid);
++static int afalg_digests(ENGINE *e, const EVP_MD **digest,
++                         const int **nids, int nid);
++
+ /* Engine Id and Name */
+ static const char *engine_afalg_id = "afalg";
+ static const char *engine_afalg_name = "AFALG engine support";
+@@ -95,11 +119,29 @@ static int afalg_cipher_nids[] = {
+     NID_aes_128_cbc,
+     NID_aes_192_cbc,
+     NID_aes_256_cbc,
++    NID_aes_128_gcm,
++    NID_aes_192_gcm,
++    NID_aes_256_gcm,
++};
++
++static int afalg_digest_nids[] = {
++    NID_sha1,
++    NID_sha256,
++    NID_sha384,
++    NID_sha512
+ };
+ 
+-static cbc_handles cbc_handle[] = {{AES_KEY_SIZE_128, NULL},
+-                                    {AES_KEY_SIZE_192, NULL},
+-                                    {AES_KEY_SIZE_256, NULL}};
++static aes_handles cipher_handle[] = {{AES_KEY_SIZE_128, NULL},
++                                      {AES_KEY_SIZE_192, NULL},
++                                      {AES_KEY_SIZE_256, NULL},
++                                      {AES_KEY_SIZE_128, NULL},
++                                      {AES_KEY_SIZE_192, NULL},
++                                      {AES_KEY_SIZE_256, NULL}};
++
++static md_handles md_handle[] = {{SHA_DIGEST_LENGTH, NULL},
++                                 {SHA256_DIGEST_LENGTH, NULL},
++                                 {SHA384_DIGEST_LENGTH, NULL},
++                                 {SHA512_DIGEST_LENGTH, NULL}};
+ 
+ static ossl_inline int io_setup(unsigned n, aio_context_t *ctx)
+ {
+@@ -213,7 +255,7 @@ static int afalg_init_aio(afalg_aio *aio)
+     return 1;
+ }
+ 
+-static int afalg_fin_cipher_aio(afalg_aio *aio, int sfd, unsigned char *buf,
++static int afalg_fin_cipher_aio(EVP_CIPHER_CTX *ctx, int sfd, unsigned char *buf,
+                                 size_t len)
+ {
+     int r;
+@@ -223,6 +265,14 @@ static int afalg_fin_cipher_aio(afalg_aio *aio, int sfd, unsigned char *buf,
+     struct timespec timeout;
+     struct io_event events[MAX_INFLIGHTS];
+     u_int64_t eval = 0;
++    struct iovec iov[3];
++    afalg_cipher_ctx *ectx = (afalg_cipher_ctx *)
++                           EVP_CIPHER_CTX_get_cipher_data(ctx);
++    afalg_ctx *actx  = (afalg_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
++    afalg_aio *aio = &actx->aio;
++    int nid;
++
++    nid = EVP_CIPHER_CTX_nid(ctx);
+ 
+     timeout.tv_sec = 0;
+     timeout.tv_nsec = 0;
+@@ -236,16 +286,44 @@ static int afalg_fin_cipher_aio(afalg_aio *aio, int sfd, unsigned char *buf,
+ 
+     cb = &(aio->cbt[0 % MAX_INFLIGHTS]);
+     memset(cb, '\0', sizeof(*cb));
++
++    switch (nid) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++        iov[0].iov_base = (unsigned char *)buf;
++        iov[0].iov_len = len;
++        cb->aio_nbytes = 1;
++        break;
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        iov[0].iov_base = (void *)ectx->aad;
++        iov[0].iov_len = ectx->aad_len;
++        iov[1].iov_base = (unsigned char *)buf;
++        iov[1].iov_len = len;
++
++        if (EVP_CIPHER_CTX_encrypting(ctx)) {
++           iov[2].iov_base = (unsigned char *)EVP_CIPHER_CTX_buf_noconst(ctx);
++           iov[2].iov_len = EVP_GCM_TLS_TAG_LEN;
++           cb->aio_nbytes = 3;
++        } else {
++           cb->aio_nbytes = 2;
++        }
++        break;
++    default:
++        return 0;
++    }
++
+     cb->aio_fildes = sfd;
+-    cb->aio_lio_opcode = IOCB_CMD_PREAD;
++    cb->aio_lio_opcode = IOCB_CMD_PREADV;
+     /*
+      * The pointer has to be converted to unsigned value first to avoid
+      * sign extension on cast to 64 bit value in 32-bit builds
+      */
+-    cb->aio_buf = (size_t)buf;
++    cb->aio_buf = (size_t)iov;
+     cb->aio_offset = 0;
+     cb->aio_data = 0;
+-    cb->aio_nbytes = len;
+     cb->aio_flags = IOCB_FLAG_RESFD;
+     cb->aio_resfd = aio->efd;
+ 
+@@ -320,6 +398,137 @@ static int afalg_fin_cipher_aio(afalg_aio *aio, int sfd, unsigned char *buf,
+         }
+     } while (!done);
+ 
++    switch (nid) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++        if (EVP_CIPHER_CTX_encrypting(ctx)) {
++            memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), buf + (len - ALG_AES_IV_LEN),
++                   ALG_AES_IV_LEN);
++        } else {
++            memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), EVP_CIPHER_CTX_buf_noconst(ctx), ALG_AES_IV_LEN);
++        }
++        r = 1;
++        break;
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        r = len;
++        break;
++    default:
++        return 0;
++    }
++
++    return r;
++}
++
++static int afalg_fin_digest_aio(afalg_aio *aio, int sfd,
++                                const void *data, size_t count)
++{
++    int r;
++    int retry = 0;
++    unsigned int done = 0;
++    struct iocb *cb;
++    struct timespec timeout;
++    struct io_event events[MAX_INFLIGHTS];
++    u_int64_t eval = 0;
++    timeout.tv_sec = 0;
++    timeout.tv_nsec = 0;
++
++    /* if efd has not been initialised yet do it here */
++    if (aio->mode == MODE_UNINIT) {
++        r = afalg_setup_async_event_notification(aio);
++        if (r == 0)
++            return 0;
++    }
++
++    cb = &(aio->cbt[0 % MAX_INFLIGHTS]);
++    memset(cb, '\0', sizeof(*cb));
++    cb->aio_fildes = sfd;
++    cb->aio_lio_opcode = IOCB_CMD_PREAD;
++
++    /*
++     * The pointer has to be converted to unsigned value first to avoid
++     * sign extension on cast to 64 bit value in 32-bit builds
++     */
++    cb->aio_buf = (size_t)data;
++    cb->aio_offset = 0;
++    cb->aio_data = 0;
++    cb->aio_nbytes = count;
++    cb->aio_flags = IOCB_FLAG_RESFD;
++    cb->aio_resfd = aio->efd;
++
++    /*
++     * Perform AIO read on AFALG socket, this in turn performs an async
++     * crypto operation in kernel space
++     */
++    r = io_read(aio->aio_ctx, 1, &cb);
++    if (r < 0) {
++        ALG_PWARN("%s(%d): io_read failed : ", __FILE__, __LINE__);
++        return 0;
++    }
++
++    do {
++        /* While AIO read is being performed pause job */
++        ASYNC_pause_job();
++
++        /* Check for completion of AIO read */
++        r = read(aio->efd, &eval, sizeof(eval));
++        if (r < 0) {
++            if (errno == EAGAIN || errno == EWOULDBLOCK)
++                continue;
++            ALG_PERR("%s(%d): read failed for event fd : ", __FILE__, __LINE__);
++            return 0;
++        } else if (r == 0 || eval <= 0) {
++            ALG_WARN("%s(%d): eventfd read %d bytes, eval = %lu\n", __FILE__,
++                     __LINE__, r, eval);
++        }
++        if (eval > 0) {
++
++            /* Get results of AIO read */
++            r = io_getevents(aio->aio_ctx, 1, MAX_INFLIGHTS,
++                             events, &timeout);
++            if (r > 0) {
++                /*
++                 * events.res indicates the actual status of the operation.
++                 * Handle the error condition first.
++                 */
++                if (events[0].res < 0) {
++                    /*
++                     * Underlying operation cannot be completed at the time
++                     * of previous submission. Resubmit for the operation.
++                     */
++                    if (events[0].res == -EBUSY && retry++ < 3) {
++                        r = io_read(aio->aio_ctx, 1, &cb);
++                        if (r < 0) {
++                            ALG_PERR("%s(%d): retry %d for io_read failed : ",
++                                     __FILE__, __LINE__, retry);
++                            return 0;
++                        }
++                        continue;
++                    } else {
++                        /*
++                         * Retries exceed for -EBUSY or unrecoverable error
++                         * condition for this instance of operation.
++                         */
++                        ALG_WARN
++                            ("%s(%d): Message Digest Operation failed with code %lld\n",
++                             __FILE__, __LINE__, events[0].res);
++                        return 0;
++                    }
++                }
++                /* Operation successful. */
++                done = 1;
++            } else if (r < 0) {
++                ALG_PERR("%s(%d): io_getevents failed : ", __FILE__, __LINE__);
++                return 0;
++            } else {
++                ALG_WARN("%s(%d): io_geteventd read 0 bytes\n", __FILE__,
++                         __LINE__);
++            }
++        }
++    } while (!done);
++
+     return 1;
+ }
+ 
+@@ -345,6 +554,14 @@ static void afalg_set_iv_sk(struct cmsghdr *cmsg, const unsigned char *iv,
+     memcpy(aiv->iv, iv, len);
+ }
+ 
++static void afalg_set_aadlen_sk(struct cmsghdr *cmsg, const size_t len)
++{
++    cmsg->cmsg_level = SOL_ALG;
++    cmsg->cmsg_type = ALG_SET_AEAD_ASSOCLEN;
++    cmsg->cmsg_len = CMSG_LEN(sizeof(size_t));
++    memcpy(CMSG_DATA(cmsg), &len, sizeof(size_t));
++}
++
+ static ossl_inline int afalg_set_key(afalg_ctx *actx, const unsigned char *key,
+                                 const int klen)
+ {
+@@ -358,6 +575,76 @@ static ossl_inline int afalg_set_key(afalg_ctx *actx, const unsigned char *key,
+     return 1;
+ }
+ 
++static int afalg_set_socket_buflen_to_max(int fd)
++{
++    int ret;
++    unsigned int buflen = 0;
++    char value[11]= {0};
++    int procfd;
++
++    procfd = open("/proc/sys/net/core/rmem_max", O_RDONLY);
++    if(procfd<0)
++    {
++       ALG_PERR("%s(%d): Failed to open /proc/sys/net/core/rmem_max : ", __FILE__, __LINE__);
++       return 0;
++    }
++    ret = read(procfd, value, 10);
++    if(ret<0)
++    {
++       ALG_PERR("%s(%d): Failed to read from rmem_max : ", __FILE__, __LINE__);
++       close(procfd);
++       return 0;
++    }
++    buflen = atoi(value);
++    ALG_DGB("%s(%d): rmem_max = %d\n", __FILE__, __LINE__, buflen);
++    close(procfd);
++    ret = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buflen, sizeof(unsigned int));
++    if (ret < 0) {
++        ALG_PERR("%s(%d): Failed to set socket option RCVBUF : ", __FILE__, __LINE__);
++        return 0;
++    }
++    ALG_DGB("%s(%d): RCVBUF buflen = %d\n", __FILE__, __LINE__, buflen);
++
++    procfd = open("/proc/sys/net/core/wmem_max", O_RDONLY);
++    if(procfd<0)
++    {
++       ALG_PERR("%s(%d): Failed to open /proc/sys/net/core/wmem_max : ", __FILE__, __LINE__);
++       return 0;
++    }
++    ret = read(procfd, value, 10);
++    if(ret<0)
++    {
++       ALG_PERR("%s(%d): Failed to read from wmem_max : ", __FILE__, __LINE__);
++       close(procfd);
++       return 0;
++    }
++    buflen = atoi(value);
++    ALG_DGB("%s(%d): wmem_max = %d\n", __FILE__, __LINE__, buflen);
++    close(procfd);
++
++    ret = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buflen, sizeof(unsigned int));
++    if (ret < 0) {
++        ALG_PERR("%s(%d): Failed to set socket option SNDBUF : ", __FILE__, __LINE__);
++        return 0;
++    }
++    ALG_DGB("%s(%d): SNDBUF buflen = %d\n", __FILE__, __LINE__, buflen);
++    return 1;
++}
++
++static ossl_inline int afalg_set_taglen(EVP_CIPHER_CTX *ctx)
++{
++    afalg_ctx *actx = (afalg_ctx *)EVP_CIPHER_CTX_get_cipher_data(ctx);
++    int ret;
++    ret = setsockopt(actx->bfd, SOL_ALG, ALG_SET_AEAD_AUTHSIZE, NULL,
++                     EVP_GCM_TLS_TAG_LEN);
++    if (ret < 0) {
++        ALG_PERR("%s(%d): Failed to set socket option : ", __FILE__, __LINE__);
++        AFALGerr(AFALG_F_AFALG_SET_TAGLEN, AFALG_R_SOCKET_SET_TAGLEN_FAILED);
++        return 0;
++    }
++    return 1;
++}
++
+ static int afalg_create_sk(afalg_ctx *actx, const char *ciphertype,
+                                 const char *ciphername)
+ {
+@@ -391,7 +678,10 @@ static int afalg_create_sk(afalg_ctx *actx, const char *ciphertype,
+         AFALGerr(AFALG_F_AFALG_CREATE_SK, AFALG_R_SOCKET_ACCEPT_FAILED);
+         goto err;
+     }
+-
++    r = afalg_set_socket_buflen_to_max(actx->sfd);
++    if (r < 1) {
++        goto err;
++    }
+     return 1;
+ 
+  err:
+@@ -403,36 +693,112 @@ static int afalg_create_sk(afalg_ctx *actx, const char *ciphertype,
+     return 0;
+ }
+ 
+-static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
++static int afalg_start_cipher_sk(EVP_CIPHER_CTX *ctx, const unsigned char *in,
+                                  size_t inl, const unsigned char *iv,
+                                  unsigned int enc)
+ {
+     struct msghdr msg = { 0 };
+     struct cmsghdr *cmsg;
+-    struct iovec iov;
+-    ssize_t sbytes;
++    struct iovec iov[3];
++    ssize_t sbytes_total, sbytes, expected_sbytes;
+ # ifdef ALG_ZERO_COPY
+-    int ret;
++    int ret, iovlen;
++    struct iovec curr_iov;
++    size_t index, zero_copy_limit;
+ # endif
+-    char cbuf[CMSG_SPACE(ALG_IV_LEN(ALG_AES_IV_LEN)) + CMSG_SPACE(ALG_OP_LEN)];
+-
+-    memset(cbuf, 0, sizeof(cbuf));
+-    msg.msg_control = cbuf;
+-    msg.msg_controllen = sizeof(cbuf);
++    char *cbuf;
++    afalg_cipher_ctx *ectx = (afalg_cipher_ctx *)
++                           EVP_CIPHER_CTX_get_cipher_data(ctx);
++    afalg_ctx *actx  = (afalg_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
++    int nid;
+ 
+     /*
+      * cipher direction (i.e. encrypt or decrypt) and iv are sent to the
+      * kernel as part of sendmsg()'s ancillary data
+      */
+-    cmsg = CMSG_FIRSTHDR(&msg);
+-    afalg_set_op_sk(cmsg, enc);
+-    cmsg = CMSG_NXTHDR(&msg, cmsg);
+-    afalg_set_iv_sk(cmsg, iv, ALG_AES_IV_LEN);
+-
+-    /* iov that describes input data */
+-    iov.iov_base = (unsigned char *)in;
+-    iov.iov_len = inl;
+ 
++    nid = EVP_CIPHER_CTX_nid(ctx);
++    switch (nid) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++        msg.msg_controllen = (size_t)(CMSG_SPACE(ALG_IV_LEN(ALG_AES_IV_LEN)) + CMSG_SPACE(ALG_OP_LEN));
++        cbuf = OPENSSL_zalloc(msg.msg_controllen);
++        if(cbuf == NULL){
++            ALG_PERR("%s(%d): OPENSSL_zalloc failed : ", __FILE__, __LINE__);
++            goto err;
++        }
++        msg.msg_control = cbuf;
++        cmsg = CMSG_FIRSTHDR(&msg);
++        afalg_set_op_sk(cmsg, enc);
++        cmsg = CMSG_NXTHDR(&msg, cmsg);
++        afalg_set_iv_sk(cmsg, iv, ALG_AES_IV_LEN);
++
++        /* iov that describes input data */
++        iov[0].iov_base = (unsigned char *)in;
++        iov[0].iov_len = inl;
++        expected_sbytes = (ssize_t) inl;
++        if(enc)
++        {
++            memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), in + (inl - ALG_AES_IV_LEN), ALG_AES_IV_LEN);
++        }
++        #ifdef ALG_ZERO_COPY
++            /* Input data is not sent as part of call to sendmsg() */
++            msg.msg_iovlen = 0;
++            msg.msg_iov = NULL;
++            iovlen = 1;
++        #else
++            msg.msg_iovlen = 1;
++            msg.msg_iov = iov;
++        #endif
++        break;
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        msg.msg_controllen = (size_t)(CMSG_SPACE(ALG_IV_LEN(EVP_CIPHER_CTX_iv_length(ctx))) + CMSG_SPACE(ALG_OP_LEN) + CMSG_SPACE(ALG_AAD_LEN));
++        cbuf = OPENSSL_zalloc(msg.msg_controllen);
++        if(cbuf == NULL){
++            ALG_PERR("%s(%d): OPENSSL_zalloc failed : ", __FILE__, __LINE__);
++            goto err;
++        }
++        msg.msg_control = cbuf;
++        cmsg = CMSG_FIRSTHDR(&msg);
++        afalg_set_op_sk(cmsg, enc);
++        cmsg = CMSG_NXTHDR(&msg, cmsg);
++        afalg_set_iv_sk(cmsg, iv, EVP_CIPHER_CTX_iv_length(ctx));
++        cmsg = CMSG_NXTHDR(&msg, cmsg);
++        afalg_set_aadlen_sk(cmsg, ectx->aad_len);
++
++        /* iov that describes input data */
++        iov[0].iov_base = (void *)ectx->aad;
++        iov[0].iov_len = ectx->aad_len;
++        iov[1].iov_base = (unsigned char *)in;
++        iov[1].iov_len = inl;
++        #ifdef ALG_ZERO_COPY
++            iov[2].iov_base = (void *)EVP_CIPHER_CTX_buf_noconst(ctx);
++            iov[2].iov_len = EVP_GCM_TLS_TAG_LEN;
++            msg.msg_iovlen = 0;
++            msg.msg_iov = NULL;
++            iovlen = 3;
++            expected_sbytes = ectx->aad_len + inl + EVP_GCM_TLS_TAG_LEN;
++        #else
++            if (enc)
++            {
++              msg.msg_iovlen = 2;
++              expected_sbytes = (ssize_t)(inl + ectx->aad_len);
++            } else {
++              iov[2].iov_base = (void *)EVP_CIPHER_CTX_buf_noconst(ctx);
++              iov[2].iov_len = EVP_GCM_TLS_TAG_LEN;
++              msg.msg_iovlen = 3;
++              expected_sbytes = (ssize_t)(inl + ectx->aad_len + EVP_GCM_TLS_TAG_LEN);
++            }
++            msg.msg_iov = iov;
++        #endif
++        break;
++    default:
++        goto err;
++        break;
++    }
+     msg.msg_flags = MSG_MORE;
+ 
+ # ifdef ALG_ZERO_COPY
+@@ -442,14 +808,108 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+      * OPENS: out of place processing (i.e. out != in)
+      */
+ 
++    /* Sendmsg() sends iv and cipher direction to the kernel */
++    sbytes_total = 0;
++    sbytes = sendmsg(actx->sfd, &msg, MSG_MORE);
++    if (sbytes < 0) {
++        ALG_PERR("%s(%d): sendmsg failed for zero copy cipher operation : ",
++                 __FILE__, __LINE__);
++        goto err;
++    }
++
++    sbytes_total += sbytes;
++    /*
++     * vmsplice and splice are used to pin the user space input buffer for
++     * kernel space processing avoiding copys from user to kernel space
++     */
++     index = 0;
++     zero_copy_limit = 15*PAGE_SIZE;
++     do{
++         curr_iov = iov[index];
++         if(curr_iov.iov_len > zero_copy_limit)
++         {
++             curr_iov.iov_len = zero_copy_limit;
++             iov[index].iov_base += zero_copy_limit;
++             iov[index].iov_len -= zero_copy_limit;
++         }else
++         {
++             index++;
++         }
++         ret = vmsplice(actx->zc_pipe[1], &curr_iov, 1, SPLICE_F_GIFT);
++         if (ret < 0) {
++             ALG_PERR("%s(%d): vmsplice failed ret=%d : ", __FILE__, __LINE__, ret);
++             goto err;
++         }
++
++         if(index == iovlen)
++         {
++             ret = splice(actx->zc_pipe[0], NULL, actx->sfd, NULL, curr_iov.iov_len, SPLICE_F_MOVE);
++         }else
++         {
++             ret = splice(actx->zc_pipe[0], NULL, actx->sfd, NULL, curr_iov.iov_len, SPLICE_F_MOVE|SPLICE_F_MORE);
++         }
++         if (ret < 0) {
++             ALG_PERR("%s(%d): splice failed ret=%d : ", __FILE__, __LINE__, ret);
++             goto err;
++         }
++         sbytes_total +=ret;
++     }while(index<iovlen);
++# else
++    /* Sendmsg() sends iv, cipher direction and input data to the kernel */
++    sbytes = sendmsg(actx->sfd, &msg, 0);
++    if (sbytes < 0) {
++        ALG_PERR("%s(%d): sendmsg failed for cipher operation : ", __FILE__,
++                 __LINE__);
++        goto err;
++    }
++    sbytes_total = sbytes;
++# endif
++    if (sbytes_total != expected_sbytes) {
++        ALG_WARN("Cipher operation send bytes %zd != inlen %zd\n", sbytes_total,
++                expected_sbytes);
++        goto err;
++    }
++
++    OPENSSL_free(cbuf);
++    return 1;
++
++err:
++    if(cbuf)
++    {
++        OPENSSL_free(cbuf);
++    }
++    return 0;
++}
++
++static int afalg_start_digest_sk(afalg_ctx *actx,
++                                 const void *data, size_t count)
++{
++    struct msghdr msg = { 0 };
++    struct iovec iov;
++    ssize_t sbytes;
++# ifdef ALG_ZERO_COPY_DIGEST
++    int ret;
++# endif
++
++    /* iov that describes input data */
++    iov.iov_base = (unsigned char *)data;
++    iov.iov_len = count;
++
++# ifdef ALG_ZERO_COPY_DIGEST
++    /*
++     * ZERO_COPY mode
++     * Works best when buffer is 4k aligned
++     * OPENS: out of place processing (i.e. out != in)
++     */
++
+     /* Input data is not sent as part of call to sendmsg() */
+     msg.msg_iovlen = 0;
+     msg.msg_iov = NULL;
+ 
+     /* Sendmsg() sends iv and cipher direction to the kernel */
+-    sbytes = sendmsg(actx->sfd, &msg, 0);
++    sbytes = sendmsg(actx->sfd, &msg, MSG_MORE);
+     if (sbytes < 0) {
+-        ALG_PERR("%s(%d): sendmsg failed for zero copy cipher operation : ",
++        ALG_PERR("%s(%d): sendmsg failed for zero copy digest operation : ",
+                  __FILE__, __LINE__);
+         return 0;
+     }
+@@ -464,7 +924,7 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+         return 0;
+     }
+ 
+-    ret = splice(actx->zc_pipe[0], NULL, actx->sfd, NULL, inl, 0);
++    ret = splice(actx->zc_pipe[0], NULL, actx->sfd, NULL, count, SPLICE_F_MORE);
+     if (ret < 0) {
+         ALG_PERR("%s(%d): splice failed : ", __FILE__, __LINE__);
+         return 0;
+@@ -474,16 +934,16 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+     msg.msg_iov = &iov;
+ 
+     /* Sendmsg() sends iv, cipher direction and input data to the kernel */
+-    sbytes = sendmsg(actx->sfd, &msg, 0);
++    sbytes = sendmsg(actx->sfd, &msg, MSG_MORE);
+     if (sbytes < 0) {
+-        ALG_PERR("%s(%d): sendmsg failed for cipher operation : ", __FILE__,
++        ALG_PERR("%s(%d): sendmsg failed for digest operation : ", __FILE__,
+                  __LINE__);
+         return 0;
+     }
+ 
+-    if (sbytes != (ssize_t) inl) {
+-        ALG_WARN("Cipher operation send bytes %zd != inlen %zd\n", sbytes,
+-                inl);
++    if (sbytes != (ssize_t) count) {
++        ALG_WARN("digest operation send bytes %zd != count %zd\n", sbytes,
++                count);
+         return 0;
+     }
+ # endif
+@@ -491,51 +951,187 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+     return 1;
+ }
+ 
+-static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+-                             const unsigned char *iv, int enc)
++static int afalg_digest_init(EVP_MD_CTX *ctx)
+ {
+-    int ciphertype;
++    int mdtype;
+     int ret;
++    const EVP_MD *digest = NULL;
+     afalg_ctx *actx;
+-    const char *ciphername;
++    const char *mdname;
+ 
+-    if (ctx == NULL || key == NULL) {
++    if (ctx == NULL) {
+         ALG_WARN("%s(%d): Null Parameter\n", __FILE__, __LINE__);
+         return 0;
+     }
+ 
+-    if (EVP_CIPHER_CTX_cipher(ctx) == NULL) {
+-        ALG_WARN("%s(%d): Cipher object NULL\n", __FILE__, __LINE__);
++    if (EVP_MD_CTX_md(ctx) == NULL) {
++        ALG_WARN("%s(%d): message digest object NULL\n", __FILE__, __LINE__);
+         return 0;
+     }
+ 
+-    actx = EVP_CIPHER_CTX_get_cipher_data(ctx);
++    actx = EVP_MD_CTX_md_data(ctx);
+     if (actx == NULL) {
+-        ALG_WARN("%s(%d): Cipher data NULL\n", __FILE__, __LINE__);
++        ALG_WARN("%s(%d): digest data NULL\n", __FILE__, __LINE__);
+         return 0;
+     }
+ 
+-    ciphertype = EVP_CIPHER_CTX_nid(ctx);
+-    switch (ciphertype) {
+-    case NID_aes_128_cbc:
+-    case NID_aes_192_cbc:
+-    case NID_aes_256_cbc:
+-        ciphername = "cbc(aes)";
+-        break;
+-    default:
+-        ALG_WARN("%s(%d): Unsupported Cipher type %d\n", __FILE__, __LINE__,
+-                 ciphertype);
++    digest = EVP_MD_CTX_md(ctx);
++    if (actx == NULL) {
++    ALG_WARN("%s(%d): message digest NULL\n", __FILE__, __LINE__);
++    return 0;
++    }
++
++    mdtype = EVP_MD_type(digest);
++    switch (mdtype) {
++    case NID_sha1:
++        mdname = "sha1";
++        break;
++    case NID_sha256:
++        mdname = "sha256";
++        break;
++    case NID_sha384:
++        mdname = "sha384";
++        break;
++    case NID_sha512:
++        mdname = "sha512";
++        break;
++    default:
++        ALG_WARN("%s(%d): Unsupported md type %d\n", __FILE__, __LINE__,
++                 mdtype);
++        return 0;
++    }
++    /* Setup AFALG socket for crypto processing */
++    ret = afalg_create_sk(actx, "hash", mdname);
++    if (ret < 1)
++        return 0;
++
++    /* Setup AIO ctx to allow async AFALG crypto processing */
++    if (afalg_init_aio(&actx->aio) == 0)
++        goto err;
++
++# ifdef ALG_ZERO_COPY_DIGEST
++    ret = pipe(actx->zc_pipe);
++    if(ret < 0){
++        io_destroy(actx->aio.aio_ctx);
++        ALG_WARN("%s(%d): create pipe failed with %d\n", __FILE__, __LINE__,
++                 ret);
++        goto err;
++    }
++# endif
++
++    actx->init_done = MAGIC_INIT_NUM;
++
++    return 1;
++
++err:
++    close(actx->sfd);
++    close(actx->bfd);
++    return 0;
++}
++
++static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
++                             const unsigned char *iv, int enc)
++{
++    int ciphertype;
++    int ret;
++    int ivlen = 0;
++    afalg_ctx *actx;
++    const char *ciphername;
++    const char *algtype;
++    int tag_required = 0;
++    afalg_cipher_ctx *ectx;
++
++    if (ctx == NULL) {
++        ALG_WARN("%s(%d): Null Parameter\n", __FILE__, __LINE__);
++        return 0;
++    }
++
++    if (EVP_CIPHER_CTX_cipher(ctx) == NULL) {
++        ALG_WARN("%s(%d): Cipher object NULL\n", __FILE__, __LINE__);
++        return 0;
++    }
++
++    ectx = (afalg_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
++    actx = EVP_CIPHER_CTX_get_cipher_data(ctx);
++    if (actx == NULL) {
++        ALG_WARN("%s(%d): Cipher data NULL\n", __FILE__, __LINE__);
+         return 0;
+     }
+ 
+-    if (ALG_AES_IV_LEN != EVP_CIPHER_CTX_iv_length(ctx)) {
+-        ALG_WARN("%s(%d): Unsupported IV length :%d\n", __FILE__, __LINE__,
+-                 EVP_CIPHER_CTX_iv_length(ctx));
++    ciphertype = EVP_CIPHER_CTX_nid(ctx);
++    switch (ciphertype) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++        if (key == NULL) {
++            ALG_WARN("%s(%d): Null Parameter\n", __FILE__, __LINE__);
++            return 0;
++        }
++
++        if(actx->init_done == MAGIC_INIT_NUM)
++        {
++            ALG_DGB("Init already done %s:%s\n",__FILE__, __func__);
++            if (key) {
++                ret = afalg_set_key(actx, key, EVP_CIPHER_CTX_key_length(ctx));
++                if (ret < 1)
++                    goto err;
++            }
++            return 1;
++        }
++
++        ciphername = "cbc(aes)";
++        algtype = "skcipher";
++        ivlen = ALG_AES_IV_LEN;
++        if (ivlen != EVP_CIPHER_CTX_iv_length(ctx)) {
++            ALG_WARN("%s(%d): Unsupported IV length :%d\n", __FILE__, __LINE__,
++                     EVP_CIPHER_CTX_iv_length(ctx));
++            return 0;
++        }
++        break;
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        if (iv){
++            ectx->iv = iv;
++        }
++
++        if(actx->init_done == MAGIC_INIT_NUM)
++        {
++            ALG_DGB("Init already done %s:%s\n",__FILE__, __func__);
++            close(actx->sfd);
++            actx->sfd = accept(actx->bfd, NULL, 0);
++            if (actx->sfd < 0) {
++                ALG_PERR("%s(%d): Socket Accept Failed : ", __FILE__, __LINE__);
++                AFALGerr(AFALG_F_AFALG_CREATE_SK, AFALG_R_SOCKET_ACCEPT_FAILED);
++                goto err;
++            }
++            ret = afalg_set_socket_buflen_to_max(actx->sfd);
++            if (ret < 1) {
++                goto err;
++            }
++            if (key) {
++                ret = afalg_set_key(actx, key, EVP_CIPHER_CTX_key_length(ctx));
++                if (ret < 1)
++                    goto err;
++            }
++            return 1;
++        }
++
++        if (key == NULL) {
++            return 1;
++        }
++        ciphername = "gcm(aes)";
++        algtype = "aead";
++        tag_required = 1;
++        break;
++    default:
++        ALG_WARN("%s(%d): Unsupported Cipher type %d\n", __FILE__, __LINE__,
++                 ciphertype);
+         return 0;
+     }
+ 
+     /* Setup AFALG socket for crypto processing */
+-    ret = afalg_create_sk(actx, "skcipher", ciphername);
++    ret = afalg_create_sk(actx, algtype, ciphername);
+     if (ret < 1)
+         return 0;
+ 
+@@ -544,12 +1140,25 @@ static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+     if (ret < 1)
+         goto err;
+ 
++    if(tag_required)
++    {
++        ret = afalg_set_taglen(ctx);
++        if (ret < 1)
++            goto err;
++    }
++
+     /* Setup AIO ctx to allow async AFALG crypto processing */
+     if (afalg_init_aio(&actx->aio) == 0)
+         goto err;
+ 
+ # ifdef ALG_ZERO_COPY
+-    pipe(actx->zc_pipe);
++    ALG_DGB("zero copy enabled %s(%d)\n", __FILE__, __LINE__);
++    ret = pipe(actx->zc_pipe);
++    if(ret < 0){
++        ALG_WARN("%s(%d): create pipe failed with %d\n", __FILE__, __LINE__,
++                 ret);
++        goto err;
++    }
+ # endif
+ 
+     actx->init_done = MAGIC_INIT_NUM;
+@@ -557,8 +1166,34 @@ static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+     return 1;
+ 
+ err:
+-    close(actx->sfd);
+-    close(actx->bfd);
++    actx->init_done = 0;
++    if(actx->sfd > 0)
++    {
++        close(actx->sfd);
++    }
++    if(actx->bfd > 0)
++    {
++        close(actx->bfd);
++    }
++# ifdef ALG_ZERO_COPY
++    if(actx->zc_pipe[0]> 0)
++    {
++        close(actx->zc_pipe[0];
++    }
++    if(actx->zc_pipe[1]> 0)
++    {
++        close(actx->zc_pipe[1];
++    }
++# endif
++    if(actx->aio.aio_ctx)
++    {
++        io_destroy(actx->aio.aio_ctx);
++    }
++    if (actx->aio.mode == MODE_SYNC)
++    {
++        close(actx->aio.efd);
++        actx->aio.mode = 0;
++    }
+     return 0;
+ }
+ 
+@@ -566,15 +1201,44 @@ static int afalg_do_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                            const unsigned char *in, size_t inl)
+ {
+     afalg_ctx *actx;
+-    int ret;
+-    char nxtiv[ALG_AES_IV_LEN] = { 0 };
++    int ret, nid;
++    afalg_cipher_ctx *ectx;
++    unsigned char *iv;
+ 
+-    if (ctx == NULL || out == NULL || in == NULL) {
++    if (ctx == NULL) {
+         ALG_WARN("NULL parameter passed to function %s(%d)\n", __FILE__,
+                  __LINE__);
+         return 0;
+     }
+ 
++    ectx = (afalg_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
++    nid = EVP_CIPHER_CTX_nid(ctx);
++    switch (nid) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++        if (out == NULL || in == NULL) {
++            ALG_WARN("NULL parameter passed to function %s(%d)\n", __FILE__,
++                     __LINE__);
++            return 0;
++        }
++        iv = EVP_CIPHER_CTX_iv(ctx);
++        break;
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        if (in == NULL) {
++           return 0;
++        }
++        if (out == NULL) {
++           return afalg_cipher_ctrl(ctx, EVP_CTRL_AEAD_TLS1_AAD, inl, in);
++        }
++        iv = ectx->iv;
++        break;
++    default:
++        return 0;
++    }
++
+     actx = (afalg_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
+     if (actx == NULL || actx->init_done != MAGIC_INIT_NUM) {
+         ALG_WARN("%s afalg ctx passed\n",
+@@ -582,35 +1246,19 @@ static int afalg_do_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+         return 0;
+     }
+ 
+-    /*
+-     * set iv now for decrypt operation as the input buffer can be
+-     * overwritten for inplace operation where in = out.
+-     */
+-    if (EVP_CIPHER_CTX_encrypting(ctx) == 0) {
+-        memcpy(nxtiv, in + (inl - ALG_AES_IV_LEN), ALG_AES_IV_LEN);
+-    }
+-
+     /* Send input data to kernel space */
+-    ret = afalg_start_cipher_sk(actx, (unsigned char *)in, inl,
+-                                EVP_CIPHER_CTX_iv(ctx),
++    ret = afalg_start_cipher_sk(ctx, (unsigned char *)in, inl, iv,
+                                 EVP_CIPHER_CTX_encrypting(ctx));
+     if (ret < 1) {
+         return 0;
+     }
+ 
+     /* Perform async crypto operation in kernel space */
+-    ret = afalg_fin_cipher_aio(&actx->aio, actx->sfd, out, inl);
++    ret = afalg_fin_cipher_aio(ctx, actx->sfd, out, inl);
+     if (ret < 1)
+         return 0;
+ 
+-    if (EVP_CIPHER_CTX_encrypting(ctx)) {
+-        memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), out + (inl - ALG_AES_IV_LEN),
+-               ALG_AES_IV_LEN);
+-    } else {
+-        memcpy(EVP_CIPHER_CTX_iv_noconst(ctx), nxtiv, ALG_AES_IV_LEN);
+-    }
+-
+-    return 1;
++    return ret;
+ }
+ 
+ static int afalg_cipher_cleanup(EVP_CIPHER_CTX *ctx)
+@@ -644,33 +1292,139 @@ static int afalg_cipher_cleanup(EVP_CIPHER_CTX *ctx)
+     return 1;
+ }
+ 
+-static cbc_handles *get_cipher_handle(int nid)
++static int afalg_do_digest_update(EVP_MD_CTX *ctx,
++                                  const void *data, size_t count)
++{
++    afalg_ctx *actx;
++    int ret;
++
++    if (ctx == NULL || data == NULL) {
++        ALG_WARN("NULL parameter passed to function %s(%d)\n", __FILE__,
++                 __LINE__);
++        return 0;
++    }
++
++    actx = (afalg_ctx *) EVP_MD_CTX_md_data(ctx);
++    if (actx == NULL || actx->init_done != MAGIC_INIT_NUM) {
++        ALG_WARN("%s afalg ctx passed\n",
++                 ctx == NULL ? "NULL" : "Uninitialised");
++        return 0;
++    }
++
++    /* Send input data to kernel space */
++    ret = afalg_start_digest_sk(actx, data, count);
++    if (ret < 1) {
++        return 0;
++    }
++
++    return 1;
++}
++
++static int afalg_do_digest_final(EVP_MD_CTX *ctx, unsigned char *md)
++{
++    afalg_ctx *actx;
++    int ret;
++
++    const EVP_MD *digest = NULL;
++    digest = EVP_MD_CTX_md(ctx);
++    size_t count = EVP_MD_size(digest);
++
++    if (ctx == NULL || md == NULL) {
++        ALG_WARN("NULL parameter passed to function %s(%d)\n", __FILE__,
++                 __LINE__);
++        return 0;
++    }
++
++    actx = (afalg_ctx *) EVP_MD_CTX_md_data(ctx);
++    if (actx == NULL || actx->init_done != MAGIC_INIT_NUM) {
++        ALG_WARN("%s afalg ctx passed\n",
++                 ctx == NULL ? "NULL" : "Uninitialised");
++        return 0;
++    }
++
++    /* Perform async crypto operation in kernel space */
++    ret = afalg_fin_digest_aio(&actx->aio, actx->sfd, md, count);
++    if (ret < 1)
++        return 0;
++
++    return 1;
++}
++
++static int afalg_digest_cleanup(EVP_MD_CTX *ctx)
++{
++    afalg_ctx *actx;
++
++    if (ctx == NULL) {
++        ALG_WARN("NULL parameter passed to function %s(%d)\n", __FILE__,
++                 __LINE__);
++        return 0;
++    }
++
++    actx = (afalg_ctx *) EVP_MD_CTX_md_data(ctx);
++    if (actx == NULL || actx->init_done != MAGIC_INIT_NUM) {
++        ALG_WARN("%s afalg ctx passed\n",
++                 ctx == NULL ? "NULL" : "Uninitialised");
++        return 0;
++    }
++
++    /* close efd in sync mode, async mode is closed in afalg_waitfd_cleanup() */
++    if (actx->aio.mode == MODE_SYNC)
++        close(actx->aio.efd);
++    io_destroy(actx->aio.aio_ctx);
++# ifdef ALG_ZERO_COPY_DIGEST
++    close(actx->zc_pipe[0]);
++    close(actx->zc_pipe[1]);
++# endif
++    close(actx->sfd);
++    close(actx->bfd);
++
++    return 1;
++}
++
++static aes_handles *get_cipher_handle(int nid)
+ {
+     switch (nid) {
+     case NID_aes_128_cbc:
+-        return &cbc_handle[AES_CBC_128];
++        return &cipher_handle[AES_CBC_128];
+     case NID_aes_192_cbc:
+-        return &cbc_handle[AES_CBC_192];
++        return &cipher_handle[AES_CBC_192];
+     case NID_aes_256_cbc:
+-        return &cbc_handle[AES_CBC_256];
++        return &cipher_handle[AES_CBC_256];
++    case NID_aes_128_gcm:
++        return &cipher_handle[AES_GCM_128];
++    case NID_aes_192_gcm:
++        return &cipher_handle[AES_GCM_192];
++    case NID_aes_256_gcm:
++        return &cipher_handle[AES_GCM_256];
+     default:
+         return NULL;
+     }
+ }
+ 
+-static const EVP_CIPHER *afalg_aes_cbc(int nid)
++static md_handles *get_digest_handle(int nid)
+ {
+-    cbc_handles *cipher_handle = get_cipher_handle(nid);
++    switch (nid) {
++    case NID_sha1:
++        return &md_handle[HASH_SHA1];
++    case NID_sha256:
++        return &md_handle[HASH_SHA256];
++    case NID_sha384:
++        return &md_handle[HASH_SHA384];
++    case NID_sha512:
++        return &md_handle[HASH_SHA512];
++    default:
++        return NULL;
++    }
++}
++
++static const EVP_CIPHER *afalg_aes_cipher(int nid)
++{
++    aes_handles *cipher_handle = get_cipher_handle(nid);
+     if (cipher_handle->_hidden == NULL
+         && ((cipher_handle->_hidden =
+          EVP_CIPHER_meth_new(nid,
+                              AES_BLOCK_SIZE,
+                              cipher_handle->key_size)) == NULL
+-        || !EVP_CIPHER_meth_set_iv_length(cipher_handle->_hidden,
+-                                          AES_IV_LEN)
+-        || !EVP_CIPHER_meth_set_flags(cipher_handle->_hidden,
+-                                      EVP_CIPH_CBC_MODE |
+-                                      EVP_CIPH_FLAG_DEFAULT_ASN1)
+         || !EVP_CIPHER_meth_set_init(cipher_handle->_hidden,
+                                      afalg_cipher_init)
+         || !EVP_CIPHER_meth_set_do_cipher(cipher_handle->_hidden,
+@@ -678,12 +1432,188 @@ static const EVP_CIPHER *afalg_aes_cbc(int nid)
+         || !EVP_CIPHER_meth_set_cleanup(cipher_handle->_hidden,
+                                         afalg_cipher_cleanup)
+         || !EVP_CIPHER_meth_set_impl_ctx_size(cipher_handle->_hidden,
+-                                              sizeof(afalg_ctx)))) {
++                                              sizeof(afalg_cipher_ctx)))) {
+         EVP_CIPHER_meth_free(cipher_handle->_hidden);
+         cipher_handle->_hidden= NULL;
+     }
++
++    switch (nid) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++        if(!EVP_CIPHER_meth_set_iv_length(cipher_handle->_hidden,
++                                          AES_IV_LEN)
++           || !EVP_CIPHER_meth_set_flags(cipher_handle->_hidden,
++                                      EVP_CIPH_CBC_MODE |
++                                      EVP_CIPH_FLAG_DEFAULT_ASN1)){
++            EVP_CIPHER_meth_free(cipher_handle->_hidden);
++            cipher_handle->_hidden= NULL;
++        }
++        break;
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        if(!EVP_CIPHER_meth_set_iv_length(cipher_handle->_hidden,
++                                          AES_GCM_IV_LEN)
++           || !EVP_CIPHER_meth_set_ctrl(cipher_handle->_hidden,
++                                     afalg_cipher_ctrl)
++           || !EVP_CIPHER_meth_set_flags(cipher_handle->_hidden,
++                                      EVP_CIPH_GCM_MODE |
++                                      GCM_FLAGS |
++                                      EVP_CIPH_FLAG_AEAD_CIPHER)){
++            EVP_CIPHER_meth_free(cipher_handle->_hidden);
++            cipher_handle->_hidden= NULL;
++        }
++        break;
++    default:
++        break;
++    }
++
+     return cipher_handle->_hidden;
+ }
++static const EVP_MD *afalg_msg_digest(int nid)
++{
++    md_handles *digest_handle = get_digest_handle(nid);
++
++    switch (nid) {
++    case NID_sha1:
++         if (digest_handle->_hidden == NULL
++            && ((digest_handle->_hidden =
++             EVP_MD_meth_new(nid,NID_sha1WithRSAEncryption)) == NULL
++             || !EVP_MD_meth_set_input_blocksize(digest_handle->_hidden,
++                                                 SHA_CBLOCK)
++             || !EVP_MD_meth_set_result_size(digest_handle->_hidden,
++                                             SHA_DIGEST_LENGTH))) {
++         EVP_MD_meth_free(digest_handle->_hidden);
++         digest_handle->_hidden= NULL;
++         }
++         break;
++    case NID_sha256:
++         if (digest_handle->_hidden == NULL
++            && ((digest_handle->_hidden =
++             EVP_MD_meth_new(nid,NID_sha256WithRSAEncryption)) == NULL
++             || !EVP_MD_meth_set_input_blocksize(digest_handle->_hidden,
++                                                 SHA256_CBLOCK)
++             || !EVP_MD_meth_set_result_size(digest_handle->_hidden,
++                                             SHA256_DIGEST_LENGTH))) {
++         EVP_MD_meth_free(digest_handle->_hidden);
++         digest_handle->_hidden= NULL;
++         }
++         break;
++    case NID_sha384:
++         if (digest_handle->_hidden == NULL
++            && ((digest_handle->_hidden =
++             EVP_MD_meth_new(nid,NID_sha384WithRSAEncryption)) == NULL
++             || !EVP_MD_meth_set_input_blocksize(digest_handle->_hidden,
++                                                 SHA512_CBLOCK)
++             || !EVP_MD_meth_set_result_size(digest_handle->_hidden,
++                                             SHA384_DIGEST_LENGTH))) {
++             EVP_MD_meth_free(digest_handle->_hidden);
++             digest_handle->_hidden= NULL;
++         }
++         break;
++    case NID_sha512:
++         if (digest_handle->_hidden == NULL
++            && ((digest_handle->_hidden =
++             EVP_MD_meth_new(nid,NID_sha512WithRSAEncryption)) == NULL
++             || !EVP_MD_meth_set_input_blocksize(digest_handle->_hidden,
++                                                 SHA512_CBLOCK)
++             || !EVP_MD_meth_set_result_size(digest_handle->_hidden,
++                                             SHA512_DIGEST_LENGTH))) {
++             EVP_MD_meth_free(digest_handle->_hidden);
++             digest_handle->_hidden= NULL;
++         }
++         break;
++    default:
++         ALG_WARN("%s(%d): Unsupported NID type %d\n", __FILE__, __LINE__,
++                  nid);
++         break;
++    }
++
++    if(digest_handle->_hidden != NULL){
++      if (!EVP_MD_meth_set_app_datasize(digest_handle->_hidden,
++                                           sizeof(afalg_ctx))
++          || !EVP_MD_meth_set_flags(digest_handle->_hidden,
++                                    EVP_MD_FLAG_DIGALGID_ABSENT)
++          || !EVP_MD_meth_set_init(digest_handle->_hidden,
++                                   afalg_digest_init)
++          || !EVP_MD_meth_set_update(digest_handle->_hidden,
++                                     afalg_do_digest_update)
++          || !EVP_MD_meth_set_final(digest_handle->_hidden,
++                                    afalg_do_digest_final)
++          || !EVP_MD_meth_set_cleanup(digest_handle->_hidden,
++                                      afalg_digest_cleanup)) {
++      EVP_MD_meth_free(digest_handle->_hidden);
++      digest_handle->_hidden= NULL;
++      }
++    }
++    return digest_handle->_hidden;
++}
++
++static int afalg_cipher_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
++{
++    afalg_cipher_ctx *ectx = (afalg_cipher_ctx *)
++                            EVP_CIPHER_CTX_get_cipher_data(ctx);
++    unsigned int len;
++    int ret = 1;
++
++    switch (type) {
++    case EVP_CTRL_INIT:
++        ectx->aad_len = 0;
++        break;
++    case EVP_CTRL_GCM_SET_TAG:
++        if (arg <= 0 || arg > 16 || EVP_CIPHER_CTX_encrypting(ctx)) {
++            ret = 0;
++            break;
++        }
++        memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), ptr, arg);
++        ectx->taglen = arg;
++        break;
++    case EVP_CTRL_GCM_GET_TAG:
++        if (arg <= 0 || arg > 16) {
++            ret = 0;
++            break;
++        }
++        memcpy(ptr, EVP_CIPHER_CTX_buf_noconst(ctx), arg);
++        break;
++    case EVP_CTRL_AEAD_SET_IVLEN:
++        if (arg <= 0) {
++            ret = 0;
++            break;
++	       }
++        EVP_CIPHER_meth_set_iv_length(EVP_CIPHER_CTX_cipher(ctx), arg);
++        break;
++     case EVP_CTRL_AEAD_TLS1_AAD:
++        ectx->aad = ptr;
++        ectx->aad_len = arg;
++        break;
++      default:
++            ret = -1;
++            break;
++   }
++   return ret;
++}
++
++static int afalg_init_ciphers(int nid)
++{
++    int r = 1;
++
++    switch (nid) {
++    case NID_aes_128_cbc:
++    case NID_aes_192_cbc:
++    case NID_aes_256_cbc:
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        if (afalg_aes_cipher(nid) == NULL)
++            r = 0;
++        break;
++    default:
++        r = 0;
++        break;
++    }
++    return r;
++}
+ 
+ static int afalg_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
+                          const int **nids, int nid)
+@@ -699,7 +1629,10 @@ static int afalg_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
+     case NID_aes_128_cbc:
+     case NID_aes_192_cbc:
+     case NID_aes_256_cbc:
+-        *cipher = afalg_aes_cbc(nid);
++    case NID_aes_128_gcm:
++    case NID_aes_192_gcm:
++    case NID_aes_256_gcm:
++        *cipher = afalg_aes_cipher(nid);
+         break;
+     default:
+         *cipher = NULL;
+@@ -708,6 +1641,29 @@ static int afalg_ciphers(ENGINE *e, const EVP_CIPHER **cipher,
+     return r;
+ }
+ 
++static int afalg_digests(ENGINE *e, const EVP_MD **digest,
++                         const int **nids, int nid)
++{
++    int r = 1;
++    if (digest == NULL) {
++        *nids = afalg_digest_nids;
++        return (sizeof(afalg_digest_nids) / sizeof(afalg_digest_nids[0]));
++    }
++
++    switch (nid) {
++    case NID_sha1:
++    case NID_sha256:
++    case NID_sha384:
++    case NID_sha512:
++        *digest = afalg_msg_digest(nid);
++        break;
++    default:
++        *digest = NULL;
++        r = 0;
++    }
++    return r;
++}
++
+ static int bind_afalg(ENGINE *e)
+ {
+     /* Ensure the afalg error handling is set up */
+@@ -729,7 +1685,7 @@ static int bind_afalg(ENGINE *e)
+      * time.
+      */
+     for(i = 0; i < OSSL_NELEM(afalg_cipher_nids); i++) {
+-        if (afalg_aes_cbc(afalg_cipher_nids[i]) == NULL) {
++        if (!afalg_init_ciphers(afalg_cipher_nids[i])) {
+             AFALGerr(AFALG_F_BIND_AFALG, AFALG_R_INIT_FAILED);
+             return 0;
+         }
+@@ -740,6 +1696,23 @@ static int bind_afalg(ENGINE *e)
+         return 0;
+     }
+ 
++    /*
++     * Create _hidden_md by calling afalg_md
++     * now, as bind_aflag can only be called by one thread at a
++     * time.
++     */
++    for(i = 0; i < OSSL_NELEM(afalg_digest_nids); i++) {
++        if (afalg_msg_digest(afalg_digest_nids[i]) == NULL) {
++            AFALGerr(AFALG_F_BIND_AFALG, AFALG_R_INIT_FAILED);
++            return 0;
++        }
++    }
++
++    if (!ENGINE_set_digests(e, afalg_digests)) {
++        AFALGerr(AFALG_F_BIND_AFALG, AFALG_R_INIT_FAILED);
++        return 0;
++    }
++
+     return 1;
+ }
+ 
+@@ -844,12 +1817,22 @@ static int afalg_finish(ENGINE *e)
+     return 1;
+ }
+ 
+-static int free_cbc(void)
++static int free_cipher(void)
+ {
+     short unsigned int i;
+     for(i = 0; i < OSSL_NELEM(afalg_cipher_nids); i++) {
+-        EVP_CIPHER_meth_free(cbc_handle[i]._hidden);
+-        cbc_handle[i]._hidden = NULL;
++        EVP_CIPHER_meth_free(cipher_handle[i]._hidden);
++        cipher_handle[i]._hidden = NULL;
++    }
++    return 1;
++}
++
++static int free_digest(void)
++{
++    short unsigned int i;
++    for(i = 0; i < OSSL_NELEM(afalg_digest_nids); i++) {
++        EVP_MD_meth_free(md_handle[i]._hidden);
++        md_handle[i]._hidden = NULL;
+     }
+     return 1;
+ }
+@@ -857,7 +1840,8 @@ static int free_cbc(void)
+ static int afalg_destroy(ENGINE *e)
+ {
+     ERR_unload_AFALG_strings();
+-    free_cbc();
++    free_cipher();
++    free_digest();
+     return 1;
+ }
+ 
+diff --git a/engines/e_afalg.h b/engines/e_afalg.h
+index 2c03c44..50417d0 100644
+--- a/engines/e_afalg.h
++++ b/engines/e_afalg.h
+@@ -44,8 +44,12 @@
+ # define AES_KEY_SIZE_192 24
+ # define AES_KEY_SIZE_256 32
+ # define AES_IV_LEN       16
++# define AES_GCM_IV_LEN   12
+ 
+ # define MAX_INFLIGHTS 1
++# define GCM_FLAGS (EVP_CIPH_FLAG_DEFAULT_ASN1 \
++                | EVP_CIPH_CUSTOM_IV | EVP_CIPH_FLAG_CUSTOM_CIPHER \
++                | EVP_CIPH_ALWAYS_CALL_INIT | EVP_CIPH_CTRL_INIT)
+ 
+ typedef enum {
+     MODE_UNINIT = 0,
+@@ -56,15 +60,32 @@ typedef enum {
+ enum {
+     AES_CBC_128 = 0,
+     AES_CBC_192,
+-    AES_CBC_256
++    AES_CBC_256,
++    AES_GCM_128,
++    AES_GCM_192,
++    AES_GCM_256
+ };
+ 
+-struct cbc_cipher_handles {
++enum {
++      HASH_SHA1 = 0,
++      HASH_SHA256,
++      HASH_SHA384,
++      HASH_SHA512
++};
++
++struct aes_cipher_handles {
+     int key_size;
+     EVP_CIPHER *_hidden;
+ };
+ 
+-typedef struct cbc_cipher_handles cbc_handles;
++typedef struct aes_cipher_handles aes_handles;
++
++struct evp_md_handles {
++    int key_size;
++    EVP_MD *_hidden;
++};
++
++typedef struct evp_md_handles md_handles;
+ 
+ struct afalg_aio_st {
+     int efd;
+@@ -80,6 +101,7 @@ typedef struct afalg_aio_st afalg_aio;
+  * of afalg_ctx.
+  */
+ # define MAGIC_INIT_NUM 0x1890671
++//# define ALG_ZERO_COPY
+ 
+ struct afalg_ctx_st {
+     int init_done;
+@@ -92,4 +114,14 @@ struct afalg_ctx_st {
+ };
+ 
+ typedef struct afalg_ctx_st afalg_ctx;
++
++struct afalg_cipher_ctx_st {
++    afalg_ctx ctx;
++    int taglen;
++    size_t aad_len;
++    unsigned char* aad;
++    unsigned char* iv;
++};
++
++typedef struct afalg_cipher_ctx_st afalg_cipher_ctx;
+ #endif
+diff --git a/engines/e_afalg.txt b/engines/e_afalg.txt
+index 3b79305..8d7df35 100644
+--- a/engines/e_afalg.txt
++++ b/engines/e_afalg.txt
+@@ -13,6 +13,7 @@ AFALG_F_AFALG_SETUP_ASYNC_EVENT_NOTIFICATION:103:\
+ 	afalg_setup_async_event_notification
+ AFALG_F_AFALG_SET_KEY:104:afalg_set_key
+ AFALG_F_BIND_AFALG:105:bind_afalg
++AFALG_F_AFALG_SET_TAGLEN:106:afalg_set_taglen
+ 
+ #Reason codes
+ AFALG_R_EVENTFD_FAILED:108:eventfd failed
+@@ -28,3 +29,4 @@ AFALG_R_SOCKET_BIND_FAILED:103:socket bind failed
+ AFALG_R_SOCKET_CREATE_FAILED:109:socket create failed
+ AFALG_R_SOCKET_OPERATION_FAILED:104:socket operation failed
+ AFALG_R_SOCKET_SET_KEY_FAILED:106:socket set key failed
++AFALG_R_SOCKET_SET_TAGLEN_FAILED:112:socket set taglen failed
+diff --git a/engines/e_afalg_err.h b/engines/e_afalg_err.h
+index 3eb1332..8e44506 100644
+--- a/engines/e_afalg_err.h
++++ b/engines/e_afalg_err.h
+@@ -23,6 +23,7 @@
+ # define AFALG_F_AFALG_SETUP_ASYNC_EVENT_NOTIFICATION     103
+ # define AFALG_F_AFALG_SET_KEY                            104
+ # define AFALG_F_BIND_AFALG                               105
++# define AFALG_F_AFALG_SET_TAGLEN                         106
+ 
+ /*
+  * AFALG reason codes.
+@@ -39,5 +40,6 @@
+ # define AFALG_R_SOCKET_CREATE_FAILED                     109
+ # define AFALG_R_SOCKET_OPERATION_FAILED                  104
+ # define AFALG_R_SOCKET_SET_KEY_FAILED                    106
++# define AFALG_R_SOCKET_SET_TAGLEN_FAILED                 112
+ 
+ #endif

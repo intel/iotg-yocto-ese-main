@@ -6,6 +6,6 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6762ed442b3822387a51c92d928ead0d \
 SRC_URI = " \
 	gitsm://github.com/GStreamer/gstreamer.git;protocol=https"
 
-SRCREV = "b50abd9f4ebe0ed1981578ae3e55ae2cbe6f57fb"
+SRCREV = "4af103d124310ca8c4c101c890e309592031e513"
 
 S = "${WORKDIR}/git"

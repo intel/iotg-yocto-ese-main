@@ -6,23 +6,21 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
 SRC_URI = " \
         gitsm://github.com/GStreamer/gst-libav.git;protocol=https"
 
-SRCREV = "1e8e040fbc7cfff63f29c5c872685bbb5578d965"
+SRCREV = "5a9f3d4bf1a31bd1eba7c86419fc5d1a328694a1"
 
 S = "${WORKDIR}/git"
 
 DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base ffmpeg bzip2 xz zlib"
 
-inherit autotools pkgconfig upstream-version-is-even gtk-doc
+inherit meson pkgconfig upstream-version-is-even gtk-doc
 
 PACKAGECONFIG ??= "orc yasm"
 
-PACKAGECONFIG[gpl] = "--enable-gpl,--disable-gpl,"
-PACKAGECONFIG[libav] = "--with-system-libav,,libav"
-PACKAGECONFIG[orc] = "--enable-orc,--disable-orc,orc"
-PACKAGECONFIG[yasm] = "--enable-yasm,--disable-yasm,nasm-native"
-PACKAGECONFIG[valgrind] = "--enable-valgrind,--disable-valgrind,valgrind"
-
-GSTREAMER_1_0_DEBUG ?= "--disable-debug"
+PACKAGECONFIG[gpl] = "-Dgpl=enabled,-Dgpl=disabled,"
+PACKAGECONFIG[libav] = "-Dwith-system-libav=true,,libav"
+PACKAGECONFIG[orc] = "-Dorc=enabled,-Dorc=disabled,orc"
+PACKAGECONFIG[yasm] = "-Dyasm=enabled,-Dyasm=disabled,nasm-native"
+PACKAGECONFIG[valgrind] = "-Dvalgrind=enabled,-Dvalgrind=disabled,valgrind"
 
 LIBAV_EXTRA_CONFIGURE = "--with-libav-extra-configure"
 

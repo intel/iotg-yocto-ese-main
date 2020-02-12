@@ -4,6 +4,7 @@ LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
 SRC_URI = "git://github.com/rhboot/shim.git;protocol=https \
+	file://170.patch \
 "
 S = "${WORKDIR}/git"
 SRCREV = "51413d1deb0df0debdf1d208723131ff0e36d3a3"

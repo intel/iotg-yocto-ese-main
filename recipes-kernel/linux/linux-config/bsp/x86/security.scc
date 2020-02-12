@@ -1,4 +1,0 @@
-define KFEATURE_DESCRIPTION "KeystoneLake-I feature set"
-define KFEATURE_COMPATIBILITY all
-
-kconf non-hardware security.cfg

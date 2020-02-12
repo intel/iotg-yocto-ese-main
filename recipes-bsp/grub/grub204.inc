@@ -275,3 +275,7 @@ do_configure_prepend(){
 	[ ! -f ${S}/.bootstrap_done ] && ${S}/bootstrap --no-git --gnulib-srcdir="${S}/gnulib"
         touch ${S}/.bootstrap_done )
 }
+
+# fix warnings with CFLAGS
+TUNE_CCARGS_remove = "-mfpmath=sse"
+EXTRA_OECONF_append_x86-64 = " TARGET_LDLFAGS="${LDFLAGS} -no-pie""
