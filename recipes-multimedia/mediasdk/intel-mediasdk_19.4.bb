@@ -6,14 +6,13 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=3cb331af679cd8f968bf799a9c55b46e"
 
 SRC_URI = "\
-	git://github.com/Intel-Media-SDK/MediaSDK.git;protocol=https \
+	git://github.com/Intel-Media-SDK/MediaSDK.git;protocol=https;branch=intel-mediasdk-19.4 \
         file://0002-Temporary-removing-sample_rotate-compilation-to-WA-G.patch \
 	file://0001-fix-MSDK-weston-flickering-issue.patch \
 	file://0001-Fix-ITT-include-directory-path.patch \
 	file://0001-enable-10bit-render-support-in-wayland.patch \
         "
-SRCREV = "170e8f96eab5ded2f5431b9ebcb18191c6ad9c27"
-PV = "19.3+git${SRCPV}"
+SRCREV = "f8f6646afcaec410ca037f0176814dd9d7ca4900"
 
 DEPENDS += "libdrm libva itt"
 

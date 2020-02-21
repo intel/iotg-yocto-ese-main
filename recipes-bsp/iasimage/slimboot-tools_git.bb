@@ -1,6 +1,6 @@
 DESCRIPTION = "Slim Bootloader is an open-source boot firmware solution"
 SRC_URI = "git://github.com/slimbootloader/slimbootloader;protocol=https"
-SRCREV = "8bbef289f3f18e961deae4510d2f378afe7d2d33"
+SRCREV = "603b492164b0edb5287fe2adf8d2e96729b5a03a"
 PV = "0.0.0+git${SRCPV}"
 LICENSE = "BSD-2-Clause-Patent"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d1ed89007e7aa232a4dc1c59b6c9efc4"

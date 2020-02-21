@@ -20,7 +20,7 @@ SRC_URI_append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib
 SRCREV_gnulib = "229f262054f003814157c3715a7f33ddfd87d43c"
 
 S = "${WORKDIR}/git"
-PR = "3"
+PR = "9"
 SRC_URI_append = " \
   file://0001-Add-support-for-Linux-EFI-stub-loading.patch \
   file://0002-Rework-linux-command.patch \
@@ -207,6 +207,12 @@ SRC_URI_append = " \
   file://0183-Don-t-add-a-class-option-to-menu-entries-generated-f.patch \
   file://0184-10_linux.in-Also-use-GRUB_CMDLINE_LINUX_DEFAULT-to-s.patch \
   file://0185-blscfg-Don-t-hardcode-an-env-var-as-fallback-for-the.patch \
+  file://0186-grub-set-bootflag-Update-comment-about-running-as-ro.patch \
+  file://0187-grub-set-bootflag-Write-new-env-to-tmpfile-and-then-.patch \
+  file://0188-blscfg-add-a-space-char-when-appending-fields-for-va.patch \
+  file://0189-grub.d-Fix-boot_indeterminate-getting-set-on-boot_su.patch \
+  file://0190-blscfg-Add-support-for-sorting-the-plus-higher-than-.patch \
+  file://0191-Fix-savedefault-with-blscfg.patch \
   file://bootstrap.conf;subdir=${S} \
   file://bootstrap;subdir=${S} \
   file://gitignore \

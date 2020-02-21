@@ -1,0 +1,124 @@
+From 49659dc445f4dd590097ca15f69b63c26a804d21 Mon Sep 17 00:00:00 2001
+From: Haihao Xiang <haihao.xiang@intel.com>
+Date: Wed, 15 Jan 2020 16:02:11 +0800
+Subject: [PATCH] msdkvp9enc: output raw vp9 stream instead of IVF stream
+
+video/x-vp9 is required in the src pad, however the output includes a
+IVF header, which makes the pipeline below doesn't work
+
+  gst-launch-1.0 videotestsrc ! msdkvp9enc ! msdkvp9dec ! fakesink
+
+Since mfx 1.26, the VP9 encoder supports bitstream without IVF header,
+so in this patch, the mfx version is checked and msdkvp9enc is enabled
+only if mfx 1.26+ is available
+---
+ sys/msdk/gstmsdk.c       |  6 ++++--
+ sys/msdk/gstmsdkvp9enc.c |  8 ++++++++
+ sys/msdk/gstmsdkvp9enc.h |  2 ++
+ sys/msdk/meson.build     | 17 ++++++++++++++++-
+ 4 files changed, 30 insertions(+), 3 deletions(-)
+
+diff --git a/sys/msdk/gstmsdk.c b/sys/msdk/gstmsdk.c
+index 5858902..fb92a6a 100644
+--- a/sys/msdk/gstmsdk.c
++++ b/sys/msdk/gstmsdk.c
+@@ -45,7 +45,9 @@
+ #include "gstmsdkmpeg2dec.h"
+ #include "gstmsdkmpeg2enc.h"
+ #include "gstmsdkvp8dec.h"
++#ifdef USE_MSDK_VP9_ENC
+ #include "gstmsdkvp9enc.h"
++#endif
+ #include "gstmsdkvc1dec.h"
+ #ifdef USE_MSDK_VP9_DEC
+ #include "gstmsdkvp9dec.h"
+@@ -135,10 +137,10 @@ plugin_init (GstPlugin * plugin)
+   ret = gst_element_register (plugin, "msdkvp9dec", GST_RANK_NONE,
+       GST_TYPE_MSDKVP9DEC);
+ #endif
+-
++#ifdef USE_MSDK_VP9_ENC
+   ret = gst_element_register (plugin, "msdkvp9enc", GST_RANK_NONE,
+       GST_TYPE_MSDKVP9ENC);
+-
++#endif
+   ret = gst_element_register (plugin, "msdkvpp", GST_RANK_NONE,
+       GST_TYPE_MSDKVPP);
+ 
+diff --git a/sys/msdk/gstmsdkvp9enc.c b/sys/msdk/gstmsdkvp9enc.c
+index af2dcd3..b5fd981 100644
+--- a/sys/msdk/gstmsdkvp9enc.c
++++ b/sys/msdk/gstmsdkvp9enc.c
+@@ -111,6 +111,7 @@ gst_msdkvp9enc_set_format (GstMsdkEnc * encoder)
+ static gboolean
+ gst_msdkvp9enc_configure (GstMsdkEnc * encoder)
+ {
++  GstMsdkVP9Enc *vp9enc = GST_MSDKVP9ENC (encoder);
+   mfxSession session;
+ 
+   if (encoder->hardware) {
+@@ -149,6 +150,13 @@ gst_msdkvp9enc_configure (GstMsdkEnc * encoder)
+   /* Enable Extended coding options */
+   gst_msdkenc_ensure_extended_coding_options (encoder);
+ 
++  memset (&vp9enc->ext_vp9, 0, sizeof (vp9enc->ext_vp9));
++  vp9enc->ext_vp9.Header.BufferId = MFX_EXTBUFF_VP9_PARAM;
++  vp9enc->ext_vp9.Header.BufferSz = sizeof (vp9enc->ext_vp9);
++  vp9enc->ext_vp9.WriteIVFHeaders = MFX_CODINGOPTION_OFF;
++
++  gst_msdkenc_add_extra_param (encoder, (mfxExtBuffer *) & vp9enc->ext_vp9);
++
+   return TRUE;
+ }
+ 
+diff --git a/sys/msdk/gstmsdkvp9enc.h b/sys/msdk/gstmsdkvp9enc.h
+index ae12087..f784347 100644
+--- a/sys/msdk/gstmsdkvp9enc.h
++++ b/sys/msdk/gstmsdkvp9enc.h
+@@ -55,6 +55,8 @@ struct _GstMsdkVP9Enc
+   GstMsdkEnc base;
+ 
+   gint profile;
++
++  mfxExtVP9Param ext_vp9;
+ };
+ 
+ struct _GstMsdkVP9EncClass
+diff --git a/sys/msdk/meson.build b/sys/msdk/meson.build
+index 1618f66..de02e03 100644
+--- a/sys/msdk/meson.build
++++ b/sys/msdk/meson.build
+@@ -18,7 +18,6 @@ msdk_sources = [
+   'gstmsdkvc1dec.c',
+   'gstmsdkvideomemory.c',
+   'gstmsdkvp8dec.c',
+-  'gstmsdkvp9enc.c',
+   'gstmsdkvpp.c',
+   'gstmsdkvpputil.c',
+   'msdk-enums.c',
+@@ -78,6 +77,22 @@ if cxx.has_header('mfxvp9.h', args: '-I' + mfx_incdir)
+   cdata.set10('USE_MSDK_VP9_DEC', 1)
+ endif
+ 
++# mfx 1.26+ is required to support raw VP9 stream
++mfx_ver126_check_code = '''
++#include <mfxdefs.h>
++#if MFX_VERSION < 1026
++#error "The current version of mfx doesn't support raw vp9 stream"
++#endif'
++'''
++
++have_mfx_ver126 = cc.compiles(mfx_ver126_check_code,
++                include_directories : [configinc, mfx_inc])
++
++if have_mfx_ver126
++  msdk_sources += [ 'gstmsdkvp9enc.c' ]
++  cdata.set10('USE_MSDK_VP9_ENC', 1)
++endif
++
+ if host_machine.system() == 'windows'
+   if cc.get_id() != 'msvc' and msdk_option.enabled()
+     error('msdk plugin can only be built with MSVC')
+-- 
+2.7.4
+

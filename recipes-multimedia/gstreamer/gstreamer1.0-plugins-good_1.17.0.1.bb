@@ -14,7 +14,3 @@ S = "${WORKDIR}/git"
 
 RPROVIDES_${PN}-pulseaudio += "${PN}-pulse"
 RPROVIDES_${PN}-soup += "${PN}-souphttpsrc"
-
-EXTRA_OECONF_remove = " \
---disable-sunaudio \
-"

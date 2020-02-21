@@ -11,12 +11,17 @@ inherit manpages update-alternatives
 
 mesa_url ?= "git://gitlab.freedesktop.org/mesa/mesa;branch=master;protocol=https"
 ## Upstream free-destkop mesa master Mon Jun 10 14:23:34 2019 -0700
-mesa_srcrev ?= "d8a3501f1b2ef2d66091cc1e9c4ede3fb1b0da10"
-mesa_pv ?= "19.1.0+git${SRCPV}"
+mesa_srcrev ?= "cd30c4d7197ac11b42aaf707280dd2927b8c11d5"
+mesa_pv ?= "20.0.0-rc1"
 
 SRC_URI = "${mesa_url}"
 PV = "${mesa_pv}"
 SRCREV = "${mesa_srcrev}"
+
+SRC_URI_append = " \
+               file://0001-Revert-egl-fix-_EGL_NATIVE_PLATFORM-fallback.patch \
+               file://0001-iris-tgl-Implement-WA-1808121037.patch \
+"
 
 S = "${WORKDIR}/git"
 

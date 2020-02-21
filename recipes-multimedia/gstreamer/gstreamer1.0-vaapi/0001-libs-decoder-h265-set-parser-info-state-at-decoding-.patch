@@ -1,0 +1,37 @@
+From 6d82df711de87b75ab020bc74051285b166236a3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Mon, 17 Feb 2020 08:55:36 +0100
+Subject: [PATCH 1/3] libs: decoder: h265: set parser info state at decoding
+ codec data
+
+Commit 1168d6d5 showed up a regression: decode_sps() stores the unit's
+parser info in sps array. If that parser info comes from decoding
+codec data, that parser info will have an undefined state which might
+break ensure_sps().
+
+This patch sets the parser info state, at decoding codec data, with
+the internal parser state. This is similar with h264 decoder apprach.
+
+Original-patch-by: Xu Guangxin <guangxin.xu@intel.com>
+---
+ gst-libs/gst/vaapi/gstvaapidecoder_h265.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapidecoder_h265.c b/gst-libs/gst/vaapi/gstvaapidecoder_h265.c
+index 5d554fce..100d5539 100644
+--- a/gst-libs/gst/vaapi/gstvaapidecoder_h265.c
++++ b/gst-libs/gst/vaapi/gstvaapidecoder_h265.c
+@@ -2867,6 +2867,9 @@ gst_vaapi_decoder_h265_decode_codec_data (GstVaapiDecoder *
+         goto cleanup;
+       }
+ 
++      pi->state = priv->parser_state;
++      pi->flags = 0;
++
+       switch (pi->nalu.type) {
+         case GST_H265_NAL_VPS:
+           status = parse_vps (decoder, &unit);
+-- 
+2.17.1
+

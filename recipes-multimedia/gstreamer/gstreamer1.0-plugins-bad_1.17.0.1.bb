@@ -8,6 +8,10 @@ SRC_URI = " \
     file://fix-maybe-uninitialized-warnings-when-compiling-with-Os.patch \
     file://avoid-including-sys-poll.h-directly.patch \
     file://ensure-valid-sentinels-for-gst_structure_get-etc.patch \
+    file://0001-msdk-ignore-MFX_ERR_UNDEFINED_BEHAVIOR-when-loading-.patch \
+    file://0001-msdkvp9enc-fix-width-and-height.patch \
+    file://0001-msdkvp9enc-fix-10bit-encoding.patch \
+    file://0001-msdkvp9enc-output-raw-vp9-stream-instead-of-IVF-stre.patch \
 "
 
 SRCREV = "526afac73681450a7dae4d9b8db9fcb039da5311"
