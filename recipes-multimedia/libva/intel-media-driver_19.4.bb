@@ -13,7 +13,9 @@ SRC_URI = " \
     git://github.com/intel/media-driver.git;protocol=https;branch=intel-media-19.4 \
     file://0001-Fix-VC1-decode-output-corruption-on-GEN12.patch \
     file://0002-Gen12-hevc-fix-caps-query-for-10-bits-decoder.patch \
-    file://0003-Ignore-the-private-VP9-status-buffer.patch \
+    file://0001-Set-the-value-for-unknown-or-unsupported-attributes-.patch \
+    file://0002-Support-up-to-8Kx8K-VP9-encoding-on-GEN12.patch \
+    file://0003-Enable-the-WA-for-slice-header-inserting-on-GEN12.patch \
 "
 
 PV = "19.4+git${SRCPV}"

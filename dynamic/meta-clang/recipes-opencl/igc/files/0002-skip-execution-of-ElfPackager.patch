@@ -1,6 +1,6 @@
-From c73fd644cff65d40e216ad738724447523581330 Mon Sep 17 00:00:00 2001
-From: Naveen Saini <naveen.kumar.saini@intel.com>
-Date: Wed, 12 Jun 2019 14:10:23 +0800
+From 3959738843cc9a3d9d8bc1134b17ea227cbc7ad8 Mon Sep 17 00:00:00 2001
+From: "Sodhi, Vunny" <vunny.sodhi@intel.com>
+Date: Fri, 21 Feb 2020 06:18:18 +0800
 Subject: [PATCH 2/3] skip execution of ElfPackager
 
 ElfPackager adds the ability to convert llvm bitcode into elf files for
@@ -11,29 +11,34 @@ Upstream-Status: Inappropriate [configuration specific]
 
 Signed-off-by: Anuj Mittal <anuj.mittal@intel.com>
 Signed-off-by: Naveen Saini <naveen.kumar.saini@intel.com>
+Signed-off-by: Sodhi, Vunny <vunny.sodhi@intel.com>
 ---
- IGC/ElfPackager/CMakeLists.txt | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ IGC/ElfPackager/CMakeLists.txt | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/IGC/ElfPackager/CMakeLists.txt b/IGC/ElfPackager/CMakeLists.txt
-index d9487aeb..bc728ada 100644
+index 563ac9d..c6c74ce 100644
 --- a/IGC/ElfPackager/CMakeLists.txt
 +++ b/IGC/ElfPackager/CMakeLists.txt
-@@ -71,10 +71,10 @@ include_directories (
+@@ -71,12 +71,12 @@ include_directories (
    ${IGC_SOURCE_DIR}/AdaptorOCL/CLElfLib/
  )
  
--add_custom_command(TARGET ${IGC_BUILD__PROJ__ElfPackager}
--                   POST_BUILD
--                   COMMAND $<TARGET_FILE:${IGC_BUILD__PROJ__ElfPackager}> -includeSizet -funcList ${CMAKE_CURRENT_SOURCE_DIR}/function_bin.txt ${IGC_BUILD__BIF_DIR}/OCLBiFImpl.bc ${IGC_BUILD__BIF_DIR}/igdclbif.bin
--                  )
-+#add_custom_command(TARGET ${IGC_BUILD__PROJ__ElfPackager}
-+#                   POST_BUILD
-+#                   COMMAND $<TARGET_FILE:${IGC_BUILD__PROJ__ElfPackager}> -includeSizet -funcList ${CMAKE_CURRENT_SOURCE_DIR}/function_bin.txt ${IGC_BUILD__BIF_DIR}/OCLBiFImpl.bc ${IGC_BUILD__BIF_DIR}/igdclbif.bin
-+#                  )
+-if(NOT ANDROID)
+-  add_custom_command(TARGET ${IGC_BUILD__PROJ__ElfPackager}
+-                     POST_BUILD
+-                     COMMAND $<TARGET_FILE:${IGC_BUILD__PROJ__ElfPackager}> -includeSizet -funcList ${CMAKE_CURRENT_SOURCE_DIR}/function_bin.txt ${IGC_BUILD__BIF_DIR}/OCLBiFImpl.bc ${IGC_BUILD__BIF_DIR}/igdclbif.bin
+-                    )
+-endif()
++#if(NOT ANDROID)
++#  add_custom_command(TARGET ${IGC_BUILD__PROJ__ElfPackager}
++#                     POST_BUILD
++#                     COMMAND $<TARGET_FILE:${IGC_BUILD__PROJ__ElfPackager}> -includeSizet -funcList ${CMAKE_CURRENT_SOURCE_DIR}/function_bin.txt ${IGC_BUILD__BIF_DIR}/OCLBiFImpl.bc ${IGC_BUILD__BIF_DIR}/igdclbif.bin
++#                    )
++#endif()
  
  
  add_dependencies("${IGC_BUILD__PROJ__ElfPackager}" "${IGC_BUILD__PROJ__BiFModule_OCL}")
 -- 
-2.20.1
+2.7.4
 

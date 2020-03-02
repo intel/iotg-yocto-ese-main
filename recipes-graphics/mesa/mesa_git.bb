@@ -1,18 +1,11 @@
-## Use the temporary ehl mesa_wa.inc for meson build until upstream
-## poky mesa recipes get meson build enabled
-## require ${COREBASE}/meta/recipes-graphics/mesa/mesa.inc
-
-## This "mesa_wa.inc" is the current ehl bkc poky "mesa.inc" integrated
-## with poky staging mesa meson build patch:
-## https://patchwork.openembedded.org/patch/159016/
-require ./mesa_wa.inc
-
+require ${COREBASE}/meta/recipes-graphics/mesa/mesa.inc
 inherit manpages update-alternatives
 
+LIC_FILES_CHKSUM = "file://docs/license.html;md5=c1843d93c460bbf778d6037ce324f9f7"
 mesa_url ?= "git://gitlab.freedesktop.org/mesa/mesa;branch=master;protocol=https"
 ## Upstream free-destkop mesa master Mon Jun 10 14:23:34 2019 -0700
-mesa_srcrev ?= "cd30c4d7197ac11b42aaf707280dd2927b8c11d5"
-mesa_pv ?= "20.0.0-rc1"
+mesa_srcrev ?= "ae7bda27a0691d6d89c35c9f732b6e49d726c17f"
+mesa_pv ?= "20.1.0+git${SRCPV}"
 
 SRC_URI = "${mesa_url}"
 PV = "${mesa_pv}"
@@ -20,7 +13,6 @@ SRCREV = "${mesa_srcrev}"
 
 SRC_URI_append = " \
                file://0001-Revert-egl-fix-_EGL_NATIVE_PLATFORM-fallback.patch \
-               file://0001-iris-tgl-Implement-WA-1808121037.patch \
 "
 
 S = "${WORKDIR}/git"

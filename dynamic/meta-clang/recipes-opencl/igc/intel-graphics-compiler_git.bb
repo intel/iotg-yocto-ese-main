@@ -10,10 +10,9 @@ LIC_FILES_CHKSUM = "file://IGC/BiFModule/Implementation/ExternalLibraries/libclc
 SRC_URI = "git://github.com/intel/intel-graphics-compiler.git;protocol=https \
            file://0001-suppress-warnings-being-marked-as-errors.patch \
            file://0002-skip-execution-of-ElfPackager.patch \
-           file://0003-comment-out-dump-functions.patch \
            "
 
-SRCREV = "45bd13b77d9f9c0508747363c1cb5edecc0390ee"
+SRCREV = "41f775b56d04621364c65353b1deac858bb1fee5"
 PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"

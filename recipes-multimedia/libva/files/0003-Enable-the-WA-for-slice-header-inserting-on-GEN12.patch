@@ -1,0 +1,33 @@
+From 6f0c94d4c896f4156294bfbf7864f66df3d8ce08 Mon Sep 17 00:00:00 2001
+From: Haihao Xiang <haihao.xiang@intel.com>
+Date: Thu, 20 Feb 2020 21:13:29 +0800
+Subject: [PATCH 3/3] Enable the WA for slice header inserting on GEN12
+
+This WA is still needed for AVC VDEnc on GEN12, otherwise the output is
+corrupted if the first 4 bytes is '00 00 00 01' in the packed slice header.
+
+example:
+
+gst-launch-1.0 videotestsrc num-buffers=500 ! video/x-raw,format=NV12 !
+vaapih264enc tune=low-power ! filesink location=output.h264
+---
+ media_driver/linux/gen12/ddi/media_sku_wa_g12.cpp | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/media_driver/linux/gen12/ddi/media_sku_wa_g12.cpp b/media_driver/linux/gen12/ddi/media_sku_wa_g12.cpp
+index 4c8ffc6c..71414127 100644
+--- a/media_driver/linux/gen12/ddi/media_sku_wa_g12.cpp
++++ b/media_driver/linux/gen12/ddi/media_sku_wa_g12.cpp
+@@ -245,8 +245,7 @@ static bool InitTglMediaWa(struct GfxDeviceInfo *devInfo,
+     MEDIA_WR_WA(waTable, WaMidBatchPreemption, 0);
+     MEDIA_WR_WA(waTable, WaArbitraryNumMbsInSlice, 1);
+ 
+-    /* Not needed any more for VDENC */
+-    MEDIA_WR_WA(waTable, WaSuperSliceHeaderPacking, 0);
++    MEDIA_WR_WA(waTable, WaSuperSliceHeaderPacking, 1);
+ 
+     MEDIA_WR_WA(waTable, WaSFC270DegreeRotation, 0);
+ 
+-- 
+2.17.1
+

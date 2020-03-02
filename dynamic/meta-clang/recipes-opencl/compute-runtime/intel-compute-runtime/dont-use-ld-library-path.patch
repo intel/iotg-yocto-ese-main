@@ -1,6 +1,6 @@
-From 2c3b617654d75672dedb3f5dccf85883456f5952 Mon Sep 17 00:00:00 2001
-From: Anuj Mittal <anuj.mittal@intel.com>
-Date: Tue, 2 Jul 2019 08:36:34 +0800
+From e62e83c5ec14316022ef54fe3547cd110d05db64 Mon Sep 17 00:00:00 2001
+From: "Sodhi, Vunny" <vunny.sodhi@intel.com>
+Date: Fri, 21 Feb 2020 06:49:53 +0800
 Subject: [PATCH] don't use LD_LIBRARY_PATH for native offline compiler
 
 Let us supply the correct path for it to be able to find the correct
@@ -10,16 +10,17 @@ Upstream-Status: Inappropriate
 
 Signed-off-by: Anuj Mittal <anuj.mittal@intel.com>
 Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+Signed-off-by: Sodhi, Vunny <vunny.sodhi@intel.com>
 ---
  runtime/built_ins/kernels/CMakeLists.txt | 2 +-
  runtime/scheduler/scheduler_binary.cmake | 2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/runtime/built_ins/kernels/CMakeLists.txt b/runtime/built_ins/kernels/CMakeLists.txt
-index 7ac437f2..1da5b283 100644
+index 863dba1..4d3f698 100644
 --- a/runtime/built_ins/kernels/CMakeLists.txt
 +++ b/runtime/built_ins/kernels/CMakeLists.txt
-@@ -46,7 +46,7 @@ function(compile_builtin gen_type platform_type builtin)
+@@ -60,7 +60,7 @@ function(compile_builtin gen_type platform_type builtin bits builtin_options)
    unset(BUILTIN_CPP)
    # set variable outside function
    set(BUILTIN_CPP built_ins/${NEO_ARCH}/${gen_type_lower}/${BASENAME}_${family_name_with_type}.cpp PARENT_SCOPE)
@@ -27,9 +28,9 @@ index 7ac437f2..1da5b283 100644
 +  if(WIN32 OR CMAKE_CROSSCOMPILING)
      set(cloc_cmd_prefix ocloc)
    else()
-     if(DEFINED IGDRCL__IGC_LIBRARY_PATH)
+     if(DEFINED NEO__IGC_LIBRARY_PATH)
 diff --git a/runtime/scheduler/scheduler_binary.cmake b/runtime/scheduler/scheduler_binary.cmake
-index 0cbadbd1..827458ce 100644
+index a7015b9..89e389b2 100644
 --- a/runtime/scheduler/scheduler_binary.cmake
 +++ b/runtime/scheduler/scheduler_binary.cmake
 @@ -31,7 +31,7 @@ function(compile_kernel target gen_type platform_type kernel)
@@ -40,7 +41,7 @@ index 0cbadbd1..827458ce 100644
 +  if(WIN32 OR CMAKE_CROSSCOMPILING)
      set(cloc_cmd_prefix ocloc)
    else()
-     if(DEFINED IGDRCL__IGC_LIBRARY_PATH)
+     if(DEFINED NEO__IGC_LIBRARY_PATH)
 -- 
-2.20.1
+2.7.4
 
