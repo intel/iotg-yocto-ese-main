@@ -79,5 +79,5 @@ python do_mender_persistent_fixup(){
 }
 
 python(){
-    d.appendVar('ROOTFS_POSTPROCESS_COMMAND', ' do_mender_persistent_fixup;')
+    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_mender_persistent_fixup;')
 }

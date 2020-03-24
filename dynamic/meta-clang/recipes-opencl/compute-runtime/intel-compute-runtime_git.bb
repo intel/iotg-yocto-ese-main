@@ -13,7 +13,7 @@ SRC_URI = "git://github.com/intel/compute-runtime.git;protocol=https \
 
 SRC_URI_append_class-target = " \
       file://dont-use-ld-library-path.patch \
-      file://fix-missing-header-path.patch \
+      file://Revert-Add-check-for-invalid-host-ptr-when-host-ptr-.patch \
 "
 
 SRCREV = "018e585eb1dadff344e01cda535b64e993765d84"
@@ -33,6 +33,7 @@ EXTRA_OECMAKE = " \
                  -DBUILD_TYPE=Release \
                  -DSKIP_UNIT_TESTS=1 \
                  -DCCACHE_ALLOWED=FALSE \
+                 -DVISA_DIR=${PKG_CONFIG_SYSROOT_DIR}/usr/include/visa \
                  "
 
 LDFLAGS_append_class-native = " -fuse-ld=lld"

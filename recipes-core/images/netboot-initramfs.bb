@@ -1,6 +1,5 @@
-DESCRIPTION = "Mender init helper image"
-PACKAGE_INSTALL = "mender-init"
-DISTRO_FEATURES_remove = "mender-install mender-image mender-grub mender-systemd"
+DESCRIPTION = "iscsi init helper image"
+PACKAGE_INSTALL = "netboot-init"
 IMAGE_FEATURES_append = " read-only-rootfs"
 IMAGE_FEATURES_remove = "ssh-server-openssh"
 IMAGE_LINGUAS = ""
@@ -8,6 +7,7 @@ LICENSE = "MIT"
 IMAGE_FSTYPES = "cpio"
 
 require eudev-initramfs.inc
+
 inherit image
 
 python() {

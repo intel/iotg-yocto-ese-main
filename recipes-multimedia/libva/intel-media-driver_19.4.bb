@@ -16,6 +16,7 @@ SRC_URI = " \
     file://0001-Set-the-value-for-unknown-or-unsupported-attributes-.patch \
     file://0002-Support-up-to-8Kx8K-VP9-encoding-on-GEN12.patch \
     file://0003-Enable-the-WA-for-slice-header-inserting-on-GEN12.patch \
+    file://0001-Ignore-the-private-VP9-status-buffer.patch \
 "
 
 PV = "19.4+git${SRCPV}"

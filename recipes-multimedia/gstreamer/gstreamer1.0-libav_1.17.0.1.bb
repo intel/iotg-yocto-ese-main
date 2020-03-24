@@ -1,40 +1,35 @@
-require gstreamer1.0.inc
+SUMMARY = "Libav-based GStreamer 1.x plugin"
+HOMEPAGE = "http://gstreamer.freedesktop.org/"
+SECTION = "multimedia"
 
+LICENSE = "GPLv2+ & LGPLv2+ & ( (GPLv2+ & LGPLv2.1+) | (GPLv3+ & LGPLv3+) )"
+LICENSE_FLAGS = "commercial"
 LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
-"
+                    file://COPYING.LIB;md5=6762ed442b3822387a51c92d928ead0d"
 
-SRC_URI = " \
-        gitsm://github.com/GStreamer/gst-libav.git;protocol=https"
-
-SRCREV = "5a9f3d4bf1a31bd1eba7c86419fc5d1a328694a1"
+SRC_URI = "gitsm://github.com/GStreamer/gst-libav.git;protocol=https \
+           "
 
 S = "${WORKDIR}/git"
+SRCREV = "c8b88847919c9cb26205d91111fa11d4d4f44883"
 
-DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base ffmpeg bzip2 xz zlib"
 
-inherit meson pkgconfig upstream-version-is-even gtk-doc
+DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base ffmpeg"
 
-PACKAGECONFIG ??= "orc yasm"
+inherit meson pkgconfig upstream-version-is-even
 
-PACKAGECONFIG[gpl] = "-Dgpl=enabled,-Dgpl=disabled,"
-PACKAGECONFIG[libav] = "-Dwith-system-libav=true,,libav"
-PACKAGECONFIG[orc] = "-Dorc=enabled,-Dorc=disabled,orc"
-PACKAGECONFIG[yasm] = "-Dyasm=enabled,-Dyasm=disabled,nasm-native"
-PACKAGECONFIG[valgrind] = "-Dvalgrind=enabled,-Dvalgrind=disabled,valgrind"
+FILES_${PN} += "${libdir}/gstreamer-1.0/*.so"
+FILES_${PN}-staticdev += "${libdir}/gstreamer-1.0/*.a"
 
-LIBAV_EXTRA_CONFIGURE = "--with-libav-extra-configure"
+delete_unused_libav_copy() {
+        # When building with meson, the internal libav copy is not used.
+        # It is only present for legacy autotools based builds. In future
+        # GStreamer versions, the autotools scripts will be gone, and so
+        # will this internal copy. Until then, it will be present. In order
+        # to make sure this copy is not included in the -src package, just
+        # manually delete the copy.
+        rm -rf "${S}/gst-libs/ext/libav/"
+}
 
-LIBAV_EXTRA_CONFIGURE_COMMON_ARG = "--target-os=linux \
-  --cc='${CC}' --as='${CC}' --ld='${CC}' --nm='${NM}' --ar='${AR}' \
-  --ranlib='${RANLIB}' \
-  ${GSTREAMER_1_0_DEBUG} \
-  --cross-prefix='${HOST_PREFIX}'"
+do_unpack[postfuncs] += " delete_unused_libav_copy"
 
-# Disable assembly optimizations for X32, as this libav lacks the support
-PACKAGECONFIG_remove_linux-gnux32 = "yasm"
-LIBAV_EXTRA_CONFIGURE_COMMON_ARG_append_linux-gnux32 = " --disable-asm"
-
-LIBAV_EXTRA_CONFIGURE_COMMON = \
-'${LIBAV_EXTRA_CONFIGURE}="${LIBAV_EXTRA_CONFIGURE_COMMON_ARG}"'
-
-EXTRA_OECONF += "${LIBAV_EXTRA_CONFIGURE_COMMON}"

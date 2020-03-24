@@ -20,7 +20,7 @@ SRC_URI_append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib
 SRCREV_gnulib = "229f262054f003814157c3715a7f33ddfd87d43c"
 
 S = "${WORKDIR}/git"
-PR = "9"
+PR = "r9"
 SRC_URI_append = " \
   file://0001-Add-support-for-Linux-EFI-stub-loading.patch \
   file://0002-Rework-linux-command.patch \

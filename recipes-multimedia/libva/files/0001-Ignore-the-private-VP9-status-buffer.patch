@@ -1,0 +1,44 @@
+From a2ca915e021fbd272e61cb29042fbf8b8107cce5 Mon Sep 17 00:00:00 2001
+From: Haihao Xiang <haihao.xiang@intel.com>
+Date: Wed, 12 Feb 2020 22:42:31 +0800
+Subject: [PATCH] Ignore the private VP9 status buffer
+
+Without a flag, user doesn't know VACodedBufferSegment.next pointing
+to a private segment status, so we have to ignore this private
+status buffer. Otherwise it will result in segmentation fault if user
+takes VACodedBufferSegment.next as a VACodedBufferSegment pointer
+
+Example:
+gst-launch-1.0 videotestsrc !
+video/x-raw,format=NV12,width=3840,height=2160 ! vaapivp9enc !
+matroskamux ! filesink location=output.vp9
+
+Upstream-Status: Merged (https://github.com/intel/media-driver/pull/845)
+This patch should be removed once we upgrade to Q1 2020 media stack.
+Signed-off-by: Sodhi, Vunny's avatarSodhi Vunny <vunny.sodhi@intel.com>
+
+---
+ .../linux/common/codec/ddi/media_ddi_encode_vp9.cpp        | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/media_driver/linux/common/codec/ddi/media_ddi_encode_vp9.cpp b/media_driver/linux/common/codec/ddi/media_ddi_encode_vp9.cpp
+index 8a71dafc..9474cd6e 100644
+--- a/media_driver/linux/common/codec/ddi/media_ddi_encode_vp9.cpp
++++ b/media_driver/linux/common/codec/ddi/media_ddi_encode_vp9.cpp
+@@ -1062,7 +1062,12 @@ VAStatus DdiEncodeVp9::ReportExtraStatus(
+     codedBufStatus->next_frame_width = encodeStatusReport->NextFrameWidthMinus1 + 1;
+     codedBufStatus->next_frame_height = encodeStatusReport->NextFrameHeightMinus1 + 1;
+ 
+-    codedBufferSegment->next = codedBufStatus;
++    /*
++     * Ignore the private status buffer temporarily. According to the comment for VACodedBufferVP9Status in VA-API,
++     * driver must set codedBufferSegment->status to be VA_CODED_BUF_STATUS_CODEC_SPECIFIC, however
++     * VA_CODED_BUF_STATUS_CODEC_SPECIFIC is not defined in VA-API
++     */
++    // codedBufferSegment->next = codedBufStatus;
+ 
+     return vaStatus;
+ }
+-- 
+2.17.1
+
