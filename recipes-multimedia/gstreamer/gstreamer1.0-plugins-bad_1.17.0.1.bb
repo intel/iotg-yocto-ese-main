@@ -144,6 +144,11 @@ FILES_${PN}-freeverb += "${datadir}/gstreamer-1.0/presets/GstFreeverb.prs"
 FILES_${PN}-opencv += "${datadir}/gst-plugins-bad/1.0/opencv*"
 FILES_${PN}-voamrwbenc += "${datadir}/gstreamer-1.0/presets/GstVoAmrwbEnc.prs"
 
+# Add the core element plugins to the main package
+FILES_${PN} += "${libdir}/gstreamer-1.0/*.so"
+FILES_${PN}-dev += "${libdir}/gstreamer-1.0/*.a ${libdir}/gstreamer-1.0/include ${datadir}/gstreamer-1.0/*"
+FILES_${PN}-dbg += "${datadir}/gdb ${datadir}/gstreamer-1.0/gdb"
+
 #Meson build to identify correct path
 export PKG_CONFIG_LIBMFX_INCLUDEDIR = "${STAGING_INCDIR}"
 export PKG_CONFIG_LIBMFX_LIBDIR = "${STAGING_LIBDIR}"

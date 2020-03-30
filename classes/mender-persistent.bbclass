@@ -50,14 +50,15 @@ python do_mender_persistent_fixup(){
     # put apparmor under BSP management
     apparmor = os.path.join(etc, "apparmor")
     apparmor_d = os.path.join(etc, "apparmor.d")
-    # handle cache dir
-    os.mkdir(os.path.join(apparmor_d, "cache"), mode)
-    os.mkdir(os.path.join(persistent, "apparmor.d.cache"), mode)
-    # move the rest
-    shutil.move(apparmor, managed)
-    shutil.move(apparmor_d, managed)
-    os.mkdir(apparmor, mode)
-    os.mkdir(apparmor_d, mode)
+    if os.path.isdir(apparmor) and os.path.isdir(apparmor):
+        # handle cache dir
+        os.mkdir(os.path.join(apparmor_d, "cache"), mode)
+        os.mkdir(os.path.join(persistent, "apparmor.d.cache"), mode)
+        # move the rest
+        shutil.move(apparmor, managed)
+        shutil.move(apparmor_d, managed)
+        os.mkdir(apparmor, mode)
+        os.mkdir(apparmor_d, mode)
 
     # move everything else to persistent /data
     shutil.move(etc, persistent)

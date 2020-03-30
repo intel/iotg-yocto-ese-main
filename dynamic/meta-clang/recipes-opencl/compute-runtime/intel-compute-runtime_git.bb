@@ -14,6 +14,7 @@ SRC_URI = "git://github.com/intel/compute-runtime.git;protocol=https \
 SRC_URI_append_class-target = " \
       file://dont-use-ld-library-path.patch \
       file://Revert-Add-check-for-invalid-host-ptr-when-host-ptr-.patch \
+      file://Add-new-CML-workstation-devices.patch \
 "
 
 SRCREV = "018e585eb1dadff344e01cda535b64e993765d84"

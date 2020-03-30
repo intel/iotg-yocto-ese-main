@@ -1,0 +1,11 @@
+[Unit]
+Description=Detect Board and load snd modules
+After=sysinit.target
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+ExecStart=/usr/sbin/audio-hda.sh
+
+[Install]
+WantedBy=systemd-udevd.service

@@ -1,0 +1,27 @@
+From e9704bc512d30d87a54ed192f2cc86ba01296854 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 18 Mar 2020 10:53:26 -0700
+Subject: [PATCH] Add new CML workstation devices
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ runtime/dll/linux/devices/devices_base.inl | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/runtime/dll/linux/devices/devices_base.inl b/runtime/dll/linux/devices/devices_base.inl
+index ccfe564fc..72cb1af1c 100644
+--- a/runtime/dll/linux/devices/devices_base.inl
++++ b/runtime/dll/linux/devices/devices_base.inl
+@@ -170,6 +170,9 @@ DEVICE( ICFL_GT2_DT_DEVICE_P0_ID,      CFL_1x3x8,  GTTYPE_GT2 )
+ DEVICE( ICFL_GT2_DT_DEVICE_G0_ID,      CFL_1x3x8,  GTTYPE_GT2 )
+ DEVICE( ICFL_GT2_HALO_DEVICE_15_ID,    CFL_1x3x8,  GTTYPE_GT2 )
+ DEVICE( ICFL_GT2_HALO_DEVICE_17_ID,    CFL_1x3x8,  GTTYPE_GT2 )
++// CML WORKSTATIONS
++DEVICE( ICFL_GT2_WKS_DEVICE_P0_ID,    CFL_1x3x8,  GTTYPE_GT2 )
++DEVICE( ICFL_GT2_WKS_DEVICE_G0_ID,    CFL_1x3x8,  GTTYPE_GT2 )
+ #endif
+ 
+ #ifdef SUPPORT_GLK
+-- 
+2.20.1
+

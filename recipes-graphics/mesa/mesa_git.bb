@@ -11,11 +11,12 @@ SRC_URI = "${mesa_url}"
 PV = "${mesa_pv}"
 SRCREV = "${mesa_srcrev}"
 
-SRC_URI_append = " \
-               file://0001-Revert-egl-fix-_EGL_NATIVE_PLATFORM-fallback.patch \
-"
-
 S = "${WORKDIR}/git"
+
+SRC_URI_append_x86-64_class-target = " \
+                      file://mesa_driver.sh \
+"
+RDEPENDS_${PN}-megadriver_append_class-target_x86-64 = " dmidecode"
 
 # This mesa 18.3.0 related fix should be added in the yocto default recipe meta layer.
 # Remove following once the upstream fix is available in the future
@@ -29,13 +30,8 @@ do_install_append() {
     fi
 }
 
-
 # mesa driver settings (should be in mesa-megadriver)
-do_install_append() {
+do_install_append_class-target_x86-64() {
 	install -m 755 -d ${D}${sysconfdir}/profile.d
-	if [ -n "${MESA_FORCE_DRIVER}" ]; then
-		echo 'export MESA_LOADER_DRIVER_OVERRIDE=${MESA_FORCE_DRIVER}' > ${D}${sysconfdir}/profile.d/mesa_driver.sh
-	else
-		: > ${D}${sysconfdir}/profile.d/mesa_driver.sh
-	fi
+	install -Dm0644 ${WORKDIR}/mesa_driver.sh ${D}${sysconfdir}/profile.d/mesa_driver.sh
 }
