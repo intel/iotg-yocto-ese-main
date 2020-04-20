@@ -1,6 +1,6 @@
 #! /bin/sh
-# get ip address
-udhcpc -n
+# get ip address for eth0
+udhcpc -n -f -q -t 30 -i eth0
 
 # prepare an overlayfs for read-only FS, can mount a real partition to save changes
 mount -t tmpfs tmpfs /tmp
@@ -12,6 +12,7 @@ iscsistart -i iqn.2005-03.org.open-iscsi:3b5f3d51247f -t iqn.2005-03.org.open-is
 # assume udevadm start/trigger is running, mount the raw example image
 remote='/dev/disk/by-path/ip-192.168.1.1:3260-iscsi-iqn.2005-03.org.open-iscsi:ae8e658ea7e1-lun-0'
 
+# waiting for enumeration
 echo "waiting for ${remote}"
 while [ ! -b "${remote}" ]; do
   usleep 100

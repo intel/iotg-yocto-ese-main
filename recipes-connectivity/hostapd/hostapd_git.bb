@@ -12,6 +12,7 @@ SRC_URI = " \
     file://defconfig \
     file://init \
     file://hostapd.service \
+    file://0001-hostapd-KW-issues-changes.patch \
 "
 SRCREV = "099224c18e26161560f8313bced13930fdb832af"
 

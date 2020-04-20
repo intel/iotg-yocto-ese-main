@@ -10,14 +10,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=ae27f47fd6755510247c19e547e4c804 \
 
 SRC_URI = "git://github.com/intel/compute-runtime.git;protocol=https \
            "
-
-SRC_URI_append_class-target = " \
-      file://dont-use-ld-library-path.patch \
-      file://Revert-Add-check-for-invalid-host-ptr-when-host-ptr-.patch \
-      file://Add-new-CML-workstation-devices.patch \
-"
-
-SRCREV = "018e585eb1dadff344e01cda535b64e993765d84"
+SRCREV = "6f6d64569d75f6fc352ce7ce3a65dd88f0f84b99"
 PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"
@@ -35,6 +28,7 @@ EXTRA_OECMAKE = " \
                  -DSKIP_UNIT_TESTS=1 \
                  -DCCACHE_ALLOWED=FALSE \
                  -DVISA_DIR=${PKG_CONFIG_SYSROOT_DIR}/usr/include/visa \
+                 -Dcloc_cmd_prefix=ocloc \
                  "
 
 LDFLAGS_append_class-native = " -fuse-ld=lld"

@@ -1,0 +1,30 @@
+From d51572455834a13c9a2f4856c95be717b5e5d52c Mon Sep 17 00:00:00 2001
+From: Jonathan Yong <jonathan.yong@intel.com>
+Date: Mon, 30 Mar 2020 10:32:38 +0800
+Subject: [PATCH] efi/Makefile: use gnu-efi provided linker script
+
+Fixes:
+	lib/entry.c:19: undefined reference to `_init_array'
+
+upstream-status: inappropriate, yocto version interdependencies
+Signed-off-by: Jonathan Yong <jonathan.yong@intel.com>
+---
+ efi/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/efi/Makefile b/efi/Makefile
+index 722dd73..f7ca580 100644
+--- a/efi/Makefile
++++ b/efi/Makefile
+@@ -113,7 +113,7 @@ endif
+ %.so : %.o
+ 	$(CC) $(CCLDFLAGS) -o $@ $^ -lefi -lgnuefi \
+ 		$(LIBGCC) \
+-		-T elf_$(ARCH)_efi.lds
++		-T $(GNUEFIDIR)/efi.lds
+ 
+ %.o : %.c
+ 	$(CC) $(BUILDFLAGS) -c -o $@ $^
+-- 
+2.21.0
+

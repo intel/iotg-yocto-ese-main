@@ -76,7 +76,7 @@ class menderio_boot(SourcePlugin):
         """
 
         # yes, 2 efi/
-        fwupdate_src = "%s/fwupdate-boot/boot/efi/EFI/boot/fwupx64.efi" % (deploydir)
+        fwupdate_src = "%s/fwupdate-boot/boot/efi/EFI/BOOT/fwupx64.efi" % (deploydir)
         fwupdate_dst = "%s/EFI/BOOT" % (hdddir)
         os.makedirs(fwupdate_dst, exist_ok=True)
         cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], fwupdate_src, "%s/fwupx64.efi" % fwupdate_dst)

@@ -1,0 +1,13 @@
+# usage IMGCLASSES_append = " image-live-injector"
+# primarily for injecting slimboot container files into hddimg images
+
+populate_kernel_append(){
+	# allows for forced kernel
+	if [ -n "${IMAGE_LIVE_INJECTOR_KERNEL}" ]; then
+		cp -L "${IMAGE_LIVE_INJECTOR_KERNEL}" $dest/${KERNEL_IMAGETYPE}
+	fi
+	# allows for sbl_os slim boot container
+	if [ -n "${IMAGE_LIVE_INJECTOR_SBL}" ]; then
+		cp -L "${IMAGE_LIVE_INJECTOR_SBL}" $dest/sbl_os
+	fi
+}

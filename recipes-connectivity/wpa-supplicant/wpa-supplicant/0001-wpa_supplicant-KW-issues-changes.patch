@@ -1,0 +1,424 @@
+From 057226d89c6dadb3a158585d587cae2d353158fd Mon Sep 17 00:00:00 2001
+From: Siddharth Ajit Waikar <siddharth.ajitx.waikar@intel.com>
+Date: Thu, 26 Mar 2020 13:48:07 +0800
+Subject: [PATCH] wpa_supplicant: KW issues changes
+
+Signed-off-by: pnalamwx <prasadx.nalamwar@intel.com>
+---
+ src/ap/wpa_auth.c                           | 13 +++++++++++++
+ src/ap/wpa_auth_ie.c                        |  4 ++--
+ src/common/dpp.c                            | 12 +++++++++++-
+ src/drivers/driver_nl80211.c                |  1 +
+ src/utils/json.c                            |  6 ++++--
+ src/wps/wps_registrar.c                     |  5 +++++
+ wpa_supplicant/ctrl_iface.c                 |  3 ++-
+ wpa_supplicant/dbus/dbus_new_handlers.c     |  6 ++++++
+ wpa_supplicant/dbus/dbus_new_handlers_p2p.c |  6 ++++++
+ wpa_supplicant/dbus/dbus_new_introspect.c   | 18 +++++++++++-------
+ wpa_supplicant/dpp_supplicant.c             |  2 +-
+ wpa_supplicant/hs20_supplicant.c            |  1 +
+ wpa_supplicant/p2p_supplicant.c             | 20 +++++++++++++++-----
+ wpa_supplicant/p2p_supplicant_sd.c          |  7 +++++--
+ wpa_supplicant/scan.c                       |  5 +++--
+ 15 files changed, 86 insertions(+), 23 deletions(-)
+
+diff --git a/src/ap/wpa_auth.c b/src/ap/wpa_auth.c
+index f5e5779ab..b603afcd1 100644
+--- a/src/ap/wpa_auth.c
++++ b/src/ap/wpa_auth.c
+@@ -900,6 +900,11 @@ static int wpa_try_alt_snonce(struct wpa_state_machine *sm, u8 *data,
+ 			pmk_len = sm->pmk_len;
+ 		}
+ 
++		if(pmk_len > PMK_LEN_MAX) {
++			ok=0;
++			break;
++		}
++
+ 		if (wpa_derive_ptk(sm, sm->alt_SNonce, pmk, pmk_len, &PTK) < 0)
+ 			break;
+ 
+@@ -1689,6 +1694,9 @@ static int wpa_verify_key_mic(int akmp, size_t pmk_len, struct wpa_ptk *PTK,
+ 	if (data_len < sizeof(*hdr) + sizeof(*key))
+ 		return -1;
+ 
++	if(mic_len > WPA_EAPOL_KEY_MIC_MAX_LEN)
++		return -1;
++
+ 	hdr = (struct ieee802_1x_hdr *) data;
+ 	key = (struct wpa_eapol_key *) (hdr + 1);
+ 	mic_pos = (u8 *) (key + 1);
+@@ -2853,6 +2861,11 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
+ 			pmk_len = sm->pmksa->pmk_len;
+ 		}
+ 
++		if(pmk_len > PMK_LEN_MAX) {
++			ok =0;
++			break;
++		}
++
+ 		if (wpa_derive_ptk(sm, sm->SNonce, pmk, pmk_len, &PTK) < 0)
+ 			break;
+ 
+diff --git a/src/ap/wpa_auth_ie.c b/src/ap/wpa_auth_ie.c
+index 8580a5a69..31d780e0b 100644
+--- a/src/ap/wpa_auth_ie.c
++++ b/src/ap/wpa_auth_ie.c
+@@ -433,8 +433,8 @@ static u8 * wpa_write_osen(struct wpa_auth_config *conf, u8 *eid)
+ 
+ int wpa_auth_gen_wpa_ie(struct wpa_authenticator *wpa_auth)
+ {
+-	u8 *pos, buf[128];
+-	int res;
++	u8 *pos = NULL, buf[128] = {0};
++	int res = 0;
+ 
+ #ifdef CONFIG_TESTING_OPTIONS
+ 	if (wpa_auth->conf.own_ie_override_len) {
+diff --git a/src/common/dpp.c b/src/common/dpp.c
+index 8094dfa9f..861c7729f 100644
+--- a/src/common/dpp.c
++++ b/src/common/dpp.c
+@@ -4361,6 +4361,8 @@ static int dpp_configuration_parse(struct dpp_authentication *auth,
+ 
+ 	auth->conf_sta = conf_sta;
+ 	auth->conf_ap = conf_ap;
++	os_free(conf->group_id);
++	os_free(conf->passphrase);
+ 	return 0;
+ 
+ fail:
+@@ -6068,9 +6070,14 @@ struct wpabuf * dpp_build_conf_result(struct dpp_authentication *auth,
+ 	clear_len = 5 + 4 + nonce_len;
+ 	attr_len = 4 + clear_len + AES_BLOCK_SIZE;
+ 	clear = wpabuf_alloc(clear_len);
++	if (!clear)
++		return NULL;
+ 	msg = dpp_alloc_msg(DPP_PA_CONFIGURATION_RESULT, attr_len);
+-	if (!clear || !msg)
++	if(!msg)
++	{
++		os_free(clear);
+ 		return NULL;
++	}
+ 
+ 	/* DPP Status */
+ 	dpp_build_attr_status(clear, status);
+@@ -8501,6 +8508,9 @@ int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd)
+ 	bi->id = dpp_next_id(dpp);
+ 	dl_list_add(&dpp->bootstrap, &bi->list);
+ 	ret = bi->id;
++	
++	os_free(bi->info);
++	os_free(bi->uri);
+ 	bi = NULL;
+ fail:
+ 	os_free(curve);
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index ef37c8bcd..6351bb6fe 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -8080,6 +8080,7 @@ static void add_survey(struct nlattr **sinfo, u32 ifidx,
+ 		   survey->filled);
+ 
+ 	dl_list_add_tail(survey_list, &survey->list);
++	os_free(survey);
+ }
+ 
+ 
+diff --git a/src/utils/json.c b/src/utils/json.c
+index b64433959..261113068 100644
+--- a/src/utils/json.c
++++ b/src/utils/json.c
+@@ -221,7 +221,7 @@ struct json_token * json_parse(const char *data, size_t data_len)
+ {
+ 	struct json_token *root = NULL, *curr_token = NULL, *token = NULL;
+ 	const char *pos, *end;
+-	char *str;
++	char *str = NULL;
+ 	int num;
+ 	unsigned int depth = 0;
+ 	unsigned int tokens = 0;
+@@ -330,7 +330,6 @@ struct json_token * json_parse(const char *data, size_t data_len)
+ 			} else {
+ 				wpa_printf(MSG_DEBUG,
+ 					   "JSON: Invalid state for a string");
+-				os_free(str);
+ 				goto fail;
+ 			}
+ 			break;
+@@ -471,6 +470,9 @@ struct json_token * json_parse(const char *data, size_t data_len)
+ 	return root;
+ fail:
+ 	wpa_printf(MSG_DEBUG, "JSON: Parsing failed");
++	if (str){
++		os_free((void*)str);
++	}
+ 	json_free(root);
+ 	return NULL;
+ }
+diff --git a/src/wps/wps_registrar.c b/src/wps/wps_registrar.c
+index 0ac5b2831..80b4b42d5 100644
+--- a/src/wps/wps_registrar.c
++++ b/src/wps/wps_registrar.c
+@@ -831,6 +831,11 @@ int wps_registrar_add_pin(struct wps_registrar *reg, const u8 *addr,
+ 	eloop_register_timeout(WPS_PBC_WALK_TIME, 0,
+ 			       wps_registrar_set_selected_timeout,
+ 			       reg, NULL);
++	if (p->pin)
++		os_free(p->pin);
++
++	if(p)
++		os_free(p);
+ 
+ 	return 0;
+ }
+diff --git a/wpa_supplicant/ctrl_iface.c b/wpa_supplicant/ctrl_iface.c
+index c1664d043..1a29d6c64 100644
+--- a/wpa_supplicant/ctrl_iface.c
++++ b/wpa_supplicant/ctrl_iface.c
+@@ -1086,6 +1086,7 @@ static int wmm_ac_ctrl_addts(struct wpa_supplicant *wpa_s, char *cmd)
+ 	struct wmm_ac_ts_setup_params params = {
+ 		.tsid = 0xff,
+ 		.direction = 0xff,
++		.user_priority = 0x01,
+ 	};
+ 
+ 	while ((token = str_token(cmd, " ", &context))) {
+@@ -8274,7 +8275,7 @@ static void wpas_ctrl_scan(struct wpa_supplicant *wpa_s, char *params,
+ 	unsigned int manual_scan_only_new = 0;
+ 	unsigned int scan_only = 0;
+ 	unsigned int scan_id_count = 0;
+-	int scan_id[MAX_SCAN_ID];
++	int scan_id[MAX_SCAN_ID] = {0};
+ 	void (*scan_res_handler)(struct wpa_supplicant *wpa_s,
+ 				 struct wpa_scan_results *scan_res);
+ 	int *manual_scan_freqs = NULL;
+diff --git a/wpa_supplicant/dbus/dbus_new_handlers.c b/wpa_supplicant/dbus/dbus_new_handlers.c
+index 6c36d91a0..d953bac44 100644
+--- a/wpa_supplicant/dbus/dbus_new_handlers.c
++++ b/wpa_supplicant/dbus/dbus_new_handlers.c
+@@ -400,6 +400,12 @@ dbus_bool_t wpas_dbus_simple_array_property_getter(DBusMessageIter *iter,
+ 	}
+ 
+ 	sub_type_str = wpa_dbus_type_as_string(type);
++	if(!sub_type_str) {
++		dbus_set_error(error, DBUS_ERROR_FAILED,
++			"%s: Failed to find dbus type", __func__);
++		return FALSE;
++	}
++
+ 	type_str[1] = sub_type_str[0];
+ 
+ 	if (!dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+diff --git a/wpa_supplicant/dbus/dbus_new_handlers_p2p.c b/wpa_supplicant/dbus/dbus_new_handlers_p2p.c
+index 8cdd88564..34f891b4a 100644
+--- a/wpa_supplicant/dbus/dbus_new_handlers_p2p.c
++++ b/wpa_supplicant/dbus/dbus_new_handlers_p2p.c
+@@ -343,6 +343,8 @@ DBusMessage * wpas_dbus_handler_p2p_group_add(DBusMessage *message,
+ 			   0 &&
+ 			   entry.type == DBUS_TYPE_OBJECT_PATH)
+ 			pg_object_path = os_strdup(entry.str_value);
++			if(!pg_object_path)
++				goto inv_args_clear;
+ 		else
+ 			goto inv_args_clear;
+ 
+@@ -713,12 +715,16 @@ DBusMessage * wpas_dbus_handler_p2p_invite(DBusMessage *message,
+ 		    entry.type == DBUS_TYPE_OBJECT_PATH) {
+ 			peer_object_path = os_strdup(entry.str_value);
+ 			wpa_dbus_dict_entry_clear(&entry);
++			if(pg_object_path == NULL)
++				goto err;
+ 		} else if (os_strcmp(entry.key, "persistent_group_object") ==
+ 			   0 &&
+ 			   entry.type == DBUS_TYPE_OBJECT_PATH) {
+ 			pg_object_path = os_strdup(entry.str_value);
+ 			persistent = 1;
+ 			wpa_dbus_dict_entry_clear(&entry);
++			if(pg_object_path == NULL)
++				goto err;
+ 		} else {
+ 			wpa_dbus_dict_entry_clear(&entry);
+ 			goto err;
+diff --git a/wpa_supplicant/dbus/dbus_new_introspect.c b/wpa_supplicant/dbus/dbus_new_introspect.c
+index aee105b4b..39a7b597c 100644
+--- a/wpa_supplicant/dbus/dbus_new_introspect.c
++++ b/wpa_supplicant/dbus/dbus_new_introspect.c
+@@ -100,10 +100,12 @@ static void extract_interfaces_methods(
+ 	struct interfaces *iface;
+ 
+ 	for (dsc = methods; dsc && dsc->dbus_method; dsc++) {
+-		iface = add_interface(list, dsc->dbus_interface);
+-		if (iface)
+-			add_entry(iface->xml, "method", dsc->dbus_method,
+-				  dsc->args, 1);
++		if(dsc->dbus_interface) {
++			iface = add_interface(list, dsc->dbus_interface);
++			if (iface)
++				add_entry(iface->xml, "method", dsc->dbus_method,
++					  dsc->args, 1);
++		}
+ 	}
+ }
+ 
+@@ -130,9 +132,11 @@ static void extract_interfaces_properties(
+ 	struct interfaces *iface;
+ 
+ 	for (dsc = properties; dsc && dsc->dbus_property; dsc++) {
+-		iface = add_interface(list, dsc->dbus_interface);
+-		if (iface)
+-			add_property(iface->xml, dsc);
++		if (dsc->dbus_interface) {
++			iface = add_interface(list, dsc->dbus_interface);
++			if (iface)
++				add_property(iface->xml, dsc);
++		}
+ 	}
+ }
+ 
+diff --git a/wpa_supplicant/dpp_supplicant.c b/wpa_supplicant/dpp_supplicant.c
+index 1532bbce8..6297c745c 100644
+--- a/wpa_supplicant/dpp_supplicant.c
++++ b/wpa_supplicant/dpp_supplicant.c
+@@ -61,7 +61,7 @@ static const u8 TRANSACTION_ID = 1;
+  */
+ int wpas_dpp_qr_code(struct wpa_supplicant *wpa_s, const char *cmd)
+ {
+-	struct dpp_bootstrap_info *bi;
++	struct dpp_bootstrap_info *bi = NULL;
+ 	struct dpp_authentication *auth = wpa_s->dpp_auth;
+ 
+ 	bi = dpp_add_qr_code(wpa_s->dpp, cmd);
+diff --git a/wpa_supplicant/hs20_supplicant.c b/wpa_supplicant/hs20_supplicant.c
+index cb236df18..50d8efc5a 100644
+--- a/wpa_supplicant/hs20_supplicant.c
++++ b/wpa_supplicant/hs20_supplicant.c
+@@ -312,6 +312,7 @@ int hs20_anqp_send_req(struct wpa_supplicant *wpa_s, const u8 *dst, u32 stypes,
+ 		icon_entry->dialog_token = res;
+ 
+ 		dl_list_add(&wpa_s->icon_head, &icon_entry->list);
++		os_free(icon_entry->file_name);
+ 	}
+ 
+ 	return ret;
+diff --git a/wpa_supplicant/p2p_supplicant.c b/wpa_supplicant/p2p_supplicant.c
+index e7c1f5d5a..fdf5b1924 100644
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -1307,7 +1307,7 @@ static void wpas_p2p_group_started(struct wpa_supplicant *wpa_s,
+ static void wpas_group_formation_completed(struct wpa_supplicant *wpa_s,
+ 					   int success, int already_deleted)
+ {
+-	struct wpa_ssid *ssid;
++	struct wpa_ssid *ssid = NULL;
+ 	int client;
+ 	int persistent;
+ 	u8 go_dev_addr[ETH_ALEN];
+@@ -1388,7 +1388,7 @@ static void wpas_group_formation_completed(struct wpa_supplicant *wpa_s,
+ 		wpas_p2p_set_group_idle_timeout(wpa_s);
+ 	}
+ 
+-	if (persistent)
++	if (persistent && ssid)
+ 		wpas_p2p_store_persistent_group(wpa_s->p2pdev,
+ 						ssid, go_dev_addr);
+ 	else {
+@@ -1396,7 +1396,7 @@ static void wpas_group_formation_completed(struct wpa_supplicant *wpa_s,
+ 		wpa_s->global->add_psk = NULL;
+ 	}
+ 
+-	if (!client) {
++	if (!client && ssid) {
+ 		wpas_notify_p2p_group_started(wpa_s, ssid, persistent, 0, NULL);
+ 		os_get_reltime(&wpa_s->global->p2p_go_wait_client);
+ 	}
+@@ -2029,7 +2029,7 @@ do {                                    \
+ }
+ 
+ 
+-static void wpas_p2p_get_group_ifname(struct wpa_supplicant *wpa_s,
++static int wpas_p2p_get_group_ifname(struct wpa_supplicant *wpa_s,
+ 				      char *ifname, size_t len)
+ {
+ 	char *ifname_ptr = wpa_s->ifname;
+@@ -2039,6 +2039,11 @@ static void wpas_p2p_get_group_ifname(struct wpa_supplicant *wpa_s,
+ 		ifname_ptr = os_strrchr(wpa_s->ifname, '-') + 1;
+ 	}
+ 
++	if (ifname_ptr == NULL) {
++		wpa_printf(MSG_DEBUG,"P2P: Unable to find interface name");
++		return -1;
++	}
++
+ 	os_snprintf(ifname, len, "p2p-%s-%d", ifname_ptr, wpa_s->p2p_group_idx);
+ 	if (os_strlen(ifname) >= IFNAMSIZ &&
+ 	    os_strlen(wpa_s->ifname) < IFNAMSIZ) {
+@@ -2049,6 +2054,7 @@ static void wpas_p2p_get_group_ifname(struct wpa_supplicant *wpa_s,
+ 		if (os_snprintf_error(len, res) && len)
+ 			ifname[len - 1] = '\0';
+ 	}
++	return 0;
+ }
+ 
+ 
+@@ -2069,7 +2075,11 @@ static int wpas_p2p_add_group_interface(struct wpa_supplicant *wpa_s,
+ 		return 0;
+ 	}
+ 
+-	wpas_p2p_get_group_ifname(wpa_s, ifname, sizeof(ifname));
++	if( wpas_p2p_get_group_ifname(wpa_s, ifname, sizeof(ifname)) < 0) {
++		wpa_printf(MSG_DEBUG,"P2P: failed to get group interface name");
++		return  -1;
++	}
++
+ 	force_ifname[0] = '\0';
+ 
+ 	wpa_printf(MSG_DEBUG, "P2P: Create a new interface %s for the group",
+diff --git a/wpa_supplicant/p2p_supplicant_sd.c b/wpa_supplicant/p2p_supplicant_sd.c
+index f8675e68b..7ad4895c4 100644
+--- a/wpa_supplicant/p2p_supplicant_sd.c
++++ b/wpa_supplicant/p2p_supplicant_sd.c
+@@ -658,8 +658,10 @@ static void wpas_sd_req_asp(struct wpa_supplicant *wpa_s,
+ 
+ 			/* Update length and count */
+ 			(*count_pos)++;
+-			WPA_PUT_LE16(len_pos,
+-				     (u8 *) wpabuf_put(resp, 0) - len_pos - 2);
++			if(len_pos) {
++				WPA_PUT_LE16(len_pos,
++					     (u8 *) wpabuf_put(resp, 0) - len_pos - 2);
++			}
+ 		}
+ 	}
+ 
+@@ -1255,6 +1257,7 @@ int wpas_p2p_service_add_upnp(struct wpa_supplicant *wpa_s, u8 version,
+ 	dl_list_add(&wpa_s->global->p2p_srv_upnp, &usrv->list);
+ 
+ 	wpas_p2p_sd_service_update(wpa_s);
++	os_free(usrv->service);
+ 	return 0;
+ }
+ 
+diff --git a/wpa_supplicant/scan.c b/wpa_supplicant/scan.c
+index 7abb028dd..f904c8a7f 100644
+--- a/wpa_supplicant/scan.c
++++ b/wpa_supplicant/scan.c
+@@ -2406,11 +2406,12 @@ wpa_supplicant_get_scan_results(struct wpa_supplicant *wpa_s,
+ 		wpa_bss_update_scan_res(wpa_s, scan_res->res[i],
+ 					&scan_res->fetch_time);
+ 	wpa_bss_update_end(wpa_s, info, new_scan);
+-
++	if (!scan_res->res){
++		return NULL;
++	}
+ 	return scan_res;
+ }
+ 
+-
+ /**
+  * wpa_supplicant_update_scan_results - Update scan results from the driver
+  * @wpa_s: Pointer to wpa_supplicant data
+-- 
+2.24.1
+

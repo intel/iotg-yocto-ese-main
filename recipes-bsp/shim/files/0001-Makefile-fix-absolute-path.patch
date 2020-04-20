@@ -1,0 +1,43 @@
+From 930e589e0a1fcb3b06457ec74ff49c9f2a403717 Mon Sep 17 00:00:00 2001
+From: Jonathan Yong <jonathan.yong@intel.com>
+Date: Sat, 28 Mar 2020 18:49:13 +0800
+Subject: [PATCH 1/2] Makefile: fix absolute path
+
+Allow absolute paths.
+
+upstream-status: inappropriate, yocto specific.
+Signed-off-by: Jonathan Yong <jonathan.yong@intel.com>
+---
+ Makefile        | 2 +-
+ certdb/Makefile | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index b5198dd..73e38a4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -23,7 +23,7 @@ export VERSION DASHRELEASE EFI_ARCH
+ all : | mkbuilddir
+ % : |
+ 	@if ! [ -d $(BUILDDIR)/ ] ; then $(MAKE) BUILDDIR=$(BUILDDIR) TOPDIR=$(TOPDIR) mkbuilddir ; fi
+-	$(MAKE) TOPDIR=../$(TOPDIR) BUILDDIR=../$(BUILDDIR) -C $(BUILDDIR) -f Makefile $@
++	$(MAKE) TOPDIR=$(TOPDIR) BUILDDIR=$(BUILDDIR) -C $(BUILDDIR) -f Makefile $@
+ 
+ mkbuilddir :
+ 	@mkdir -p $(BUILDDIR)
+diff --git a/certdb/Makefile b/certdb/Makefile
+index 82b46db..a72618c 100644
+--- a/certdb/Makefile
++++ b/certdb/Makefile
+@@ -18,7 +18,7 @@ certdb/secmod.db: certdb/shim.crt certdb/shim.p12
+ certdb/shim.crt certdb/shim.p12:
+ 	@cd $(BUILDDIR)/certdb
+ 	echo making shim.crt
+-	$(TOPDIR)/../certdb/make-certs shim shim@xn--u4h.net all codesign 1.3.6.1.4.1.311.10.3.1 </dev/null >/dev/null
++	$(TOPDIR)/certdb/make-certs shim shim@xn--u4h.net all codesign 1.3.6.1.4.1.311.10.3.1 </dev/null >/dev/null
+ 
+ .ONESHELL: certdb/shim.cer
+ certdb/shim.cer: certdb/shim.crt
+-- 
+2.21.0
+

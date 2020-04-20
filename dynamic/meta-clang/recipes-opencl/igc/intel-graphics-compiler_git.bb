@@ -8,11 +8,10 @@ LIC_FILES_CHKSUM = "file://IGC/BiFModule/Implementation/ExternalLibraries/libclc
                     file://IGC/Compiler/LegalizationPass.cpp;beginline=1;endline=25;md5=4abf1738ff96b18e34186eb763e28eeb"
 
 SRC_URI = "git://github.com/intel/intel-graphics-compiler.git;protocol=https \
-           file://0001-suppress-warnings-being-marked-as-errors.patch \
            file://0002-skip-execution-of-ElfPackager.patch \
            "
 
-SRCREV = "41f775b56d04621364c65353b1deac858bb1fee5"
+SRCREV = "d61fd3e2d31baeea5d20549279b1c5f44038d168"
 PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"

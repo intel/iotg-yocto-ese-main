@@ -10,6 +10,7 @@ DEPENDS = " \
 SRC_URI = "git://github.com/rhboot/fwupdate.git \
            file://0001-efi-Makefile-remove-standard-system-header-file-dire.patch \
            file://132.patch \
+           file://0001-efi-Makefile-use-gnu-efi-provided-linker-script.patch \
            "
 SRCREV = "6101b6b304da06644bd7a90444f729d0fc44940e"
 S = "${WORKDIR}/git"
@@ -17,13 +18,8 @@ S = "${WORKDIR}/git"
 inherit gettext pkgconfig bash-completion
 RDEPENDS_${PN}-bash-completion_append = " ${PN} bash"
 
-# There is -I/usr/include/efi/ -I/usr/include/efi/$(ARCH)/ in efi/Makefile,
-# but those seem to be ignored due to -nostdinc (considered "system includes"
-# because of the path by gcc?). We need to specify them with the full, non-standard
-# path.
-#
-# GNUEFIDIR and LIBDIR below includes the sysroot for the same reason.
-CFLAGS += "-I${RECIPE_SYSROOT}${includedir}/efi -I${RECIPE_SYSROOT}${includedir}/efi/${ARCH} -I${RECIPE_SYSROOT}${includedir}/efivar"
+inherit gnu-efi
+CFLAGS += "-I${RECIPE_SYSROOT}${includedir}/efi -I${RECIPE_SYSROOT}${includedir}/efi/${GNU_EFI_ARCH} -I${RECIPE_SYSROOT}${includedir}/efivar"
 
 # Does not work in combination with the -mno-sse that is needed
 # for the EFI app.
@@ -40,9 +36,9 @@ EXTRA_OEMAKE += " \
     libexecdir=${libexecdir}/ \
     datadir=${datadir}/ \
     localedir=${datadir}/locale/ \
-    LIBDIR=${RECIPE_SYSROOT}${libdir}/ \
-    GNUEFIDIR=${RECIPE_SYSROOT}${libdir}/ \
-    EFIDIR='boot' \
+    LIBDIR=${STAGING_LIBDIR}/ \
+    GNUEFIDIR=${STAGING_LIBDIR}/gnuefi/${GNU_EFI_ARCH} \
+    EFIDIR='BOOT' \
 "
 
 # libsmbios currently has no recipe. fwupdate compiles also without it.
@@ -53,10 +49,10 @@ PARALLEL_MAKE = "-j1"
 
 do_install () {
     oe_runmake install DESTDIR=${D}
-    rm -f ${D}/${debuglibdir}/boot/efi/EFI/refkit/fwupx64.efi.debug
+    rm -f ${D}/${debuglibdir}/boot/efi/EFI/refkit/fwup${GNU_EFI_ARCH}.efi.debug
 
-    if [ ! -f ${D}/boot/efi/EFI/boot/fwupx64.efi ]; then
-        cp efi/fwupx64.efi ${D}/boot/efi/EFI/boot/
+    if [ ! -f ${D}/boot/efi/EFI/BOOT/fwup${GNU_EFI_ARCH}.efi ]; then
+        cp efi/fwup${GNU_EFI_ARCH}.efi ${D}/boot/efi/EFI/BOOT/
     fi
 }
 

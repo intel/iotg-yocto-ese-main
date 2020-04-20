@@ -1,0 +1,43 @@
+From 012a86de0769f2df4a646fc2b01830392f791fbc Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Wed, 15 Apr 2020 08:43:48 +0000
+Subject: [PATCH] EFI_WARN_UNKNOWN_GLYPH: fix typo
+
+Compatibility with 3.0.11.
+
+Upstream-status: Already fixed in fedora fork
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ inc/efierr.h | 2 +-
+ lib/error.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/inc/efierr.h b/inc/efierr.h
+index dfd3d3c..d351c1c 100644
+--- a/inc/efierr.h
++++ b/inc/efierr.h
+@@ -58,7 +58,7 @@ Revision History
+ #define EFI_INVALID_LANGUAGE            EFIERR(32)
+ #define EFI_COMPROMISED_DATA            EFIERR(33)
+ 
+-#define EFI_WARN_UNKOWN_GLYPH           EFIWARN(1)
++#define EFI_WARN_UNKNOWN_GLYPH          EFIWARN(1)
+ #define EFI_WARN_DELETE_FAILURE         EFIWARN(2)
+ #define EFI_WARN_WRITE_FAILURE          EFIWARN(3)
+ #define EFI_WARN_BUFFER_TOO_SMALL       EFIWARN(4)
+diff --git a/lib/error.c b/lib/error.c
+index 3a856a6..c4d053d 100644
+--- a/lib/error.c
++++ b/lib/error.c
+@@ -56,7 +56,7 @@ struct {
+ 	{  EFI_COMPROMISED_DATA,       L"Compromised Data"},
+ 
+ 	// warnings
+-	{  EFI_WARN_UNKOWN_GLYPH,      L"Warning Unknown Glyph"},
++	{  EFI_WARN_UNKNOWN_GLYPH,     L"Warning Unknown Glyph"},
+ 	{  EFI_WARN_DELETE_FAILURE,    L"Warning Delete Failure"},
+ 	{  EFI_WARN_WRITE_FAILURE,     L"Warning Write Failure"},
+ 	{  EFI_WARN_BUFFER_TOO_SMALL,  L"Warning Buffer Too Small"},
+-- 
+2.20.1
+

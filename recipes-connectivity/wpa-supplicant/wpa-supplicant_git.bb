@@ -27,6 +27,7 @@ SRC_URI = "git://w1.fi/srv/git/hostap.git \
            file://wpa_supplicant.conf-sane \
            file://99_wpa_supplicant \
 	   file://wpa-supplicant-Handle-long-P2P-Device-Interface-name.patch \
+	   file://0001-wpa_supplicant-KW-issues-changes.patch \
           "
 SRCREV = "099224c18e26161560f8313bced13930fdb832af"
 

@@ -1,0 +1,506 @@
+From 02bc449d417c565387b1078daae54edd46e8f8f2 Mon Sep 17 00:00:00 2001
+From: Siddharth Ajit Waikar <siddharth.ajitx.waikar@intel.com>
+Date: Wed, 18 Mar 2020 15:41:09 +0800
+Subject: [PATCH] hostapd: KW issues changes
+
+Resolved KW critical and error issues
+
+Signed-off-by: Siddharth Ajit Waikar <siddharth.ajitx.waikar@intel.com>
+---
+ hostapd/hostapd_cli.c             |  7 ++--
+ hostapd/main.c                    | 55 ++++++++++++++++++++++---------
+ src/ap/ieee802_11.c               | 13 ++++++--
+ src/ap/ieee802_1x.c               | 11 ++++---
+ src/ap/wpa_auth.c                 | 10 +++++-
+ src/ap/wpa_auth_ie.c              |  3 +-
+ src/common/cli.c                  |  1 +
+ src/drivers/driver_hostap.c       |  1 +
+ src/drivers/driver_nl80211.c      | 19 +++++++----
+ src/drivers/driver_nl80211_capa.c |  2 ++
+ src/eap_server/eap_server.c       |  3 +-
+ src/radius/radius_client.c        | 12 +++++--
+ src/utils/common.c                | 10 +++---
+ 13 files changed, 105 insertions(+), 42 deletions(-)
+
+diff --git a/hostapd/hostapd_cli.c b/hostapd/hostapd_cli.c
+index 23c592a6b..a4daf0ca8 100644
+--- a/hostapd/hostapd_cli.c
++++ b/hostapd/hostapd_cli.c
+@@ -1919,7 +1919,8 @@ static char ** hostapd_cli_edit_completion_cb(void *ctx, const char *str,
+ static void hostapd_cli_interactive(void)
+ {
+ 	char *hfile = NULL;
+-	char *home;
++	char *home = NULL;
++	int hfile_len = 0;
+ 
+ 	printf("\nInteractive mode\n\n");
+ 
+@@ -1930,9 +1931,9 @@ static void hostapd_cli_interactive(void)
+ #endif /* CONFIG_HOSTAPD_CLI_HISTORY_DIR */
+ 	if (home) {
+ 		const char *fname = ".hostapd_cli_history";
+-		int hfile_len = os_strlen(home) + 1 + os_strlen(fname) + 1;
++		hfile_len = os_strlen(home) + 1 + os_strlen(fname) + 1;
+ 		hfile = os_malloc(hfile_len);
+-		if (hfile)
++		if (hfile && hfile_len > 0)
+ 			os_snprintf(hfile, hfile_len, "%s/%s", home, fname);
+ 	}
+ 
+diff --git a/hostapd/main.c b/hostapd/main.c
+index 08896ffe2..8277012cd 100644
+--- a/hostapd/main.c
++++ b/hostapd/main.c
+@@ -645,7 +645,7 @@ int main(int argc, char *argv[])
+ 	char *pid_file = NULL;
+ 	const char *log_file = NULL;
+ 	const char *entropy_file = NULL;
+-	char **bss_config = NULL, **tmp_bss;
++	char **bss_config = NULL, **tmp_bss = NULL;
+ 	size_t num_bss_configs = 0;
+ #ifdef CONFIG_DEBUG_LINUX_TRACING
+ 	int enable_trace_dbg = 0;
+@@ -724,21 +724,32 @@ int main(int argc, char *argv[])
+ 			exit(1);
+ 			break;
+ 		case 'g':
+-			if (hostapd_get_global_ctrl_iface(&interfaces, optarg))
++			if (hostapd_get_global_ctrl_iface(&interfaces, optarg)) {
++				if(tmp_bss)
++					os_free(tmp_bss);
++
+ 				return -1;
++			}
+ 			break;
+ 		case 'G':
+-			if (hostapd_get_ctrl_iface_group(&interfaces, optarg))
++			if (hostapd_get_ctrl_iface_group(&interfaces, optarg)) {
++				if(tmp_bss)
++					os_free(tmp_bss);
++
+ 				return -1;
++			}
+ 			break;
+ 		case 'b':
+-			tmp_bss = os_realloc_array(bss_config,
++			if(!tmp_bss) {
++				tmp_bss = os_realloc_array(bss_config,
+ 						   num_bss_configs + 1,
+ 						   sizeof(char *));
+-			if (tmp_bss == NULL)
+-				goto out;
+-			bss_config = tmp_bss;
+-			bss_config[num_bss_configs++] = optarg;
++				if (tmp_bss == NULL)
++					goto out;
++				bss_config = tmp_bss;
++			}
++			if(bss_config)
++				bss_config[num_bss_configs++] = optarg;
+ 			break;
+ #ifdef CONFIG_DEBUG_SYSLOG
+ 		case 's':
+@@ -782,6 +793,9 @@ int main(int argc, char *argv[])
+ 		int tret = wpa_debug_open_linux_tracing();
+ 		if (tret) {
+ 			wpa_printf(MSG_ERROR, "Failed to enable trace logging");
++			if(tmp_bss)
++				os_free(tmp_bss);
++
+ 			return -1;
+ 		}
+ 	}
+@@ -793,12 +807,18 @@ int main(int argc, char *argv[])
+ 					     sizeof(struct hostapd_iface *));
+ 		if (interfaces.iface == NULL) {
+ 			wpa_printf(MSG_ERROR, "malloc failed");
++			if(tmp_bss)
++				os_free(tmp_bss);
++
+ 			return -1;
+ 		}
+ 	}
+ 
+ 	if (hostapd_global_init(&interfaces, entropy_file)) {
+ 		wpa_printf(MSG_ERROR, "Failed to initialize global context");
++		if(tmp_bss)
++			os_free(tmp_bss);
++
+ 		return -1;
+ 	}
+ 
+@@ -869,6 +889,7 @@ int main(int argc, char *argv[])
+ 			interfaces.iface = tmp;
+ 			interfaces.iface[interfaces.count++] = iface;
+ 		}
++		free(iface);
+ 	}
+ 
+ 	/*
+@@ -898,15 +919,17 @@ int main(int argc, char *argv[])
+  out:
+ 	hostapd_global_ctrl_iface_deinit(&interfaces);
+ 	/* Deinitialize all interfaces */
+-	for (i = 0; i < interfaces.count; i++) {
+-		if (!interfaces.iface[i])
+-			continue;
+-		interfaces.iface[i]->driver_ap_teardown =
+-			!!(interfaces.iface[i]->drv_flags &
+-			   WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT);
+-		hostapd_interface_deinit_free(interfaces.iface[i]);
++	if(interfaces.iface != NULL) {
++		for (i = 0; i < interfaces.count; i++) {
++			if (!interfaces.iface[i])
++				continue;
++			interfaces.iface[i]->driver_ap_teardown =
++				!!(interfaces.iface[i]->drv_flags &
++			   	WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT);
++			hostapd_interface_deinit_free(interfaces.iface[i]);
++		}
++		os_free(interfaces.iface);
+ 	}
+-	os_free(interfaces.iface);
+ 
+ #ifdef CONFIG_DPP
+ 	dpp_global_deinit(interfaces.dpp);
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 56f6363a3..8cac10922 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -2202,8 +2202,11 @@ static void handle_auth(struct hostapd_data *hapd,
+ 		resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
+ 		goto fail;
+ 	}
+-	if (res == HOSTAPD_ACL_PENDING)
++	if (res == HOSTAPD_ACL_PENDING) {
++		free(identity);
++		free(radius_cui);
+ 		return;
++	}
+ 
+ #ifdef CONFIG_SAE
+ 	if (auth_alg == WLAN_AUTH_SAE && !from_queue &&
+@@ -2234,6 +2237,9 @@ static void handle_auth(struct hostapd_data *hapd,
+ 				       HOSTAPD_LEVEL_DEBUG,
+ 				       "Drop repeated authentication frame seq_ctrl=0x%x",
+ 				       seq_ctrl);
++
++			free(identity);
++			free(radius_cui);
+ 			return;
+ 		}
+ #ifdef CONFIG_MESH
+@@ -3800,8 +3806,11 @@ static void handle_assoc(struct hostapd_data *hapd,
+ 				resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
+ 				goto fail;
+ 			}
+-			if (acl_res == HOSTAPD_ACL_PENDING)
++			if (acl_res == HOSTAPD_ACL_PENDING) {
++				free(identity);
++				free(radius_cui);
+ 				return;
++			}
+ 
+ 			/* DMG/IEEE 802.11ad does not use authentication.
+ 			 * Allocate sta entry upon association. */
+diff --git a/src/ap/ieee802_1x.c b/src/ap/ieee802_1x.c
+index 97f503f75..d8459ffcc 100644
+--- a/src/ap/ieee802_1x.c
++++ b/src/ap/ieee802_1x.c
+@@ -44,6 +44,9 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
+ 				int remediation);
+ 
+ 
++#define WEP_MIN_KEY_SIZE 0
++#define WEP_MAX_KEY_SIZE 127
++
+ static void ieee802_1x_send(struct hostapd_data *hapd, struct sta_info *sta,
+ 			    u8 type, const u8 *data, size_t datalen)
+ {
+@@ -211,7 +214,6 @@ static void ieee802_1x_tx_key_one(struct hostapd_data *hapd,
+ 	os_free(buf);
+ }
+ 
+-
+ static void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
+ {
+ 	struct eapol_authenticator *eapol = hapd->eapol_auth;
+@@ -236,9 +238,10 @@ static void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
+ 				      hapd->conf->default_wep_key_len);
+ 	}
+ 
+-	if (hapd->conf->individual_wep_key_len > 0) {
++	if (hapd->conf->individual_wep_key_len > WEP_MIN_KEY_SIZE && 
++			hapd->conf->individual_wep_key_len <= WEP_MAX_KEY_SIZE ) {
+ 		u8 *ikey;
+-		ikey = os_malloc(hapd->conf->individual_wep_key_len);
++		ikey = os_malloc(WEP_MAX_KEY_SIZE+1);
+ 		if (ikey == NULL ||
+ 		    random_get_bytes(ikey, hapd->conf->individual_wep_key_len))
+ 		{
+@@ -2002,7 +2005,7 @@ static int ieee802_1x_rekey_broadcast(struct hostapd_data *hapd)
+ 		return 0;
+ 
+ 	os_free(eapol->default_wep_key);
+-	eapol->default_wep_key = os_malloc(hapd->conf->default_wep_key_len);
++	eapol->default_wep_key = os_malloc(WEP_MAX_KEY_SIZE+1);
+ 	if (eapol->default_wep_key == NULL ||
+ 	    random_get_bytes(eapol->default_wep_key,
+ 			     hapd->conf->default_wep_key_len)) {
+diff --git a/src/ap/wpa_auth.c b/src/ap/wpa_auth.c
+index f5e5779ab..7c559d7d9 100644
+--- a/src/ap/wpa_auth.c
++++ b/src/ap/wpa_auth.c
+@@ -900,6 +900,11 @@ static int wpa_try_alt_snonce(struct wpa_state_machine *sm, u8 *data,
+ 			pmk_len = sm->pmk_len;
+ 		}
+ 
++		if(pmk_len >= PMK_LEN_MAX) {
++			ok = 0;
++			break;
++		}
++
+ 		if (wpa_derive_ptk(sm, sm->alt_SNonce, pmk, pmk_len, &PTK) < 0)
+ 			break;
+ 
+@@ -1686,6 +1691,9 @@ static int wpa_verify_key_mic(int akmp, size_t pmk_len, struct wpa_ptk *PTK,
+ 	u8 mic[WPA_EAPOL_KEY_MIC_MAX_LEN], *mic_pos;
+ 	size_t mic_len = wpa_mic_len(akmp, pmk_len);
+ 
++	if(mic_len >= WPA_EAPOL_KEY_MIC_MAX_LEN) 
++		return -1;
++
+ 	if (data_len < sizeof(*hdr) + sizeof(*key))
+ 		return -1;
+ 
+@@ -2860,7 +2868,7 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
+ 		    wpa_verify_key_mic(sm->wpa_key_mgmt, pmk_len, &PTK,
+ 				       sm->last_rx_eapol_key,
+ 				       sm->last_rx_eapol_key_len) == 0) {
+-			if (sm->PMK != pmk) {
++			if (sm->PMK != pmk && pmk_len <= PMK_LEN_MAX ) {
+ 				os_memcpy(sm->PMK, pmk, pmk_len);
+ 				sm->pmk_len = pmk_len;
+ 			}
+diff --git a/src/ap/wpa_auth_ie.c b/src/ap/wpa_auth_ie.c
+index 8580a5a69..b79d9d694 100644
+--- a/src/ap/wpa_auth_ie.c
++++ b/src/ap/wpa_auth_ie.c
+@@ -433,7 +433,8 @@ static u8 * wpa_write_osen(struct wpa_auth_config *conf, u8 *eid)
+ 
+ int wpa_auth_gen_wpa_ie(struct wpa_authenticator *wpa_auth)
+ {
+-	u8 *pos, buf[128];
++	u8 *pos;
++	u8 buf[128] = {0};
+ 	int res;
+ 
+ #ifdef CONFIG_TESTING_OPTIONS
+diff --git a/src/common/cli.c b/src/common/cli.c
+index b583d1cd5..ddcb89631 100644
+--- a/src/common/cli.c
++++ b/src/common/cli.c
+@@ -133,6 +133,7 @@ int cli_txt_list_add(struct dl_list *txt_list, const char *txt)
+ 		return -1;
+ 	}
+ 	dl_list_add(txt_list, &e->list);
++	os_free(e->txt);
+ 	return 0;
+ }
+ 
+diff --git a/src/drivers/driver_hostap.c b/src/drivers/driver_hostap.c
+index 186eccbf2..bb2ea5a8f 100644
+--- a/src/drivers/driver_hostap.c
++++ b/src/drivers/driver_hostap.c
+@@ -997,6 +997,7 @@ static void * hostap_init(struct hostapd_data *hapd,
+ 	if (hostap_init_sockets(drv, params->own_addr) ||
+ 	    hostap_wireless_event_init(drv)) {
+ 		close(drv->ioctl_sock);
++		close(drv->sock);
+ 		os_free(drv);
+ 		return NULL;
+ 	}
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index ef37c8bcd..bd5fc2f51 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -2062,6 +2062,7 @@ static void * wpa_driver_nl80211_drv_init(void *ctx, const char *ifname,
+ 		drv->in_interface_list = 1;
+ 	}
+ 
++	close(drv->eapol_tx_sock);
+ 	return bss;
+ 
+ failed:
+@@ -7387,14 +7388,16 @@ static int wpa_driver_nl80211_send_action(struct i802_bss *bss,
+ {
+ 	struct wpa_driver_nl80211_data *drv = bss->drv;
+ 	int ret = -1;
+-	u8 *buf;
+-	struct ieee80211_hdr *hdr;
++	u8 *buf = NULL;
++	struct ieee80211_hdr *hdr = NULL;
++	int buf_len = 0;
+ 
+ 	wpa_printf(MSG_DEBUG, "nl80211: Send Action frame (ifindex=%d, "
+ 		   "freq=%u MHz wait=%d ms no_cck=%d)",
+ 		   drv->ifindex, freq, wait_time, no_cck);
+ 
+-	buf = os_zalloc(24 + data_len);
++	buf_len = (24 + data_len);
++	buf = os_zalloc(buf_len);
+ 	if (buf == NULL)
+ 		return ret;
+ 	os_memcpy(buf + 24, data, data_len);
+@@ -7417,12 +7420,12 @@ static int wpa_driver_nl80211_send_action(struct i802_bss *bss,
+ 	    (!(drv->capa.flags & WPA_DRIVER_FLAGS_OFFCHANNEL_TX) ||
+ 	     (int) freq == bss->freq || drv->device_ap_sme ||
+ 	     !drv->use_monitor))
+-		ret = wpa_driver_nl80211_send_mlme(bss, buf, 24 + data_len,
++		ret = wpa_driver_nl80211_send_mlme(bss, buf, buf_len,
+ 						   0, freq, no_cck, 1,
+ 						   wait_time, NULL, 0);
+ 	else
+ 		ret = nl80211_send_frame_cmd(bss, freq, wait_time, buf,
+-					     24 + data_len,
++					     buf_len,
+ 					     &drv->send_action_cookie,
+ 					     no_cck, 0, 1, NULL, 0);
+ 
+@@ -8080,6 +8083,8 @@ static void add_survey(struct nlattr **sinfo, u32 ifidx,
+ 		   survey->filled);
+ 
+ 	dl_list_add_tail(survey_list, &survey->list);
++
++	os_free(survey);
+ }
+ 
+ 
+@@ -9794,7 +9799,7 @@ errout:
+ 
+ static int linux_write_system_file(const char *path, unsigned int val)
+ {
+-	char buf[50];
++	char buf[50]={0};
+ 	int fd, len;
+ 
+ 	len = os_snprintf(buf, sizeof(buf), "%u\n", val);
+@@ -9805,7 +9810,7 @@ static int linux_write_system_file(const char *path, unsigned int val)
+ 	if (fd < 0)
+ 		return -1;
+ 
+-	if (write(fd, buf, len) < 0) {
++	if (write(fd, buf, os_strlen(buf)) < 0) {
+ 		wpa_printf(MSG_DEBUG,
+ 			   "nl80211: Failed to write Linux system file: %s with the value of %d",
+ 			   path, val);
+diff --git a/src/drivers/driver_nl80211_capa.c b/src/drivers/driver_nl80211_capa.c
+index a90a55db8..6506ff7b1 100644
+--- a/src/drivers/driver_nl80211_capa.c
++++ b/src/drivers/driver_nl80211_capa.c
+@@ -1753,6 +1753,8 @@ wpa_driver_nl80211_postprocess_modes(struct hostapd_hw_modes *modes,
+ 	wpa_printf(MSG_DEBUG, "nl80211: Added 802.11b mode based on 802.11g "
+ 		   "information");
+ 
++	free(mode->rates);
++	free(mode->channels);
+ 	return modes;
+ }
+ 
+diff --git a/src/eap_server/eap_server.c b/src/eap_server/eap_server.c
+index e8b36e133..29c32124e 100644
+--- a/src/eap_server/eap_server.c
++++ b/src/eap_server/eap_server.c
+@@ -760,7 +760,7 @@ static void erp_send_finish_reauth(struct eap_sm *sm,
+ 
+ 	bin_clear_free(sm->eap_if.eapKeyData, sm->eap_if.eapKeyDataLen);
+ 	sm->eap_if.eapKeyDataLen = 0;
+-	sm->eap_if.eapKeyData = os_malloc(erp->rRK_len);
++		sm->eap_if.eapKeyData = os_malloc(sm->eap_if.eapKeyDataLen);
+ 	if (!sm->eap_if.eapKeyData)
+ 		return;
+ 
+@@ -775,6 +775,7 @@ static void erp_send_finish_reauth(struct eap_sm *sm,
+ 		sm->eap_if.eapKeyData = NULL;
+ 		return;
+ 	}
++
+ 	sm->eap_if.eapKeyDataLen = erp->rRK_len;
+ 	sm->eap_if.eapKeyAvailable = TRUE;
+ 	wpa_hexdump_key(MSG_DEBUG, "EAP: ERP rMSK",
+diff --git a/src/radius/radius_client.c b/src/radius/radius_client.c
+index a3db4048c..65ffdfb94 100644
+--- a/src/radius/radius_client.c
++++ b/src/radius/radius_client.c
+@@ -1568,6 +1568,10 @@ static int radius_client_dump_auth_server(char *buf, size_t buflen,
+ 		}
+ 	}
+ 
++	if(!hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf))){
++		memset(abuf,0x00,sizeof(abuf));	
++	}
++
+ 	return os_snprintf(buf, buflen,
+ 			   "radiusAuthServerIndex=%d\n"
+ 			   "radiusAuthServerAddress=%s\n"
+@@ -1585,7 +1589,7 @@ static int radius_client_dump_auth_server(char *buf, size_t buflen,
+ 			   "radiusAuthClientUnknownTypes=%u\n"
+ 			   "radiusAuthClientPacketsDropped=%u\n",
+ 			   serv->index,
+-			   hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf)),
++			   abuf,
+ 			   serv->port,
+ 			   serv->round_trip_time,
+ 			   serv->requests,
+@@ -1618,6 +1622,10 @@ static int radius_client_dump_acct_server(char *buf, size_t buflen,
+ 		}
+ 	}
+ 
++	if(!hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf))){
++		memset(abuf,0x00,sizeof(abuf));
++	}
++
+ 	return os_snprintf(buf, buflen,
+ 			   "radiusAccServerIndex=%d\n"
+ 			   "radiusAccServerAddress=%s\n"
+@@ -1633,7 +1641,7 @@ static int radius_client_dump_acct_server(char *buf, size_t buflen,
+ 			   "radiusAccClientUnknownTypes=%u\n"
+ 			   "radiusAccClientPacketsDropped=%u\n",
+ 			   serv->index,
+-			   hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf)),
++			   abuf,
+ 			   serv->port,
+ 			   serv->round_trip_time,
+ 			   serv->requests,
+diff --git a/src/utils/common.c b/src/utils/common.c
+index 836fef190..d7a5f8b86 100644
+--- a/src/utils/common.c
++++ b/src/utils/common.c
+@@ -641,8 +641,8 @@ void * __hide_aliasing_typecast(void *foo)
+ char * wpa_config_parse_string(const char *value, size_t *len)
+ {
+ 	if (*value == '"') {
+-		const char *pos;
+-		char *str;
++		const char *pos = NULL;
++		char *str = NULL;
+ 		value++;
+ 		pos = os_strrchr(value, '"');
+ 		if (pos == NULL || pos[1] != '\0')
+@@ -653,9 +653,9 @@ char * wpa_config_parse_string(const char *value, size_t *len)
+ 			return NULL;
+ 		return str;
+ 	} else if (*value == 'P' && value[1] == '"') {
+-		const char *pos;
+-		char *tstr, *str;
+-		size_t tlen;
++		const char *pos = NULL;
++		char *tstr = NULL, *str = NULL;
++		size_t tlen = 0;
+ 		value += 2;
+ 		pos = os_strrchr(value, '"');
+ 		if (pos == NULL || pos[1] != '\0')
+-- 
+2.24.1
+

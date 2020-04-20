@@ -34,7 +34,7 @@ fail() {
 find_part_nofatal=""
 find_part() {
     name="$1"
-    hint="$(grep ${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
+    hint="$(grep \\W${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
     if [ -z "find_part_nofatal" -a -z "${hint}" ]; then
         say "Cannot find ${name}"
         fail
@@ -93,6 +93,17 @@ check_mount() {
     if [ "$?" -ne 0 ]; then
       say "Fatal error mounting ${source}"
       fail
+    fi
+}
+
+# default init program
+init_bin="/sbin/init"
+# check if user wants a custom init
+update_init(){
+    init="$(grep \\Winit=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
+    if [ -n "${init}" ]; then
+        init_bin="${init}"
+        say "Using init ${init}"
     fi
 }
 
@@ -164,6 +175,11 @@ if [ ! -f "${realroot}/etc/mender/mender.conf" -a -f "${realroot}/etc/mender/men
 fi
 say "mender.conf done"
 
-udevadm control --exit
-exec switch_root -c /dev/console "${realroot}" /sbin/init
+say "waiting for udev"
+udevadm settle --timeout=3
+udevadm control --exit --timeout=3
+say "udev done, transition to real rootfs"
+
+update_init
+exec switch_root -c /dev/console "${realroot}" "${init_bin}"
 fail
