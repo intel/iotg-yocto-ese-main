@@ -10,13 +10,13 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=ae27f47fd6755510247c19e547e4c804 \
 
 SRC_URI = "git://github.com/intel/compute-runtime.git;protocol=https \
            "
-SRCREV = "6f6d64569d75f6fc352ce7ce3a65dd88f0f84b99"
+SRCREV = "4216e962b24d70510b22f71844fdc25e17a35dd7"
 PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"
 
 DEPENDS += " intel-graphics-compiler intel-graphics-compiler-native intel-compute-runtime-native gmmlib clang libva"
-RDEPENDS_${PN} += " intel-graphics-compiler gmmlib ( >= 19.3.2 )"
+RDEPENDS_${PN} += " intel-graphics-compiler gmmlib ( >= 20.1.1 )"
 
 inherit cmake pkgconfig
 

@@ -20,11 +20,11 @@ Signed-off-by: Peter Jones <pjones@redhat.com>
 [javierm: fix menu entry selection based on title]
 Signed-off-by: Javier Martinez Canillas <javierm@redhat.com>
 ---
- grub-core/normal/menu.c | 143 ++++++++++++++++++++++++------------------------
- 1 file changed, 72 insertions(+), 71 deletions(-)
+ grub-core/normal/menu.c | 141 ++++++++++++++++++++++++------------------------
+ 1 file changed, 71 insertions(+), 70 deletions(-)
 
 diff --git a/grub-core/normal/menu.c b/grub-core/normal/menu.c
-index 046a1fb2c84..920b44a8aed 100644
+index 37d753d8081..ea714d27176 100644
 --- a/grub-core/normal/menu.c
 +++ b/grub-core/normal/menu.c
 @@ -164,12 +164,12 @@ grub_menu_set_timeout (int timeout)
@@ -114,18 +114,15 @@ index 046a1fb2c84..920b44a8aed 100644
  /* Get the first entry number from the value of the environment variable NAME,
     which is a space-separated list of non-negative integers.  The entry number
     which is returned is stripped from the value of NAME.  If no entry number
-@@ -195,9 +251,8 @@ static int
- get_and_remove_first_entry_number (grub_menu_t menu, const char *name)
+@@ -196,7 +252,6 @@ get_and_remove_first_entry_number (grub_menu_t menu, const char *name)
  {
-   const char *val;
--  char *tail;
-+  const char *tail;
+   const char *val, *tail;
    int entry;
 -  int sz = 0;
  
    val = grub_env_get (name);
    if (! val)
-@@ -205,50 +260,24 @@ get_and_remove_first_entry_number (grub_menu_t menu, const char *name)
+@@ -204,50 +259,24 @@ get_and_remove_first_entry_number (grub_menu_t menu, const char *name)
  
    grub_error_push ();
  
@@ -184,7 +181,7 @@ index 046a1fb2c84..920b44a8aed 100644
      }
  
    grub_error_pop ();
-@@ -525,6 +554,7 @@ static int
+@@ -524,6 +553,7 @@ static int
  get_entry_number (grub_menu_t menu, const char *name)
  {
    const char *val;
@@ -192,7 +189,7 @@ index 046a1fb2c84..920b44a8aed 100644
    int entry;
  
    val = grub_env_get (name);
-@@ -532,38 +562,9 @@ get_entry_number (grub_menu_t menu, const char *name)
+@@ -531,38 +561,9 @@ get_entry_number (grub_menu_t menu, const char *name)
      return -1;
  
    grub_error_push ();

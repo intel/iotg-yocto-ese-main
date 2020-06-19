@@ -13,7 +13,7 @@ SRCREV = "51413d1deb0df0debdf1d208723131ff0e36d3a3"
 
 inherit deploy
 
-DEPENDS += " gnu-efi nss sb-keymgmt-native sbsigntool-native"
+DEPENDS += " gnu-efi nss sb-keymgmt-native sbsigntool-native elfutils-native"
 
 ALLOW_EMPTY_${PN} = "1"
 
@@ -38,21 +38,21 @@ do_configure_append() {
 	sb-keymgmt.py -c to_cer -cn yocto.crt -cer yocto.cer
 }
 
+EXTRA_OEMAKE += "VENDOR_CERT_FILE=yocto.cer CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
+	EFI_INCLUDE="${STAGING_INCDIR}/efi" EFI_PATH="${STAGING_LIBDIR}/gnuefi/${GNU_EFI_ARCH}"  \
+	ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 \
+	EFI_LDS="${STAGING_LIBDIR}/gnuefi/${GNU_EFI_ARCH}/efi.lds" \
+	${SHIM_DEFAULT_LOADER}"
+
 do_compile_prepend() {
         unset CFLAGS LDFLAGS
-}
-
-do_compile() {
 	if [ -e "${SHIM_KEY_PATH}" -a -e "${SHIM_CERT_PATH}" ] ; then
 		cp "${SHIM_KEY_PATH}" shim.key
 		cp "${SHIM_CERT_PATH}" shim.crt
 		touch -m shim.key shim.crt
 	fi
-        oe_runmake VENDOR_CERT_FILE=yocto.cer CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
-	EFI_INCLUDE="${STAGING_INCDIR}/efi" EFI_PATH="${STAGING_LIBDIR}/gnuefi/${GNU_EFI_ARCH}"  \
-	ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 \
-	EFI_LDS="${STAGING_LIBDIR}/gnuefi/${GNU_EFI_ARCH}/efi.lds" \
-	${SHIM_DEFAULT_LOADER}
+	# native tool used during install
+	${BUILD_CCLD} -Og -g3 -Wall -Werror -Wextra -o "${B}/buildid" "${S}/buildid.c" -lelf
 }
 
 addtask deploy after do_install before do_build

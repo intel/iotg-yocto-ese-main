@@ -1,0 +1,29 @@
+From 6fb63b3061d74d7846bcf715df2c8da24ac85f8b Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 12 May 2020 15:22:41 -0700
+Subject: [PATCH] Should not hardcode the patch to the LLVM lib
+
+Change-Id: Ida8de565592b3140f9118088e7b295ab3b5e2cf4
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ IGC/CMakeLists.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/IGC/CMakeLists.txt b/IGC/CMakeLists.txt
+index bb67f87c..8698fe70 100644
+--- a/IGC/CMakeLists.txt
++++ b/IGC/CMakeLists.txt
+@@ -3271,8 +3271,8 @@ endif()
+ if(LLVM_LINK_LLVM_DYLIB)
+     # LLVM was built and configured in a way that tools (in our case IGC) should be linked
+     # against single LLVM dynamic library.
+-    set(IGC_BUILD__LLVM_LIBS_TO_LINK "/usr/local/lib/libLLVM-${LLVM_VERSION_MAJOR}.so")
+-    message(STATUS "[IGC] Link against LLVM dylib ${IGC_BUILD__LLVM_LIBS_TO_LINK}")
++    message(STATUS "[IGC] Link against LLVM dylib")
++    set(IGC_BUILD__LLVM_LIBS_TO_LINK "LLVM")
+ else()
+     # LLVM was built into multiple libraries (static or shared).
+     message(STATUS "[IGC] Link against LLVM static or shared component libs")
+-- 
+2.20.1
+

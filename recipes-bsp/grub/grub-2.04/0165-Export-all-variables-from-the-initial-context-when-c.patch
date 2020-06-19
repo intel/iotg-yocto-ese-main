@@ -30,10 +30,10 @@ index ee53d4a68e5..87edd254c44 100644
  
  int grub_extractor_level = 0;
 diff --git a/grub-core/normal/menu.c b/grub-core/normal/menu.c
-index 920b44a8aed..341228f87c9 100644
+index ea714d27176..d4832f17699 100644
 --- a/grub-core/normal/menu.c
 +++ b/grub-core/normal/menu.c
-@@ -376,8 +376,6 @@ grub_menu_execute_entry(grub_menu_entry_t entry, int auto_boot)
+@@ -375,8 +375,6 @@ grub_menu_execute_entry(grub_menu_entry_t entry, int auto_boot)
  
    if (ptr && ptr[0] && ptr[1])
      grub_env_set ("default", ptr + 1);

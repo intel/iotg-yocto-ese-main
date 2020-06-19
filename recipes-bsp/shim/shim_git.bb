@@ -13,7 +13,7 @@ PV_append = "+${SRCPV}"
 
 inherit deploy
 
-DEPENDS += " gnu-efi nss openssl-native dos2unix-native sb-keymgmt-native sbsigntool-native"
+DEPENDS += " gnu-efi nss openssl-native dos2unix-native sb-keymgmt-native sbsigntool-native elfutils-native"
 
 ALLOW_EMPTY_${PN} = "1"
 
@@ -68,6 +68,9 @@ do_compile_prepend() {
 
 do_compile() {
 	cd "${B}"
+
+	# native tool used during install
+	${BUILD_CCLD} -Og -g3 -Wall -Werror -Wextra -o "${B}/buildid" "${S}/buildid.c" -lelf
 
         oe_runmake VENDOR_CERT_FILE=yocto.crt CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
 	EFI_INCLUDE="${STAGING_INCDIR}/efi" EFI_PATH="${STAGING_LIBDIR}" \ ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 ${SHIM_DEFAULT_LOADER} \

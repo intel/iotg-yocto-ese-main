@@ -19,7 +19,7 @@ while [ ! -b "${remote}" ]; do
 done
 
 # busybox mount is not able to handle the disk path directly
-disk="$(realpath '/dev/disk/by-path/ip-192.168.1.1:3260-iscsi-iqn.2005-03.org.open-iscsi:ae8e658ea7e1-lun-0')"
+disk="$(realpath ${remote})"
 mount -o ro "${disk}" /tmp/root_ro
 
 # mount an overlay

@@ -16,10 +16,10 @@ Signed-off-by: Javier Martinez Canillas <javierm@redhat.com>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/grub-core/kern/misc.c b/grub-core/kern/misc.c
-index f6eaa7b4df8..2477eb609ba 100644
+index 18a7dbf4cd7..87afb43cd55 100644
 --- a/grub-core/kern/misc.c
 +++ b/grub-core/kern/misc.c
-@@ -473,8 +473,7 @@ grub_strtoull (const char *str, const char ** const end, int base)
+@@ -475,8 +475,7 @@ grub_strtoull (const char * restrict str, const char ** const restrict end,
  
    if (! found)
      {

@@ -1,0 +1,35 @@
+From cf33e22d7d8edde6a64390bcb8414b7e60f5de94 Mon Sep 17 00:00:00 2001
+From: dnagasun <devamekalai.nagasundaram@intel.com>
+Date: Thu, 23 Apr 2020 13:57:55 +0800
+Subject: [PATCH] Gen12: Set correct value for VAConfigAttribRTFormat for HEVC
+ main-444 and main-444-10
+
+Signed-off-by: dnagasun <devamekalai.nagasundaram@intel.com>
+---
+ media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp b/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp
+index 4cdc369e..b1076aff 100644
+--- a/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp
++++ b/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp
+@@ -1610,6 +1610,16 @@ VAStatus MediaLibvaCapsG12::CreateDecAttributes(
+     else if(profile == VAProfileHEVCMain422_10)
+     {
+         attrib.value = VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV422 | VA_RT_FORMAT_YUV400 | VA_RT_FORMAT_YUV420_10 | VA_RT_FORMAT_YUV422_10;
++    } else if(profile == VAProfileHEVCMain444)
++    {
++        attrib.value = VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV422 | VA_RT_FORMAT_YUV400 | VA_RT_FORMAT_YUV444;
++        (*attribList)[attrib.type] = attrib.value;
++    }
++    else if(profile == VAProfileHEVCMain444_10)
++    {
++        attrib.value = VA_RT_FORMAT_YUV420 |VA_RT_FORMAT_YUV422 | VA_RT_FORMAT_YUV400 | VA_RT_FORMAT_YUV444;
++        attrib.value |= VA_RT_FORMAT_YUV420_10 | VA_RT_FORMAT_YUV422_10 | VA_RT_FORMAT_YUV444_10;
++        (*attribList)[attrib.type] = attrib.value;
+     }
+     else if (profile == VAProfileVP9Profile0
+           || profile == VAProfileVP9Profile2
+-- 
+2.26.1
+

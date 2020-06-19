@@ -20,7 +20,7 @@ SRC_URI_append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib
 SRCREV_gnulib = "229f262054f003814157c3715a7f33ddfd87d43c"
 
 S = "${WORKDIR}/git"
-PR = "r9"
+PR = "r15"
 SRC_URI_append = " \
   file://0001-Add-support-for-Linux-EFI-stub-loading.patch \
   file://0002-Rework-linux-command.patch \
@@ -213,6 +213,27 @@ SRC_URI_append = " \
   file://0189-grub.d-Fix-boot_indeterminate-getting-set-on-boot_su.patch \
   file://0190-blscfg-Add-support-for-sorting-the-plus-higher-than-.patch \
   file://0191-Fix-savedefault-with-blscfg.patch \
+  file://0192-Also-define-GRUB_EFI_MAX_ALLOCATION_ADDRESS-for-RISC.patch \
+  file://0193-chainloader-Define-machine-types-for-RISC-V.patch \
+  file://0194-Add-start-symbol-for-RISC-V.patch \
+  file://0195-RISC-V-Add-__clzdi2-symbol.patch \
+  file://0196-grub-install-Define-default-platform-for-RISC-V.patch \
+  file://0197-blscfg-Always-use-the-root-variable-to-search-for-BL.patch \
+  file://0198-bootstrap.conf-Force-autogen.sh-to-use-python3.patch \
+  file://0199-efi-http-Export-fw-http-_path-variables-to-make-them.patch \
+  file://0200-efi-http-Enclose-literal-IPv6-addresses-in-square-br.patch \
+  file://0201-efi-net-Allow-to-specify-a-port-number-in-addresses.patch \
+  file://0202-efi-ip4_config-Improve-check-to-detect-literal-IPv6-.patch \
+  file://0203-efi-net-Print-a-debug-message-if-parsing-the-address.patch \
+  file://0204-blscfg-return-NULL-instead-of-a-zero-length-array-in.patch \
+  file://0205-grub-switch-to-blscfg-Update-grub2-binary-in-ESP-for.patch \
+  file://0206-grub-switch-to-blscfg-Only-mark-GRUB-as-BLS-supporte.patch \
+  file://0207-10_linux.in-Merge-logic-from-10_linux_bls-and-drop-t.patch \
+  file://0208-grub-switch-to-blscfg-Use-install-to-copy-GRUB-binar.patch \
+  file://0209-10_linux.in-Enable-BLS-configuration-if-new-kernel-p.patch \
+  file://0210-efi-Set-image-base-address-before-jumping-to-the-PE-.patch \
+  file://0211-blscfg-Lookup-default_kernelopts-variable-as-fallbac.patch \
+  file://0212-10_linux.in-fix-early-exit-due-error-when-reading-pe.patch \
   file://bootstrap.conf;subdir=${S} \
   file://bootstrap;subdir=${S} \
   file://gitignore \
