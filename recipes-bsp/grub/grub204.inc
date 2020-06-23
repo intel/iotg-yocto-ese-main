@@ -281,8 +281,6 @@ export PYTHON = "python3"
 
 RDEPENDS_${PN}_class-native = ""
 
-BBCLASSEXTEND = "native"
-
 do_prepatch(){
 	cp -f ${WORKDIR}/gitignore ${S}/.gitignore
 }
@@ -306,3 +304,13 @@ do_configure_prepend(){
 # fix warnings with CFLAGS
 TUNE_CCARGS_remove = "-mfpmath=sse"
 EXTRA_OECONF_append_x86-64 = " TARGET_LDLFAGS="${LDFLAGS} -no-pie""
+
+do_install_append() {
+    # Remove build host references...
+    find "${D}" -name modinfo.sh -type f -exec \
+        sed -i \
+        -e 's,--sysroot=${STAGING_DIR_TARGET},,g' \
+        -e 's|${DEBUG_PREFIX_MAP}||g' \
+        -e 's:${RECIPE_SYSROOT_NATIVE}::g' \
+        {} +
+}

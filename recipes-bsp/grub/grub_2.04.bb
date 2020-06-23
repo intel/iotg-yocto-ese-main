@@ -6,6 +6,15 @@ RDEPENDS_${PN} += "diffutils freetype ${PN}-common"
 
 RPROVIDES_${PN}-editenv += "${PN}-efi-editenv"
 
+#### transitional
+PROVIDES_append_class-native = " grub-efi-native"
+RPROVIDES_${PN}-common_append_class-native = " grub-efi-native"
+RREPLACES_${PN}-common_append_class-native = " grub-efi-native"
+RCONFLICTS_${PN}-common_append_class-native = " grub-efi-native"
+# fix meta-mender conflict
+DEPENDS_remove = "grub-efi-native"
+####
+
 PACKAGES =+ "${PN}-editenv ${PN}-common"
 FILES_${PN}-editenv = "${bindir}/grub-editenv"
 FILES_${PN}-common = " \
@@ -17,14 +26,8 @@ FILES_${PN}-common = " \
 
 do_install_append () {
     install -d ${D}${sysconfdir}/grub.d
-    # Remove build host references...
-    find "${D}" -name modinfo.sh -type f -exec \
-        sed -i \
-        -e 's,--sysroot=${STAGING_DIR_TARGET},,g' \
-        -e 's|${DEBUG_PREFIX_MAP}||g' \
-        -e 's:${RECIPE_SYSROOT_NATIVE}::g' \
-        {} +
 }
 
 INSANE_SKIP_${PN} = "arch"
 INSANE_SKIP_${PN}-dbg = "arch"
+BBCLASSEXTEND = "native"

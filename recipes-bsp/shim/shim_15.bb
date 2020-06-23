@@ -13,7 +13,7 @@ SRCREV = "51413d1deb0df0debdf1d208723131ff0e36d3a3"
 
 inherit deploy
 
-DEPENDS += " gnu-efi nss sb-keymgmt-native sbsigntool-native elfutils-native"
+DEPENDS += " gnu-efi nss sbsigntool-native elfutils-native"
 
 ALLOW_EMPTY_${PN} = "1"
 
@@ -27,15 +27,15 @@ export ARCH = "${TARGET_ARCH}"
 # should be also arm compatible but untested
 COMPATIBLE_HOST = '(x86_64.*|i686)-linux'
 
+do_configure[depends] += "virtual/secure-boot-certificates:do_deploy"
 do_configure_append() {
-	if [ -e "${MOK_KEY_PATH}" -a -e "${MOK_CERT_PATH}" ] ; then
-		cp "${MOK_KEY_PATH}" yocto.key
-		cp "${MOK_CERT_PATH}" yocto.crt
-		touch -m yocto.key yocto.crt
-	else
-		sb-keymgmt.py -c gen -kn yocto.key -kl 2048 -cn yocto.crt -sn "/CN=Yocto BSP Signing Key/" -vd 365
-	fi
-	sb-keymgmt.py -c to_cer -cn yocto.crt -cer yocto.cer
+	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt .
+        cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key .
+	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.crt .
+	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.key .
+	touch -m yocto.key yocto.crt shim.key shim.crt
+	openssl x509 -outform DER -in yocto.crt -out yocto.cer
+	openssl x509 -outform DER -in shim.crt -out shim.cer
 }
 
 EXTRA_OEMAKE += "VENDOR_CERT_FILE=yocto.cer CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
@@ -46,13 +46,8 @@ EXTRA_OEMAKE += "VENDOR_CERT_FILE=yocto.cer CROSS_COMPILE=${TARGET_PREFIX} CC="$
 
 do_compile_prepend() {
         unset CFLAGS LDFLAGS
-	if [ -e "${SHIM_KEY_PATH}" -a -e "${SHIM_CERT_PATH}" ] ; then
-		cp "${SHIM_KEY_PATH}" shim.key
-		cp "${SHIM_CERT_PATH}" shim.crt
-		touch -m shim.key shim.crt
-	fi
 	# native tool used during install
-	${BUILD_CCLD} -Og -g3 -Wall -Werror -Wextra -o "${B}/buildid" "${S}/buildid.c" -lelf
+	${BUILD_CCLD} -o "${B}/buildid" ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS} "${S}/buildid.c" -lelf
 }
 
 addtask deploy after do_install before do_build
@@ -66,13 +61,10 @@ do_deploy_class-native() {
 }
 
 do_deploy() {
-	cp ${S}/mm*.efi.signed ${DEPLOYDIR}/
-	cp ${S}/fb*.efi.signed ${DEPLOYDIR}/
-	cp ${S}/shim*.efi ${DEPLOYDIR}/
-	mv ${S}/yocto.key ${DEPLOYDIR}/
-	mv ${S}/yocto.crt ${DEPLOYDIR}/
-	mv ${S}/shim.key ${DEPLOYDIR}/
-	mv ${S}/shim.crt ${DEPLOYDIR}/
+	install -m 755 -d ${DEPLOYDIR}/${PN}
+	for i in mm${GNU_EFI_ARCH}.efi shim${GNU_EFI_ARCH}.efi fb${GNU_EFI_ARCH}.efi; do
+		install -m644 ${B}/${i} ${DEPLOYDIR}/${PN}
+	done
 }
 
 python() {

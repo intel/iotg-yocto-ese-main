@@ -13,15 +13,41 @@ fi
 # busybox findfs cannot handle GPT PARTUUIDs!
 udevd --daemon
 udevadm trigger
+udevadm settle --timeout=3
 
-if [ -e /etc/init.d/netmount ]; then
-    /etc/init.d/netmount
+
+if [ -c /dev/kmsg ]; then
+    use_kmsg=1
 fi
 
+say() {
+    if [ -n "${use_kmsg}" ]; then
+        echo "[initrd] $@" > /dev/kmsg
+    else
+        echo "[initrd] $@" 1>&2
+    fi
+}
+
+get_cmd(){
+    value="$(grep \\W${1}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
+    if [ x"${value}" = "x" ]; then
+        echo "$2"
+    else
+        echo "${value}"
+    fi
+}
+
+say "Found netmount script"
+if [ -e /etc/init.d/netmount ]; then
+    . /etc/init.d/netmount
+fi
+
+init="$(get_cmd init /sbin/init)"
+
 # netmount script is expected to put root in /tmp/root
-if [ -d /tmp/root -a -e /tmp/root/sbin/init ]; then
-    udevadm control --exit
-    exec switch_root /tmp/root /sbin/init
+udevadm control --exit
+if [ -d /tmp/root -a -e "/tmp/root/${init}" ]; then
+    exec switch_root /tmp/root "${init}"
 else
     exec /bin/sh
 fi

@@ -22,7 +22,7 @@ class menderio_boot(SourcePlugin):
 
     @staticmethod
     def do_sign_pe(key, crt, input, output):
-        cmd = "sb-keymgmt.py -c sign -kn %s -cn %s -usf %s -sf %s" % (key, crt, input, output)
+        cmd = "sbsign --key %s --cert %s --output %s %s" % (key, crt, output, input)
         exec_cmd(cmd)
 
     @classmethod
@@ -34,7 +34,7 @@ class menderio_boot(SourcePlugin):
         grub_modules = "all_video boot blscfg btrfs cat configfile cryptodisk echo efi_netfs efifwsetup efinet ext2"
         grub_modules += " fat font gcry_rijndael gcry_rsa gcry_serpent gcry_sha256 gcry_twofish gcry_whirlpool gfxmenu gfxterm gzio halt hfsplus http increment iso9660 jpeg loadenv loopback linux lvm lsefi lsefimmap"
         grub_modules += " mdraid09 mdraid1x minicmd net normal part_apple part_msdos part_gpt password_pbkdf2 png reboot search search_fs_uuid search_fs_file"
-        grub_modules += " search_label serial sleep syslinuxcfg test tftp version video xfs"
+        grub_modules += " search_label serial sleep syslinuxcfg test tftp version video xfs zstd"
         grub_modules += " backtrace chain usb usbserial_common usbserial_pl2303 usbserial_ftdi usbserial_usbdebug"
         grub_modules += " hashsum"
         grub_modules += " cpio newc f2fs squash4 efienv memdisk eval"
@@ -56,9 +56,8 @@ class menderio_boot(SourcePlugin):
         Copy Shim/MokManager over to hdd
         """
 
-        cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], "%s/shimx64.efi" % deploydir, "%s/EFI/BOOT/bootx64.efi" % hdddir)
-        shutil.copyfile("%s/mmx64.efi.signed" % deploydir, "%s/EFI/BOOT/mmx64.efi" % hdddir)
-
+        cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], "%s/shim/shimx64.efi" % deploydir, "%s/EFI/BOOT/bootx64.efi" % hdddir)
+        cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], "%s/shim/mmx64.efi" % deploydir, "%s/EFI/BOOT/mmx64.efi" % hdddir)
 
     @classmethod
     def do_copy_grub(cls, deploydir, cr_workdir, hdddir, creator, source_params):
@@ -67,7 +66,7 @@ class menderio_boot(SourcePlugin):
         """
         cls.do_grub_cfg(hdddir, creator, cr_workdir, source_params)
         cls.gen_grub_image(cr_workdir, source_params)
-        cls.do_sign_pe("%s/yocto.key" % deploydir, "%s/yocto.crt" % deploydir, "%s/grub-efi-bootx64.efi" % cr_workdir, "%s/EFI/BOOT/grubx64.efi" % hdddir)
+        cls.do_sign_pe(source_params['mok_key'], source_params['mok_cert'], "%s/grub-efi-bootx64.efi" % cr_workdir, "%s/EFI/BOOT/grubx64.efi" % hdddir)
 
     @classmethod
     def do_copy_fwupdate(cls, deploydir, workdir, hdddir, source_params):
@@ -81,6 +80,23 @@ class menderio_boot(SourcePlugin):
         os.makedirs(fwupdate_dst, exist_ok=True)
         cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], fwupdate_src, "%s/fwupx64.efi" % fwupdate_dst)
         os.makedirs("%s/EFI/BOOT/FW" % hdddir)
+
+    @classmethod
+    def do_copy_ptcm(cls, deploydir, workdir, hdddir, source_params):
+        """
+        Copy ptcm binary over to hdd
+        """
+        if 'ptcm_install' not in source_params:
+            raise WicError("ptcm_install is unset!")
+
+        if (source_params['ptcm_install'] == "1"):
+            ptcm_dst_dir = "%s/EFI/BOOT" % (hdddir)
+            ptcm_boot = "%s/ptcm/ptcm_boot.efi" % (deploydir)
+            cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], ptcm_boot, "%s/ptcm/ptcm_boot_signed.efi" % deploydir)
+            shutil.copyfile("%s/ptcm/ptcm_boot_signed.efi" % deploydir, "%s/ptcm_boot.efi" % ptcm_dst_dir)
+            ptcm_rtdrv = "%s/ptcm/ptcm_rtdrv.efi" % (deploydir)
+            cls.do_sign_pe(source_params['db_key'], source_params['db_cert'], ptcm_rtdrv, "%s/ptcm/ptcm_rtdrv_signed.efi" % deploydir)
+            shutil.copyfile("%s/ptcm/ptcm_rtdrv_signed.efi" % deploydir, "%s/ptcm_rtdrv.efi" % ptcm_dst_dir)
 
     @classmethod
     def do_grub_cfg(cls, hdddir, creator, cr_workdir, source_params):
@@ -336,6 +352,7 @@ fi
         cls.do_copy_mender_env(deploydir, cr_workdir, hdddir, source_params)
         cls.do_copy_grub(deploydir, cr_workdir, hdddir, creator, source_params)
         cls.do_copy_fwupdate(deploydir, cr_workdir, hdddir, source_params)
+        cls.do_copy_ptcm(deploydir, cr_workdir, hdddir, source_params)
 
         du_cmd = "du -bks %s" % hdddir
         out = exec_cmd(du_cmd)

@@ -163,6 +163,13 @@ mount -o rbind "${realroot}/usr/share/intel/managed/apparmor.d" "${realroot}/etc
 mount -o rbind "${realroot}/data/persistent/apparmor.d.cache"   "${realroot}/etc/apparmor.d/cache" || fail
 say "rbind apparmor done"
 
+# setup overlay for mender so config can be regenerated each reboot
+mkdir -p "${realroot}/var/mender/config"
+mount -t tmpfs -o size=1m,uid=0,gid=0,mode=0750 tmpfs "${realroot}/var/mender/config"
+mkdir -p "${realroot}/var/mender/config/upper" "${realroot}/var/mender/config/work"
+mount -t overlay -o "lowerdir=${realroot}/data/persistent/etc/mender,upperdir=${realroot}/var/mender/config/upper,workdir=${realroot}/var/mender/config/work" overlay "${realroot}/etc/mender"
+say "mender configuration overlay done"
+
 # fix up mender pointers
 primary_part="$( realpath $( find_part mender.primary ) )"
 secondary_part="$( realpath $( find_part mender.secondary ) )"
