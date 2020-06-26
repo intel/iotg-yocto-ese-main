@@ -4,14 +4,14 @@ SECTION = "multimedia"
 
 LICENSE = "GPLv2+ & LGPLv2+ & ( (GPLv2+ & LGPLv2.1+) | (GPLv3+ & LGPLv3+) )"
 LICENSE_FLAGS = "commercial"
-LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
-                    file://COPYING.LIB;md5=6762ed442b3822387a51c92d928ead0d"
+LIC_FILES_CHKSUM = "file://COPYING;md5=6762ed442b3822387a51c92d928ead0d \
+                   "
 
 SRC_URI = "gitsm://github.com/GStreamer/gst-libav.git;protocol=https \
            "
 
 S = "${WORKDIR}/git"
-SRCREV = "c8b88847919c9cb26205d91111fa11d4d4f44883"
+SRCREV = "1c436201ce4af5bcb73555d6e0bcde167d57989c"
 
 
 DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base ffmpeg"

@@ -10,7 +10,7 @@ SRC_URI = "gitsm://github.com/GStreamer/gstreamer-vaapi.git;protocol=https \
 	   "
 
 S = "${WORKDIR}/git"
-SRCREV = "a8031bcb0e343be48c07abe52c9907dcfa53fdea"
+SRCREV = "e6e377c720e110792e8d14e76ae610aa285bf6ea"
 
 DEPENDS = "libva gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad"
 

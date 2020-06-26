@@ -21,7 +21,7 @@ SRC_URI = " \
     file://0002-add-more-Valgrind-specific-configure-log-output.patch \
 "
 
-SRCREV = "e9085043c16512c0d02eb4476802d433eccb5e37"
+SRCREV = "c092dd40ca91c0cd7c69783d59f8a9c0eb80e22d"
 
 PACKAGECONFIG ??= "${@bb.utils.contains('PTEST_ENABLED', '1', 'tests', '', d)} \
                    check \

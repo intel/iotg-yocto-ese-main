@@ -1,7 +1,7 @@
 require ${COREBASE}/meta/recipes-graphics/mesa/mesa.inc
 inherit manpages update-alternatives
 
-LIC_FILES_CHKSUM = "file://docs/license.html;md5=c1843d93c460bbf778d6037ce324f9f7"
+LIC_FILES_CHKSUM = "file://docs/license.rst;md5=9aa1bc48c9826ad9fdb16661f6930496"
 mesa_url ?= "git://gitlab.freedesktop.org/mesa/mesa;branch=master;protocol=https"
 ## Upstream free-destkop mesa master Mon Jun 10 14:23:34 2019 -0700
 mesa_srcrev ?= "ae7bda27a0691d6d89c35c9f732b6e49d726c17f"

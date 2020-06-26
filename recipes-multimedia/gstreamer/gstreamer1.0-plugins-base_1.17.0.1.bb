@@ -12,7 +12,7 @@ SRC_URI = " \
             "
 
 S = "${WORKDIR}/git"
-SRCREV = "19f27f94ee72c3f87c8eb474fcbada310e9dee3e"
+SRCREV = "78444fc62225bd1ea6f3ba172b4962b75327fcbe"
 
 DEPENDS += "iso-codes util-linux zlib"
 

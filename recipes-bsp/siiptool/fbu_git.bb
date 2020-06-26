@@ -4,7 +4,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=ae11844b70d3f1dac86ad0125ab1cd60"
 
 PV = "0.0.0+git${SRCPV}"
 SRC_URI = "git://github.com/intel/iotg-fbu;protocol=https;nobranch=1"
-SRCREV = "1f7de33ff62da16b1a4f7520eda804861a26e66e"
+SRCREV = "e21bcce54a6d5da79ba524dfa35abdaa95c5c8b2"
 
 S = "${WORKDIR}/git"
 inherit python3native

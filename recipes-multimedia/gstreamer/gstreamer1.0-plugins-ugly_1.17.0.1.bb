@@ -10,7 +10,7 @@ SRC_URI = " \
             "
 
 S = "${WORKDIR}/git"
-SRCREV = "9273903286b0fe7a9d8a5279c44a5e149e55ff24"
+SRCREV = "84cebf9fabe4fa0d2e5cf70de84ae6941dc54df5"
 
 DEPENDS += "gstreamer1.0-plugins-base"
 

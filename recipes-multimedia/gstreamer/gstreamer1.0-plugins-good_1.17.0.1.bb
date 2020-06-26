@@ -5,7 +5,7 @@ SRC_URI = " \
             "
 
 S = "${WORKDIR}/git"
-SRCREV = "42e7864e90ce40059efc192e375ada9dada15701"
+SRCREV = "54810bf44f27d9c180730f58f16f6e172c7b0bc8"
 
 LICENSE = "GPLv2+ & LGPLv2.1+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=a6f89e2100d9b6cdffcea4f398e37343 \

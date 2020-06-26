@@ -1,5 +1,7 @@
-SUMMARY = "Intel Media Driver for VAAPI"
-LICENSE = "MIT & BSD"
+SUMMARY = "VA driver for Intel Gen based graphics hardware"
+DESCRIPTION = "Intel Media Driver for VAAPI is a new VA-API (Video Acceleration API) \
+user mode driver supporting hardware accelerated decoding, encoding, \
+and video post processing for GEN based graphics hardware."
 
 HOMEPAGE = "https://github.com/intel/media-driver"
 BUGTRACKER = "https://github.com/intel/media-driver/issues"
@@ -8,23 +10,44 @@ LICENSE = "MIT & BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=6aab5363823095ce682b155fef0231f0 \
                     file://media_driver/media_libvpx.LICENSE;md5=d5b04755015be901744a78cc30d390d4 \
                     "
+# Only for 64 bit until this is resolved: https://github.com/intel/media-driver/issues/356
+COMPATIBLE_HOST = '(x86_64).*-linux'
 
-SRC_URI = " \
-    git://github.com/intel/media-driver.git;protocol=https \
-"
-
-PV = "20.1.1+git${SRCPV}"
-SRCREV = "92965b513fdd0a42969eab26f0525555687cff03"
-S = "${WORKDIR}/git"
+REQUIRED_DISTRO_FEATURES = "opengl"
 
 DEPENDS += "libva gmmlib"
+
+
+SRC_URI = "git://github.com/intel/media-driver.git;protocol=https"
+PV = "20.1.1+git${SRCPV}"
+SRCREV = "0432f8d4e2c1178f03eb5bfedc545b6706e2228b"
+S = "${WORKDIR}/git"
+
+COMPATIBLE_HOST_x86-x32 = "null"
+
+UPSTREAM_CHECK_GITTAGREGEX = "^intel-media-(?P<pver>(?!600\..*)\d+(\.\d+)+)$"
+
+inherit cmake pkgconfig
+
 MEDIA_DRIVER_ARCH_x86    = "32"
 MEDIA_DRIVER_ARCH_x86-64 = "64"
 
+EXTRA_OECMAKE += " \
+                   -DMEDIA_RUN_TEST_SUITE=OFF \
+                   -DARCH=${MEDIA_DRIVER_ARCH} \
+                   -DMEDIA_BUILD_FATAL_WARNINGS=OFF \
+                   -DMEDIA_VERSION=2.0.0 \
+		   -DBYPASS_MEDIA_ULT=yes \
+                   -DCenc_Decode_Supported=no \
+		  "
 
-inherit pkgconfig cmake
+do_configure_prepend_toolchain-clang() {
+    sed -i -e '/-fno-tree-pre/d' ${S}/media_driver/cmake/linux/media_compile_flags_linux.cmake
+}
 
-EXTRA_OECMAKE = "-DMEDIA_VERSION=2.0.0 -DBYPASS_MEDIA_ULT=yes -DCenc_Decode_Supported=no"
+# See: https://github.com/intel/media-driver/issues/358
+FILES_${PN} += " \
+                 ${libdir}/dri/ \
+                 ${libdir}/igfxcmrt64.so \
+                 "
 
-FILES_${PN} += "${libdir}/dri/iHD_drv_video.so \
-		 ${libdir}/igfxcmrt64.so \ "
