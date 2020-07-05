@@ -2,6 +2,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://disable-syslogd-klogd.cfg \
             file://misc.cfg \
             file://procps.cfg \
+            file://ipv6.cfg \
            "
 
 SYSTEMD_PACKAGES_remove = "${PN}-syslog"

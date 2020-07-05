@@ -1,9 +1,18 @@
 #! /bin/sh
+mkdir -p /etc/iscsi /var/run
+
 iface="$(get_cmd netmount.iface eth0)"
 say "Using ${iface} for network boot"
 
-# get ip address for eth0
-udhcpc -n -f -q -t 30 -i "${iface}"
+ipv6_mode="$(get_cmd netmount.ipv6 0)"
+if [ "${ipv6_mode}" = 1 ]; then
+  say "Using statefule DHCPv6"
+  udhcpc6 -n -f -q -t 30 -i "${iface}"
+  target_ip="$(get_cmd netmount.target_ip fe80::206f:6fcc:83d7:79ce%${iface})"
+else
+  udhcpc -n -f -q -t 30 -i "${iface}"
+  target_ip="$(get_cmd netmount.target_ip 192.168.1.1)"
+fi
 
 # prepare an overlayfs for read-only FS, can mount a real partition to save changes
 mount -t tmpfs tmpfs /tmp
@@ -11,11 +20,15 @@ mkdir -p /tmp/root /tmp/root_ro /tmp/work /tmp/upper
 
 initiator="$(get_cmd netmount.initiator iqn.2005-03.org.open-iscsi:3b5f3d51247f)"
 target="$(get_cmd netmount.target iqn.2005-03.org.open-iscsi:ae8e658ea7e1)"
-target_ip="$(get_cmd netmount.target_ip 192.168.1.1)"
 target_port="$(get_cmd netmount.target_port 3260)"
 target_pt="$(get_cmd netmount.target_portal 1)"
 
-mkdir -p /etc/iscsi /var/run
+say "Target IQN:    ${target}"
+say "Target IP:     ${target_ip}"
+say "Target Port:   ${target_port}"
+say "Target Portal: ${target_pt}"
+say "Initiator IQN: ${initiator}"
+
 echo "${initiator}" > /etc/iscsi/initiatorname.iscsi
 
 # call iscsistart, we assume the server is at 192.168.1.1, use and install dig if needed to resolve the address
