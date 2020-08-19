@@ -1,69 +1,79 @@
 #!/bin/sh
 
 # udhcpc script edited by Tim Riker <Tim@Rikers.org>
+# this modified version should support ipv6 but requires /sbin/ip
+# no support for lease time yet
 
 [ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
 
 RESOLV_CONF="/etc/resolv.conf"
-[ -n "$subnet" ] && NETMASK="netmask $subnet"
-
 # return 0 if root is mounted on a network filesystem
 root_is_nfs() {
 	sed -n 's/^[^ ]* \([^ ]*\) \([^ ]*\) .*$/\1 \2/p' /proc/mounts |
 	grep -q "^/ \(nfs\|smbfs\|ncp\|coda\)$"
 }
 
+if [ -z "${IF_WAIT_DELAY}" ]; then
+	IF_WAIT_DELAY=10
+fi
+wait_for_ipv6_default_route() {
+	printf "Waiting for IPv6 default route to appear"
+	while [ $IF_WAIT_DELAY -gt 0 ]; do
+		if [ -z "$(ip -6 route list | grep default)" ]; then
+			printf "\n"
+			return
+		fi
+		sleep 1
+		printf "."
+		: $((IF_WAIT_DELAY -= 1))
+	done
+	printf " timeout!\n"
+}
+
+
 have_bin_ip=0
-if [ -x /SBIN_DIR/ip ]; then
-  have_bin_ip=1
-  BROADCAST="broadcast +"
+if [ -z "$(type -t ip)" ]; then
+  exit 1
 fi
 
-[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+# udhcpc6 doesn't set env "mask"
+if [ -n "$ipv6prefix" ]; then
+	ipaddress="${ipv6prefix} scope global"
+elif [ -n "$ipv6" ]; then
+	ipaddress="${ipv6}/128 scope global"
+else
+	ipaddress="${ip}/${mask} broadcast +"
+fi
 
 case "$1" in
 	deconfig)
-		if [ -x /SBIN_DIR/resolvconf ]; then
-			/SBIN_DIR/resolvconf -d "${interface}.udhcpc"
+		if [ -n "$(type -t resolvconf)" ]; then
+			resolvconf -d "${interface}.udhcpc"
 		fi
 		if ! root_is_nfs ; then
-                        if [ $have_bin_ip -eq 1 ]; then
-                                /SBIN_DIR/ip -4 addr flush dev $interface
-                                /SBIN_DIR/ip link set dev $interface up
-                        else
-                                /SBIN_DIR/ifconfig $interface 0.0.0.0
-                        fi
+			# should not flush ipv4 when dhcpv6 is used
+			ip -4 addr flush dev $interface
+			ip link set dev $interface up
 		fi
 		;;
 
 	renew|bound)
-                if [ $have_bin_ip -eq 1 ]; then
-                        /SBIN_DIR/ip addr add dev $interface local $ip/$mask $BROADCAST
-                else
-                        /SBIN_DIR/ifconfig $interface $ip $BROADCAST $NETMASK
-                fi
+		ip addr add local ${ipaddress} dev $interface
 
+		if [ -n "$ipv6" -o -n "${ipv6prefix}" ] ; then
+			wait_for_ipv6_default_route
+		fi
 		if [ -n "$router" ] ; then
 			if ! root_is_nfs ; then
-                                if [ $have_bin_ip -eq 1 ]; then
-                                        while /SBIN_DIR/ip route del default dev $interface 2>/dev/null ; do
-                                                :
-                                        done
-                                else
-                                        while /SBIN_DIR/route del default gw 0.0.0.0 dev $interface 2>/dev/null ; do
-                                                :
-                                        done
-                                fi
+				while ip route del default dev $interface 2>/dev/null ; do
+					:
+				done
 			fi
 
 			metric=10
 			for i in $router ; do
-                                if [ $have_bin_ip -eq 1 ]; then
-                                        /SBIN_DIR/ip route add default via $i metric $metric
-                                else
-                                        /SBIN_DIR/route add default gw $i dev $interface metric $metric 2>/dev/null
-                                fi
-                                metric=$(($metric + 1))
+				ip route add default via $i metric $metric
+				metric=$(($metric + 1))
 			done
 		fi
 
@@ -77,8 +87,8 @@ case "$1" in
 "
 		done
 
-		if [ -x /SBIN_DIR/resolvconf ]; then
-			echo -n "$R" | /SBIN_DIR/resolvconf -a "${interface}.udhcpc"
+		if [ -n "$(type -t resolvconf)" ]; then
+			echo -n "$R" | resolvconf -a "${interface}.udhcpc"
 		else
 			echo -n "$R" > "$RESOLV_CONF"
 		fi

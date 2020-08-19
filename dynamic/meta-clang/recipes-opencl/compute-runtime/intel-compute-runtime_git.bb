@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=ae27f47fd6755510247c19e547e4c804 \
 
 SRC_URI = "git://github.com/intel/compute-runtime.git;protocol=https \
            "
-SRCREV = "4216e962b24d70510b22f71844fdc25e17a35dd7"
+SRCREV = "72080bbf12751b95ef6d4da5317350ee0c8002ba"
 PV = "git+${SRCPV}"
 
 S = "${WORKDIR}/git"
@@ -28,13 +28,17 @@ EXTRA_OECMAKE = " \
                  -DSKIP_UNIT_TESTS=1 \
                  -DCCACHE_ALLOWED=FALSE \
                  -DVISA_DIR=${PKG_CONFIG_SYSROOT_DIR}/usr/include/visa \
-                 -Dcloc_cmd_prefix=ocloc \
                  "
+EXTRA_OECMAKE_append_class-target = " -Dcloc_cmd_prefix=ocloc"
 
 LDFLAGS_append_class-native = " -fuse-ld=lld"
 TOOLCHAIN_class-native = "clang"
 
-FILES_${PN} += "${libdir}/intel-opencl/libigdrcl.so"
+# The developers are not aware of Unix soname conventions
+FILES_${PN}-dev = "${includedir}"
+ALLOW_EMPTY_${PN}-dev = "1"
+
+FILES_${PN} += "${libdir}/intel-opencl/libigdrcl.so ${libdir}/libocloc.so"
 
 BBCLASSEXTEND = "native nativesdk"
 

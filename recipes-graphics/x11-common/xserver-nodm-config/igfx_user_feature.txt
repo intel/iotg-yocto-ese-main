@@ -1,0 +1,10 @@
+[KEY]
+    0x00000001
+    UFKEY_INTERNAL\LibVa
+        [VALUE]
+            Disable MMC
+            4
+            1
+[KEY]
+    0x00000002
+    UFKEY_INTERNAL\Report

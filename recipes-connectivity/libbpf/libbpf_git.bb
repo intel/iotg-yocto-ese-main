@@ -8,6 +8,7 @@ SRC_URI =" \
           git://github.com/libbpf/libbpf.git \
           file://0002-makefile-don-t-preserve-ownership-when-installing-fr.patch \
           file://0003-makefile-remove-check-for-reallocarray.patch \
+          file://0001-libbpf-add-txtime-field-in-xdp_desc-struct.patch \
           "
 
 DEPENDS = "elfutils"
