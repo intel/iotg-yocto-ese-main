@@ -1,0 +1,28 @@
+From 03ab006cab625ee35c7656ac42b79e46c99b11d8 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 25 Aug 2020 15:25:56 +0800
+Subject: [PATCH 06/11] codecparsers: av1: uint8 range is not enough for
+ av1_bitstreamfn_ns
+
+---
+ gst-libs/gst/codecparsers/gstav1parser.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
+index d8711149f..6264dcd4c 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.c
++++ b/gst-libs/gst/codecparsers/gstav1parser.c
+@@ -293,8 +293,8 @@ av1_bitstreamfn_su (GstBitReader * br, guint8 n, GstAV1ParserResult * retval)
+ /* 4.10.7
+  *
+  * Unsigned encoded integer with maximum number of values n */
+-static guint8
+-av1_bitstreamfn_ns (GstBitReader * br, guint8 n, GstAV1ParserResult * retval)
++static guint32
++av1_bitstreamfn_ns (GstBitReader * br, guint32 n, GstAV1ParserResult * retval)
+ {
+   gint w, m, v;
+   gint extra_bit;
+-- 
+2.17.1
+

@@ -1,0 +1,152 @@
+From f65c8bbfc10fd3e7154d1af8c259fba49c0267e0 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 24 Jul 2020 14:54:37 +0800
+Subject: [PATCH 10/11] codecparsers: av1: Improve the parse_tile_info.
+
+1. store more tile info when parse tile group.
+   The column, row, tile offset and tile data size are all useful for
+   decoder process, especially for HW kind decoder such as VAAPI dec.
+   Also fix the tile group skip size for each tile data.
+2. No min_inner_tile_width requirement in newest spec.
+3. Calculate the sbs of each tile for both uniform tile and non-uniformi
+   tile.
+---
+ gst-libs/gst/codecparsers/gstav1parser.c | 39 ++++++++++++++++--------
+ gst-libs/gst/codecparsers/gstav1parser.h |  8 +++++
+ 2 files changed, 34 insertions(+), 13 deletions(-)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
+index da90ff94a..84259446f 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.c
++++ b/gst-libs/gst/codecparsers/gstav1parser.c
+@@ -2188,7 +2188,6 @@ gst_av1_parse_tile_info (GstAV1Parser * parser, GstBitReader * br,
+   gint max_width /* maxWidth */ , max_height /* maxHeight */ ;
+   gint size_sb /* sizeSb */ ;
+   gint widest_tile_sb /* widestTileSb */ ;
+-  gint min_inner_tile_width = G_MAXINT /* min width of non-rightmost tile */ ;
+ 
+   g_assert (parser->seq_header);
+   seq_header = parser->seq_header;
+@@ -2235,8 +2234,13 @@ gst_av1_parse_tile_info (GstAV1Parser * parser, GstBitReader * br,
+     }
+     parser->state.mi_col_starts[i] = parser->state.mi_cols;
+     parser->state.tile_cols = i;
+-    if (parser->state.tile_cols > 1)
+-      min_inner_tile_width = tile_width_sb << sb_size;
++
++    while (i >= 1) {
++      tile_info->width_in_sbs_minus_1[i - 1] =
++          ((parser->state.mi_col_starts[i] - parser->state.mi_col_starts[i - 1]
++              + ((1 << sb_shift) - 1)) >> sb_shift) - 1;
++      i--;
++    }
+ 
+     min_log2_tile_rows = MAX (min_log2_tiles - parser->state.tile_cols_log2, 0);
+     parser->state.tile_rows_log2 = min_log2_tile_rows;
+@@ -2259,6 +2263,12 @@ gst_av1_parse_tile_info (GstAV1Parser * parser, GstBitReader * br,
+     }
+     parser->state.mi_row_starts[i] = parser->state.mi_rows;
+     parser->state.tile_rows = i;
++    while (i >= 1) {
++      tile_info->height_in_sbs_minus_1[i - 1] =
++          ((parser->state.mi_row_starts[i] - parser->state.mi_row_starts[i - 1]
++              + ((1 << sb_shift) - 1)) >> sb_shift) - 1;
++      i--;
++    }
+   } else {
+     widest_tile_sb = 0;
+     start_sb = 0;
+@@ -2273,8 +2283,6 @@ gst_av1_parse_tile_info (GstAV1Parser * parser, GstBitReader * br,
+       size_sb = tile_info->width_in_sbs_minus_1[i] + 1;
+       widest_tile_sb = MAX (size_sb, widest_tile_sb);
+       start_sb += size_sb;
+-      if (i > 0 && ((size_sb << sb_size) < min_inner_tile_width))
+-        min_inner_tile_width = size_sb << sb_size;
+     }
+     parser->state.mi_col_starts[i] = parser->state.mi_cols;
+     parser->state.tile_cols = i;
+@@ -2323,13 +2331,6 @@ gst_av1_parse_tile_info (GstAV1Parser * parser, GstBitReader * br,
+     tile_info->context_update_tile_id = 0;
+   }
+ 
+-  if (min_inner_tile_width < (64 << (parser->state.upscaled_width !=
+-              parser->state.frame_width))) {
+-    GST_INFO ("Minimum tile width requirement not satisfied");
+-    retval = GST_AV1_PARSER_BITSTREAM_ERROR;
+-    goto error;
+-  }
+-
+   memcpy (tile_info->mi_col_starts, parser->state.mi_col_starts,
+       sizeof (guint32) * (GST_AV1_MAX_TILE_COLS + 1));
+   memcpy (tile_info->mi_row_starts, parser->state.mi_row_starts,
+@@ -4399,6 +4400,11 @@ gst_av1_parse_tile_group (GstAV1Parser * parser, GstBitReader * br,
+       goto error;
+   }
+ 
++  if (tile_group->tg_end < tile_group->tg_start) {
++    retval = GST_AV1_PARSER_NO_MORE_DATA;
++    goto error;
++  }
++
+   if (!gst_bit_reader_skip_to_byte (br)) {
+     retval = GST_AV1_PARSER_NO_MORE_DATA;
+     goto error;
+@@ -4407,6 +4413,7 @@ gst_av1_parse_tile_group (GstAV1Parser * parser, GstBitReader * br,
+   end_bit_pos = gst_bit_reader_get_pos (br);
+   header_bytes = (end_bit_pos - start_bitpos) / 8;
+   sz -= header_bytes;
++
+   for (tile_num = tile_group->tg_start; tile_num <= tile_group->tg_end;
+       tile_num++) {
+     tile_row = tile_num / parser->state.tile_cols;
+@@ -4423,6 +4430,11 @@ gst_av1_parse_tile_group (GstAV1Parser * parser, GstBitReader * br,
+       sz -= tile_size - parser->state.tile_size_bytes;
+     }
+ 
++    tile_group->entry[tile_num].tile_size = tile_size;
++    tile_group->entry[tile_num].tile_offset = gst_bit_reader_get_pos (br) / 8;
++    tile_group->entry[tile_num].tile_row = tile_row;
++    tile_group->entry[tile_num].tile_col = tile_col;
++
+     tile_group->entry[tile_num].mi_row_start =
+         parser->state.mi_row_starts[tile_row];
+     tile_group->entry[tile_num].mi_row_end =
+@@ -4438,7 +4450,8 @@ gst_av1_parse_tile_group (GstAV1Parser * parser, GstBitReader * br,
+      */
+ 
+     /* Skip the real data to the next one */
+-    if (!gst_bit_reader_skip (br, tile_size)) {
++    if (tile_num < tile_group->tg_end &&
++        !gst_bit_reader_skip (br, tile_size * 8)) {
+       retval = GST_AV1_PARSER_NO_MORE_DATA;
+       goto error;
+     }
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.h b/gst-libs/gst/codecparsers/gstav1parser.h
+index f5a23d046..0ce8fcb0c 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.h
++++ b/gst-libs/gst/codecparsers/gstav1parser.h
+@@ -1666,6 +1666,10 @@ struct _GstAV1TileListOBU {
+  *   It is a requirement of bitstream conformance that the value of tg_end is greater
+  *   than or equal to tg_start. It is a requirement of bitstream conformance that the
+  *   value of tg_end for the last tile group in each frame is equal to num_tiles-1.
++ * @tile_offset: Offset from the OBU data, the real data start of this tile.
++ * @tg_size: Data size of this tile.
++ * @tile_row: Tile index in row.
++ * @tile_col: Tile index in column.
+  * @mi_row_start: start position in mi rows
+  * @mi_row_end: end position in mi rows
+  * @mi_col_start: start position in mi cols
+@@ -1677,6 +1681,10 @@ struct _GstAV1TileGroupOBU {
+   guint8 tg_start;
+   guint8 tg_end;
+   struct {
++    guint32 tile_offset; /* Tile data offset from the OBU data. */
++    guint32 tile_size; /* Data size of this tile */
++    guint32 tile_row; /* tileRow */
++    guint32 tile_col; /* tileCol */
+     /* global varialbes */
+     guint32 mi_row_start; /* MiRowStart */
+     guint32 mi_row_end; /* MiRowEnd */
+-- 
+2.17.1
+

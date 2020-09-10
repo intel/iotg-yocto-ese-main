@@ -11,6 +11,9 @@ SRC_URI = "${mesa_url}"
 PV = "${mesa_pv}"
 SRCREV = "${mesa_srcrev}"
 
+SRC_URI_append = " \
+               file://0001-Revert-glsl-declare-gl_Layer-gl_ViewportIndex-gl_Vie.patch \
+"
 S = "${WORKDIR}/git"
 
 SRC_URI_append_x86-64_class-target = " \

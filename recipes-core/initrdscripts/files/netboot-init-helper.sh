@@ -10,16 +10,14 @@ ip link > /dev/urandom
 say "Waiting for ${iface}"
 sleep 10
 
-host=$(</dev/urandom tr -dc A-Za-z0-9-_ | head -c 24)
-say "Using randomly generated dhcp request fqdn: ${host}"
-
 ipv6_mode="$(get_cmd netmount.ipv6 0)"
 if [ "${ipv6_mode}" = 1 ]; then
-  say "Using statefule DHCPv6"
+  host=$(</dev/urandom tr -dc A-Za-z0-9-_ | head -c 24)
+  say "Using statefule DHCPv6 request fqdn: ${host}"
   udhcpc6 -n -f -q -t 30 -O dns -O search -x fqdn:${host} -i "${iface}"
   target_ip="$(get_cmd netmount.target_ip fe80::206f:6fcc:83d7:79ce%${iface})"
 else
-  udhcpc -n -f -q -t 30 -x fqdn:${host} -i "${iface}"
+  udhcpc -n -f -q -t 30 -i "${iface}"
   target_ip="$(get_cmd netmount.target_ip 192.168.1.1)"
 fi
 
