@@ -83,7 +83,7 @@ class DMVerityPlugin(SourcePlugin):
 
         # Set the kernel image path in the .its file for use with mkimage later.
         shutil.copyfile("%s" % (get_bitbake_var("ITS_FILE")), "%s/temp_kmb_os_image.its" % (cr_workdir))
-        out = exec_cmd("sed -i s:Image:%s/Image: %s/temp_kmb_os_image.its" % (boot_partition_dir, cr_workdir)) # ":" as delimiter is safer
+        out = exec_cmd("sed -i s:kmb-kernel:%s/Image: %s/temp_kmb_os_image.its" % (boot_partition_dir, cr_workdir)) # ":" as delimiter is safer
 
         # Sign the kernel with keys in KEYS_DIR to generate a signed FIT image.
         ret, out = exec_native_cmd("uboot-mkimage -f %s/temp_kmb_os_image.its -k %s sign-fit-img.itb" % (cr_workdir, get_bitbake_var("KEYS_DIR")), native_sysroot)

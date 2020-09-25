@@ -14,7 +14,9 @@ SRC_URI = " \
     file://hostapd.service \
     file://0001-hostapd-KW-issues-changes.patch \
 "
-SRCREV = "099224c18e26161560f8313bced13930fdb832af"
+
+#hostapd V2.9
+SRCREV = "7cb441432c4379b92ef044059fa21eec7e3bb355"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/git/hostapd"

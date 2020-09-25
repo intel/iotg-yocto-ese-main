@@ -2,8 +2,8 @@ require grub204.inc
 
 GRUBPLATFORM = "efi"
 
-DEPENDS_append_class-target = " grub-efi-native"
-RDEPENDS_${PN}_class-target = "diffutils freetype grub-common virtual/grub-bootconf"
+DEPENDS_append = " grub-native"
+RDEPENDS_${PN} = "diffutils freetype grub-common virtual/grub-bootconf"
 
 SRC_URI += " \
            file://cfg \
@@ -54,21 +54,11 @@ do_mkimage() {
 
 addtask mkimage before do_install after do_compile
 
-do_mkimage_class-native() {
-	:
-}
-
-do_install_append_class-target() {
+do_install_append() {
 	install -d ${D}/boot
 	install -d ${D}/boot/EFI
 	install -d ${D}/boot/EFI/BOOT
 	install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}/boot/EFI/BOOT/${GRUB_IMAGE}
-}
-
-do_compile_class-native() {
-	oe_runmake libgrubmods.a libgrubgcry.a libgrubkern.a
-	oe_runmake -C grub-core/lib/gnulib
-	oe_runmake grub-mkimage
 }
 
 # make race condition fix
@@ -79,21 +69,8 @@ do_compile_prepend() {
 	oe_runmake grub_script.yy.c
 }
 
-do_install_class-native() {
-	install -d ${D}${bindir}
-	install -m 755 grub-mkimage ${D}${bindir}
-}
-
-do_install_class-target() {
+do_install() {
     oe_runmake 'DESTDIR=${D}' -C grub-core install
-
-    # Remove build host references...
-    find "${D}" -name modinfo.sh -type f -exec \
-        sed -i \
-        -e 's,--sysroot=${STAGING_DIR_TARGET},,g' \
-        -e 's|${DEBUG_PREFIX_MAP}||g' \
-        -e 's:${RECIPE_SYSROOT_NATIVE}::g' \
-        {} +
 }
 
 GRUB_BUILDIN ?= "boot linux ext2 fat serial part_msdos part_gpt normal \
@@ -101,10 +78,6 @@ GRUB_BUILDIN ?= "boot linux ext2 fat serial part_msdos part_gpt normal \
 
 do_deploy() {
 	install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${DEPLOYDIR}
-}
-
-do_deploy_class-native() {
-	:
 }
 
 addtask deploy after do_install before do_build
@@ -122,5 +95,3 @@ INSANE_SKIP_${PN}_append_linux-gnux32 = " arch"
 INSANE_SKIP_${PN}-dbg_append_linux-gnux32 = " arch"
 INSANE_SKIP_${PN}_append_linux-muslx32 = " arch"
 INSANE_SKIP_${PN}-dbg_append_linux-muslx32 = " arch"
-
-BBCLASSEXTEND = "native"

@@ -29,7 +29,9 @@ SRC_URI = "git://w1.fi/srv/git/hostap.git \
 	   file://wpa-supplicant-Handle-long-P2P-Device-Interface-name.patch \
 	   file://0001-wpa_supplicant-KW-issues-changes.patch \
           "
-SRCREV = "099224c18e26161560f8313bced13930fdb832af"
+
+#wpa-supplicant V2.9
+SRCREV = "7cb441432c4379b92ef044059fa21eec7e3bb355"
 
 CVE_PRODUCT = "wpa_supplicant"
 

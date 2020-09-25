@@ -10,4 +10,9 @@ populate_kernel_append(){
 	if [ -n "${IMAGE_LIVE_INJECTOR_SBL}" ]; then
 		cp -L "${IMAGE_LIVE_INJECTOR_SBL}" $dest/sbl_os
 	fi
+	if [ -n "${IMAGE_LIVE_INJECTOR_OTHERS}" ]; then
+		for i in ${IMAGE_LIVE_INJECTOR_OTHERS}; do
+			cp -L ${i} $dest/
+		done
+	fi
 }

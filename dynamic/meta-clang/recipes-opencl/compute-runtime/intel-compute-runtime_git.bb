@@ -10,13 +10,16 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=ae27f47fd6755510247c19e547e4c804 \
 
 SRC_URI = "git://github.com/intel/compute-runtime.git;protocol=https \
            "
-SRCREV = "4216e962b24d70510b22f71844fdc25e17a35dd7"
-PV = "git+${SRCPV}"
+SRC_URI_append_class-target = " file://allow-to-find-cpp-generation-tool.patch"
+
+SRCREV = "cc3186c413cc680e9fab628ac425311fe758eb57"
 
 S = "${WORKDIR}/git"
 
-DEPENDS += " intel-graphics-compiler intel-graphics-compiler-native intel-compute-runtime-native gmmlib clang libva"
-RDEPENDS_${PN} += " intel-graphics-compiler gmmlib ( >= 20.1.1 )"
+DEPENDS += " intel-graphics-compiler gmmlib clang"
+DEPENDS_append_class-target = " intel-compute-runtime-native"
+
+RDEPENDS_${PN} += " intel-graphics-compiler gmmlib"
 
 inherit cmake pkgconfig
 
@@ -24,18 +27,31 @@ COMPATIBLE_HOST = '(x86_64).*-linux'
 COMPATIBLE_HOST_libc-musl = "null"
 
 EXTRA_OECMAKE = " \
+                 -DIGC_DIR=${STAGING_INCDIR}/igc \
                  -DBUILD_TYPE=Release \
                  -DSKIP_UNIT_TESTS=1 \
                  -DCCACHE_ALLOWED=FALSE \
-                 -DVISA_DIR=${PKG_CONFIG_SYSROOT_DIR}/usr/include/visa \
-                 -Dcloc_cmd_prefix=ocloc \
                  "
+EXTRA_OECMAKE_append_class-target = " \
+                                     -Dcloc_cmd_prefix=ocloc \
+                                    "
 
-LDFLAGS_append_class-native = " -fuse-ld=lld"
-TOOLCHAIN_class-native = "clang"
+PACKAGECONFIG ??= ""
+PACKAGECONFIG[levelzero] = "-DBUILD_WITH_L0=ON, -DBUILD_WITH_L0=OFF, level-zero"
 
-FILES_${PN} += "${libdir}/intel-opencl/libigdrcl.so"
+do_install_append_class-native() {
+    install -d ${D}${bindir}
+    install ${B}/bin/cpp_generate_tool ${D}${bindir}/
+}
+
+SOLIBS = ".so"
+FILES_SOLIBSDEV = ""
+
+FILES_${PN} += " \
+                 ${libdir}/intel-opencl/libigdrcl.so \
+                 ${libdir}/libocloc.so \
+                 "
 
 BBCLASSEXTEND = "native nativesdk"
 
-EXCLUDE_FROM_WORLD = "1"
+UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>\d+(\.\d+)+)"

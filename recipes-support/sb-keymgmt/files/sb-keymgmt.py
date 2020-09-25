@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 
 ########################################################################################
 #  This sample script demonstrates key management for various keys and certificates used
@@ -39,27 +39,27 @@ import sys
 # If using an HSM, this method can be used to associate the key_name with the
 # key stored in HSM.
 def gen_key(key_name, key_len):
-  print "Generating " + key_name + " Key."
+  print("Generating " + key_name + " Key.")
   cmd = "openssl genrsa -out %s %d" % (key_name, key_len)
   subprocess.check_output(cmd, shell=True)
 
 # Used for getting access to the certificate in PEM format.
 # If using an HSM, retrieve the certificate from HSM and convert it into PEM format and provide to caller.
 def gen_cert(key_name, cert_name, subj_name, valid_days):
-  print "Generating " + cert_name + " Certificate."
+  print("Generating " + cert_name + " Certificate.")
   cmd = "openssl req -new -x509 -key %s -outform PEM -out %s -sha256 -subj \"%s\" -days %d" % (key_name, cert_name, subj_name, valid_days)
   subprocess.check_output(cmd, shell=True)
 
 # Used for signing the efi modules
 # If using an HSM, key_name and cert_name will refer to the key and certificate available inside HSM.
 def sign_efi(key_name, cert_name, unsigned_file, signed_file):
-  print "Signing " + unsigned_file + " efi file."
+  print("Signing " + unsigned_file + " efi file.")
   cmd = "sbsign --key %s --cert %s --output %s %s" % (key_name, cert_name, signed_file, unsigned_file)
   subprocess.check_output(cmd, shell=True)
 
 # Used for converting a PEM encoded certificate to DER encoding.
 def to_cer(cert_name, cer_name):
-  print "Generating " + cer_name + " Certificate."
+  print("Generating " + cer_name + " Certificate.")
   cmd = "openssl x509 -in %s -out %s -outform DER" % (cert_name, cer_name)
   subprocess.check_output(cmd, shell=True)
 
@@ -76,7 +76,7 @@ def main():
   parser.add_argument('-cer',  '--cer_name', dest='CerName', type=str, help='Certificate Name file (in DER format)', required = False)
 
   args = parser.parse_args()
-  print "Command : " + args.Command
+  print("Command : " + args.Command)
 
   try:
     if(args.Command == 'gen'):
@@ -87,10 +87,10 @@ def main():
     elif(args.Command == 'sign'):
       sign_efi(args.KeyName, args.CertName, args.UnsignedFile, args.SignedFile)
     else:
-      print "Wrong Command !!"
+      print("Wrong Command !!")
 
-  except subprocess.CalledProcessError, e:
-    print e.cmd + "failed with return code ",  e.returncode
+  except subprocess.CalledProcessError as e:
+    print(e.cmd + "failed with return code ",  e.returncode)
     return 1
   except:
     return 1

@@ -1,5 +1,5 @@
 diff --git a/engines/e_afalg.c b/engines/e_afalg.c
-index 7f62d77..4ea8591 100644
+index 4b17228..8e84870 100644
 --- a/engines/e_afalg.c
 +++ b/engines/e_afalg.c
 @@ -16,11 +16,16 @@
@@ -569,41 +569,24 @@ index 7f62d77..4ea8591 100644
      msg.msg_flags = MSG_MORE;
  
  # ifdef ALG_ZERO_COPY
-@@ -442,85 +823,466 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+@@ -442,31 +823,152 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
       * OPENS: out of place processing (i.e. out != in)
       */
  
--    /* Input data is not sent as part of call to sendmsg() */
--    msg.msg_iovlen = 0;
--    msg.msg_iov = NULL;
--
-     /* Sendmsg() sends iv and cipher direction to the kernel */
--    sbytes = sendmsg(actx->sfd, &msg, 0);
++    /* Sendmsg() sends iv and cipher direction to the kernel */
 +    sbytes_total = 0;
 +    sbytes = sendmsg(actx->sfd, &msg, MSG_MORE);
-     if (sbytes < 0) {
-         ALG_PERR("%s(%d): sendmsg failed for zero copy cipher operation : ",
-                  __FILE__, __LINE__);
--        return 0;
++    if (sbytes < 0) {
++        ALG_PERR("%s(%d): sendmsg failed for zero copy cipher operation : ",
++                 __FILE__, __LINE__);
 +        goto err;
-     }
- 
++    }
++
 +    sbytes_total += sbytes;
-     /*
-      * vmsplice and splice are used to pin the user space input buffer for
-      * kernel space processing avoiding copys from user to kernel space
-      */
--    ret = vmsplice(actx->zc_pipe[1], &iov, 1, SPLICE_F_GIFT);
--    if (ret < 0) {
--        ALG_PERR("%s(%d): vmsplice failed : ", __FILE__, __LINE__);
--        return 0;
--    }
--
--    ret = splice(actx->zc_pipe[0], NULL, actx->sfd, NULL, inl, 0);
--    if (ret < 0) {
--        ALG_PERR("%s(%d): splice failed : ", __FILE__, __LINE__);
--        return 0;
--    }
++    /*
++     * vmsplice and splice are used to pin the user space input buffer for
++     * kernel space processing avoiding copys from user to kernel space
++     */
 +     index = 0;
 +     zero_copy_limit = 15*PAGE_SIZE;
 +     do{
@@ -636,34 +619,24 @@ index 7f62d77..4ea8591 100644
 +         }
 +         sbytes_total +=ret;
 +     }while(index<iovlen);
- # else
--    msg.msg_iovlen = 1;
--    msg.msg_iov = &iov;
--
-     /* Sendmsg() sends iv, cipher direction and input data to the kernel */
-     sbytes = sendmsg(actx->sfd, &msg, 0);
-     if (sbytes < 0) {
-         ALG_PERR("%s(%d): sendmsg failed for cipher operation : ", __FILE__,
-                  __LINE__);
--        return 0;
--    }
--
--    if (sbytes != (ssize_t) inl) {
--        ALG_WARN("Cipher operation send bytes %zd != inlen %zd\n", sbytes,
--                inl);
--        return 0;
++# else
++    /* Sendmsg() sends iv, cipher direction and input data to the kernel */
++    sbytes = sendmsg(actx->sfd, &msg, 0);
++    if (sbytes < 0) {
++        ALG_PERR("%s(%d): sendmsg failed for cipher operation : ", __FILE__,
++                 __LINE__);
 +        goto err;
-     }
++    }
 +    sbytes_total = sbytes;
- # endif
++# endif
 +    if (sbytes_total != expected_sbytes) {
 +        ALG_WARN("Cipher operation send bytes %zd != inlen %zd\n", sbytes_total,
 +                expected_sbytes);
 +        goto err;
 +    }
- 
++
 +    OPENSSL_free(cbuf);
-     return 1;
++    return 1;
 +
 +err:
 +    if(cbuf)
@@ -671,67 +644,56 @@ index 7f62d77..4ea8591 100644
 +        OPENSSL_free(cbuf);
 +    }
 +    return 0;
- }
- 
--static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
--                             const unsigned char *iv, int enc)
++}
++
 +static int afalg_start_digest_sk(afalg_ctx *actx,
 +                                 const void *data, size_t count)
- {
--    int ciphertype;
++{
 +    struct msghdr msg = { 0 };
 +    struct iovec iov;
 +    ssize_t sbytes;
 +# ifdef ALG_ZERO_COPY
-     int ret;
--    afalg_ctx *actx;
--    const char *ciphername;
++    int ret;
 +    struct iovec curr_iov;
 +    size_t zero_copy_limit, sbytes_total;
 +# endif
- 
--    if (ctx == NULL || key == NULL) {
--        ALG_WARN("%s(%d): Null Parameter\n", __FILE__, __LINE__);
--        return 0;
--    }
++
 +    /* iov that describes input data */
 +    iov.iov_base = (unsigned char *)data;
 +    iov.iov_len = count;
- 
--    if (EVP_CIPHER_CTX_cipher(ctx) == NULL) {
--        ALG_WARN("%s(%d): Cipher object NULL\n", __FILE__, __LINE__);
--        return 0;
--    }
++
 +# ifdef ALG_ZERO_COPY
 +    /*
 +     * ZERO_COPY mode
 +     * Works best when buffer is 4k aligned
 +     * OPENS: out of place processing (i.e. out != in)
 +     */
- 
--    actx = EVP_CIPHER_CTX_get_cipher_data(ctx);
--    if (actx == NULL) {
--        ALG_WARN("%s(%d): Cipher data NULL\n", __FILE__, __LINE__);
-+    /* Input data is not sent as part of call to sendmsg() */
-+    msg.msg_iovlen = 0;
-+    msg.msg_iov = NULL;
 +
+     /* Input data is not sent as part of call to sendmsg() */
+     msg.msg_iovlen = 0;
+     msg.msg_iov = NULL;
+ 
 +    sbytes_total = 0;
-+    /* Sendmsg() sends iv and cipher direction to the kernel */
+     /* Sendmsg() sends iv and cipher direction to the kernel */
+-    sbytes = sendmsg(actx->sfd, &msg, 0);
 +    sbytes = sendmsg(actx->sfd, &msg, MSG_MORE);
-+    if (sbytes < 0) {
+     if (sbytes < 0) {
+-        ALG_PERR("%s(%d): sendmsg failed for zero copy cipher operation : ",
 +        ALG_PERR("%s(%d): sendmsg failed for zero copy digest operation : ",
-+                 __FILE__, __LINE__);
+                  __FILE__, __LINE__);
          return 0;
      }
  
--    ciphertype = EVP_CIPHER_CTX_nid(ctx);
--    switch (ciphertype) {
 +    sbytes_total += sbytes;
-+    /*
-+     * vmsplice and splice are used to pin the user space input buffer for
-+     * kernel space processing avoiding copys from user to kernel space
-+     */
+     /*
+      * vmsplice and splice are used to pin the user space input buffer for
+      * kernel space processing avoiding copies from user to kernel space
+      */
+-    ret = vmsplice(actx->zc_pipe[1], &iov, 1, SPLICE_F_GIFT);
+-    if (ret < 0) {
+-        ALG_PERR("%s(%d): vmsplice failed : ", __FILE__, __LINE__);
+-        return 0;
+-    }
 +    zero_copy_limit = 15*PAGE_SIZE;
 +
 +    do{
@@ -744,7 +706,10 @@ index 7f62d77..4ea8591 100644
 +        else{
 +           iov.iov_len = 0;
 +        }
-+
+ 
+-    ret = splice(actx->zc_pipe[0], NULL, actx->sfd, NULL, inl, 0);
+-    if (ret < 0) {
+-        ALG_PERR("%s(%d): splice failed : ", __FILE__, __LINE__);
 +        ret = vmsplice(actx->zc_pipe[1], &curr_iov, 1, SPLICE_F_GIFT);
 +        if (ret < 0) {
 +            ALG_PERR("%s(%d): vmsplice failed ret=%d : ", __FILE__, __LINE__, ret);
@@ -764,30 +729,35 @@ index 7f62d77..4ea8591 100644
 +    if (sbytes_total < (ssize_t) count) {
 +        ALG_WARN("zero copy digest operation send bytes %zd != count %zd\n", sbytes,
 +                count);
-+        return 0;
-+    }
-+# else
-+    msg.msg_iovlen = 1;
-+    msg.msg_iov = &iov;
-+
-+    /* Sendmsg() sends iv, cipher direction and input data to the kernel */
+         return 0;
+     }
+ # else
+@@ -474,16 +976,16 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+     msg.msg_iov = &iov;
+ 
+     /* Sendmsg() sends iv, cipher direction and input data to the kernel */
+-    sbytes = sendmsg(actx->sfd, &msg, 0);
 +    sbytes = sendmsg(actx->sfd, &msg, MSG_MORE);
-+    if (sbytes < 0) {
+     if (sbytes < 0) {
+-        ALG_PERR("%s(%d): sendmsg failed for cipher operation : ", __FILE__,
 +        ALG_PERR("%s(%d): sendmsg failed for digest operation : ", __FILE__,
-+                 __LINE__);
-+        return 0;
-+    }
-+
+                  __LINE__);
+         return 0;
+     }
+ 
+-    if (sbytes != (ssize_t) inl) {
+-        ALG_WARN("Cipher operation send bytes %zd != inlen %zd\n", sbytes,
+-                inl);
 +    if (sbytes != (ssize_t) count) {
 +        ALG_WARN("digest operation send bytes %zd != count %zd\n", sbytes,
 +                count);
-+        return 0;
-+    }
-+# endif
-+
-+    return 1;
-+}
-+
+         return 0;
+     }
+ # endif
+@@ -491,15 +993,215 @@ static int afalg_start_cipher_sk(afalg_ctx *actx, const unsigned char *in,
+     return 1;
+ }
+ 
 +static int afalg_digest_init(EVP_MD_CTX *ctx)
 +{
 +    int mdtype,pkey_type = 0;
@@ -984,37 +954,32 @@ index 7f62d77..4ea8591 100644
 +    return 1;
 +}
 +
-+static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
-+                             const unsigned char *iv, int enc)
-+{
-+    int ciphertype;
-+    int ret;
+ static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                              const unsigned char *iv, int enc)
+ {
+     int ciphertype;
+     int ret;
 +    int ivlen = 0;
-+    afalg_ctx *actx;
-+    const char *ciphername;
+     afalg_ctx *actx;
+     const char *ciphername;
 +    const char *algtype;
 +    int tag_required = 0;
 +    afalg_cipher_ctx *ectx;
-+
+ 
+-    if (ctx == NULL || key == NULL) {
 +    if (ctx == NULL) {
-+        ALG_WARN("%s(%d): Null Parameter\n", __FILE__, __LINE__);
-+        return 0;
-+    }
-+
-+    if (EVP_CIPHER_CTX_cipher(ctx) == NULL) {
-+        ALG_WARN("%s(%d): Cipher object NULL\n", __FILE__, __LINE__);
-+        return 0;
-+    }
-+
+         ALG_WARN("%s(%d): Null Parameter\n", __FILE__, __LINE__);
+         return 0;
+     }
+@@ -509,6 +1211,7 @@ static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+         return 0;
+     }
+ 
 +    ectx = (afalg_cipher_ctx *) EVP_CIPHER_CTX_get_cipher_data(ctx);
-+    actx = EVP_CIPHER_CTX_get_cipher_data(ctx);
-+    if (actx == NULL) {
-+        ALG_WARN("%s(%d): Cipher data NULL\n", __FILE__, __LINE__);
-+        return 0;
-+    }
-+
-+    ciphertype = EVP_CIPHER_CTX_nid(ctx);
-+    switch (ciphertype) {
+     actx = EVP_CIPHER_CTX_get_cipher_data(ctx);
+     if (actx == NULL) {
+         ALG_WARN("%s(%d): Cipher data NULL\n", __FILE__, __LINE__);
+@@ -520,7 +1223,66 @@ static int afalg_cipher_init(EVP_CIPHER_CTX *ctx, const unsigned char *key,
      case NID_aes_128_cbc:
      case NID_aes_192_cbc:
      case NID_aes_256_cbc:
@@ -1757,9 +1722,20 @@ index 7f62d77..4ea8591 100644
  }
  
 diff --git a/engines/e_afalg.h b/engines/e_afalg.h
-index 2c03c44..ee3ac19 100644
+index 3323c89..ee3ac19 100644
 --- a/engines/e_afalg.h
 +++ b/engines/e_afalg.h
+@@ -7,8 +7,8 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
+-#ifndef OSSL_ENGINES_E_AFALG_H
+-# define OSSL_ENGINES_E_AFALG_H
++#ifndef HEADER_AFALG_H
++# define HEADER_AFALG_H
+ 
+ # if defined(__GNUC__) && __GNUC__ >= 4 && \
+      (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
 @@ -44,8 +44,12 @@
  # define AES_KEY_SIZE_192 24
  # define AES_KEY_SIZE_256 32
@@ -1850,9 +1826,20 @@ index 3b79305..8d7df35 100644
  AFALG_R_SOCKET_SET_KEY_FAILED:106:socket set key failed
 +AFALG_R_SOCKET_SET_TAGLEN_FAILED:112:socket set taglen failed
 diff --git a/engines/e_afalg_err.h b/engines/e_afalg_err.h
-index 3eb1332..8e44506 100644
+index 3036443..8e44506 100644
 --- a/engines/e_afalg_err.h
 +++ b/engines/e_afalg_err.h
+@@ -8,8 +8,8 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
+-#ifndef OSSL_ENGINES_E_AFALG_ERR_H
+-# define OSSL_ENGINES_E_AFALG_ERR_H
++#ifndef HEADER_AFALGERR_H
++# define HEADER_AFALGERR_H
+ 
+ # define AFALGerr(f, r) ERR_AFALG_error((f), (r), OPENSSL_FILE, OPENSSL_LINE)
+ 
 @@ -23,6 +23,7 @@
  # define AFALG_F_AFALG_SETUP_ASYNC_EVENT_NOTIFICATION     103
  # define AFALG_F_AFALG_SET_KEY                            104

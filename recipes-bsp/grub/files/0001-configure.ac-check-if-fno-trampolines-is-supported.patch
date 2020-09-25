@@ -1,0 +1,61 @@
+From 7f8224f593a0061a9b900b605eb4d96b6f023619 Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Mon, 27 Jul 2020 05:14:16 +0000
+Subject: [PATCH] configure.ac: check if -fno-trampolines is supported
+
+Old system gcc may be in use.
+
+Upstream-status: Inappropriate, yocto specific
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ conf/Makefile.common |  2 +-
+ configure.ac         | 20 ++++++++++++++++++--
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/conf/Makefile.common b/conf/Makefile.common
+index 87c1f0e80..91c4b11db 100644
+--- a/conf/Makefile.common
++++ b/conf/Makefile.common
+@@ -66,7 +66,7 @@ grubconfdir = $(sysconfdir)/grub.d
+ platformdir = $(pkglibdir)/$(target_cpu)-$(platform)
+ starfielddir = $(pkgdatadir)/themes/starfield
+ 
+-CFLAGS_GNULIB = -Wno-undef -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Werror=trampolines -fno-trampolines
++CFLAGS_GNULIB = -Wno-undef -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code $(TRAMPOLINES_CFLAGS)
+ CPPFLAGS_GNULIB = -I$(top_builddir)/grub-core/lib/gnulib -I$(top_srcdir)/grub-core/lib/gnulib
+ 
+ CFLAGS_POSIX = -fno-builtin
+diff --git a/configure.ac b/configure.ac
+index d04dfcfe0..dcddf393d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2004,8 +2004,24 @@ if test x"$enable_wextra" != xno ; then
+   HOST_CFLAGS="$HOST_CFLAGS -Wextra"
+ fi
+ 
+-TARGET_CFLAGS="$TARGET_CFLAGS -Werror=trampolines -fno-trampolines"
+-HOST_CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines"
++AC_CACHE_CHECK([whether -fno-trampolines work], [grub_cv_host_cc_fnotrampolines], [
++  SAVED_CFLAGS="$CFLAGS"
++  CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines -Werror"
++  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdarg.h>
++int va_arg_func (int fixed, va_list args);]], [[]])],
++      [grub_cv_host_cc_fnotrampolines=yes],
++      [grub_cv_host_cc_fnotrampolines=no])
++  CFLAGS="$SAVED_CFLAGS"
++])
++
++if test x"$grub_cv_host_cc_fnotrampolines" = xyes ; then
++  TARGET_CFLAGS="$TARGET_CFLAGS -Werror=trampolines -fno-trampolines"
++  HOST_CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines"
++  TRAMPOLINES_CFLAGS="-Werror=trampolines -fno-trampolines"
++else
++  TRAMPOLINES_CFLAGS=""
++fi
++AC_SUBST([TRAMPOLINES_CFLAGS])
+ 
+ TARGET_CPP="$TARGET_CC -E"
+ TARGET_CCAS=$TARGET_CC
+-- 
+2.25.1
+

@@ -1,0 +1,26 @@
+From 89d4badf5df664d5a5ae9f836b9bf640acb8800c Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Tue, 4 Aug 2020 02:00:10 +0000
+Subject: [PATCH] bootp: fix bootp compile if EFI disabled
+
+Upstream-status: inappropriate, yocto specific
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ grub-core/net/bootp.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/grub-core/net/bootp.c b/grub-core/net/bootp.c
+index 25591d078..31d98c6f4 100644
+--- a/grub-core/net/bootp.c
++++ b/grub-core/net/bootp.c
+@@ -28,6 +28,7 @@
+ #include <grub/datetime.h>
+ #include <grub/time.h>
+ #include <grub/list.h>
++#include <grub/efi/api.h>
+ 
+ static int
+ dissect_url (const char *url, char **proto, char **host, char **path)
+-- 
+2.25.1
+

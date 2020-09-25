@@ -4,7 +4,7 @@ IMAGE_FEATURES_append = " read-only-rootfs"
 IMAGE_FEATURES_remove = "ssh-server-openssh"
 IMAGE_LINGUAS = ""
 LICENSE = "MIT"
-IMAGE_FSTYPES = "cpio"
+IMAGE_FSTYPES = "cpio cpio.lz4"
 
 require eudev-initramfs.inc
 

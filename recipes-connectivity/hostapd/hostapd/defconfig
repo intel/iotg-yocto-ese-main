@@ -158,3 +158,11 @@ CONFIG_INTERWORKING=y
 
 # Hotspot 2.0
 CONFIG_HS20=y
+
+# Simultaneous Authentication of Equals (SAE), WPA3-Personal
+CONFIG_SAE=y
+
+# Opportunistic Wireless Encryption (OWE)
+# Experimental implementation of draft-harkins-owe-07.txt
+CONFIG_OWE=y
+
