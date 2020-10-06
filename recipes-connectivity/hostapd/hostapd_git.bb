@@ -21,7 +21,7 @@ SRCREV = "7cb441432c4379b92ef044059fa21eec7e3bb355"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/git/hostapd"
 
-inherit update-rc.d systemd pkgconfig distro_features_check
+inherit update-rc.d systemd pkgconfig features_check
 
 CONFLICT_DISTRO_FEATURES = "openssl-no-weak-ciphers"
 

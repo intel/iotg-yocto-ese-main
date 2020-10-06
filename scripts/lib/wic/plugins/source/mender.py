@@ -250,15 +250,17 @@ fi
         build_date = "echo 'Image built on %u (%s)'\n" % (time.time(), datetime.datetime.utcnow())
         # menu entries
         grubefi_conf += "menuentry 'boot %s' {\n" % source_params['boot_name']
-
+        # directly get the "$APPEND" variable from get_bitbake_var("APPEND") because there is concatenate
+	# strings set in APPEND on bootloader.append from OE-Core which causing the string duplication.
         kernel = "bzImage-kernel"
         kernels = source_params['extra_kernels']
         initrd = source_params['initrd']
+        var_append = get_bitbake_var("APPEND")
 
         grubefi_conf += "  echo Using ${kernelroot}\n"
         grubefi_conf += "  echo 'Loading kernel %s'\n" % kernel
         grubefi_conf += "  linuxefi ${kernelroot}/boot/%s root=${mender_root} ${mender_info} %s\n" \
-            % (kernel, bootloader.append)
+            % (kernel, var_append)
 
         if initrd:
             grubefi_conf += "  echo 'Loading initial ramdisk %s'\n" % initrd
@@ -273,7 +275,7 @@ fi
                 grubefi_conf += "  echo Using ${kernelroot}\n"
                 grubefi_conf += "  echo 'Loading kernel %s'\n" % k
                 grubefi_conf += "  linuxefi ${kernelroot}/boot/bzImage-%s root=${mender_root} ${mender_info} %s\n" \
-                    % (k, bootloader.append)
+                    % (k, var_append)
                 if 'initrd-' + k in source_params:
                     initrd_spec = source_params['initrd-' + k]
                 else:

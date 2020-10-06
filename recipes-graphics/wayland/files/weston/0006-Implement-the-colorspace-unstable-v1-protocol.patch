@@ -1,0 +1,253 @@
+From 96087d3071c35813e2256d8909a7a3f6dc717566 Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harish.krupo.kps@intel.com>
+Date: Mon, 24 Dec 2018 17:41:40 +0530
+Subject: [PATCH 06/27] Implement the colorspace-unstable-v1 protocol
+
+This is just a placeholder to get data from clients to test our HDR
+stack. The actual protocol is being discussed here:
+https://patchwork.freedesktop.org/series/57657/
+
+v2: Use the common color primary definitions (Pekka)
+
+Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+Signed-off-by: alex.chae <alex.chae@intel.com>
+---
+ include/libweston/libweston.h |   7 +++
+ libweston/backend-drm/drm.c   |   4 ++
+ libweston/colorspace.c        | 101 ++++++++++++++++++++++++++++++++++
+ libweston/compositor.c        |   4 +-
+ libweston/meson.build         |   3 +
+ protocol/meson.build          |   1 +
+ 6 files changed, 119 insertions(+), 1 deletion(-)
+ create mode 100644 libweston/colorspace.c
+
+diff --git a/include/libweston/libweston.h b/include/libweston/libweston.h
+index 6796ab01..91d0608a 100644
+--- a/include/libweston/libweston.h
++++ b/include/libweston/libweston.h
+@@ -44,6 +44,7 @@ extern "C" {
+ #include <libweston/matrix.h>
+ #include <libweston/zalloc.h>
+ #include <libweston/hdr_metadata_defs.h>
++#include <libweston/colorspace.h>
+ 
+ struct weston_geometry {
+ 	int32_t x, y;
+@@ -1346,6 +1347,8 @@ struct weston_surface_state {
+ 	enum weston_surface_protection_mode protection_mode;
+ 
+ 	struct weston_hdr_metadata *hdr_metadata;
++
++	uint32_t colorspace;
+ };
+ 
+ struct weston_surface_activation_data {
+@@ -1480,6 +1483,7 @@ struct weston_surface {
+ 
+ 	struct wl_resource *hdr_surface_resource;
+ 	struct weston_hdr_metadata *hdr_metadata;
++	uint32_t colorspace;
+ };
+ 
+ struct weston_subsurface {
+@@ -2060,6 +2064,9 @@ weston_timeline_refresh_subscription_objects(struct weston_compositor *wc,
+ int
+ weston_hdr_metadata_setup(struct weston_compositor *compositor);
+ 
++int
++weston_colorspace_setup(struct weston_compositor *compositor);
++
+ #ifdef  __cplusplus
+ }
+ #endif
+diff --git a/libweston/backend-drm/drm.c b/libweston/backend-drm/drm.c
+index 9a8f13d6..79c4df3e 100644
+--- a/libweston/backend-drm/drm.c
++++ b/libweston/backend-drm/drm.c
+@@ -2972,6 +2972,10 @@ drm_backend_create(struct weston_compositor *compositor,
+ 		weston_log("Error: initializing hdr metadata "
+ 			   "support failed.\n");
+ 
++	if (weston_colorspace_setup(compositor) < 0)
++		weston_log("Error: initializing colorspace "
++			   "support failed.\n");
++
+ 	ret = weston_plugin_api_register(compositor, WESTON_DRM_OUTPUT_API_NAME,
+ 					 &api, sizeof(api));
+ 
+diff --git a/libweston/colorspace.c b/libweston/colorspace.c
+new file mode 100644
+index 00000000..00d20058
+--- /dev/null
++++ b/libweston/colorspace.c
+@@ -0,0 +1,101 @@
++/*
++ * Copyright © 2017 Intel Corporation
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files (the
++ * "Software"), to deal in the Software without restriction, including
++ * without limitation the rights to use, copy, modify, merge, publish,
++ * distribute, sublicense, and/or sell copies of the Software, and to
++ * permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial
++ * portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#include "config.h"
++
++#include <string.h>
++
++#include <libweston/libweston.h>
++
++#include "colorspace-unstable-v1-server-protocol.h"
++
++static void
++colorspace_destroy_request(struct wl_client *client,
++			   struct wl_resource *resource)
++{
++	wl_resource_destroy(resource);
++}
++
++static void
++colorspace_set_request(struct wl_client *client,
++		       struct wl_resource *resource,
++		       struct wl_resource *surface_resource,
++		       uint32_t chromacities)
++{
++	static uint32_t colorspace_names[] = {
++		[ZWP_COLORSPACE_V1_CHROMACITIES_UNDEFINED] = WESTON_CS_UNDEFINED,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_BT470M] = WESTON_CS_BT470M,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_BT470BG] = WESTON_CS_BT470BG,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_SMPTE170M] = WESTON_CS_SMPTE170M,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_BT709] = WESTON_CS_BT709,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_BT2020] = WESTON_CS_BT2020,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_ADOBERGB] = WESTON_CS_ADOBERGB,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_DCI_P3] = WESTON_CS_DCI_P3,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_PROPHOTORGB] = WESTON_CS_PROPHOTORGB,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_CIERGB] = WESTON_CS_CIERGB,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_AP0] = WESTON_CS_AP0,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_AP1] = WESTON_CS_AP1,
++	};
++
++	struct weston_surface *surface =
++		wl_resource_get_user_data(surface_resource);
++
++	surface->pending.colorspace = colorspace_names[chromacities];
++}
++
++static const struct zwp_colorspace_v1_interface
++zwp_colorspace_implementation = {
++	.destroy = colorspace_destroy_request,
++	.set = colorspace_set_request,
++};
++
++static void
++bind_colorspace(struct wl_client *client,
++		void *data, uint32_t version, uint32_t id)
++{
++	struct weston_compositor *compositor = data;
++	struct wl_resource *resource;
++
++	resource = wl_resource_create(client, &zwp_colorspace_v1_interface,
++				      version, id);
++	if (resource == NULL) {
++		wl_client_post_no_memory(client);
++		return;
++	}
++
++	wl_resource_set_implementation(resource, &zwp_colorspace_implementation,
++				       compositor, NULL);
++}
++
++WL_EXPORT int
++weston_colorspace_setup(struct weston_compositor *compositor)
++{
++	if (!wl_global_create(compositor->wl_display,
++			      &zwp_colorspace_v1_interface, 1,
++			      compositor, bind_colorspace))
++		return -1;
++
++	return 0;
++}
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index 30b253bf..10986627 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -480,11 +480,11 @@ weston_surface_state_init(struct weston_surface_state *state)
+ 	state->buffer_viewport.buffer.src_width = wl_fixed_from_int(-1);
+ 	state->buffer_viewport.surface.width = -1;
+ 	state->buffer_viewport.changed = 0;
+-
+ 	state->acquire_fence_fd = -1;
+ 
+ 	state->desired_protection = WESTON_HDCP_DISABLE;
+ 	state->protection_mode = WESTON_SURFACE_PROTECTION_MODE_RELAXED;
++	state->colorspace = WESTON_CS_BT709;
+ }
+ 
+ static void
+@@ -562,6 +562,7 @@ weston_surface_create(struct weston_compositor *compositor)
+ 
+ 	weston_matrix_init(&surface->buffer_to_surface_matrix);
+ 	weston_matrix_init(&surface->surface_to_buffer_matrix);
++	surface->colorspace = WESTON_CS_BT709;
+ 
+ 	wl_list_init(&surface->pointer_constraints);
+ 
+@@ -3627,6 +3628,7 @@ weston_surface_commit_state(struct weston_surface *surface,
+ 
+ 	/* weston_protected_surface.set_type */
+ 	weston_surface_set_desired_protection(surface, state->desired_protection);
++	surface->colorspace = state->colorspace;
+ 
+ 	wl_signal_emit(&surface->commit_signal, surface);
+ }
+diff --git a/libweston/meson.build b/libweston/meson.build
+index 233129b9..c6a5b33d 100644
+--- a/libweston/meson.build
++++ b/libweston/meson.build
+@@ -34,6 +34,7 @@ srcs_libweston = [
+ 	'weston-direct-display.c',
+ 	'zoom.c',
+ 	'hdr_metadata.c',
++	'colorspace.c',
+ 	'../shared/colorspace.c',
+ 	linux_dmabuf_unstable_v1_protocol_c,
+ 	linux_dmabuf_unstable_v1_server_protocol_h,
+@@ -69,6 +70,8 @@ srcs_libweston = [
+ 	weston_direct_display_server_protocol_h,
+ 	hdr_metadata_unstable_v1_protocol_c,
+ 	hdr_metadata_unstable_v1_server_protocol_h,
++	colorspace_unstable_v1_protocol_c,
++	colorspace_unstable_v1_server_protocol_h,
+ ]
+ 
+ if get_option('renderer-gl')
+diff --git a/protocol/meson.build b/protocol/meson.build
+index bc188dfb..4bc5bc01 100644
+--- a/protocol/meson.build
++++ b/protocol/meson.build
+@@ -38,6 +38,7 @@ generated_protocols = [
+ 	[ 'xdg-shell', 'v6' ],
+ 	[ 'xdg-shell', 'stable' ],
+ 	[ 'hdr-metadata', 'v1' ],
++	[ 'colorspace', 'v1' ],
+ ]
+ 
+ foreach proto: generated_protocols
+-- 
+2.21.3
+

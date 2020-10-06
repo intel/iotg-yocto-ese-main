@@ -1,0 +1,120 @@
+From bf3418bafd1420017a616755b415c7aef806173e Mon Sep 17 00:00:00 2001
+From: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Date: Mon, 24 Feb 2020 16:10:50 -0800
+Subject: [PATCH 27/27] Fix KW issues associated with the HDR patches
+
+Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Signed-off-by: alex.chae <alex.chae@intel.com>
+---
+ clients/simple-hdr-video-gbm.c      | 8 +++++++-
+ libweston/colorspace.c              | 3 +++
+ libweston/compositor.c              | 8 +++++---
+ libweston/renderer-gl/gl-renderer.c | 1 +
+ libweston/renderer-gl/gl-shaders.c  | 5 ++++-
+ 5 files changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/clients/simple-hdr-video-gbm.c b/clients/simple-hdr-video-gbm.c
+index bf903009..637aada3 100644
+--- a/clients/simple-hdr-video-gbm.c
++++ b/clients/simple-hdr-video-gbm.c
+@@ -303,7 +303,10 @@ subtitle_redraw_handler(struct widget *widget, void *data)
+ 	uint32_t dst_stride;
+ 
+ 	widget_get_allocation(sub->widget, &allocation);
++
+ 	buffer = subtitle_next_buffer(sub);
++	if (!buffer)
++		return;
+ 
+ 	buffer->mmap = gbm_bo_map(buffer->bo, 0, 0, buffer->width, buffer->height,
+ 				  GBM_BO_TRANSFER_WRITE, &dst_stride, &map_data);
+@@ -440,7 +443,7 @@ static AVFrame *
+ demux_and_decode(struct video *s)
+ {
+ 	AVFrame *frame;
+-	bool ret;
++	bool ret = false;
+ 
+ 	frame = av_frame_alloc();
+ 	if (!frame)
+@@ -949,6 +952,9 @@ create_dmabuf_buffer(struct app *app, struct buffer *buffer,
+ 		buffer->cpp = 1;
+ 		break;
+ 	default:
++		pixel_format = GBM_FORMAT_XRGB8888;
++		buf_w = width;
++		buf_h = height;
+ 		buffer->height = height;
+ 		buffer->cpp = 1;
+ 	}
+diff --git a/libweston/colorspace.c b/libweston/colorspace.c
+index 00d20058..91677774 100644
+--- a/libweston/colorspace.c
++++ b/libweston/colorspace.c
+@@ -62,6 +62,9 @@ colorspace_set_request(struct wl_client *client,
+ 	struct weston_surface *surface =
+ 		wl_resource_get_user_data(surface_resource);
+ 
++	if (chromacities > ZWP_COLORSPACE_V1_CHROMACITIES_AP1)
++		chromacities = ZWP_COLORSPACE_V1_CHROMACITIES_UNDEFINED;
++
+ 	surface->pending.colorspace = colorspace_names[chromacities];
+ }
+ 
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index 10986627..5cc4d11c 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -3613,9 +3613,11 @@ weston_surface_commit_state(struct weston_surface *surface,
+ 		if (!surface->hdr_metadata)
+ 			surface->hdr_metadata =
+ 				zalloc(sizeof(struct weston_hdr_metadata));
+-		memcpy(surface->hdr_metadata,
+-		       surface->pending.hdr_metadata,
+-		       sizeof(struct weston_hdr_metadata));
++
++		if (surface->hdr_metadata)
++			memcpy(surface->hdr_metadata,
++				surface->pending.hdr_metadata,
++				sizeof(struct weston_hdr_metadata));
+ 	} else if (surface->hdr_metadata) {
+ 		free(surface->hdr_metadata);
+ 		surface->hdr_metadata = NULL;
+diff --git a/libweston/renderer-gl/gl-renderer.c b/libweston/renderer-gl/gl-renderer.c
+index 61c18421..1ca9d0d4 100644
+--- a/libweston/renderer-gl/gl-renderer.c
++++ b/libweston/renderer-gl/gl-renderer.c
+@@ -3806,6 +3806,7 @@ fail_with_error:
+ fail_terminate:
+ 	eglTerminate(gr->egl_display);
+ fail:
++	gl_shader_generator_destroy(gr->sg);
+ 	free(gr);
+ 	return -1;
+ }
+diff --git a/libweston/renderer-gl/gl-shaders.c b/libweston/renderer-gl/gl-shaders.c
+index 8bb16739..ffc795e2 100644
+--- a/libweston/renderer-gl/gl-shaders.c
++++ b/libweston/renderer-gl/gl-shaders.c
+@@ -713,6 +713,7 @@ gl_shader_create(struct gl_shader_generator *sg,
+ 	if (!status) {
+ 		glGetProgramInfoLog(shader->program, sizeof msg, NULL, msg);
+ 		weston_log("link info: %s\n", msg);
++		free(shader);
+ 		return NULL;
+ 	}
+ 
+@@ -737,7 +738,9 @@ struct gl_shader_generator *
+ gl_shader_generator_create(struct weston_compositor *compositor)
+ {
+ 	struct gl_shader_generator *sg = zalloc(sizeof *sg);
+-	sg->debug = weston_compositor_add_log_scope(compositor->weston_log_ctx, "gl-shader-generator",
++
++	if (sg)
++		sg->debug = weston_compositor_add_log_scope(compositor->weston_log_ctx, "gl-shader-generator",
+ 						      "Debug messages from GL renderer",
+ 						      NULL, NULL, NULL);
+ 	return sg;
+-- 
+2.21.3
+

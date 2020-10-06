@@ -1,0 +1,274 @@
+From ccb4cf2a80ee4d396f560341bf351698b19b47a5 Mon Sep 17 00:00:00 2001
+From: Harish Krupo <harishkrupo@gmail.com>
+Date: Thu, 18 Apr 2019 21:45:48 +0530
+Subject: [PATCH 02/27] gl-renderer: use intermediate texture for linear light
+ blending
+
+Linear light blending is required when the presented surfaces are
+of different colorspaces. The surfaces are linearized, colorspace
+convertion is applied (if required) and then blended together. All
+this is done to an intermediate texture so that it can be blitted
+on to the framebuffer while applying the required non linear curve.
+
+v2: Use /* */ instead of // (Pekka)
+    Rename fbo and tex to shadow_{fbo,tex} (Pekka)
+    Check for OpenGLES capabilities before creating
+    shadow_{tex,fbo} (Pekka)
+
+Signed-off-by: Harish Krupo <harishkrupo@gmail.com>
+Signed-off-by: alex.chae <alex.chae@intel.com>
+---
+ libweston/renderer-gl/gl-renderer-internal.h |   2 +
+ libweston/renderer-gl/gl-renderer.c          | 152 ++++++++++++++++++-
+ 2 files changed, 147 insertions(+), 7 deletions(-)
+
+diff --git a/libweston/renderer-gl/gl-renderer-internal.h b/libweston/renderer-gl/gl-renderer-internal.h
+index c3c6fa56..c0a42404 100644
+--- a/libweston/renderer-gl/gl-renderer-internal.h
++++ b/libweston/renderer-gl/gl-renderer-internal.h
+@@ -102,6 +102,8 @@ struct gl_renderer {
+ 	 * List constains cached shaders built from struct gl_shader_requirements
+ 	 */
+ 	struct wl_list shader_list;
++
++	bool supports_half_float_texture;
+ };
+ 
+ static inline struct gl_renderer *
+diff --git a/libweston/renderer-gl/gl-renderer.c b/libweston/renderer-gl/gl-renderer.c
+index fb391b40..a6e9d5df 100644
+--- a/libweston/renderer-gl/gl-renderer.c
++++ b/libweston/renderer-gl/gl-renderer.c
+@@ -98,6 +98,8 @@ struct gl_output_state {
+ 
+ 	/* struct timeline_render_point::link */
+ 	struct wl_list timeline_render_point_list;
++	GLuint shadow_fbo;
++	GLuint shadow_tex;
+ };
+ 
+ enum buffer_type {
+@@ -1399,6 +1401,73 @@ pixman_region_to_egl_y_invert(struct weston_output *output,
+ 	pixman_region32_fini(&transformed);
+ }
+ 
++static void
++repaint_from_texture(struct weston_output *output,
++		     pixman_region32_t *output_damage)
++{
++	struct gl_output_state *go = get_output_state(output);
++	struct gl_renderer *gr = get_renderer(output->compositor);
++	double width = output->current_mode->width;
++	double height = output->current_mode->height;
++	pixman_box32_t *rects;
++	int n_rects;
++	int i;
++	struct gl_shader_requirements shader_requirements;
++
++	GLfloat verts[4 * 2] = { 0.0f };
++
++	static const GLfloat proj[16] = { /* transpose */
++		2.0f,  0.0f, 0.0f, 0.0f,
++		0.0f,  2.0f, 0.0f, 0.0f,
++		0.0f,  0.0f, 1.0f, 0.0f,
++		-1.0f, -1.0f, 0.0f, 1.0f
++	};
++
++	/* Bind default framebuffer */
++	glBindFramebuffer(GL_FRAMEBUFFER, 0);
++	glViewport(go->borders[GL_RENDERER_BORDER_LEFT].width,
++		   go->borders[GL_RENDERER_BORDER_BOTTOM].height,
++		   output->current_mode->width,
++		   output->current_mode->height);
++
++	gl_shader_requirements_init(&shader_requirements);
++	shader_requirements.variant = SHADER_VARIANT_RGBA;
++	use_gl_program(gr, &shader_requirements);
++
++	glUniformMatrix4fv(gr->current_shader->proj_uniform, 1, GL_FALSE, proj);
++	glUniform1f(gr->current_shader->alpha_uniform, 1.0f);
++
++	glUniform1i(gr->current_shader->tex_uniforms[0], 0);
++
++	glActiveTexture(GL_TEXTURE0);
++	glBindTexture(GL_TEXTURE_2D, go->shadow_tex);
++
++	rects = pixman_region32_rectangles(output_damage, &n_rects);
++	for (i = 0; i < n_rects; i++) {
++
++		verts[0] = rects[i].x1 / width;
++		verts[1] = (height - rects[i].y1) / height;
++		verts[2] = rects[i].x2 / width;
++		verts[3] = (height - rects[i].y1) / height;
++
++		verts[4] = rects[i].x2 / width;
++		verts[5] = (height - rects[i].y2) / height;
++		verts[6] = rects[i].x1 / width;
++		verts[7] = (height - rects[i].y2) / height;
++
++		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, verts);
++		glEnableVertexAttribArray(0);
++
++		/* texcoord: */
++		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, verts);
++		glEnableVertexAttribArray(1);
++
++		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
++	}
++
++	glBindTexture(GL_TEXTURE_2D, 0);
++}
++
+ /* NOTE: We now allow falling back to ARGB gl visuals when XRGB is
+  * unavailable, so we're assuming the background has no transparency
+  * and that everything with a blend, like drop shadows, will have something
+@@ -1443,12 +1512,6 @@ gl_renderer_repaint_output(struct weston_output *output,
+ 
+ 	go->begin_render_sync = create_render_sync(gr);
+ 
+-	/* Calculate the viewport */
+-	glViewport(go->borders[GL_RENDERER_BORDER_LEFT].width,
+-		   go->borders[GL_RENDERER_BORDER_BOTTOM].height,
+-		   output->current_mode->width,
+-		   output->current_mode->height);
+-
+ 	/* Calculate the global GL matrix */
+ 	go->output_matrix = output->matrix;
+ 	weston_matrix_translate(&go->output_matrix,
+@@ -1458,6 +1521,12 @@ gl_renderer_repaint_output(struct weston_output *output,
+ 			    2.0 / output->current_mode->width,
+ 			    -2.0 / output->current_mode->height, 1);
+ 
++	glBindFramebuffer(GL_FRAMEBUFFER, 0);
++	glViewport(go->borders[GL_RENDERER_BORDER_LEFT].width,
++		   go->borders[GL_RENDERER_BORDER_BOTTOM].height,
++		   output->current_mode->width,
++		   output->current_mode->height);
++
+ 	/* In fan debug mode, redraw everything to make sure that we clear any
+ 	 * fans left over from previous draws on this buffer.
+ 	 * This precludes the use of EGL_EXT_swap_buffers_with_damage and
+@@ -1473,6 +1542,14 @@ gl_renderer_repaint_output(struct weston_output *output,
+ 		pixman_region32_fini(&undamaged);
+ 	}
+ 
++	if (gr->supports_half_float_texture) {
++		glBindFramebuffer(GL_FRAMEBUFFER, go->shadow_fbo);
++		glViewport(0, 0,
++			   output->current_mode->width,
++			   output->current_mode->height);
++
++	}
++
+ 	/* previous_damage covers regions damaged in previous paints since we
+ 	 * last used this buffer */
+ 	pixman_region32_init(&previous_damage);
+@@ -1503,7 +1580,15 @@ gl_renderer_repaint_output(struct weston_output *output,
+ 		free(egl_rects);
+ 	}
+ 
+-	repaint_views(output, &total_damage);
++	if (gr->supports_half_float_texture) {
++		glBindFramebuffer(GL_FRAMEBUFFER, go->shadow_fbo);
++		repaint_views(output, output_damage);
++		glBindFramebuffer(GL_FRAMEBUFFER, 0);
++		repaint_from_texture(output, &total_damage);
++	} else {
++		glBindFramebuffer(GL_FRAMEBUFFER, 0);
++		repaint_views(output, &total_damage);
++	}
+ 
+ 	pixman_region32_fini(&total_damage);
+ 	pixman_region32_fini(&previous_damage);
+@@ -2986,7 +3071,11 @@ gl_renderer_output_create(struct weston_output *output,
+ 			  EGLSurface surface)
+ {
+ 	struct gl_output_state *go;
++	struct gl_renderer *gr = get_renderer(output->compositor);
+ 	int i;
++	int width = output->current_mode->width;
++	int height = output->current_mode->height;
++	int fb_status;
+ 
+ 	go = zalloc(sizeof *go);
+ 	if (go == NULL)
+@@ -3004,6 +3093,33 @@ gl_renderer_output_create(struct weston_output *output,
+ 
+ 	output->renderer_state = go;
+ 
++	if (gr->supports_half_float_texture) {
++		glGenTextures(1, &go->shadow_tex);
++		glBindTexture(GL_TEXTURE_2D, go->shadow_tex);
++		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_EXT, width, height, 0,
++			     GL_RGBA, GL_FLOAT, NULL);
++		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++		glBindTexture(GL_TEXTURE_2D, 0);
++
++		glGenFramebuffers(1, &go->shadow_fbo);
++		glBindFramebuffer(GL_FRAMEBUFFER, go->shadow_fbo);
++		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++				       GL_TEXTURE_2D, go->shadow_tex, 0);
++
++		fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
++
++		/* no framebuffer, bail! */
++		if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
++			weston_log("Unable to create shadow FBO\n");
++			glBindFramebuffer(GL_FRAMEBUFFER, 0);
++			return -1;
++		}
++	}
++
++
++	glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
+ 	return 0;
+ }
+ 
+@@ -3107,6 +3223,11 @@ gl_renderer_output_destroy(struct weston_output *output)
+ 	if (go->end_render_sync != EGL_NO_SYNC_KHR)
+ 		gr->destroy_sync(gr->egl_display, go->end_render_sync);
+ 
++	if (gr->supports_half_float_texture) {
++		glDeleteTextures(1, &go->shadow_tex);
++		glDeleteFramebuffers(1, &go->shadow_fbo);
++	}
++
+ 	free(go);
+ }
+ 
+@@ -3499,6 +3620,7 @@ gl_renderer_setup(struct weston_compositor *ec, EGLSurface egl_surface)
+ 	struct gl_renderer *gr = get_renderer(ec);
+ 	const char *extensions;
+ 	EGLBoolean ret;
++	EGLint major_version;
+ 
+ 	EGLint context_attribs[16] = {
+ 		EGL_CONTEXT_CLIENT_VERSION, 0,
+@@ -3603,6 +3725,22 @@ gl_renderer_setup(struct weston_compositor *ec, EGLSurface egl_surface)
+ 	if (weston_check_egl_extension(extensions, "GL_OES_EGL_image_external"))
+ 		gr->has_egl_image_external = true;
+ 
++	if (weston_check_egl_extension(extensions, "GL_OES_EGL_image_external"))
++		gr->has_egl_image_external = 1;
++
++	major_version = gr->gl_version >> 16;
++	switch (major_version) {
++	case 3:
++		gr->supports_half_float_texture = true;
++		break;
++	case 2:
++		if (weston_check_egl_extension(extensions, "GL_OES_texture_half_float"))
++			gr->supports_half_float_texture = true;
++		break;
++	default:
++		gr->supports_half_float_texture = false;
++	}
++
+ 	glActiveTexture(GL_TEXTURE0);
+ 
+ 	gr->fragment_binding =
+-- 
+2.21.3
+

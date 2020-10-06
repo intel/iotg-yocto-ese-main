@@ -18,7 +18,7 @@ DEPENDS += "libdrm libva itt"
 
 S = "${WORKDIR}/git"
 
-inherit pkgconfig perlnative cmake distro_features_check
+inherit pkgconfig perlnative cmake features_check
 
 
 # Set to "release" or "debug" accordingly

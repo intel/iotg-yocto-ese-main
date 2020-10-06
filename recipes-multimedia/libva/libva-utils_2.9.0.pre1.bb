@@ -23,7 +23,7 @@ S = "${WORKDIR}/git"
 
 DEPENDS = "libva"
 
-inherit autotools pkgconfig distro_features_check
+inherit autotools pkgconfig features_check
 
 # depends on libva which requires opengl
 REQUIRED_DISTRO_FEATURES = "opengl"

@@ -1,27 +1,28 @@
-From ee960a27d8629d34c8e730dc28e95d0144d9a37c Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sat, 18 Jun 2016 17:33:33 +0000
-Subject: [PATCH 24/39] more udev children workers
+From af3fcb936a92294e30742be88b6ce3791d353f74 Mon Sep 17 00:00:00 2001
+From: Ng Shui Lei <shui.lei.ng@intel.com>
+Date: Wed, 6 May 2020 15:53:37 +0800
+Subject: [PATCH] [PATCH 24/39] more udev children workers
 
 Upstream-Status: Inappropriate [not author]
 
+From: Arjan van de Ven <arjan@linux.intel.com>
 ---
  units/systemd-udevd.service.in | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/units/systemd-udevd.service.in b/units/systemd-udevd.service.in
-index fc037b5a5..6806d5b41 100644
+index 8b1dd0e..7a5f6ae 100644
 --- a/units/systemd-udevd.service.in
 +++ b/units/systemd-udevd.service.in
-@@ -20,7 +20,7 @@ OOMScoreAdjust=-1000
+@@ -22,7 +22,7 @@ OOMScoreAdjust=-1000
  Sockets=systemd-udevd-control.socket systemd-udevd-kernel.socket
  Restart=always
  RestartSec=0
 -ExecStart=@rootlibexecdir@/systemd-udevd
 +ExecStart=@rootlibexecdir@/systemd-udevd  --children-max=16
+ ExecReload=@rootbindir@/udevadm control --reload --timeout 0
  KillMode=mixed
- WatchdogSec=3min
  TasksMax=infinity
 -- 
-2.13.3
+2.7.4
 
