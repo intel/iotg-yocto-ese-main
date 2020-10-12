@@ -18,7 +18,7 @@ do_configure_prepend(){
 # fix multilib
 do_prepare_recipe_sysroot[postfuncs] += "do_llvm_fixup"
 do_llvm_fixup(){
-       if [ "${base_libdir}" != "lib" ]; then
+       if [ "${baselib}" != "lib" ]; then
                for i in ${STAGING_LIBDIR}/libLLVM*; do
                        ln -sf ${i} ${STAGING_DIR_HOST}/${prefix}/lib/
                done

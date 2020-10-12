@@ -1,0 +1,8 @@
+# short-description: Create an EFI disk image with systemd-boot
+# long-description: Creates a partitioned EFI disk image that the user
+# can directly dd to boot media. The selected bootloader is grub-efi.
+
+part /boot --part-type="c12a7328-f81f-11d2-ba4b-00a0c93ec93b" --source bootimg-efi --sourceparams="loader=grub-efi,title=install,label=install-efi,initrd=${WKS_EXTRA_INITRD}" --label install --active --align 1024 --use-uuid
+part / --source rawcopy --sourceparams="file=${ESE_INSTALLER_ROOTFS}" --fstype=squashfs --align 4096
+bootloader --ptable gpt --timeout=5 --append="${APPEND}"
+
