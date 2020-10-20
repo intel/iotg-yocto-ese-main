@@ -3,7 +3,7 @@ SRC_URI = "file://${BPN}.header"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-inherit allarch
+inherit allarch grub-efi-cfg
 require conf/image-uefi.conf
 
 # no external initrd support yet
@@ -32,6 +32,21 @@ python do_compile(){
   image_type = d.getVar('KERNEL_IMAGETYPE')
 
   with open(os.path.join(wd, bpn + '.conf.sample'), 'w') as grubconf:
+
+    ### from grub-efi-cfg for compatibility
+    grubconf.write('# Automatically created by %s\n' % bpn)
+    opts = d.getVar('GRUB_OPTS')
+    if opts:
+      for opt in opts.split(';'):
+        grubconf.write('%s\n' % opt)
+
+    timeout = d.getVar('GRUB_TIMEOUT')
+    if timeout:
+      grubconf.write('timeout=%s\n' % timeout)
+    else:
+      grubconf.write('timeout=50\n')
+    ###
+
     with open(os.path.join(wd, bpn + '.header')) as header:
       grubconf.write(header.read())
     kernel = d.getVar('PREFERRED_PROVIDER_virtual/kernel')

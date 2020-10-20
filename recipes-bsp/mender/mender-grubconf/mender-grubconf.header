@@ -2,7 +2,6 @@ search -l efi --no-floppy --set root
 set prefix=($root)/EFI/BOOT
 search -l primary --no-floppy --set rootfs2
 search -l secondary --no-floppy --set rootfs3
-serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1
 
 mender_rootfsa_part=2
 mender_rootfsb_part=3
