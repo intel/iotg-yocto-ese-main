@@ -13,7 +13,7 @@ SRCREV = "51413d1deb0df0debdf1d208723131ff0e36d3a3"
 
 inherit deploy
 
-DEPENDS += " gnu-efi sbsigntool-native elfutils-native"
+DEPENDS += " gnu-efi nss sbsigntool-native elfutils-native"
 
 ALLOW_EMPTY_${PN} = "1"
 
