@@ -1,0 +1,54 @@
+From 493456115d7f774d95dc77ad8d4a3d129e804ad6 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 31 Jul 2020 14:38:42 +0800
+Subject: [PATCH 3/4] video-format: Add Y212_LE format.
+
+It can be used as HEVC YUV_4:2:2 12bits stream's decoder output, and
+also can be used as the input format for encoding HEVC YUV_4:2:2 12bits
+stream.
+---
+ gst-libs/gst/vaapi/gstvaapiimage.c | 1 +
+ gst-libs/gst/vaapi/video-format.c  | 1 +
+ gst-libs/gst/vaapi/video-format.h  | 2 +-
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapiimage.c b/gst-libs/gst/vaapi/gstvaapiimage.c
+index ef35a0b2..18389adf 100644
+--- a/gst-libs/gst/vaapi/gstvaapiimage.c
++++ b/gst-libs/gst/vaapi/gstvaapiimage.c
+@@ -94,6 +94,7 @@ vaapi_image_is_linear (const VAImage * va_image)
+     case VA_FOURCC ('Y', '2', '1', '0'):
+     case VA_FOURCC ('Y', '4', '1', '0'):
+     case VA_FOURCC ('A', 'R', '3', '0'):
++    case VA_FOURCC ('Y', '2', '1', '2'):
+       data_size = 4 * width * height;
+       break;
+     case VA_FOURCC ('P', '0', '1', '0'):
+diff --git a/gst-libs/gst/vaapi/video-format.c b/gst-libs/gst/vaapi/video-format.c
+index fc81407f..dc32d5f6 100644
+--- a/gst-libs/gst/vaapi/video-format.c
++++ b/gst-libs/gst/vaapi/video-format.c
+@@ -112,6 +112,7 @@ static const GstVideoFormatMap gst_vaapi_video_default_formats[] = {
+ 
+   DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y210, Y210, ('Y', '2', '1', '0'), 32, 422_10BPP),
+   DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y410, Y410, ('Y', '4', '1', '0'), 32, 444_10BPP),
++  DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y212_LE, Y212, ('Y', '2', '1', '2'), 32, 422_12BPP),
+   DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y412_LE, Y412, ('Y', '4', '1', '2'), 32, 444_12BPP),
+ 
+   /* RGB formats */
+diff --git a/gst-libs/gst/vaapi/video-format.h b/gst-libs/gst/vaapi/video-format.h
+index 1882164b..22e14fbf 100644
+--- a/gst-libs/gst/vaapi/video-format.h
++++ b/gst-libs/gst/vaapi/video-format.h
+@@ -30,7 +30,7 @@
+ G_BEGIN_DECLS
+ 
+ #define GST_VAAPI_FORMATS_ALL "{ ENCODED, " \
+-  "NV12, YV12, I420, YUY2, UYVY, Y444, GRAY8, P010_10LE, P012_LE, VUYA, Y210, Y410, Y412_LE, " \
++  "NV12, YV12, I420, YUY2, UYVY, Y444, GRAY8, P010_10LE, P012_LE, VUYA, Y210, Y410, Y212_LE, Y412_LE, " \
+   "ARGB, xRGB, RGBA, RGBx, ABGR, xBGR, BGRA, BGRx, RGB16, RGB, BGR10A2_LE "  \
+   "}"
+ 
+-- 
+2.17.1
+
