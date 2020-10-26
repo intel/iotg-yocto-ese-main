@@ -2,6 +2,11 @@
 # recipe into userspace and kernel space respectively
 # workaround for multi kernel out of tree module support
 
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+SRC_URI += " \
+    file://v2-kni-fix-build-with-Linux-5.9.patch\
+"
+
 # we may not be able to predict the package names otherwise
 PACKAGESPLITFUNCS_remove="split_kernel_module_packages"
 

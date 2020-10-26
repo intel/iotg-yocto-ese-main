@@ -1,11 +1,13 @@
-require grub204.inc conf/image-uefi.conf
+require grub204.inc
 
 GRUBPLATFORM = "efi"
 
 DEPENDS_append = " grub-native"
 RDEPENDS_${PN} = "diffutils freetype grub-common virtual/grub-bootconf"
 
-SRC_URI_append = " file://cfg"
+SRC_URI += " \
+           file://cfg \
+          "
 
 # Determine the target arch for the grub modules
 python __anonymous () {
@@ -45,7 +47,7 @@ do_mkimage() {
 	cd ${B}
 	# Search for the grub.cfg on the local boot media by using the
 	# built in cfg file provided via this recipe
-	grub-mkimage -c ../cfg -p ${EFIDIR} -d ./grub-core/ \
+	grub-mkimage -c ../cfg -p /EFI/BOOT -d ./grub-core/ \
 	               -O ${GRUB_TARGET}-efi -o ./${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} \
 	               ${GRUB_BUILDIN}
 }
@@ -53,8 +55,10 @@ do_mkimage() {
 addtask mkimage before do_install after do_compile
 
 do_install_append() {
-	install -d ${D}${EFI_FILES_PATH}
-	install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}${EFI_FILES_PATH}/${GRUB_IMAGE}
+	install -d ${D}/boot
+	install -d ${D}/boot/EFI
+	install -d ${D}/boot/EFI/BOOT
+	install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}/boot/EFI/BOOT/${GRUB_IMAGE}
 }
 
 # make race condition fix
@@ -83,7 +87,7 @@ FILES_${PN} = "${libdir}/grub/${GRUB_TARGET}-efi \
                "
 
 PACKAGES += "${PN}-bootimg"
-FILES_${PN}-bootimg = "${EFI_FILES_PATH}/${GRUB_IMAGE}"
+FILES_${PN}-bootimg = "/boot/EFI/BOOT/${GRUB_IMAGE}"
 ALLOW_EMPTY_${PN}-bootimg = "1"
 
 # 64-bit binaries are expected for the bootloader with an x32 userland

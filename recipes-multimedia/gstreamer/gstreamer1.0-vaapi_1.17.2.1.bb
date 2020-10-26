@@ -10,11 +10,7 @@ SRC_URI = "gitsm://github.com/GStreamer/gstreamer-vaapi.git;protocol=https \
            file://0001-libs-encoder-H265-Add-screen-content-coding-extensio.patch \
            file://0001-libs-codecobject-Add-number-of-elements-when-create-.patch \
            file://0002-libs-decoder-AV1-Add-the-av1-decoder-support.patch \
-           file://0001-video-format-Add-Y412_LE-format.patch \
-           file://0002-libs-decoder-H265-Add-MAIN_444_12-profile-supporting.patch \
-           file://0003-video-format-Add-Y212_LE-format.patch \
-           file://0004-libs-decoder-H265-Add-MAIN_422_12-profile-supporting.patch \
-"
+	   "
 
 S = "${WORKDIR}/git"
 SRCREV = "30290115affc43078b2844cfd165d464bbcc335e"
