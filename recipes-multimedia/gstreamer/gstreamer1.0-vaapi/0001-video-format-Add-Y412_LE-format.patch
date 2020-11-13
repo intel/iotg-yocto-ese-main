@@ -1,0 +1,56 @@
+From 0bc7578b448dcf6ab8dd62244a802be6bf93f648 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 30 Jul 2020 23:13:10 +0800
+Subject: [PATCH 1/4] video-format: Add Y412_LE format.
+
+It can be used as HEVC YUV_4:4:4 12bits stream's decoder output, and
+also can be used as the input format for encoding HEVC YUV_4:4:4 12bits
+stream.
+---
+ gst-libs/gst/vaapi/gstvaapiimage.c | 3 +++
+ gst-libs/gst/vaapi/video-format.c  | 1 +
+ gst-libs/gst/vaapi/video-format.h  | 2 +-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapiimage.c b/gst-libs/gst/vaapi/gstvaapiimage.c
+index 34baf403..ef35a0b2 100644
+--- a/gst-libs/gst/vaapi/gstvaapiimage.c
++++ b/gst-libs/gst/vaapi/gstvaapiimage.c
+@@ -104,6 +104,9 @@ vaapi_image_is_linear (const VAImage * va_image)
+     case VA_FOURCC ('4', '4', '4', 'P'):
+       data_size = 3 * width * height;
+       break;
++    case VA_FOURCC ('Y', '4', '1', '2'):
++      data_size = 8 * width * height;
++      break;
+     default:
+       GST_ERROR ("FIXME: incomplete formats %" GST_FOURCC_FORMAT,
+           GST_FOURCC_ARGS (va_image->format.fourcc));
+diff --git a/gst-libs/gst/vaapi/video-format.c b/gst-libs/gst/vaapi/video-format.c
+index 310cbeff..d189b6fd 100644
+--- a/gst-libs/gst/vaapi/video-format.c
++++ b/gst-libs/gst/vaapi/video-format.c
+@@ -112,6 +112,7 @@ static const GstVideoFormatMap gst_vaapi_video_default_formats[] = {
+ 
+   DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y210, Y210, ('Y', '2', '1', '0'), 32, 422_10BPP),
+   DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y410, Y410, ('Y', '4', '1', '0'), 32, 444_10BPP),
++  DEF_YUV (VA_BYTE_ORDER_NOT_CARE, Y412_LE, Y412, ('Y', '4', '1', '2'), 32, 444_12BPP),
+ 
+   /* RGB formats */
+   DEF_RGB (VA_LSB_FIRST, ARGB, BGRA8888, ('A', 'R', 'G', 'B'), 32, 32, 0x0000ff00,
+diff --git a/gst-libs/gst/vaapi/video-format.h b/gst-libs/gst/vaapi/video-format.h
+index 9f23959b..1882164b 100644
+--- a/gst-libs/gst/vaapi/video-format.h
++++ b/gst-libs/gst/vaapi/video-format.h
+@@ -30,7 +30,7 @@
+ G_BEGIN_DECLS
+ 
+ #define GST_VAAPI_FORMATS_ALL "{ ENCODED, " \
+-  "NV12, YV12, I420, YUY2, UYVY, Y444, GRAY8, P010_10LE, P012_LE, VUYA, Y210, Y410, " \
++  "NV12, YV12, I420, YUY2, UYVY, Y444, GRAY8, P010_10LE, P012_LE, VUYA, Y210, Y410, Y412_LE, " \
+   "ARGB, xRGB, RGBA, RGBx, ABGR, xBGR, BGRA, BGRx, RGB16, RGB, BGR10A2_LE "  \
+   "}"
+ 
+-- 
+2.17.1
+

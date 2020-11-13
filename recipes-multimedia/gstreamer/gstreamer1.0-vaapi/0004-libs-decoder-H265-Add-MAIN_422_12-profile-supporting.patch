@@ -1,0 +1,116 @@
+From 54bfb4bbc1ce79703c7a92fa6f5462b0936a0432 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 17 Jul 2020 18:00:30 +0800
+Subject: [PATCH 4/4] libs: decoder: H265: Add MAIN_422_12 profile supporting.
+
+---
+ gst-libs/gst/vaapi/gstvaapidecoder_h265.c | 3 ++-
+ gst-libs/gst/vaapi/gstvaapiprofile.c      | 2 ++
+ gst-libs/gst/vaapi/gstvaapiprofile.h      | 1 +
+ gst-libs/gst/vaapi/gstvaapiutils_h265.c   | 8 ++++++++
+ gst-libs/gst/vaapi/video-format.c         | 2 ++
+ gst/vaapi/gstvaapidecode.c                | 3 ++-
+ 6 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapidecoder_h265.c b/gst-libs/gst/vaapi/gstvaapidecoder_h265.c
+index fb3d9476..6a448cfb 100644
+--- a/gst-libs/gst/vaapi/gstvaapidecoder_h265.c
++++ b/gst-libs/gst/vaapi/gstvaapidecoder_h265.c
+@@ -534,7 +534,8 @@ is_range_extension_profile (GstVaapiProfile profile)
+       || profile == GST_VAAPI_PROFILE_H265_MAIN_444
+       || profile == GST_VAAPI_PROFILE_H265_MAIN_444_10
+       || profile == GST_VAAPI_PROFILE_H265_MAIN12
+-      || profile == GST_VAAPI_PROFILE_H265_MAIN_444_12)
++      || profile == GST_VAAPI_PROFILE_H265_MAIN_444_12
++      || profile == GST_VAAPI_PROFILE_H265_MAIN_422_12)
+     return TRUE;
+   return FALSE;
+ }
+diff --git a/gst-libs/gst/vaapi/gstvaapiprofile.c b/gst-libs/gst/vaapi/gstvaapiprofile.c
+index 0a538972..5a2e1c05 100644
+--- a/gst-libs/gst/vaapi/gstvaapiprofile.c
++++ b/gst-libs/gst/vaapi/gstvaapiprofile.c
+@@ -132,6 +132,8 @@ static const GstVaapiProfileMap gst_vaapi_profiles[] = {
+       "video/x-h265", "main-12"},
+   {GST_VAAPI_PROFILE_H265_MAIN_444_12, VAProfileHEVCMain444_12,
+       "video/x-h265", "main-444-12"},
++  {GST_VAAPI_PROFILE_H265_MAIN_422_12, VAProfileHEVCMain422_12,
++      "video/x-h265", "main-422-12"},
+   {GST_VAAPI_PROFILE_H265_SCREEN_EXTENDED_MAIN, VAProfileHEVCSccMain,
+       "video/x-h265", "screen-extended-main"},
+   {GST_VAAPI_PROFILE_H265_SCREEN_EXTENDED_MAIN_10, VAProfileHEVCSccMain10,
+diff --git a/gst-libs/gst/vaapi/gstvaapiprofile.h b/gst-libs/gst/vaapi/gstvaapiprofile.h
+index 38ec59ab..3255fe53 100644
+--- a/gst-libs/gst/vaapi/gstvaapiprofile.h
++++ b/gst-libs/gst/vaapi/gstvaapiprofile.h
+@@ -191,6 +191,7 @@ typedef enum {
+                                                 GST_VAAPI_MAKE_PROFILE(H265,10),
+     GST_VAAPI_PROFILE_H265_MAIN12             = GST_VAAPI_MAKE_PROFILE(H265,11),
+     GST_VAAPI_PROFILE_H265_MAIN_444_12        = GST_VAAPI_MAKE_PROFILE(H265,12),
++    GST_VAAPI_PROFILE_H265_MAIN_422_12        = GST_VAAPI_MAKE_PROFILE(H265,13),
+     GST_VAAPI_PROFILE_VP9_0                   = GST_VAAPI_MAKE_PROFILE(VP9,1),
+     GST_VAAPI_PROFILE_VP9_1                   = GST_VAAPI_MAKE_PROFILE(VP9,2),
+     GST_VAAPI_PROFILE_VP9_2                   = GST_VAAPI_MAKE_PROFILE(VP9,3),
+diff --git a/gst-libs/gst/vaapi/gstvaapiutils_h265.c b/gst-libs/gst/vaapi/gstvaapiutils_h265.c
+index 5c4d5107..fe75b809 100644
+--- a/gst-libs/gst/vaapi/gstvaapiutils_h265.c
++++ b/gst-libs/gst/vaapi/gstvaapiutils_h265.c
+@@ -171,6 +171,11 @@ gst_vaapi_utils_h265_get_profile (GstH265SPS * sps)
+     case GST_H265_PROFILE_MAIN_422_10_INTRA:
+       vaapi_profile = GST_VAAPI_PROFILE_H265_MAIN_422_10;
+       break;
++    case GST_H265_PROFILE_MAIN_422_12:
++      /* Main 422_12 Intra, recognize it as MAIN_422_12 */
++    case GST_H265_PROFILE_MAIN_422_12_INTRA:
++      vaapi_profile = GST_VAAPI_PROFILE_H265_MAIN_422_12;
++      break;
+     case GST_H265_PROFILE_MAIN_444:
+       /* Main 444 Intra, recognize it as MAIN_444 */
+     case GST_H265_PROFILE_MAIN_444_INTRA:
+@@ -374,6 +379,8 @@ gst_vaapi_utils_h265_get_chroma_type (guint chroma_format_idc,
+         chroma_type = GST_VAAPI_CHROMA_TYPE_YUV422;
+       else if (depth > 8 && depth <= 10)
+         chroma_type = GST_VAAPI_CHROMA_TYPE_YUV422_10BPP;
++      else if (depth > 10 && depth <= 12)
++        chroma_type = GST_VAAPI_CHROMA_TYPE_YUV422_12BPP;
+       break;
+     case 3:
+       if (depth == 8)
+@@ -410,6 +417,7 @@ gst_vaapi_utils_h265_get_chroma_format_idc (GstVaapiChromaType chroma_type)
+       break;
+     case GST_VAAPI_CHROMA_TYPE_YUV422:
+     case GST_VAAPI_CHROMA_TYPE_YUV422_10BPP:
++    case GST_VAAPI_CHROMA_TYPE_YUV422_12BPP:
+       chroma_format_idc = 2;
+       break;
+     case GST_VAAPI_CHROMA_TYPE_YUV444:
+diff --git a/gst-libs/gst/vaapi/video-format.c b/gst-libs/gst/vaapi/video-format.c
+index dc32d5f6..dad7570c 100644
+--- a/gst-libs/gst/vaapi/video-format.c
++++ b/gst-libs/gst/vaapi/video-format.c
+@@ -470,6 +470,8 @@ gst_vaapi_video_format_from_chroma (guint chroma_type)
+       return GST_VIDEO_FORMAT_Y410;
+     case GST_VAAPI_CHROMA_TYPE_YUV444_12BPP:
+       return GST_VIDEO_FORMAT_Y412_LE;
++    case GST_VAAPI_CHROMA_TYPE_YUV422_12BPP:
++      return GST_VIDEO_FORMAT_Y212_LE;
+     default:
+       return GST_VIDEO_FORMAT_UNKNOWN;
+   }
+diff --git a/gst/vaapi/gstvaapidecode.c b/gst/vaapi/gstvaapidecode.c
+index cd9b3a9a..e97c2ac7 100644
+--- a/gst/vaapi/gstvaapidecode.c
++++ b/gst/vaapi/gstvaapidecode.c
+@@ -1303,7 +1303,8 @@ gst_vaapidecode_ensure_allowed_sinkpad_caps (GstVaapiDecode * decode)
+         || profile == GST_VAAPI_PROFILE_H265_MAIN_444
+         || profile == GST_VAAPI_PROFILE_H265_MAIN_444_10
+         || profile == GST_VAAPI_PROFILE_H265_MAIN12
+-        || profile == GST_VAAPI_PROFILE_H265_MAIN_444_12) {
++        || profile == GST_VAAPI_PROFILE_H265_MAIN_444_12
++        || profile == GST_VAAPI_PROFILE_H265_MAIN_422_12) {
+       gchar *profiles[3], *intra_name;
+ 
+       intra_name = g_strdup_printf ("%s-intra", profile_name);
+-- 
+2.17.1
+

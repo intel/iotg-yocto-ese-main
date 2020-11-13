@@ -18,6 +18,7 @@ UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>(\d+(\.\d+)+))"
 SRCREV_mdapi ?= "2601e0bffbfaaeec2353a08d18d86568b509425d"
 
 SRC_URI = "${MDAPI_GIT_URI};protocol=https;name=mdapi;destsuffix=git"
+SRC_URI_append = " file://0001-CMakeLists-consistently-install-.pc-file-into-correc.patch"
 
 DEPENDS = "libdrm ncurses"
 
@@ -25,12 +26,3 @@ inherit cmake
 
 S = "${WORKDIR}/git"
 EXTRA_OECMAKE = "-DMD_PLATFORM=linux -DMD_BUILD_TYPE=release -DMD_LIBDRM_SRC=${STAGING_INCDIR}/libdrm"
-
-# Workaround cmake inability to respect libdir path
-do_install_append() {
-	if [ "(" "${libdir}" != "${prefix}/lib" ")" -a \
-		-d "${D}${prefix}/lib" -a ! -d "${D}${libdir}" ]; then
-		mv "${D}${prefix}/lib" "${D}${libdir}"
-		sed "s@libdir=${prefix}/lib/@libdir=${libdir}/@g" -i ${D}${libdir}/pkgconfig/libmd.pc
-	fi
-}
