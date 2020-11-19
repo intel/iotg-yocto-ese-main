@@ -3,6 +3,7 @@ SRC_URI = "file://${BPN}.header"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
+INHIBIT_DEFAULT_DEPS = "1"
 inherit gnu-efi grub-efi-cfg
 require conf/image-uefi.conf
 
@@ -41,6 +42,7 @@ python do_compile(){
   cmdline = d.getVar('APPEND')
   common_cmd = 'root=${mender_root} ' + cmdline
   image_type = d.getVar('KERNEL_IMAGETYPE')
+  want_submenu = bool(d.getVar('MENDER_GRUBCONF_USE_SUBMENU'))
 
   with open(os.path.join(wd, bpn + '.conf.sample'), 'w') as grubconf:
 
@@ -62,14 +64,16 @@ python do_compile(){
       grubconf.write(header.read())
     kernel = d.getVar('PREFERRED_PROVIDER_virtual/kernel')
     grubconf.write('\nset default="boot %s"\n' % (kernel))
-    make_menuentry(d, grubconf, 'boot ' + kernel, image_type + '-kernel', common_cmd, None)
+    # special case entry for default kernel parameter extras, not to be common for all
+    default_additions = d.getVar('MENDER_GRUBCONF_KERNELS_DEFAULT') or ''
+    make_menuentry(d, grubconf, 'boot ' + kernel, image_type + '-kernel', common_cmd + default_additions, None)
 
     for entry in sorted(d.getVarFlags('MENDER_GRUBCONF_KERNELS_MENU')):
       menu_names = d.getVarFlag('MENDER_GRUBCONF_KERNELS_MENU', entry)
       menu_name = sorted(menu_names.strip().split())
       menu_cmdlines = len(menu_name)
       spacing = ''
-      if menu_cmdlines > 1:
+      if want_submenu and menu_cmdlines > 1:
         grubconf.write('submenu \'boot %s (menu)\' {\n' % entry)
         spacing = '  '
       for name in menu_name:
@@ -78,15 +82,19 @@ python do_compile(){
         if k_cmdline is not None:
           specific_cmdline += ' %s' % k_cmdline
         make_menuentry(d, grubconf, 'boot ' + name, image_type + '-' + entry + '-kernel', specific_cmdline, None, spacing)
-      if menu_cmdlines > 1:
+      if want_submenu and menu_cmdlines > 1:
         grubconf.write('}\n')
 
     make_chainloaders(d, grubconf)
     make_fwsetup(d, grubconf)
 }
 
-do_compile[vardeps] += "KERNEL_IMAGETYPE PREFERRED_PROVIDER_virtual/kernel MENDER_GRUBCONF_KERNELS_MENU MENDER_GRUBCONF_KERNELS MENDER_GRUBCONF_CHAINLOADER"
+do_compile[vardeps] += "KERNEL_IMAGETYPE PREFERRED_PROVIDER_virtual/kernel MENDER_GRUBCONF_KERNELS_MENU MENDER_GRUBCONF_KERNELS MENDER_GRUBCONF_CHAINLOADER MENDER_GRUBCONF_KERNELS_DEFAULT MENDER_GRUBCONF_USE_SUBMENU"
 
+# set to empty to flatten menu
+MENDER_GRUBCONF_USE_SUBMENU ??= "1"
+# extra arguments to the default kernel cmdline that aren't common for the rest
+MENDER_GRUBCONF_KERNELS_DEFAULT ??= ""
 MENDER_GRUBCONF_PREFIX ??= "/EFI/BOOT"
 do_install(){
 	install -d -m 755 ${D}${datadir}/${BPN} "${D}${EFI_PREFIX}${MENDER_GRUBCONF_PREFIX}"
