@@ -25,3 +25,6 @@ python(){
     vulk = d.getVar('VULKAN_DRIVERS')
     d.setVar('VULKAN_DRIVERS', vulk.strip(','))
 }
+
+# fix builds after November 23 2020
+PLATFORMS_remove = "drm surfaceless"

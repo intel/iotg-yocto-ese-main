@@ -1,0 +1,86 @@
+From ba7eec4a23c725120a2904535a5e418f2e148c2e Mon Sep 17 00:00:00 2001
+From: James Xiong <james.xiong@intel.com>
+Date: Wed, 18 Nov 2020 14:05:57 -0800
+Subject: [PATCH 1/1] Fix KW issues associated with the HDR patches
+
+HSDES ID: NA
+
+Signed-off-by: James Xiong <james.xiong@intel.com>
+---
+ clients/simple-hdr-video.c            | 11 +++++++++--
+ libweston/backend-drm/state-propose.c |  4 +++-
+ libweston/colorspace.c                |  1 +
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/clients/simple-hdr-video.c b/clients/simple-hdr-video.c
+index bf39cf7..1c17c18 100644
+--- a/clients/simple-hdr-video.c
++++ b/clients/simple-hdr-video.c
+@@ -321,7 +321,7 @@ subtitle_redraw_handler(struct widget *widget, void *data)
+ 	widget_get_allocation(sub->widget, &allocation);
+ 	buffer = subtitle_next_buffer(sub);
+ 
+-	if (!buffer->dev->map_bo(buffer)) {
++	if (!buffer || !buffer->dev->map_bo(buffer)) {
+ 		fprintf(stderr, "map_bo failed\n");
+ 		return;
+ 	}
+@@ -454,7 +454,7 @@ static AVFrame *
+ demux_and_decode(struct video *s)
+ {
+ 	AVFrame *frame;
+-	bool ret;
++	bool ret = false;
+ 
+ 	frame = av_frame_alloc();
+ 	if (!frame)
+@@ -960,8 +960,15 @@ drm_device_init(struct buffer *buf)
+ 
+ 	drmVersionPtr version = drmGetVersion(buf->drm_fd);
+ 
++	if (!dev)
++		return 0;
++
+ 	dev->fd = buf->drm_fd;
+ 	dev->name = strdup(version->name);
++	if (!dev->name) {
++		free(dev);
++		return 0;
++	}
+ 	if (0) {
+ 		/* nothing */
+ 	}
+diff --git a/libweston/backend-drm/state-propose.c b/libweston/backend-drm/state-propose.c
+index 9d7cf67..a034da5 100644
+--- a/libweston/backend-drm/state-propose.c
++++ b/libweston/backend-drm/state-propose.c
+@@ -1117,11 +1117,13 @@ drm_head_prepare_color_state(struct drm_backend *b,
+ 	struct drm_conn_color_state *target;
+ 	enum drm_colorspace target_cs = DRM_COLORSPACE_REC709;
+ 	uint8_t target_eotf = DRM_EOTF_SDR_TRADITIONAL;
+-	uint16_t display_cs = drm_head->clrspaces & EDID_CS_HDR_CS_BASIC;
++	uint16_t display_cs;
+ 
+ 	if (!drm_head)
+ 		return 0;
+ 
++	display_cs = drm_head->clrspaces & EDID_CS_HDR_CS_BASIC;
++
+ 	/* This is an active HDR session, so the state is already set */
+ 	if (output->output_is_hdr)
+ 		return 0;
+diff --git a/libweston/colorspace.c b/libweston/colorspace.c
+index 9167777..ba54f7e 100644
+--- a/libweston/colorspace.c
++++ b/libweston/colorspace.c
+@@ -55,6 +55,7 @@ colorspace_set_request(struct wl_client *client,
+ 		[ZWP_COLORSPACE_V1_CHROMACITIES_DCI_P3] = WESTON_CS_DCI_P3,
+ 		[ZWP_COLORSPACE_V1_CHROMACITIES_PROPHOTORGB] = WESTON_CS_PROPHOTORGB,
+ 		[ZWP_COLORSPACE_V1_CHROMACITIES_CIERGB] = WESTON_CS_CIERGB,
++		[ZWP_COLORSPACE_V1_CHROMACITIES_CIEXYZ] = WESTON_CS_CIEXYZ,
+ 		[ZWP_COLORSPACE_V1_CHROMACITIES_AP0] = WESTON_CS_AP0,
+ 		[ZWP_COLORSPACE_V1_CHROMACITIES_AP1] = WESTON_CS_AP1,
+ 	};
+-- 
+2.17.1
+

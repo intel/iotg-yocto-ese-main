@@ -1,7 +1,7 @@
-From 1230a61e615ddf49e2162384242e9f517fe90c6a Mon Sep 17 00:00:00 2001
+From 326bfd9473bf361ea18c41e6888ca5bc519098df Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Tue, 28 Jul 2020 15:06:04 +0800
-Subject: [PATCH 02/11] codecparsers: av1: Fix a level index bug in sequence.
+Subject: [PATCH 02/17] codecparsers: av1: Fix a level index bug in sequence.
 
 ---
  gst-libs/gst/codecparsers/gstav1parser.c | 2 +-

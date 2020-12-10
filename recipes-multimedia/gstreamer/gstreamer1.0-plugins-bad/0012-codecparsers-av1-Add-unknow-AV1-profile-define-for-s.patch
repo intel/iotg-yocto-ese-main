@@ -1,0 +1,33 @@
+From 1b197f330c1ed5ba0f55786b047361dc21817af7 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 22 Sep 2020 19:16:30 +0800
+Subject: [PATCH 12/17] codecparsers: av1: Add unknow AV1 profile define for
+ saint check.
+
+---
+ gst-libs/gst/codecparsers/gstav1parser.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.h b/gst-libs/gst/codecparsers/gstav1parser.h
+index 0ce8fcb0c..65733cde6 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.h
++++ b/gst-libs/gst/codecparsers/gstav1parser.h
+@@ -142,6 +142,7 @@ typedef enum {
+  * @GST_AV1_PROFILE_0: 8-bit and 10-bit 4:2:0 and 4:0:0 only.
+  * @GST_AV1_PROFILE_1: 8-bit and 10-bit 4:4:4.
+  * @GST_AV1_PROFILE_2: 8-bit and 10-bit 4:2:2, 12-bit 4:0:0 4:2:2 and 4:4:4
++ * @GST_AV1_PROFILE_UNDEFINED: unknow AV1 profile
+  *
+  * Defines the AV1 profiles
+  */
+@@ -149,6 +150,7 @@ typedef enum {
+   GST_AV1_PROFILE_0 = 0,
+   GST_AV1_PROFILE_1 = 1,
+   GST_AV1_PROFILE_2 = 2,
++  GST_AV1_PROFILE_UNDEFINED,
+ } GstAV1Profile;
+ 
+ /**
+-- 
+2.17.1
+

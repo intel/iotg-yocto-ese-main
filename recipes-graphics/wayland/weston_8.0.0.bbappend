@@ -28,6 +28,7 @@ SRC_URI_append = "\
     file://weston/0025-compositor-drm-Allow-HDR-surfaces-in-render-only-mod.patch \
     file://weston/0026-compositor-drm-Reject-heads-if-HDR-head-exists.patch \
     file://weston/0027-Fix-KW-issues-associated-with-the-HDR-patches.patch \
+    file://weston/0001-Fix-KW-issues-associated-with-the-HDR-patches.patch \
 "
 
 DEPENDS_append = " ffmpeg"

@@ -1,0 +1,91 @@
+From f45941a4c1ebfaab7f89d195b736b0010eb1d895 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Mon, 28 Sep 2020 13:33:00 +0800
+Subject: [PATCH 17/17] av1parser: add the set_operating_point() API.
+
+The av1 can support multi layers when scalability is enabled. We
+need an API to set the operating point and filter the OBUs just
+belonging to some layers(the layers are specified by the operating
+point).
+---
+ gst-libs/gst/codecparsers/gstav1parser.c | 33 ++++++++++++++++++++++--
+ gst-libs/gst/codecparsers/gstav1parser.h |  5 ++++
+ 2 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
+index dda7122d1..1ccd5dc5c 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.c
++++ b/gst-libs/gst/codecparsers/gstav1parser.c
+@@ -1289,7 +1289,8 @@ gst_av1_parser_parse_sequence_header_obu (GstAV1Parser * parser,
+     }
+   }
+ 
+-  /* Let user decide the operatingPoint, move it later
++  /* Let user decide the operatingPoint,
++     implemented by calling gst_av1_parser_set_operating_point()
+      operatingPoint = choose_operating_point( )
+      operating_point_idc = operating_point_idc[ operatingPoint ] */
+ 
+@@ -1451,7 +1452,7 @@ gst_av1_parser_parse_sequence_header_obu (GstAV1Parser * parser,
+   if (parser->state.operating_point < 0 ||
+       parser->state.operating_point >
+       seq_header->operating_points_cnt_minus_1) {
+-    GST_INFO ("Invalid operating_point %d set by user, just use 0",
++    GST_WARNING ("Invalid operating_point %d set by user, just use 0",
+         parser->state.operating_point);
+     parser->state.operating_point_idc = seq_header->operating_points[0].idc;
+   } else {
+@@ -4647,6 +4648,34 @@ gst_av1_parser_parse_frame_obu (GstAV1Parser * parser, GstAV1OBU * obu,
+   return retval;
+ }
+ 
++/**
++ * gst_av1_parser_set_operating_point:
++ *
++ * @parser: the #GstAV1Parser
++ * @operating_point: the operating point to set
++ *
++ * Set the operating point to filter OBUs.
++ *
++ * Returns: The #GstAV1ParserResult.
++ *
++ * Since: 1.20
++ */
++GstAV1ParserResult
++gst_av1_parser_set_operating_point (GstAV1Parser * parser,
++    gint32 operating_point)
++{
++  g_return_val_if_fail (parser != NULL, GST_AV1_PARSER_INVALID_OPERATION);
++  g_return_val_if_fail (operating_point >= 0, GST_AV1_PARSER_INVALID_OPERATION);
++
++  if (parser->seq_header &&
++      operating_point > parser->seq_header->operating_points_cnt_minus_1)
++    return GST_AV1_PARSER_INVALID_OPERATION;
++
++  /* Decide whether it is valid when sequence comes. */
++  parser->state.operating_point = operating_point;
++  return GST_AV1_PARSER_OK;
++}
++
+ /**
+  * gst_av1_parser_new:
+  *
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.h b/gst-libs/gst/codecparsers/gstav1parser.h
+index b525eadec..76f225ac5 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.h
++++ b/gst-libs/gst/codecparsers/gstav1parser.h
+@@ -1816,6 +1816,11 @@ GstAV1ParserResult
+ gst_av1_parser_reference_frame_update (GstAV1Parser * parser,
+     GstAV1FrameHeaderOBU * frame_header);
+ 
++GST_CODEC_PARSERS_API
++GstAV1ParserResult
++gst_av1_parser_set_operating_point (GstAV1Parser * parser,
++    gint32 operating_point);
++
+ GST_CODEC_PARSERS_API
+ GstAV1Parser * gst_av1_parser_new (void);
+ 
+-- 
+2.17.1
+

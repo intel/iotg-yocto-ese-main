@@ -1,0 +1,103 @@
+From c8cf3343decb412fd8a4e9fec3123dec5c9601a3 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 9 Oct 2020 16:13:28 +0800
+Subject: [PATCH 16/17] AV1parser: Add an API to reset the annex_b state only.
+
+In practice, we encounter streams that have one or more temporal units
+error. When that kind of error temporal units is in annex b format, the
+whole temporal unit should be discarded.
+But the temporal units before it are correct and can be used. More
+important, because of the error temporal unit, the parser is in a wrong
+state and all later temporal unit are also parsed uncorrectly.
+We need to add this API to reset the annex_b state only when we meet
+some temporal unit error.
+---
+ gst-libs/gst/codecparsers/gstav1parser.c | 51 +++++++++++++++---------
+ gst-libs/gst/codecparsers/gstav1parser.h |  4 ++
+ 2 files changed, 37 insertions(+), 18 deletions(-)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
+index 94d37767d..dda7122d1 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.c
++++ b/gst-libs/gst/codecparsers/gstav1parser.c
+@@ -568,29 +568,44 @@ gst_av1_parser_reset (GstAV1Parser * parser, gboolean annex_b)
+ {
+   g_return_if_fail (parser != NULL);
+ 
+-  if (parser->annex_b) {
+-    g_assert (parser->temporal_unit_consumed <= parser->temporal_unit_size);
+-    if (parser->temporal_unit_consumed < parser->temporal_unit_size)
+-      GST_DEBUG ("temporal_unit_consumed: %d, temporal_unit_size:%d, "
+-          "discard the left %d bytes for a temporal_unit.",
+-          parser->temporal_unit_consumed, parser->temporal_unit_size,
+-          parser->temporal_unit_size - parser->temporal_unit_consumed);
+-
+-    g_assert (parser->frame_unit_consumed <= parser->frame_unit_size);
+-    if (parser->frame_unit_consumed < parser->frame_unit_size)
+-      GST_DEBUG (" frame_unit_consumed %d, frame_unit_size: %d "
+-          "discard the left %d bytes for a frame_unit.",
+-          parser->frame_unit_consumed, parser->frame_unit_size,
+-          parser->frame_unit_size - parser->frame_unit_consumed);
+-  }
++  parser->annex_b = annex_b;
++  if (parser->annex_b)
++    gst_av1_parser_reset_annex_b (parser);
++
++  gst_av1_parse_reset_state (parser, TRUE);
++}
++
++/**
++ * gst_av1_parser_reset:
++ * @parser: the #GstAV1Parser
++ *
++ * Only reset the current #GstAV1Parser's annex b context.
++ * The other part of the state is kept.
++ *
++ * Since: 1.20
++ */
++void
++gst_av1_parser_reset_annex_b (GstAV1Parser * parser)
++{
++  g_return_if_fail (parser != NULL);
++  g_return_if_fail (parser->annex_b);
++
++  if (parser->temporal_unit_consumed < parser->temporal_unit_size)
++    GST_DEBUG ("temporal_unit_consumed: %d, temporal_unit_size:%d, "
++        "discard the left %d bytes for a temporal_unit.",
++        parser->temporal_unit_consumed, parser->temporal_unit_size,
++        parser->temporal_unit_size - parser->temporal_unit_consumed);
++
++  if (parser->frame_unit_consumed < parser->frame_unit_size)
++    GST_DEBUG (" frame_unit_consumed %d, frame_unit_size: %d "
++        "discard the left %d bytes for a frame_unit.",
++        parser->frame_unit_consumed, parser->frame_unit_size,
++        parser->frame_unit_size - parser->frame_unit_consumed);
+ 
+   parser->temporal_unit_consumed = 0;
+   parser->temporal_unit_size = 0;
+   parser->frame_unit_consumed = 0;
+   parser->frame_unit_size = 0;
+-  parser->annex_b = annex_b;
+-
+-  gst_av1_parse_reset_state (parser, TRUE);
+ }
+ 
+ /* 5.3.2 */
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.h b/gst-libs/gst/codecparsers/gstav1parser.h
+index 65733cde6..b525eadec 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.h
++++ b/gst-libs/gst/codecparsers/gstav1parser.h
+@@ -1762,6 +1762,10 @@ GST_CODEC_PARSERS_API
+ void
+ gst_av1_parser_reset (GstAV1Parser * parser, gboolean annex_b);
+ 
++GST_CODEC_PARSERS_API
++void
++gst_av1_parser_reset_annex_b (GstAV1Parser * parser);
++
+ GST_CODEC_PARSERS_API
+ GstAV1ParserResult
+ gst_av1_parser_identify_one_obu (GstAV1Parser * parser, const guint8 * data,
+-- 
+2.17.1
+

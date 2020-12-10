@@ -1,0 +1,25 @@
+From 8d84ca53d5c456a5550af416e3fd8d029f186ffb Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 29 Sep 2020 13:15:37 +0800
+Subject: [PATCH 14/17] av1parser: fix a typo in parse_metadata_scalability
+
+---
+ gst-libs/gst/codecparsers/gstav1parser.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
+index 9539845fe..414c6c8c1 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.c
++++ b/gst-libs/gst/codecparsers/gstav1parser.c
+@@ -1600,7 +1600,7 @@ gst_av1_parse_metadata_scalability (GstAV1Parser * parser,
+ 
+   if (scalability->spatial_layer_description_present_flag) {
+     for (i = 0; i <= scalability->spatial_layers_cnt_minus_1; i++) {
+-      scalability->spatial_layer_ref_id[i] = AV1_READ_BIT_CHECKED (br, &ret);
++      scalability->spatial_layer_ref_id[i] = AV1_READ_UINT8_CHECKED (br, &ret);
+       if (ret != GST_AV1_PARSER_OK)
+         goto error;
+     }
+-- 
+2.17.1
+

@@ -1,7 +1,7 @@
-From 8b1704d2967d7edde10469cec3a9c587fd35b67f Mon Sep 17 00:00:00 2001
+From b464d4c6ac153e29cd439181e4c3dc7e86c8fed2 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Mon, 24 Aug 2020 15:29:56 +0800
-Subject: [PATCH 04/11] codecparsers: av1: Improve the loop filter setting.
+Subject: [PATCH 04/17] codecparsers: av1: Improve the loop filter setting.
 
 1. loop_filter_ref_deltas should be int because it needs to compare
    with 0.
@@ -13,10 +13,10 @@ Subject: [PATCH 04/11] codecparsers: av1: Improve the loop filter setting.
  2 files changed, 54 insertions(+), 65 deletions(-)
 
 diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
-index 21f07abab..d8711149f 100644
+index f0e48e906..18dbd29bc 100644
 --- a/gst-libs/gst/codecparsers/gstav1parser.c
 +++ b/gst-libs/gst/codecparsers/gstav1parser.c
-@@ -2279,13 +2279,8 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
+@@ -2276,13 +2276,8 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
    lf_params = &frame_header->loop_filter_params;
  
    if (frame_header->coded_lossless || frame_header->allow_intrabc) {
@@ -30,7 +30,7 @@ index 21f07abab..d8711149f 100644
      lf_params->loop_filter_ref_deltas[GST_AV1_REF_INTRA_FRAME] = 1;
      lf_params->loop_filter_ref_deltas[GST_AV1_REF_LAST_FRAME] = 0;
      lf_params->loop_filter_ref_deltas[GST_AV1_REF_LAST2_FRAME] = 0;
-@@ -2300,58 +2295,6 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
+@@ -2297,58 +2292,6 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
      goto success;
    }
  
@@ -89,7 +89,7 @@ index 21f07abab..d8711149f 100644
    if (AV1_REMAINING_BITS (br) < 6 + 6) {
      retval = GST_AV1_PARSER_NO_MORE_DATA;
      goto error;
-@@ -2395,8 +2338,7 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
+@@ -2392,8 +2335,7 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
                av1_bitstreamfn_su (br, 7, &retval);
            if (retval != GST_AV1_PARSER_OK)
              goto error;
@@ -99,7 +99,7 @@ index 21f07abab..d8711149f 100644
        }
        for (i = 0; i < 2; i++) {
          update_mode_deltas = AV1_READ_BIT_CHECKED (br, &retval);
-@@ -2408,8 +2350,7 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
+@@ -2405,8 +2347,7 @@ gst_av1_parse_loop_filter_params (GstAV1Parser * parser,
                av1_bitstreamfn_su (br, 7, &retval);
            if (retval != GST_AV1_PARSER_OK)
              goto error;
@@ -109,7 +109,7 @@ index 21f07abab..d8711149f 100644
        }
      }
    }
-@@ -3884,13 +3825,61 @@ gst_av1_parse_uncompressed_frame_header (GstAV1Parser * parser, GstAV1OBU * obu,
+@@ -3881,13 +3822,61 @@ gst_av1_parse_uncompressed_frame_header (GstAV1Parser * parser, GstAV1OBU * obu,
      goto error;
    }
  
