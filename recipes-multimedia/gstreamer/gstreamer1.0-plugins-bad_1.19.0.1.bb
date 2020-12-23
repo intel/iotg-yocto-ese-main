@@ -6,27 +6,11 @@ SRC_URI = " \
     file://0002-avoid-including-sys-poll.h-directly.patch \
     file://0003-ensure-valid-sentinals-for-gst_structure_get-etc.patch \
     file://0004-opencv-resolve-missing-opencv-data-dir-in-yocto-buil.patch \
-    file://0001-codecparsers-av1-all-ref-idx-should-be-gint8.patch \
-    file://0002-codecparsers-av1-Fix-a-level-index-bug-in-sequence.patch \
-    file://0003-codecparsers-av1-Fix-a-error-report-for-metadata-obu.patch \
-    file://0004-codecparsers-av1-Improve-the-loop-filter-setting.patch \
-    file://0005-test-av1parser-update-the-test-result-because-of-bug.patch \
-    file://0006-codecparsers-av1-delete-duplicated-GST_AV1_GM_ABS_AL.patch \
-    file://0007-codecparsers-av1-uint8-range-is-not-enough-for-av1_b.patch \
-    file://0008-codecparsers-av1-add-valid-check-for-global-motion-p.patch \
-    file://0009-codecparsers-av1-Fix-a-typo-when-get-value-of-segmen.patch \
-    file://0010-codecparsers-av1-Fix-a-tile-info-read-typo-in-frame-.patch \
-    file://0011-codecparsers-av1-Improve-the-parse_tile_info.patch \
-    file://0012-codecparsers-av1-Add-unknow-AV1-profile-define-for-s.patch \
-    file://0013-av1parser-Do-not-assert-in-identify_one_obu-when-che.patch \
-    file://0014-av1parser-fix-a-typo-in-parse_metadata_scalability.patch \
-    file://0015-AV1parser-clean-the-seen_frame_header-in-parse_tile_.patch \
-    file://0016-AV1parser-Add-an-API-to-reset-the-annex_b-state-only.patch \
-    file://0017-av1parser-add-the-set_operating_point-API.patch \
+    file://0001-Revert-msdk-call-vaExportSurfaceHandle-to-get-DMABuf.patch \
 "
 
 S = "${WORKDIR}/git"
-SRCREV = "81151145b2db3271193ecdc53b3214da8d0b07b9"
+SRCREV = "470c79be61ed15f88e99c555663c2e45b0b20dd8"
 
 LICENSE = "GPLv2+ & LGPLv2+ & LGPLv2.1+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c"
