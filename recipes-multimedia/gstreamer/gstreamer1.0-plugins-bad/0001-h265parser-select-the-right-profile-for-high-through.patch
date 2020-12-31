@@ -1,0 +1,87 @@
+From be3b36846bb1ff7b3bb66cd28c0deb8623ac2b11 Mon Sep 17 00:00:00 2001
+From: Haihao Xiang <haihao.xiang@intel.com>
+Date: Fri, 5 Jun 2020 13:01:06 +0800
+Subject: [PATCH 1/2] h265parser: select the right profile for high throughput
+ SCC stream
+
+Currently screen-extended-high-throughput-444 is recognized as
+screen-extended-main-444, screen-extended-high-throughput-444-10 is
+recognized as screen-extended-main-444-10 because they have the same
+extension flags, so without this patch, it is possible that a decoder
+which supports SCC but doesn't support throughput SCC will try to decode
+a throughput SCC stream.
+
+e.g.
+https://www.itu.int/wftp3/av-arch/jctvc-site/bitstream_exchange/draft_conformance/SCC/HT_A_SCC_Apple_2.zip
+---
+ gst-libs/gst/codecparsers/gsth265parser.c | 34 +++++++++++++++--------
+ 1 file changed, 22 insertions(+), 12 deletions(-)
+
+diff --git a/gst-libs/gst/codecparsers/gsth265parser.c b/gst-libs/gst/codecparsers/gsth265parser.c
+index 26e68b276..69166ca36 100644
+--- a/gst-libs/gst/codecparsers/gsth265parser.c
++++ b/gst-libs/gst/codecparsers/gsth265parser.c
+@@ -3582,14 +3582,6 @@ get_screen_content_coding_extensions_profile (GstH265ProfileTierLevel * ptl)
+         1, 1, 1, 1, 0, 0, 0, 0, 0, TRUE, 2},
+     {GST_H265_PROFILE_SCREEN_EXTENDED_MAIN_444_10,
+         1, 1, 1, 0, 0, 0, 0, 0, 0, TRUE, 3},
+-    /* identical to screen-extended-main-444 */
+-    {GST_H265_PROFILE_SCREEN_EXTENDED_HIGH_THROUGHPUT_444,
+-        1, 1, 1, 1, 0, 0, 0, 0, 0, TRUE, 4},
+-    /* identical to screen-extended-main-444-10 */
+-    {GST_H265_PROFILE_SCREEN_EXTENDED_HIGH_THROUGHPUT_444_10,
+-        1, 1, 1, 0, 0, 0, 0, 0, 0, TRUE, 5},
+-    {GST_H265_PROFILE_SCREEN_EXTENDED_HIGH_THROUGHPUT_444_14,
+-        1, 0, 0, 0, 0, 0, 0, 0, 0, TRUE, 6},
+   };
+ 
+   return get_extension_profile (profiles, G_N_ELEMENTS (profiles), ptl);
+@@ -3612,6 +3604,22 @@ get_scalable_format_range_extensions_profile (GstH265ProfileTierLevel * ptl)
+   return get_extension_profile (profiles, G_N_ELEMENTS (profiles), ptl);
+ }
+ 
++static GstH265Profile
++    get_screen_content_coding_extensions_high_throughput_profile
++    (GstH265ProfileTierLevel * ptl)
++{
++  static H265ExtensionProfile profiles[] = {
++    {GST_H265_PROFILE_SCREEN_EXTENDED_HIGH_THROUGHPUT_444,
++        1, 1, 1, 1, 0, 0, 0, 0, 0, TRUE, 0},
++    {GST_H265_PROFILE_SCREEN_EXTENDED_HIGH_THROUGHPUT_444_10,
++        1, 1, 1, 0, 0, 0, 0, 0, 0, TRUE, 1},
++    {GST_H265_PROFILE_SCREEN_EXTENDED_HIGH_THROUGHPUT_444_14,
++        1, 0, 0, 0, 0, 0, 0, 0, 0, TRUE, 2},
++  };
++
++  return get_extension_profile (profiles, G_N_ELEMENTS (profiles), ptl);
++}
++
+ /**
+  * gst_h265_profile_tier_level_get_profile:
+  * @ptl: a #GstH265ProfileTierLevel
+@@ -3657,16 +3665,18 @@ gst_h265_profile_tier_level_get_profile (GstH265ProfileTierLevel * ptl)
+     return get_3d_profile (ptl);
+ 
+   if (ptl->profile_idc == GST_H265_PROFILE_IDC_SCREEN_CONTENT_CODING
+-      || ptl->profile_compatibility_flag[9]
+-      || ptl->profile_idc ==
+-      GST_H265_PROFILE_IDC_HIGH_THROUGHPUT_SCREEN_CONTENT_CODING_EXTENSION
+-      || ptl->profile_compatibility_flag[11])
++      || ptl->profile_compatibility_flag[9])
+     return get_screen_content_coding_extensions_profile (ptl);
+ 
+   if (ptl->profile_idc == GST_H265_PROFILE_IDC_SCALABLE_FORMAT_RANGE_EXTENSION
+       || ptl->profile_compatibility_flag[10])
+     return get_scalable_format_range_extensions_profile (ptl);
+ 
++  if (ptl->profile_idc ==
++      GST_H265_PROFILE_IDC_HIGH_THROUGHPUT_SCREEN_CONTENT_CODING_EXTENSION
++      || ptl->profile_compatibility_flag[11])
++    return get_screen_content_coding_extensions_high_throughput_profile (ptl);
++
+   return GST_H265_PROFILE_INVALID;
+ }
+ 
+-- 
+2.17.1
+

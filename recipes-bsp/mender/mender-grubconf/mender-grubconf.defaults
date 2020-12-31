@@ -1,3 +1,0 @@
-if test -f ${prefix}/grub-defaults.cfg; then
-  load_env --file ${prefix}/grub-defaults.cfg --skip-sig default
-fi

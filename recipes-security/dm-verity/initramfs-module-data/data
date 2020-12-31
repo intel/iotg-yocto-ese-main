@@ -69,10 +69,8 @@ data_run() {
     say "rbind persistent done"
 
     # fix up apparmor
-    if [ -d "${realroot}/usr/share/intel/managed/apparmor" ]; then
-       mount -o rbind "${realroot}/usr/share/intel/managed/apparmor"   "${realroot}/etc/apparmor"   || fail
-       mount -o rbind "${realroot}/usr/share/intel/managed/apparmor.d" "${realroot}/etc/apparmor.d" || fail
-       mount -o rbind "${realroot}/data/persistent/apparmor.d.cache"   "${realroot}/etc/apparmor.d/cache" || fail
-       say "rbind apparmor done"
-    fi
+    mount -o rbind "${realroot}/usr/share/intel/managed/apparmor"   "${realroot}/etc/apparmor"   || fail
+    mount -o rbind "${realroot}/usr/share/intel/managed/apparmor.d" "${realroot}/etc/apparmor.d" || fail
+    mount -o rbind "${realroot}/data/persistent/apparmor.d.cache"   "${realroot}/etc/apparmor.d/cache" || fail
+    say "rbind apparmor done"
 }
