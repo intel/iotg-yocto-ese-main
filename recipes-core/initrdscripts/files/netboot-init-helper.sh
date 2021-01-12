@@ -12,6 +12,7 @@ sleep 10
 
 ipv6_mode="$(get_cmd netmount.ipv6 0)"
 if [ "${ipv6_mode}" = 1 ]; then
+  echo -n "1" > /proc/sys/net/ipv6/conf/"${iface}"/forwarding
   host=$(</dev/urandom tr -dc A-Za-z0-9-_ | head -c 24)
   say "Using statefule DHCPv6 request fqdn: ${host}"
   udhcpc6 -n -f -q -t 30 -O dns -O search -x fqdn:${host} -i "${iface}"
@@ -42,7 +43,7 @@ echo "${initiator}" > /etc/iscsi/initiatorname.iscsi
 iscsistart -i "${initiator}" -t "${target}" -g "${target_pt}" -a "${target_ip}" -p "${target_port}" -u yocto -w yocto
 while [ "${?}" -ne 0 ]; do
   sleep 5
-  iscsiadm -m session --logout
+  iscsiadm --mode node --logoutall=all
   killall -KILL iscsid
   sleep 5
   iscsistart -i "${initiator}" -t "${target}" -g "${target_pt}" -a "${target_ip}" -p "${target_port}" -u yocto -w yocto

@@ -1,0 +1,207 @@
+From e375cde49809fe36e1dab0af870ef48a9b59e8f0 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Tue, 8 Dec 2020 14:49:19 +0800
+Subject: [PATCH] Revert "msdk: call vaExportSurfaceHandle() to get DMABuf FD"
+
+This reverts commit df491142759c33d9ecd6413f61020dde9b57b5fa.
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ sys/msdk/gstmsdkallocator.h       |  2 +-
+ sys/msdk/gstmsdkallocator_libva.c | 66 ++++++++++++-------------------
+ sys/msdk/gstmsdkcontext.h         |  1 -
+ sys/msdk/gstmsdkvideomemory.c     | 14 +++----
+ 4 files changed, 32 insertions(+), 51 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkallocator.h b/sys/msdk/gstmsdkallocator.h
+index e0d561620..4d94b8bce 100644
+--- a/sys/msdk/gstmsdkallocator.h
++++ b/sys/msdk/gstmsdkallocator.h
+@@ -46,7 +46,7 @@ struct _GstMsdkMemoryID {
+ #ifndef _WIN32
+   VASurfaceID *surface;
+   VAImage image;
+-  VADRMPRIMESurfaceDescriptor desc;
++  VABufferInfo info;
+ #else
+   /* TODO: This is just to avoid compile errors on Windows.
+    * Implement handling Windows-specific video-memory.
+diff --git a/sys/msdk/gstmsdkallocator_libva.c b/sys/msdk/gstmsdkallocator_libva.c
+index 1ddda232f..90d8c36d8 100644
+--- a/sys/msdk/gstmsdkallocator_libva.c
++++ b/sys/msdk/gstmsdkallocator_libva.c
+@@ -32,7 +32,6 @@
+ 
+ #include <va/va.h>
+ #include <va/va_drmcommon.h>
+-#include <unistd.h>
+ #include "gstmsdkallocator.h"
+ #include "gstmsdkallocator_libva.h"
+ #include "msdk_libva.h"
+@@ -165,37 +164,37 @@ gst_msdk_frame_alloc (mfxHDL pthis, mfxFrameAllocRequest * req,
+     for (i = 0; i < surfaces_num; i++) {
+       /* Get dmabuf handle if MFX_MEMTYPE_EXPORT_FRAME */
+       if (req->Type & MFX_MEMTYPE_EXPORT_FRAME) {
+-        VADRMPRIMESurfaceDescriptor va_desc = { 0 };
+-        uint32_t export_flags = VA_EXPORT_SURFACE_SEPARATE_LAYERS |
+-            VA_EXPORT_SURFACE_READ_WRITE;
+-
++        msdk_mids[i].info.mem_type = VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
+         va_status =
+-            vaExportSurfaceHandle (gst_msdk_context_get_handle (context),
+-            surfaces[i], VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2, export_flags,
+-            &va_desc);
+-
++            vaDeriveImage (gst_msdk_context_get_handle (context), surfaces[i],
++            &msdk_mids[i].image);
+         status = gst_msdk_get_mfx_status_from_va_status (va_status);
+ 
+         if (MFX_ERR_NONE != status) {
+-          GST_ERROR ("Failed to export surface");
++          GST_ERROR ("failed to derive image");
+           return status;
+         }
+ 
+-        g_assert (va_desc.num_objects);
++        va_status =
++            vaAcquireBufferHandle (gst_msdk_context_get_handle (context),
++            msdk_mids[i].image.buf, &msdk_mids[i].info);
++        status = gst_msdk_get_mfx_status_from_va_status (va_status);
+ 
+-        /* This plugin supports single object only */
+-        if (va_desc.num_objects > 1) {
+-          GST_ERROR ("Can not support multiple objects");
+-          return MFX_ERR_UNSUPPORTED;
++        if (MFX_ERR_NONE != status) {
++          GST_ERROR ("failed to get dmabuf handle");
++          va_status = vaDestroyImage (gst_msdk_context_get_handle (context),
++              msdk_mids[i].image.image_id);
++          if (va_status == VA_STATUS_SUCCESS) {
++            msdk_mids[i].image.image_id = VA_INVALID_ID;
++            msdk_mids[i].image.buf = VA_INVALID_ID;
++          }
+         }
+-
+-        msdk_mids[i].desc = va_desc;
++      } else {
++        /* useful to check the image mapping state later */
++        msdk_mids[i].image.image_id = VA_INVALID_ID;
++        msdk_mids[i].image.buf = VA_INVALID_ID;
+       }
+ 
+-      /* Don't use image for DMABuf */
+-      msdk_mids[i].image.image_id = VA_INVALID_ID;
+-      msdk_mids[i].image.buf = VA_INVALID_ID;
+-
+       msdk_mids[i].surface = &surfaces[i];
+       mids[i] = (mfxMemId *) & msdk_mids[i];
+     }
+@@ -226,11 +225,6 @@ gst_msdk_frame_alloc (mfxHDL pthis, mfxFrameAllocRequest * req,
+       surfaces[i] = coded_buf;
+       msdk_mids[i].surface = &surfaces[i];
+       msdk_mids[i].fourcc = fourcc;
+-
+-      /* Don't use image for P208 */
+-      msdk_mids[i].image.image_id = VA_INVALID_ID;
+-      msdk_mids[i].image.buf = VA_INVALID_ID;
+-
+       mids[i] = (mfxMemId *) & msdk_mids[i];
+     }
+   }
+@@ -277,12 +271,9 @@ gst_msdk_frame_free (mfxHDL pthis, mfxFrameAllocResponse * resp)
+     for (i = 0; i < resp->NumFrameActual; i++) {
+       GstMsdkMemoryID *mem = resp->mids[i];
+ 
+-      /* Release prime fd if used */
+-      if (mem->desc.num_objects) {
+-        g_assert (mem->desc.num_objects == 1);
+-        close (mem->desc.objects[0].fd);
+-        mem->desc.num_objects = 0;
+-      }
++      /* Release dmabuf handle if used */
++      if (mem->info.mem_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME)
++        vaReleaseBufferHandle (dpy, mem->image.buf);
+ 
+       if (mem->image.image_id != VA_INVALID_ID &&
+           vaDestroyImage (dpy, mem->image.image_id) == VA_STATUS_SUCCESS) {
+@@ -325,7 +316,7 @@ gst_msdk_frame_lock (mfxHDL pthis, mfxMemId mid, mfxFrameData * data)
+   va_surface = mem_id->surface;
+   dpy = gst_msdk_context_get_handle (context);
+ 
+-  if (mem_id->desc.num_objects) {
++  if (mem_id->info.mem_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME) {
+     GST_WARNING ("Couldn't map the buffer since dmabuf is already in use");
+     return MFX_ERR_LOCK_MEMORY;
+   }
+@@ -465,8 +456,6 @@ gst_msdk_frame_unlock (mfxHDL pthis, mfxMemId mid, mfxFrameData * ptr)
+   mem_id = (GstMsdkMemoryID *) mid;
+   dpy = gst_msdk_context_get_handle (context);
+ 
+-  g_assert (mem_id->desc.num_objects == 0);
+-
+   if (mem_id->fourcc != MFX_FOURCC_P8) {
+     vaUnmapBuffer (dpy, mem_id->image.buf);
+     va_status = vaDestroyImage (dpy, mem_id->image.image_id);
+@@ -521,13 +510,10 @@ gst_msdk_get_dmabuf_info_from_surface (mfxFrameSurface1 * surface,
+   g_return_val_if_fail (surface, FALSE);
+ 
+   mem_id = (GstMsdkMemoryID *) surface->Data.MemId;
+-
+-  g_assert (mem_id->desc.num_objects == 1);
+-
+   if (handle)
+-    *handle = mem_id->desc.objects[0].fd;
++    *handle = mem_id->info.handle;
+   if (size)
+-    *size = mem_id->desc.objects[0].size;
++    *size = mem_id->info.mem_size;
+ 
+   return TRUE;
+ }
+diff --git a/sys/msdk/gstmsdkcontext.h b/sys/msdk/gstmsdkcontext.h
+index 8fce6feee..f115b407d 100644
+--- a/sys/msdk/gstmsdkcontext.h
++++ b/sys/msdk/gstmsdkcontext.h
+@@ -36,7 +36,6 @@
+ #include "msdk.h"
+ #ifndef _WIN32
+ #include <va/va.h>
+-#include <va/va_drmcommon.h>
+ #endif
+ 
+ G_BEGIN_DECLS
+diff --git a/sys/msdk/gstmsdkvideomemory.c b/sys/msdk/gstmsdkvideomemory.c
+index c296ae86e..642d6b9ed 100644
+--- a/sys/msdk/gstmsdkvideomemory.c
++++ b/sys/msdk/gstmsdkvideomemory.c
+@@ -499,22 +499,18 @@ gst_msdk_dmabuf_memory_new_with_surface (GstAllocator * allocator,
+   g_return_val_if_fail (GST_IS_MSDK_DMABUF_ALLOCATOR (allocator), NULL);
+ 
+   mem_id = surface->Data.MemId;
++  fd = mem_id->info.handle;
++  size = mem_id->info.mem_size;
+ 
+-  g_assert (mem_id->desc.num_objects == 1);
+-
+-  fd = mem_id->desc.objects[0].fd;
+-  size = mem_id->desc.objects[0].size;
+-
+-  if (fd < 0) {
++  if (fd < 0 || (fd = dup (fd)) < 0) {
+     GST_ERROR ("Failed to get dmabuf handle");
+     return NULL;
+   }
+ 
+-  mem = gst_fd_allocator_alloc (allocator, fd, size,
+-      GST_FD_MEMORY_FLAG_DONT_CLOSE);
+-
++  mem = gst_dmabuf_allocator_alloc (allocator, fd, size);
+   if (!mem) {
+     GST_ERROR ("failed ! dmabuf fd: %d", fd);
++    close (fd);
+     return NULL;
+   }
+ 
+-- 
+2.17.1
+

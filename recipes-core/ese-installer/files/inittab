@@ -1,0 +1,30 @@
+::sysinit:/etc/init.d/rcS
+::sysinit:/etc/init.d/udev start
+
+### ese-installer
+#tty0::once:-/usr/bin/screen -dmS installer /bin/vi
+#tty0::respawn:-/usr/bin/screen -mS installer /bin/vi
+
+# clients
+ttyS0::askfirst:-/bin/sh
+ttyS1::askfirst:-/bin/sh
+ttyS2::askfirst:-/bin/sh
+ttyS3::askfirst:-/bin/sh
+ttyS4::askfirst:-/bin/sh
+ttyS5::askfirst:-/bin/sh
+ttyS6::askfirst:-/bin/sh
+ttyS7::askfirst:-/bin/sh
+
+tty0::askfirst:-/bin/sh
+tty1::askfirst:-/bin/sh
+tty2::askfirst:-/bin/sh
+tty3::askfirst:-/bin/sh
+
+::restart:/sbin/init
+
+::ctrlaltdel:/etc/init.d/udev stop
+::ctrlaltdel:/sbin/reboot
+
+::shutdown:/etc/init.d/udev stop
+::shutdown:/bin/umount -a -r
+::shutdown:/sbin/swapoff -a

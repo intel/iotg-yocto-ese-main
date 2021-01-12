@@ -8,7 +8,7 @@ ESE_EMBED_GRUB_CFG ??= "1"
 EFI_PREFIX ??= "/boot/efi"
 
 # extensions
-IMAGE_FEATURES[validitems] += "ese-grub-image ese-mender-persistent ese-shim-image"
+IMAGE_FEATURES[validitems] += "ese-grub-image ese-mender-persistent ese-shim-image efi-lockdown"
 ESE_IMAGE_PREPROCESS ??= ""
 ESE_IMAGE_POSTPROCESS ??= ""
 
@@ -19,6 +19,9 @@ inherit ${ESE_IMAGE_PREPROCESS}
 
 # ptcm
 inherit ${@bb.utils.contains('PTCM_INSTALL', '1', 'ese-ptcm-image', '', d)}
+
+# efi secure boot lockdown mechanism from efitools
+inherit ${@bb.utils.contains_any('IMAGE_FEATURES', [ 'efi-lockdown' ], 'ese-uefi-lockdown', '', d)}
 
 # mkimage generated grub EFI
 inherit ${@bb.utils.contains_any('IMAGE_FEATURES', [ 'ese-grub-image' ], 'ese-grub-image', '', d)}

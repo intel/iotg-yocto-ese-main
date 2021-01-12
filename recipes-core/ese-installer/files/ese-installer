@@ -1,0 +1,113 @@
+#! /bin/sh
+# no support for LVM/udev style paths yet
+while test ! -b /dev/"${DEST}" -a -d "/sys/block/${DEST}"; do
+  echo "# Valid block devices for installation:"
+  /sbin/blockdev --report
+  /usr/bin/lsblk
+  /sbin/blkid
+  echo "# Select a destination block device by typing the device node (eg nvme0n1, without /dev) to continue"
+  read DEST
+done
+
+# get sizing option
+while test -z "${SIZING}"; do
+  echo "# Select install partitioning scheme:"
+  echo "1. Standard (42GB)"
+  echo "2. Minimal (21GB) (No Manageability Support)"
+  echo "# Enter a number to select scheme"
+  read SIZING_CHOICE
+  case "${SIZING_CHOICE}" in
+  1)
+    SIZING="/usr/sbin/sgdisk -a 4096 -n 1:0:+128M --typecode=1:ef00 -n 2:0:+12G --typecode=2:8304 -n 3:0:+12G --typecode=3:8304 -n 4:0:+12G --typecode=4:8300 -n 5:0:+4G --typecode=5:8200"
+    ;;
+  2)
+    SIZING="/usr/sbin/sgdisk -a 4096 -n 1:0:+128M --typecode=1:ef00 -n 2:0:+12G --typecode=2:8304 -n 3:0:+32M --typecode=3:8304 -n 4:0:+4G --typecode=4:8300 -n 5:0:+4G --typecode=5:8200"
+    ;;
+  esac
+done
+
+# get last param set
+root=$(/bin/grep -o -P 'root=\S+' /proc/cmdline | tail -n 1 | cut -f2- -d=)
+DESTINATION=$(/usr/sbin/findfs "/dev/${DEST}")
+SOURCE=$(/usr/sbin/findfs "${root}")
+
+if test -z "${SOURCE}"; then
+  echo "Unable to determine install source, aborting"
+  exit 1
+fi
+
+if test ! -b "${SOURCE}"; then
+  echo "Source ${SOURCE} cannot be found, aborting"
+  exit 1
+fi
+
+if test "${SOURCE}" = "${DESTINATION}"; then
+  echo "Source and Destination appears to be the same, aborting"
+  exit 1
+fi
+
+echo "Using ${DESTINATION} as install destination, this will destroy any data on it"
+echo "Using ${SOURCE} as install source"
+echo "Press any key to continue or CTRL-C to abort now"
+read
+
+try_get_part_node(){
+  case "$1" in
+  *sd?) # /dev/sda1
+    echo "${1}${2}"
+  ;;
+  *) # mmcblk0p1
+    echo "${1}p${2}"
+  ;;
+  esac
+}
+
+# partitioning
+/usr/sbin/sgdisk -Z "${DESTINATION}"
+/usr/sbin/blkdiscard "${DESTINATION}"
+# intentionally unquoted
+${SIZING} "${DESTINATION}"
+
+# labeling
+/usr/sbin/sfdisk --part-label "${DESTINATION}" 1 efi
+/usr/sbin/sfdisk --part-label "${DESTINATION}" 2 primary
+/usr/sbin/sfdisk --part-label "${DESTINATION}" 3 secondary
+/usr/sbin/sfdisk --part-label "${DESTINATION}" 4 data
+/usr/sbin/sfdisk --part-label "${DESTINATION}" 5 swap
+
+# formatting
+test_part="$(try_get_part_node ${DESTINATION} 1)"
+if test ! -b "${test_part}" ; then
+  echo "Sanity check on device node naming scheme failed"
+  echo "Failed to guess ${DESTINATION} naming scheme, tried:"
+  echo "  ${test_part}"
+  echo "try_get_part_node needs updating"
+  exit 1
+fi
+
+/usr/sbin/mkfs.fat -F32 -n efi  "$(try_get_part_node ${DESTINATION} 1)"
+/sbin/mkfs.ext4 -F -L primary   "$(try_get_part_node ${DESTINATION} 2)"
+/sbin/mkfs.ext4 -F -L secondary "$(try_get_part_node ${DESTINATION} 3)"
+/sbin/mkfs.ext4 -F -L data      "$(try_get_part_node ${DESTINATION} 4)"
+/sbin/mkswap -L swap "$(try_get_part_node ${DESTINATION} 5)"
+
+# mounting
+mkdir -p /tmp/SOURCE /tmp/DESTINATION
+mount -o ro "${SOURCE}" /tmp/SOURCE
+mount -o rw "$(try_get_part_node ${DESTINATION} 2)" /tmp/DESTINATION
+mkdir -p /tmp/DESTINATION/boot/efi /tmp/DESTINATION/data
+mount -o rw "$(try_get_part_node ${DESTINATION} 1)" /tmp/DESTINATION/boot/efi
+mount -o rw "$(try_get_part_node ${DESTINATION} 4)" /tmp/DESTINATION/data
+
+# install here
+echo "Copying contents"
+rsync -rlt /tmp/SOURCE/boot/efi/ /tmp/DESTINATION/boot/efi/
+rsync -rltogDAX --exclude=/boot/efi/ /tmp/SOURCE/ /tmp/DESTINATION/
+
+# umount
+echo "Unmounting"
+umount -R /tmp/SOURCE /tmp/DESTINATION
+
+echo "You may use the following command to add a boot entry into the UEFI NVRAM"
+echo "  /usr/sbin/efibootmgr -c -l '\EFI\BOOT\BOOTx64.EFI' -L 'Yocto BSP' -d $(try_get_part_node ${DESTINATION} 1)"
+echo "Installation complete, type 'busybox reboot' to restart"
