@@ -1,4 +1,4 @@
-From 7f8224f593a0061a9b900b605eb4d96b6f023619 Mon Sep 17 00:00:00 2001
+From dea5a94b0b305b11428b30a1a53530c64c83d174 Mon Sep 17 00:00:00 2001
 From: "Yong, Jonathan" <jonathan.yong@intel.com>
 Date: Mon, 27 Jul 2020 05:14:16 +0000
 Subject: [PATCH] configure.ac: check if -fno-trampolines is supported
@@ -13,12 +13,12 @@ Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
  2 files changed, 19 insertions(+), 3 deletions(-)
 
 diff --git a/conf/Makefile.common b/conf/Makefile.common
-index 87c1f0e80..91c4b11db 100644
+index 6b85eb394..e0ed1951c 100644
 --- a/conf/Makefile.common
 +++ b/conf/Makefile.common
-@@ -66,7 +66,7 @@ grubconfdir = $(sysconfdir)/grub.d
- platformdir = $(pkglibdir)/$(target_cpu)-$(platform)
- starfielddir = $(pkgdatadir)/themes/starfield
+@@ -69,7 +69,7 @@ starfielddir = $(pkgdatadir)/themes/starfield
+ systemdunitdir = ${prefix}/lib/systemd/system
+ systemd_logind_service_ddir = $(systemdunitdir)/systemd-logind.service.d
  
 -CFLAGS_GNULIB = -Wno-undef -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Werror=trampolines -fno-trampolines
 +CFLAGS_GNULIB = -Wno-undef -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code $(TRAMPOLINES_CFLAGS)
@@ -26,10 +26,10 @@ index 87c1f0e80..91c4b11db 100644
  
  CFLAGS_POSIX = -fno-builtin
 diff --git a/configure.ac b/configure.ac
-index d04dfcfe0..dcddf393d 100644
+index d150a2e4a..73024d737 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2004,8 +2004,24 @@ if test x"$enable_wextra" != xno ; then
+@@ -2015,8 +2015,24 @@ if test x"$enable_wextra" != xno ; then
    HOST_CFLAGS="$HOST_CFLAGS -Wextra"
  fi
  
@@ -57,5 +57,5 @@ index d04dfcfe0..dcddf393d 100644
  TARGET_CPP="$TARGET_CC -E"
  TARGET_CCAS=$TARGET_CC
 -- 
-2.25.1
+2.29.2
 

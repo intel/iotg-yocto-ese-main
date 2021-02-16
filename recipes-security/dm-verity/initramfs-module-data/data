@@ -52,7 +52,8 @@ data_enabled() {
 data_run() {
     realroot="${ROOTFS_DIR}"
     # mount data partition
-    data_part="/dev/disk/by-partlabel/data"
+    name="mender.data"
+    data_part="$(grep \\W${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
     check_mount "${data_part}" "${realroot}/data" -o rw || fail
     say "data done"
 

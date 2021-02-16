@@ -6,7 +6,6 @@ SRC_URI = " \
     file://0002-avoid-including-sys-poll.h-directly.patch \
     file://0003-ensure-valid-sentinals-for-gst_structure_get-etc.patch \
     file://0004-opencv-resolve-missing-opencv-data-dir-in-yocto-buil.patch \
-    file://0001-Revert-msdk-call-vaExportSurfaceHandle-to-get-DMABuf.patch \
 "
 
 S = "${WORKDIR}/git"

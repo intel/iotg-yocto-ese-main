@@ -1,0 +1,28 @@
+From a3013be80cfb50f42cafcc561bef8ae06131af17 Mon Sep 17 00:00:00 2001
+From: "Ung, Teng En" <teng.en.ung@intel.com>
+Date: Mon, 21 Dec 2020 05:36:29 +0000
+Subject: [PATCH 1/2] vaapipostproc: Added gstreamer BT2020 color standard
+ support.
+
+---
+ gst-libs/gst/vaapi/gstvaapiutils.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapiutils.c b/gst-libs/gst/vaapi/gstvaapiutils.c
+index 1f228e37..e2300cb0 100644
+--- a/gst-libs/gst/vaapi/gstvaapiutils.c
++++ b/gst-libs/gst/vaapi/gstvaapiutils.c
+@@ -985,7 +985,9 @@ from_GstVideoColorimetry (const GstVideoColorimetry * const colorimetry)
+   /* NOTE: VAProcColorStandardBT2020 in VAAPI is the same as
+    * GST_VIDEO_COLORIMETRY_BT2020_10 in gstreamer. */
+   if (gst_video_colorimetry_matches (colorimetry,
+-          GST_VIDEO_COLORIMETRY_BT2020_10))
++          GST_VIDEO_COLORIMETRY_BT2020_10) ||
++      gst_video_colorimetry_matches (colorimetry,
++          GST_VIDEO_COLORIMETRY_BT2020))
+     return VAProcColorStandardBT2020;
+   if (gst_video_colorimetry_matches (colorimetry, GST_VIDEO_COLORIMETRY_BT601))
+     return VAProcColorStandardBT601;
+-- 
+2.17.1
+

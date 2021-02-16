@@ -12,14 +12,14 @@ SECTION = "bootloaders"
 LICENSE = "GPLv3"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 SRC_URI = "git://github.com/rhboot/grub2.git;protocol=https;nobranch=1;name=grub"
-SRCREV_grub = "c23593ecd27743667ce871e1425d49d75d7aa561"
+SRCREV_grub = "73a0a9bc0fca27530ce83607e70750d7ecb42cb6"
 
 SRC_URI_append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
-SRCREV_gnulib = "229f262054f003814157c3715a7f33ddfd87d43c"
+SRCREV_gnulib = "0e9febb5e173f1dc85e5993a72aa886b431ff32f"
 
 SRCREV_FORMAT = "grub_gnulib"
 S = "${WORKDIR}/git"
-PR = "r25+${SRCPV}"
+PR = "r35+${SRCPV}"
 SRC_URI_append = " \
   file://bootstrap.conf;subdir=. \
   file://bootstrap;subdir=. \
@@ -28,7 +28,6 @@ SRC_URI_append = " \
   http://unifoundry.com/unifont-5.1.20080820.pcf.gz;downloadfilename=unifont.pcf.gz;subdir=.;unpack=0;name=unifont \
   file://0001-grub-rpm-sort-make-rpm-sort-actually-optional.patch \
   file://0001-bootp-fix-bootp-compile-if-EFI-disabled.patch \
-  file://0001-linux.c-temporary-workaround-for-broken-upstream-com.patch \
   file://0001-configure.ac-check-if-fno-trampolines-is-supported.patch;apply=${GRUB_NATIVE_PATCH} \
 "
 
@@ -70,6 +69,8 @@ PACKAGECONFIG ??= ""
 PACKAGECONFIG[grub-mount] = "--enable-grub-mount,--disable-grub-mount,fuse"
 PACKAGECONFIG[device-mapper] = "--enable-device-mapper,--disable-device-mapper,libdevmapper"
 
+CFLAGS_append_class-native = " -I${STAGING_INCDIR_NATIVE}"
+
 export PYTHON = "python3"
 
 RDEPENDS_${PN}_class-native = ""
@@ -106,4 +107,8 @@ do_install_append() {
         -e 's|${DEBUG_PREFIX_MAP}||g' \
         -e 's:${RECIPE_SYSROOT_NATIVE}::g' \
         {} +
+    # remove empty usr/lib
+    if test "${baselib}" != "lib"; then
+      rm -rf ${D}${prefix}/lib
+    fi
 }

@@ -39,10 +39,15 @@ say "Initiator IQN: ${initiator}"
 
 echo "${initiator}" > /etc/iscsi/initiatorname.iscsi
 
+# force logout
+iscsiadm --mode node --logoutall=all
+iscsiadm --mode node --logoutall=all
+
 # call iscsistart, we assume the server is at 192.168.1.1, use and install dig if needed to resolve the address
 iscsistart -i "${initiator}" -t "${target}" -g "${target_pt}" -a "${target_ip}" -p "${target_port}" -u yocto -w yocto
 while [ "${?}" -ne 0 ]; do
   sleep 5
+  iscsiadm --mode node --logoutall=all
   iscsiadm --mode node --logoutall=all
   killall -KILL iscsid
   sleep 5
