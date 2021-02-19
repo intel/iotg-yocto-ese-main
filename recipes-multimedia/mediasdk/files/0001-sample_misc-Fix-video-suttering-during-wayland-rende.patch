@@ -1,0 +1,225 @@
+From 2fad6995846a26988c9cf2f048c85549a164825e Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Tue, 24 Nov 2020 14:44:05 +0800
+Subject: [PATCH] [sample_misc] Fix video suttering during wayland rendering
+
+The issue at here when RenderFrame exits, does not mean
+corresponding wl_buffer is not used anymore by weston.
+So, the wl_buffer has be wait until buffer_release function
+call out under wl_buffer_listener get trigger. Than only
+consider wl_buffer is no longer used anymore by weston and
+safe to use by previous upper component like vpp csc.
+
+The implementation code fixed at here is to prevent surface
+get overwrite and used back by vpp csc inside sample_decode
+when wl_buffer still not yet release when RenderFrame exits.
+
+Tested:
+./sample_decode h264 -i Puppies_1920x1080.h264 -rwld -rgb4 -f 30
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ samples/sample_common/src/vaapi_device.cpp    |  2 +-
+ .../wayland/include/class_wayland.h           | 21 +++++-
+ .../sample_misc/wayland/src/class_wayland.cpp | 69 ++++++++++++++++++-
+ .../wayland/src/listener_wayland.cpp          |  3 +
+ 4 files changed, 90 insertions(+), 5 deletions(-)
+
+diff --git a/samples/sample_common/src/vaapi_device.cpp b/samples/sample_common/src/vaapi_device.cpp
+index de435fe7..3e3e7473 100644
+--- a/samples/sample_common/src/vaapi_device.cpp
++++ b/samples/sample_common/src/vaapi_device.cpp
+@@ -397,7 +397,7 @@ mfxStatus CVAAPIDeviceWayland::RenderFrame(mfxFrameSurface1 * pSurface, mfxFrame
+             return mfx_res;
+     }
+ 
+-    m_Wayland->RenderBuffer(m_wl_buffer, pSurface->Info.CropW, pSurface->Info.CropH);
++    m_Wayland->RenderBuffer(m_wl_buffer, pSurface->Info.CropW, pSurface->Info.CropH, pSurface);
+ 
+     return mfx_res;
+ }
+diff --git a/samples/sample_misc/wayland/include/class_wayland.h b/samples/sample_misc/wayland/include/class_wayland.h
+index c2c8cea0..22a53d72 100644
+--- a/samples/sample_misc/wayland/include/class_wayland.h
++++ b/samples/sample_misc/wayland/include/class_wayland.h
+@@ -28,7 +28,11 @@ extern "C"
+ }
+ #include <poll.h>
+ #include <wayland-client.h>
++#include <list>
+ #include "wayland-drm-client-protocol.h"
++#include "mfxstructures.h"
++#include "mfx_buffering.h"
++#include "sample_defs.h"
+ 
+ /* ShmPool Struct */
+ struct ShmPool {
+@@ -38,7 +42,14 @@ struct ShmPool {
+     unsigned size;
+ };
+ 
+-class Wayland {
++/* buffer Struct */
++struct buffer {
++   struct wl_buffer *buffer;
++   mfxFrameSurface1 *pInSurface;
++   bool done;
++};
++
++class Wayland: public CBuffering {
+     public:
+         Wayland();
+         virtual ~Wayland();
+@@ -48,7 +59,8 @@ class Wayland {
+         virtual void SetRenderWinPos(int x, int y);
+         virtual void RenderBuffer(struct wl_buffer *buffer
+             , int32_t width
+-            , int32_t height);
++            , int32_t height
++            , mfxFrameSurface1 *surface);
+         virtual void RenderBufferWinPosSize(struct wl_buffer *buffer
+             , int x
+             , int y
+@@ -115,6 +127,9 @@ class Wayland {
+         void DestroyCallback();
+         virtual void Sync();
+         virtual void SetPerfMode(bool perf_mode);
++        void AddBufferToList(buffer *buffer);
++        void RemoveBufferFromList();
++        void DestroyBufferList();
+     private:
+         //no copies allowed
+         Wayland(const Wayland &);
+@@ -140,6 +155,8 @@ class Wayland {
+         char *m_device_name;
+         int m_x, m_y;
+         bool m_perf_mode;
++    protected:
++        std::list<struct buffer*> m_buffers_list;
+ };
+ 
+ extern "C" Wayland* WaylandCreate();
+diff --git a/samples/sample_misc/wayland/src/class_wayland.cpp b/samples/sample_misc/wayland/src/class_wayland.cpp
+index 5d0e6208..c901a85c 100644
+--- a/samples/sample_misc/wayland/src/class_wayland.cpp
++++ b/samples/sample_misc/wayland/src/class_wayland.cpp
+@@ -156,6 +156,7 @@ void Wayland::Sync()
+         wl_display_read_events(m_display);
+         wl_display_dispatch_queue_pending(m_display, m_event_queue);
+     }
++    RemoveBufferFromList();
+ }
+ 
+ void Wayland::SetPerfMode(bool perf_mode)
+@@ -170,14 +171,24 @@ void Wayland::SetRenderWinPos(int x, int y)
+ 
+ void Wayland::RenderBuffer(struct wl_buffer *buffer
+      , int32_t width
+-     , int32_t height)
++     , int32_t height
++     , mfxFrameSurface1 *surface)
+ {
++    struct buffer *my_buffer = new struct buffer;
++    if (my_buffer == NULL)
++      return;
++
++    my_buffer->buffer = buffer;
++    my_buffer->pInSurface = surface;
++    my_buffer->done = false;
++
+     wl_surface_attach(m_surface, buffer, 0, 0);
+     wl_surface_damage(m_surface, m_x, m_y, width, height);
+ 
+     wl_proxy_set_queue((struct wl_proxy *) buffer, m_event_queue);
+ 
+-    wl_buffer_add_listener(buffer, &buffer_listener, NULL);
++    AddBufferToList(my_buffer);
++    wl_buffer_add_listener(buffer, &buffer_listener, my_buffer);
+     m_pending_frame=1;
+     if (m_perf_mode)
+         m_callback = wl_display_sync(m_display);
+@@ -365,6 +376,8 @@ Wayland::~Wayland()
+         wl_compositor_destroy(m_compositor);
+     if(NULL != m_event_queue)
+         wl_event_queue_destroy(m_event_queue);
++    if(0 != m_buffers_list.size())
++        DestroyBufferList();
+     if(NULL != m_registry)
+         wl_registry_destroy(m_registry);
+     if(NULL != m_display)
+@@ -428,6 +441,58 @@ void Wayland::DrmHandleAuthenticated()
+     m_bufmgr = drm_intel_bufmgr_gem_init(m_fd, BATCH_SIZE);
+ }
+ 
++void Wayland::AddBufferToList(buffer *buffer)
++{
++   if (buffer == NULL)
++     return;
++
++   if (buffer->pInSurface) {
++     msdkFrameSurface *surface = FindUsedSurface(buffer->pInSurface);
++     msdk_atomic_inc16(&(surface->render_lock));
++     m_buffers_list.push_back(buffer);
++   }
++}
++
++void Wayland::RemoveBufferFromList()
++{
++   struct buffer *tmp_buffer = NULL;
++   for (std::list<struct buffer*>::iterator it = m_buffers_list.begin(); it != m_buffers_list.end(); ++it)
++   {
++      if ((*it) != NULL && ((*it)->done == true)) {
++        if ((*it)->pInSurface) {
++           msdkFrameSurface *surface = FindUsedSurface((*it)->pInSurface);
++           msdk_atomic_dec16(&(surface->render_lock));
++        }
++        (*it)->buffer = NULL;
++        (*it)->pInSurface = NULL;
++        (*it)->done = false;
++        tmp_buffer = *it;
++        break;
++     }
++   }
++
++   if (NULL != tmp_buffer) {
++     m_buffers_list.remove(tmp_buffer);
++     delete tmp_buffer;
++   }
++}
++
++void Wayland::DestroyBufferList()
++{
++   struct buffer *tmp_buffer = NULL;
++   while (!m_buffers_list.empty())
++   {
++      tmp_buffer = m_buffers_list.front();
++      if (tmp_buffer->pInSurface)
++      {
++        msdkFrameSurface *surface = FindUsedSurface(tmp_buffer->pInSurface);
++        msdk_atomic_dec16(&(surface->render_lock));
++      }
++      m_buffers_list.pop_front();
++      delete tmp_buffer;
++   }
++}
++
+ Wayland* WaylandCreate()
+ {
+     return new Wayland;
+diff --git a/samples/sample_misc/wayland/src/listener_wayland.cpp b/samples/sample_misc/wayland/src/listener_wayland.cpp
+index dc68c1d5..f1db5b4e 100644
+--- a/samples/sample_misc/wayland/src/listener_wayland.cpp
++++ b/samples/sample_misc/wayland/src/listener_wayland.cpp
+@@ -98,6 +98,9 @@ void handle_done(void *data, struct wl_callback *callback, uint32_t time)
+ 
+ void buffer_release(void *data, struct wl_buffer *buffer)
+ {
++    struct buffer *my_buffer = static_cast<struct buffer*>(data);
++    my_buffer->done = true;
++
+     wl_buffer_destroy(buffer);
+     buffer = NULL;
+ }
+-- 
+2.17.1
+

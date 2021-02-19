@@ -6,7 +6,9 @@ IMAGE_LINGUAS = ""
 LICENSE = "MIT"
 IMAGE_FSTYPES = "cpio cpio.lz4"
 
-inherit image eudev-initramfs
+require eudev-initramfs.inc
+
+inherit image
 
 python() {
     d.setVar("KERNELDEPMODDEPEND","")

@@ -1,0 +1,13 @@
+diff --git a/clang/tools/libclang/CMakeLists.txt b/clang/tools/libclang/CMakeLists.txt
+index 613ead1a36b..5f5e7c78b60 100644
+--- a/clang/tools/libclang/CMakeLists.txt
++++ b/clang/tools/libclang/CMakeLists.txt
+@@ -108,6 +108,8 @@ add_clang_library(libclang ${ENABLE_SHARED} ${ENABLE_STATIC} INSTALL_WITH_TOOLCH
+   Support
+   )
+ 
++target_link_libraries(libclang PRIVATE -ldl)
++
+ if(ENABLE_SHARED)
+   if(WIN32)
+     set_target_properties(libclang

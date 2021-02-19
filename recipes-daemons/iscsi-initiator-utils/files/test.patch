@@ -1,0 +1,44 @@
+diff --git a/usr/iscsistart.c b/usr.mod/iscsistart.c
+index 73991b3..ac51c8e 100644
+--- a/usr/iscsistart.c
++++ b/usr.mod/iscsistart.c
+@@ -238,12 +238,24 @@ static int login_session(struct node_rec *rec)
+ 	req.command = MGMT_IPC_SESSION_LOGIN;
+ 	memcpy(&req.u.session.rec, rec, sizeof(*rec));
+ 
+-	/*
+-	 * Need to handle race where iscsid proc is starting up while we are
+-	 * trying to connect. Retry with exponential backoff, start from 50 ms.
+-	 */
+-	for (msec = 50; msec <= 15000; msec <<= 1) {
+-		rc = iscsid_exec_req(&req, &rsp, 0, ISCSID_REQ_TIMEOUT);
++        /*
++         * Need to handle race where iscsid proc is starting up while we are
++         * trying to connect. Retry with exponential backoff, start from 50 ms.
++         *
++         * NOTE: another race condition can occur if the system is just coming
++         * up, where our login request will be sent, but the login response
++         * takes a while. In such a case, if we timeout and give up, the
++         * login response may still show up once we give up, in which case
++         * it seems to get iscsistart into a state where it cannot try to
++         * login again because it thinks there's already a session. So make
++         * sure our timeout is long enough, on each try, to give the response
++         * a chance to show up. The old value of 1 second was not enough,
++         * so we multiply that by 10, which seems reasonable for initial
++         * login.
++         */
++        for (msec = 50; msec <= 15000; msec <<= 1) {
++                int tmo = 10* ISCSID_REQ_TIMEOUT;
++                rc = iscsid_exec_req(&req, &rsp, 0, tmo);
+ 		if (rc == 0) {
+ 			return rc;
+ 		} else if (rc == ISCSI_ERR_ISCSID_NOTCONN) {
+@@ -527,7 +539,7 @@ int main(int argc, char *argv[])
+ 	 * in a different RPM from the daemon and utils, and users may try to
+ 	 * mix and match in ways that don't work.
+ 	 */
+-	log_error("version %s", ISCSI_VERSION_STR);
++	log_error("version %s-poll_timeout_fix", ISCSI_VERSION_STR);
+ 
+ 	/* oom-killer will not kill us at the night... */
+ 	if (oom_adjust())

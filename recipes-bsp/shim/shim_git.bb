@@ -3,12 +3,12 @@ execute another application."
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
-SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1 \
-           file://0002-lib-console.c-fix-typo.patch \
+SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https \
+	   file://0001-Makefile-fix-absolute-path.patch \
+	   file://0002-include-defaults.mk-fix-Makefile-variable.patch \
 "
-
 S = "${WORKDIR}/git"
-SRCREV = "1f123ac2359cd923e9144f944a4bddf597fddbb5"
+SRCREV = "c252b9ee94c342f9074a3e9064fd254eef203a63"
 PV_append = "+${SRCPV}"
 
 inherit deploy
@@ -34,12 +34,22 @@ do_configure[depends] += "virtual/secure-boot-certificates:do_deploy"
 do_configure_append() {
 	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt .
 	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key .
-	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.crt .
-	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.key .
+	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/certdb/shim.crt .
+	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/certdb/shim.key .
 	touch -m yocto.key yocto.crt shim.key shim.crt
 	openssl x509 -outform DER -in yocto.crt -out yocto.cer
-	openssl x509 -outform DER -in shim.crt -out shim.cer
-	openssl pkcs12 -export -in shim.crt -inkey shim.key -out shim.p12 -passout pass:
+	openssl x509 -outform DER -in certdb/shim.crt -out certdb/shim.cer
+	openssl pkcs12 -export -in certdb/shim.crt -inkey certdb/shim.key -out certdb/shim.p12 -passout pass:
+
+	cp ${STAGING_INCDIR}/efi.mk .
+
+	# fix paths
+	sed -e "s@${includedir}@${STAGING_INCDIR}@g" \
+	    -e "s@${libdir}@${STAGING_LIBDIR}@g" \
+	    -i efi.mk
+
+	# fix extra comma
+	echo '_EFI_CCLDLIBS = -Wl$(comma)--start-group $(foreach x,$(EFI_CCLDLIBS),$(x)) -Wl$(comma)--end-group' >> efi.mk
 }
 
 do_compile_prepend() {
@@ -55,8 +65,7 @@ do_compile() {
 	${BUILD_CCLD} -Og -g3 -Wall -Werror -Wextra -o "${B}/buildid" "${S}/buildid.c" -lelf
 
         oe_runmake VENDOR_CERT_FILE=yocto.crt CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
-	EFI_INCLUDE="${STAGING_INCDIR}/efi" EFI_PATH="${STAGING_LIBDIR}" \
-        ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 ${SHIM_DEFAULT_LOADER} \
+	EFI_INCLUDE="${STAGING_INCDIR}/efi" EFI_PATH="${STAGING_LIBDIR}" \ ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 ${SHIM_DEFAULT_LOADER} \
 	EFI_CC="${CCLD}" EFI_HOSTCC="${CCLD}" TOPDIR="${S}/" BUILDDIR="${B}/" \
 	-I "${B}" -I "${STAGING_INCDIR}" -f "${S}/Makefile"
 }

@@ -1,0 +1,175 @@
+From 1c683678417cbfc4fc2b315d8ef380e9e3ad9869 Mon Sep 17 00:00:00 2001
+From: Jay Yang <jay.yang@intel.com>
+Date: Fri, 6 Nov 2020 18:31:01 +0800
+Subject: [PATCH] [sample_vpp] Enable runtime HSBC
+
+---
+ samples/sample_vpp/src/sample_vpp.cpp | 118 ++++++++------------------
+ 1 file changed, 35 insertions(+), 83 deletions(-)
+
+diff --git a/samples/sample_vpp/src/sample_vpp.cpp b/samples/sample_vpp/src/sample_vpp.cpp
+index f18ba2db..1291ca28 100644
+--- a/samples/sample_vpp/src/sample_vpp.cpp
++++ b/samples/sample_vpp/src/sample_vpp.cpp
+@@ -731,58 +731,34 @@ int main(int argc, msdk_char *argv[])
+             else
+             {
+ #ifdef ENABLE_VPP_RUNTIME_HSBC
+-                auto procAmp = pOutSurf->AddExtBuffer<mfxExtVPPProcAmp>();
+-                // set default values for ProcAmp filters
+-                procAmp->Brightness = 0.0F;
+-                procAmp->Contrast   = 1.0F;
+-                procAmp->Hue        = 0.0F;
+-                procAmp->Saturation = 1.0F;
+-
+-                if (Params.rtHue.isEnabled)
++                if (Params.rtHue.isEnabled || Params.rtSaturation.isEnabled ||
++                    Params.rtBrightness.isEnabled || Params.rtContrast.isEnabled)
+                 {
+-                    if((nOutFrames / Params.rtHue.interval & 0x1) == 0)
++                    auto procAmp = pOutSurf->AddExtBuffer<mfxExtVPPProcAmp>();
++                    // set default values for ProcAmp filters
++                    procAmp->Brightness = 0.0F;
++                    procAmp->Contrast   = 1.0F;
++                    procAmp->Hue        = 0.0F;
++                    procAmp->Saturation = 1.0F;
++
++                    if (Params.rtHue.isEnabled)
+                     {
+-                        procAmp->Hue = Params.rtHue.value1;
++                        procAmp->Hue = ((nOutFrames / Params.rtHue.interval & 0x1) == 0) ? Params.rtHue.value1 : Params.rtHue.value2;
+                     }
+-                    else
+-                    {
+-                        procAmp->Hue = Params.rtHue.value2;
+-                    }
+-                }
+ 
+-                if (Params.rtSaturation.isEnabled)
+-                {
+-                    if((nOutFrames / Params.rtSaturation.interval & 0x1) == 0)
++                    if (Params.rtSaturation.isEnabled)
+                     {
+-                        procAmp->Saturation = Params.rtSaturation.value1;
++                        procAmp->Saturation = ((nOutFrames / Params.rtSaturation.interval & 0x1) == 0) ? Params.rtSaturation.value1 : Params.rtSaturation.value2;
+                     }
+-                    else
+-                    {
+-                        procAmp->Saturation = Params.rtSaturation.value2;
+-                    }
+-                }
+ 
+-                if (Params.rtBrightness.isEnabled)
+-                {
+-                    if((nOutFrames / Params.rtBrightness.interval & 0x1) == 0)
+-                    {
+-                        procAmp->Brightness = Params.rtBrightness.value1;
+-                    }
+-                    else
++                    if (Params.rtBrightness.isEnabled)
+                     {
+-                        procAmp->Brightness = Params.rtBrightness.value2;
++                        procAmp->Brightness = ((nOutFrames / Params.rtBrightness.interval & 0x1) == 0) ? Params.rtBrightness.value1 : Params.rtBrightness.value2;
+                     }
+-                }
+ 
+-                if (Params.rtContrast.isEnabled)
+-                {
+-                    if((nOutFrames / Params.rtContrast.interval & 0x1) == 0)
+-                    {
+-                        procAmp->Contrast = Params.rtContrast.value1;
+-                    }
+-                    else
++                    if (Params.rtContrast.isEnabled)
+                     {
+-                        procAmp->Contrast = Params.rtContrast.value2;
++                        procAmp->Contrast = ((nOutFrames / Params.rtContrast.interval & 0x1) == 0) ? Params.rtContrast.value1 : Params.rtContrast.value2;
+                     }
+                 }
+                 nOutFrames++;
+@@ -902,58 +878,34 @@ int main(int argc, msdk_char *argv[])
+             else
+             {
+ #ifdef ENABLE_VPP_RUNTIME_HSBC
+-                auto procAmp = pOutSurf->AddExtBuffer<mfxExtVPPProcAmp>();
+-                // set default values for ProcAmp filters
+-                procAmp->Brightness = 0.0F;
+-                procAmp->Contrast   = 1.0F;
+-                procAmp->Hue        = 0.0F;
+-                procAmp->Saturation = 1.0F;
+-
+-                if (Params.rtHue.isEnabled)
++                if (Params.rtHue.isEnabled || Params.rtSaturation.isEnabled ||
++                    Params.rtBrightness.isEnabled || Params.rtContrast.isEnabled)
+                 {
+-                    if((nOutFrames / Params.rtHue.interval & 0x1) == 0)
++                    auto procAmp = pOutSurf->AddExtBuffer<mfxExtVPPProcAmp>();
++                    // set default values for ProcAmp filters
++                    procAmp->Brightness = 0.0F;
++                    procAmp->Contrast   = 1.0F;
++                    procAmp->Hue        = 0.0F;
++                    procAmp->Saturation = 1.0F;
++
++                    if (Params.rtHue.isEnabled)
+                     {
+-                        procAmp->Hue = Params.rtHue.value1;
++                        procAmp->Hue = ((nOutFrames / Params.rtHue.interval & 0x1) == 0) ? Params.rtHue.value1 : Params.rtHue.value2;
+                     }
+-                    else
+-                    {
+-                        procAmp->Hue = Params.rtHue.value2;
+-                    }
+-                }
+ 
+-                if (Params.rtSaturation.isEnabled)
+-                {
+-                    if((nOutFrames / Params.rtSaturation.interval & 0x1) == 0)
++                    if (Params.rtSaturation.isEnabled)
+                     {
+-                        procAmp->Saturation = Params.rtSaturation.value1;
++                        procAmp->Saturation = ((nOutFrames / Params.rtSaturation.interval & 0x1) == 0) ? Params.rtSaturation.value1 : Params.rtSaturation.value2;
+                     }
+-                    else
+-                    {
+-                        procAmp->Saturation = Params.rtSaturation.value2;
+-                    }
+-                }
+ 
+-                if (Params.rtBrightness.isEnabled)
+-                {
+-                    if((nOutFrames / Params.rtBrightness.interval & 0x1) == 0)
+-                    {
+-                        procAmp->Brightness = Params.rtBrightness.value1;
+-                    }
+-                    else
++                    if (Params.rtBrightness.isEnabled)
+                     {
+-                        procAmp->Brightness = Params.rtBrightness.value2;
++                        procAmp->Brightness = ((nOutFrames / Params.rtBrightness.interval & 0x1) == 0) ? Params.rtBrightness.value1 : Params.rtBrightness.value2;
+                     }
+-                }
+ 
+-                if (Params.rtContrast.isEnabled)
+-                {
+-                    if((nOutFrames / Params.rtContrast.interval & 0x1) == 0)
+-                    {
+-                        procAmp->Contrast = Params.rtContrast.value1;
+-                    }
+-                    else
++                    if (Params.rtContrast.isEnabled)
+                     {
+-                        procAmp->Contrast = Params.rtContrast.value2;
++                        procAmp->Contrast = ((nOutFrames / Params.rtContrast.interval & 0x1) == 0) ? Params.rtContrast.value1 : Params.rtContrast.value2;
+                     }
+                 }
+                 nOutFrames++;
+@@ -1019,4 +971,4 @@ int main(int argc, msdk_char *argv[])
+     return 0; /* OK */
+ 
+ } // int _tmain(int argc, msdk_char *argv[])
+-/* EOF */
++/* EOF */
+\ No newline at end of file
+-- 
+2.27.0
+

@@ -1,0 +1,191 @@
+From 03d4f54fdc5a05f5316388c990b9200db1ba0ff4 Mon Sep 17 00:00:00 2001
+From: dvolkov <denis.volkov@intel.com>
+Date: Thu, 15 Oct 2020 05:46:29 +0800
+Subject: [PATCH 1/2] [Encode] Fix sporadic JPEGe failure on JSL-EHL
+
+[Encode] Fix sporadic JPEGe failure on JSL-EHL
+- Sporadic failure could be observed in parallel execution
+(for example, with AVC VDenc)
+- Added special classed for JPEG on JSL-EHL
+
+Change-Id: I671964e42fa840030fd9bc1e051d208e610e80d9
+---
+ .../hal/codechal_encode_jpeg_g11_jsl_ehl.cpp  | 52 +++++++++++++++++
+ .../hal/codechal_encode_jpeg_g11_jsl_ehl.h    | 58 +++++++++++++++++++
+ .../gen11_icllp/codec/hal/media_srcs.cmake    | 11 ++++
+ .../media_interfaces_g11_jsl_ehl.h            |  6 +-
+ 4 files changed, 126 insertions(+), 1 deletion(-)
+ create mode 100644 media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.cpp
+ create mode 100644 media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.h
+
+diff --git a/media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.cpp b/media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.cpp
+new file mode 100644
+index 00000000..ccee15d5
+--- /dev/null
++++ b/media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.cpp
+@@ -0,0 +1,52 @@
++/*
++* Copyright (c) 2020, Intel Corporation
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included
++* in all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
++* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++* OTHER DEALINGS IN THE SOFTWARE.
++*/
++//!
++//! \file     codechal_encode_jpeg_g11_jsl_ehl.cpp
++//! \brief    Defines state class for JPEG encoder.
++//!
++
++#include "codechal_encode_jpeg_g11_jsl_ehl.h"
++
++MOS_STATUS CodechalEncodeJpegStateG11JslEhl::GetStatusReport(
++    EncodeStatus* encodeStatus,
++    EncodeStatusReport* encodeStatusReport)
++{
++    MOS_STATUS eStatus = MOS_STATUS_SUCCESS;
++
++    PMHW_VDBOX_IMAGE_STATUS_CONTROL imgStatusCtrl = &encodeStatus->ImageStatusCtrl;
++
++    // The huffman tables sent by application were incorrect (used only for JPEG encoding)
++    if (imgStatusCtrl->MissingHuffmanCode == 1)
++    {
++        // WA for JPEGe on JSL-EHL:
++        // Sometimes bit "MissingHuffmanCode" could be sporadic set to 1
++        // from parallel execution process (ex: h264 encoding),
++        // what introduce "false possitive" issue reporting on JPEG encoding.
++        // Disabling this checking for JPEGe, only keep the report in logs
++
++        CODECHAL_ENCODE_ASSERTMESSAGE("Error: JPEG standard encoding: missing huffman code - skip for JSL-EHL");
++    }
++
++    eStatus = GetStatusReportCommon(encodeStatus, encodeStatusReport);
++
++    return eStatus;
++}
+diff --git a/media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.h b/media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.h
+new file mode 100644
+index 00000000..bc07c4fa
+--- /dev/null
++++ b/media_driver/agnostic/gen11_icllp/codec/hal/codechal_encode_jpeg_g11_jsl_ehl.h
+@@ -0,0 +1,58 @@
++/*
++* Copyright (c) 2020, Intel Corporation
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included
++* in all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
++* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++* OTHER DEALINGS IN THE SOFTWARE.
++*/
++//!
++//! \file     codechal_encode_jpeg_g11_jsl_ehl.h
++//! \brief    Defines the encode interface extension for JPEG.
++//! \details  Defines all types, macros, and functions required by CodecHal for JPEG encoding. Definitions are not externally facing.
++//!
++
++#ifndef __CODECHAL_ENCODEC_JPEG_G11_EHLJSLLP_H__
++#define __CODECHAL_ENCODEC_JPEG_G11_EHLJSLLP_H__
++
++#include "codechal_encode_jpeg_g11.h"
++
++class CodechalEncodeJpegStateG11JslEhl : public CodechalEncodeJpegStateG11
++{
++public:
++    //!
++    //! \brief    Constructor
++    //!
++    CodechalEncodeJpegStateG11JslEhl(
++        CodechalHwInterface* hwInterface,
++        CodechalDebugInterface* debugInterface,
++        PCODECHAL_STANDARD_INFO standardInfo)
++        : CodechalEncodeJpegStateG11(hwInterface, debugInterface, standardInfo)
++    {
++    }
++
++    //!
++    //! \brief    Destructor
++    //!
++    virtual ~CodechalEncodeJpegStateG11JslEhl() { }
++
++
++    virtual MOS_STATUS GetStatusReport(
++        EncodeStatus* encodeStatus,
++        EncodeStatusReport* encodeStatusReport) override;
++};
++
++#endif  // __CODECHAL_ENCODEC_JPEG_G11_EHLJSLLP_H__
+diff --git a/media_driver/agnostic/gen11_icllp/codec/hal/media_srcs.cmake b/media_driver/agnostic/gen11_icllp/codec/hal/media_srcs.cmake
+index dac86ec1..27e236ea 100644
+--- a/media_driver/agnostic/gen11_icllp/codec/hal/media_srcs.cmake
++++ b/media_driver/agnostic/gen11_icllp/codec/hal/media_srcs.cmake
+@@ -103,6 +103,17 @@ if ("${VP9_Encode_VDEnc_Supported}" STREQUAL "yes")
+     )
+ endif ()
+ 
++if(${JPEG_Encode_Supported} STREQUAL "yes")
++    set(TMP_3_SOURCES_
++        ${TMP_3_SOURCES_}
++        ${CMAKE_CURRENT_LIST_DIR}/codechal_encode_jpeg_g11_jsl_ehl.cpp
++    )
++    set(TMP_3_HEADERS_
++        ${TMP_3_HEADERS_}
++        ${CMAKE_CURRENT_LIST_DIR}/codechal_encode_jpeg_g11_jsl_ehl.h
++    )
++endif()
++
+ set(SOURCES_
+     ${SOURCES_}
+     ${TMP_1_SOURCES_}
+diff --git a/media_driver/media_interface/media_interfaces_m11_jsl_ehl/media_interfaces_g11_jsl_ehl.h b/media_driver/media_interface/media_interfaces_m11_jsl_ehl/media_interfaces_g11_jsl_ehl.h
+index dfd8d605..666f3fc7 100644
+--- a/media_driver/media_interface/media_interfaces_m11_jsl_ehl/media_interfaces_g11_jsl_ehl.h
++++ b/media_driver/media_interface/media_interfaces_m11_jsl_ehl/media_interfaces_g11_jsl_ehl.h
+@@ -95,6 +95,10 @@
+ #include "codechal_vdenc_vp9_g11_jsl_ehl.h"
+ #endif
+ 
++#ifdef _JPEG_ENCODE_SUPPORTED
++#include "codechal_encode_jpeg_g11_jsl_ehl.h"
++#endif
++
+ #include "cm_hal_g11.h"
+ #include "mos_util_user_interface.h"
+ #include "vphal_g11_jsl_ehl.h"
+@@ -168,7 +172,7 @@ public:
+     using Vp9 = CodechalVdencVp9StateG11JslEhl;
+ #endif
+ #ifdef _JPEG_ENCODE_SUPPORTED
+-    using Jpeg = CodechalEncodeJpegState;
++    using Jpeg = CodechalEncodeJpegStateG11JslEhl;
+ #endif
+ #ifdef _HEVC_ENCODE_VDENC_SUPPORTED
+     using HevcVdenc = CodechalVdencHevcStateG11JslEhl;
+-- 
+2.24.3
+

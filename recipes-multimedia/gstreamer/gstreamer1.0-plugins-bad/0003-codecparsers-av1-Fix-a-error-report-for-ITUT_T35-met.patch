@@ -1,0 +1,44 @@
+From a85a6d91dc73c3d2ecbe94e94cf385e624b294d2 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 14 Aug 2020 14:40:49 +0800
+Subject: [PATCH 03/11] codecparsers: av1: Fix a error report for ITUT_T35
+ metadata.
+
+The ITUT_T35 has an undefined itu_t_t35_payload_bytes field in AV1
+spec, we should just ignore it and skip to the OBU end directly.
+---
+ gst-libs/gst/codecparsers/gstav1parser.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
+index 82293b478..21f07abab 100644
+--- a/gst-libs/gst/codecparsers/gstav1parser.c
++++ b/gst-libs/gst/codecparsers/gstav1parser.c
+@@ -1414,7 +1414,7 @@ gst_av1_parse_metadata_itut_t35 (GstAV1Parser * parser, GstBitReader * br,
+   if (ret != GST_AV1_PARSER_OK)
+     return ret;
+ 
+-  if (itut_t35->itu_t_t35_country_code) {
++  if (itut_t35->itu_t_t35_country_code == 0xFF) {
+     itut_t35->itu_t_t35_country_code_extention_byte =
+         AV1_READ_BITS_CHECKED (br, 8, &ret);
+     if (ret != GST_AV1_PARSER_OK)
+@@ -1689,6 +1689,15 @@ gst_av1_parser_parse_metadata_obu (GstAV1Parser * parser, GstAV1OBU * obu,
+     goto error;
+ 
+   retval = av1_skip_trailing_bits (parser, &bit_reader, obu);
++  if (retval != GST_AV1_PARSER_OK &&
++      metadata->metadata_type == GST_AV1_METADATA_TYPE_ITUT_T35) {
++    /* itu_t_t35_payload_bytes is not defined in specification,
++       We need to directly skip it to the OBU end. */
++    GST_DEBUG ("ITUT T35 metadata may have unrecognized payload, "
++        "just skip.");
++    retval = GST_AV1_PARSER_OK;
++  }
++
+   return retval;
+ 
+ error:
+-- 
+2.17.1
+

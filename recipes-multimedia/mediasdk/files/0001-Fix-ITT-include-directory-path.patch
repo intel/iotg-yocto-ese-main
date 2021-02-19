@@ -1,0 +1,40 @@
+From e62fffe28e71aa450a08c4ffb1a05625167413b7 Mon Sep 17 00:00:00 2001
+From: dnagasun <devamekalai.nagasundaram@intel.com>
+Date: Thu, 15 Aug 2019 08:19:59 +0800
+Subject: [PATCH] Fix ITT include directory path
+
+Signed-off-by: dnagasun <devamekalai.nagasundaram@intel.com>
+---
+ _studio/shared/mfx_trace/src/mfx_trace_itt.cpp | 2 +-
+ builder/FindITT.cmake                          | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/_studio/shared/mfx_trace/src/mfx_trace_itt.cpp b/_studio/shared/mfx_trace/src/mfx_trace_itt.cpp
+index e795b2b6..79ac07b7 100644
+--- a/_studio/shared/mfx_trace/src/mfx_trace_itt.cpp
++++ b/_studio/shared/mfx_trace/src/mfx_trace_itt.cpp
+@@ -27,7 +27,7 @@ extern "C"
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wattributes"
+ 
+-#include <ittnotify.h>
++#include <ittnotify/ittnotify.h>
+ 
+ #pragma GCC diagnostic pop
+ 
+diff --git a/builder/FindITT.cmake b/builder/FindITT.cmake
+index ba2542c5..ba195ca9 100644
+--- a/builder/FindITT.cmake
++++ b/builder/FindITT.cmake
+@@ -33,7 +33,7 @@ if( ENABLE_ITT )
+       set( arch "32" )
+     endif()
+ 
+-    find_path( ITT_INCLUDE_DIRS ittnotify.h
++    find_path( ITT_INCLUDE_DIRS ittnotify/ittnotify.h
+       PATHS ${CMAKE_ITT_HOME} ${CMAKE_VTUNE_HOME}
+       PATH_SUFFIXES include )
+ 
+-- 
+2.21.0
+

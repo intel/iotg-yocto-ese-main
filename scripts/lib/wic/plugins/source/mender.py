@@ -1,8 +1,3 @@
-##############
-# THIS PLUGIN IS NO LONGER USED by mender-io.wks.in
-# image post processing is now done with bitbake
-# see classes/ese-image-features.bbclass
-##############
 import re
 import logging
 import os

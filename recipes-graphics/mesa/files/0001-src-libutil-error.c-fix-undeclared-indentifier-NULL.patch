@@ -1,0 +1,26 @@
+From 34e5ff5ce4e43dcf187f88a829201b0e2493268e Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Mon, 24 Jun 2019 05:55:20 +0000
+Subject: [PATCH] src/libutil/error.c: fix undeclared indentifier NULL
+
+Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ src/libutil/error.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libutil/error.c b/src/libutil/error.c
+index 7212748..c71ffdf 100644
+--- a/src/libutil/error.c
++++ b/src/libutil/error.c
+@@ -31,7 +31,7 @@
+ #include "gluos.h"
+ #include "gluint.h"
+ #include <GL/glu.h>
+-
++#include <stddef.h>
+ 
+ struct token_string
+ {
+-- 
+2.17.1
+

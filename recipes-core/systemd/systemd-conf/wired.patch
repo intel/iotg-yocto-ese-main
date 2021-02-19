@@ -1,0 +1,10 @@
+--- a/wired.network
++++ b/wired.network
+@@ -3,6 +3,7 @@ Name=en* eth*
+ KernelCommandLine=!nfsroot
+ 
+ [Network]
++KeepConfiguration=yes
+ DHCP=yes
+ 
+ [DHCP]
