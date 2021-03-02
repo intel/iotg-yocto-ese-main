@@ -3,7 +3,7 @@ execute another application."
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
-SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https \
+SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1 \
            file://170.patch \
            file://0001-shim-fix-Werror-pointer-sign-errors.patch \
            file://0002-lib-console.c-fix-typo.patch \

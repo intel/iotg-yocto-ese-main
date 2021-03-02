@@ -3,7 +3,7 @@ execute another application."
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
-SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https \
+SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1 \
 	   file://0001-Makefile-fix-absolute-path.patch \
 	   file://0002-include-defaults.mk-fix-Makefile-variable.patch \
 "
