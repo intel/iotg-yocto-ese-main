@@ -27,7 +27,7 @@ python fakeroot do_ese_grub_mkimage(){
     'net', 'normal', 'part_apple', 'part_msdos', 'part_gpt', 'password_pbkdf2', \
     'png', 'reboot', 'search', 'search_fs_uuid', 'search_fs_file', 'search_label', 'serial', \
     'sleep', 'syslinuxcfg', 'test', 'tftp', 'version', 'video', 'xfs', 'zstd', 'backtrace', \
-    'chain', 'usb', 'usbserial_common', 'usbserial_pl2303', 'usbserial_ftdi', \
+    'chain', 'usb', 'usbserial_common', 'usbserial_pl2303', 'usbserial_ftdi', 'xzio', 'lzopio', \
     'usbserial_usbdebug', 'hashsum', 'cpio', 'newc', 'f2fs', 'squash4', 'efienv', 'memdisk', \
     'eval', 'shim_lock', 'tpm']
   # Removed in 2.04
@@ -50,5 +50,5 @@ python fakeroot do_ese_grub_mkimage(){
 }
 
 python(){
-    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_ese_grub_mkimage;')
+    d.appendVar('ESE_IMAGE_CALLS', ' do_ese_grub_mkimage;')
 }

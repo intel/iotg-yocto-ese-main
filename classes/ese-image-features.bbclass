@@ -1,5 +1,5 @@
 # image post processing (to be used with IMGCLASSES_append)
-# these are listed in order of execution by appending IMAGE_PREPROCESS_COMMAND
+# these are listed in order of execution by appending ESE_IMAGE_CALLS
 require ${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'conf/image-uefi.conf', '', d)}
 
 # should grub.cfg into grub efi?
@@ -8,9 +8,10 @@ ESE_EMBED_GRUB_CFG ??= "1"
 EFI_PREFIX ??= "/boot/efi"
 
 # extensions
-IMAGE_FEATURES[validitems] += "ese-grub-image ese-mender-persistent ese-shim-image"
+IMAGE_FEATURES[validitems] += "ese-grub-image ese-mender-persistent ese-shim-image efi-lockdown"
 ESE_IMAGE_PREPROCESS ??= ""
 ESE_IMAGE_POSTPROCESS ??= ""
+ESE_IMAGE_CALLS ??= ""
 
 inherit ${ESE_IMAGE_PREPROCESS}
 
@@ -19,6 +20,9 @@ inherit ${ESE_IMAGE_PREPROCESS}
 
 # ptcm
 inherit ${@bb.utils.contains('PTCM_INSTALL', '1', 'ese-ptcm-image', '', d)}
+
+# efi secure boot lockdown mechanism from efitools
+inherit ${@bb.utils.contains_any('IMAGE_FEATURES', [ 'efi-lockdown' ], 'ese-uefi-lockdown', '', d)}
 
 # mkimage generated grub EFI
 inherit ${@bb.utils.contains_any('IMAGE_FEATURES', [ 'ese-grub-image' ], 'ese-grub-image', '', d)}
@@ -39,3 +43,5 @@ inherit ${@bb.utils.contains_any('SECUREBOOT', [ 'true' ], 'ese-uefi-secure-boot
 inherit ${@bb.utils.contains_any('IMAGE_FEATURES', [ 'ese-mender-persistent' ], 'mender-persistent', '', d)}
 
 inherit ${ESE_IMAGE_POSTPROCESS}
+
+inherit ese-pseudo-late-fix

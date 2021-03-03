@@ -9,5 +9,5 @@ do_ese_shim_install(){
 }
 
 python(){
-    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_ese_shim_install;')
+    d.appendVar('ESE_IMAGE_CALLS', ' do_ese_shim_install;')
 }

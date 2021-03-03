@@ -1,0 +1,43 @@
+From 59301d57731e42668312829e015df36446d96a98 Mon Sep 17 00:00:00 2001
+From: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
+Date: Mon, 22 Feb 2021 10:28:35 +0800
+Subject: [PATCH 3/3] igc: Add support for dumping frame preemption stats
+ registers
+
+Includes registers that help verify if frame preemption is indeed
+working, and if any problem happened.
+
+Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@intel.com>
+Signed-off-by: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
+---
+ igc.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/igc.c b/igc.c
+index 91ab64d..90df3a2 100644
+--- a/igc.c
++++ b/igc.c
+@@ -57,6 +57,20 @@ int igc_dump_regs(struct ethtool_drvinfo *info, struct ethtool_regs *regs)
+ 		       bit_to_boolean(reg & RAH_QSEL_EN),
+ 		       bit_to_boolean(reg & RAH_AV));
+ 	}
++	
++	printf("Preemption statistics:\n");
++	printf("    TX Preemption event counter: %d\n", regs_buff[216]);
++	printf("    Good TX Preemptable Packets: %d\n", regs_buff[219]);
++	printf("    Good TX Express Packets: %d\n", regs_buff[221]);
++	printf("    TX Preempted Packets: %d\n", regs_buff[215]);
++	printf("    RX Preemption event counter: %d\n", regs_buff[218]);
++	printf("    Good RX Preemptable Packets: %d\n", regs_buff[220]);
++	printf("    Good RX Preempted Packets: %d\n", regs_buff[217]);
++	printf("    Preemption Exception Counter:\n");
++	printf("        OOO_SMDC %d\n", (regs_buff[222] & 0xff));
++	printf("        OOO_FRAME %d\n", (regs_buff[222] >> 8 & 0xff));
++	printf("        OOO_FRAG %d\n", (regs_buff[222] >> 16 & 0xff));
++	printf("        MISS_FRAME_FRAG %d\n", (regs_buff[222] >> 24 & 0xff));
+ 
+ 	return 0;
+ }
+-- 
+2.17.1
+

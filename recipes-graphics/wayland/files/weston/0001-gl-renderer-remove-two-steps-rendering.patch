@@ -1,0 +1,213 @@
+From 8a38a506a2214c8fa88eec091596f786ea740be8 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Mon, 4 Jan 2021 18:10:22 -0800
+Subject: [PATCH 1/2] gl-renderer: remove two steps rendering
+
+Two steps rendering (render to texture then render texture to the
+framebuffer) is causing huge performance penalty without any significant
+functional benefit. The primary goal was to be able to apply color/light
+adjustments before rendering to the compositing surface but these corrections
+can be done in one shot in the final stage.
+
+Also, Unused SHADER_GAMMA_LINEAR and SHADER_DEGAMMA_LINEAR are removed.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ libweston/renderer-gl/gl-renderer-internal.h |   1 -
+ libweston/renderer-gl/gl-renderer-private.h  |   2 -
+ libweston/renderer-gl/gl-renderer.c          | 107 ++++---------------
+ 3 files changed, 18 insertions(+), 92 deletions(-)
+
+diff --git a/libweston/renderer-gl/gl-renderer-internal.h b/libweston/renderer-gl/gl-renderer-internal.h
+index f5bf3bb9..758be2d2 100644
+--- a/libweston/renderer-gl/gl-renderer-internal.h
++++ b/libweston/renderer-gl/gl-renderer-internal.h
+@@ -107,7 +107,6 @@ struct gl_renderer {
+ 	 */
+ 	struct wl_list shader_list;
+ 
+-	bool supports_half_float_texture;
+ 	struct gl_shader_generator *sg;
+ };
+ 
+diff --git a/libweston/renderer-gl/gl-renderer-private.h b/libweston/renderer-gl/gl-renderer-private.h
+index 90fa05ec..80412e55 100644
+--- a/libweston/renderer-gl/gl-renderer-private.h
++++ b/libweston/renderer-gl/gl-renderer-private.h
+@@ -47,7 +47,6 @@ enum gl_shader_texture_variant {
+ 
+ enum gl_shader_degamma_variant {
+ 	SHADER_DEGAMMA_NONE = 0,
+-	SHADER_DEGAMMA_LINEAR,
+ 	SHADER_DEGAMMA_SRGB,
+ 	SHADER_DEGAMMA_PQ,
+ 	SHADER_DEGAMMA_HLG,
+@@ -55,7 +54,6 @@ enum gl_shader_degamma_variant {
+ 
+ enum gl_shader_gamma_variant {
+ 	SHADER_GAMMA_NONE = 0,
+-	SHADER_GAMMA_LINEAR,
+ 	SHADER_GAMMA_SRGB,
+ 	SHADER_GAMMA_PQ,
+ 	SHADER_GAMMA_HLG,
+diff --git a/libweston/renderer-gl/gl-renderer.c b/libweston/renderer-gl/gl-renderer.c
+index 69d4ebbd..4734d929 100644
+--- a/libweston/renderer-gl/gl-renderer.c
++++ b/libweston/renderer-gl/gl-renderer.c
+@@ -1017,24 +1017,20 @@ compute_hdr_requirements_from_view(struct weston_view *ev,
+ 
+ 	gs->shader_requirements.tone_mapping = tone_map_type;
+ 
+-	// If RGBA16F textures aren't supported, then we are forced to go for
+-	// non linear blending
+-	if (!gr->supports_half_float_texture) {
+-		gamma = SHADER_GAMMA_SRGB;
+-		if (dst_md) {
+-			switch (dst_md->metadata.static_metadata.eotf) {
+-			case WESTON_EOTF_ST2084:
+-				gamma = SHADER_GAMMA_PQ;
+-				break;
+-			case WESTON_EOTF_HLG:
+-				gamma = SHADER_GAMMA_HLG;
+-				break;
+-			}
++	gamma = SHADER_GAMMA_SRGB;
++	if (dst_md) {
++		switch (dst_md->metadata.static_metadata.eotf) {
++		case WESTON_EOTF_ST2084:
++			gamma = SHADER_GAMMA_PQ;
++			break;
++		case WESTON_EOTF_HLG:
++			gamma = SHADER_GAMMA_HLG;
++			break;
+ 		}
+-
+-		gs->shader_requirements.nl_variant = gamma;
+-		gs->shader_requirements.gamma = gamma;
+ 	}
++
++	gs->shader_requirements.nl_variant = gamma;
++	gs->shader_requirements.gamma = gamma;
+ }
+ 
+ static void
+@@ -1734,14 +1730,6 @@ gl_renderer_repaint_output(struct weston_output *output,
+ 		pixman_region32_fini(&undamaged);
+ 	}
+ 
+-	if (gr->supports_half_float_texture) {
+-		glBindFramebuffer(GL_FRAMEBUFFER, go->shadow_fbo);
+-		glViewport(0, 0,
+-			   output->current_mode->width,
+-			   output->current_mode->height);
+-
+-	}
+-
+ 	/* previous_damage covers regions damaged in previous paints since we
+ 	 * last used this buffer */
+ 	pixman_region32_init(&previous_damage);
+@@ -1777,31 +1765,15 @@ gl_renderer_repaint_output(struct weston_output *output,
+ 		free(egl_rects);
+ 	}
+ 
+-
+-	if (gr->supports_half_float_texture) {
+-		if (go->hdr_state_changed) {
+-			repaint_damage = &full_damage;
+-			repaint_texture_damage = &full_damage;
+-		} else {
+-			repaint_damage = output_damage;
+-			repaint_texture_damage = &total_damage;
+-		}
+-
+-		glBindFramebuffer(GL_FRAMEBUFFER, go->shadow_fbo);
+-		repaint_views(output, repaint_damage);
+-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+-		repaint_from_texture(output, repaint_texture_damage);
++	if (go->hdr_state_changed) {
++		repaint_damage = &full_damage;
+ 	} else {
+-		if (go->hdr_state_changed) {
+-			repaint_damage = &full_damage;
+-		} else {
+-			repaint_damage = &total_damage;
+-		}
+-
+-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+-		repaint_views(output, repaint_damage);
++		repaint_damage = &total_damage;
+ 	}
+ 
++	glBindFramebuffer(GL_FRAMEBUFFER, 0);
++	repaint_views(output, repaint_damage);
++
+ 	pixman_region32_fini(&total_damage);
+ 	pixman_region32_fini(&previous_damage);
+ 
+@@ -3393,31 +3365,6 @@ gl_renderer_output_create(struct weston_output *output,
+ 
+ 	output->renderer_state = go;
+ 
+-	if (gr->supports_half_float_texture) {
+-		glGenTextures(1, &go->shadow_tex);
+-		glBindTexture(GL_TEXTURE_2D, go->shadow_tex);
+-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_EXT, width, height, 0,
+-			     GL_RGBA, GL_FLOAT, NULL);
+-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+-		glBindTexture(GL_TEXTURE_2D, 0);
+-
+-		glGenFramebuffers(1, &go->shadow_fbo);
+-		glBindFramebuffer(GL_FRAMEBUFFER, go->shadow_fbo);
+-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+-				       GL_TEXTURE_2D, go->shadow_tex, 0);
+-
+-		fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+-
+-		/* no framebuffer, bail! */
+-		if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
+-			weston_log("Unable to create shadow FBO\n");
+-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+-			return -1;
+-		}
+-	}
+-
+-
+ 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+ 
+ 	go->target_colorspace = WESTON_CS_BT709;
+@@ -3521,11 +3468,6 @@ gl_renderer_output_destroy(struct weston_output *output)
+ 	if (go->end_render_sync != EGL_NO_SYNC_KHR)
+ 		gr->destroy_sync(gr->egl_display, go->end_render_sync);
+ 
+-	if (gr->supports_half_float_texture) {
+-		glDeleteTextures(1, &go->shadow_tex);
+-		glDeleteFramebuffers(1, &go->shadow_fbo);
+-	}
+-
+ 	free(go);
+ }
+ 
+@@ -3950,19 +3892,6 @@ gl_renderer_setup(struct weston_compositor *ec, EGLSurface egl_surface)
+ 	if (weston_check_egl_extension(extensions, "GL_OES_EGL_image_external"))
+ 		gr->has_egl_image_external = 1;
+ 
+-	major_version = gr->gl_version >> 16;
+-	switch (major_version) {
+-	case 3:
+-		gr->supports_half_float_texture = true;
+-		break;
+-	case 2:
+-		if (weston_check_egl_extension(extensions, "GL_OES_texture_half_float"))
+-			gr->supports_half_float_texture = true;
+-		break;
+-	default:
+-		gr->supports_half_float_texture = false;
+-	}
+-
+ 	glActiveTexture(GL_TEXTURE0);
+ 
+ 	gr->fragment_binding =
+-- 
+2.17.1
+

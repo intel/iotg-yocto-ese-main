@@ -23,5 +23,5 @@ fakeroot python do_ese_efi_finalize(){
 do_ese_efi_finalize[fakeroot] = '1'
 
 python(){
-    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_ese_efi_finalize;')
+    d.appendVar('ESE_IMAGE_CALLS', ' do_ese_efi_finalize;')
 }

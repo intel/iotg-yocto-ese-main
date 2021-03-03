@@ -6,5 +6,5 @@ do_ese_copy_ptcm(){
 }
 
 python(){
-    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_ese_copy_ptcm;')
+    d.appendVar('ESE_IMAGE_CALLS', ' do_ese_copy_ptcm;')
 }

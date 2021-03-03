@@ -1,0 +1,37 @@
+From 6b8f90a4c96a31c3d5c797f751398e16cd41e2bc Mon Sep 17 00:00:00 2001
+From: "Chew, Tong Liang" <tong.liang.chew@intel.com>
+Date: Mon, 23 Nov 2020 11:10:01 +0800
+Subject: [PATCH] Update new bfd API
+
+Signed-off-by: Chew, Tong Liang <tong.liang.chew@intel.com>
+---
+ common/src/crash.linux.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/common/src/crash.linux.c b/common/src/crash.linux.c
+index 218d65f..7b08a41 100644
+--- a/common/src/crash.linux.c
++++ b/common/src/crash.linux.c
+@@ -98,10 +98,10 @@ static void load_symbols()
+ 
+ static bool lookup_address(bfd_vma pc, const char ** filename, const char ** function, unsigned int * line, unsigned int * discriminator)
+ {
+-  if ((bfd_get_section_flags(crash.fd, crash.section) & SEC_ALLOC) == 0)
++  if ((bfd_section_flags(crash.section) & SEC_ALLOC) == 0)
+     return false;
+ 
+-  bfd_size_type size = bfd_get_section_size(crash.section);
++  bfd_size_type size = bfd_section_size(crash.section);
+   if (pc >= size)
+     return false;
+ 
+@@ -230,4 +230,4 @@ bool installCrashHandler(const char * exe)
+   return true;
+ }
+ 
+-#endif
+\ No newline at end of file
++#endif
+-- 
+2.17.1
+

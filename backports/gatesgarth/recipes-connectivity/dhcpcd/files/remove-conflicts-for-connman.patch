@@ -1,0 +1,10 @@
+--- a/dhcpcd.service
++++ b/dhcpcd.service
+@@ -2,7 +2,6 @@
+ Description=A minimalistic network configuration daemon with DHCPv4, rdisc and DHCPv6 support
+ Wants=network.target
+ Before=network.target
+-Conflicts=connman.service
+
+ [Service]
+ ExecStart=/usr/sbin/dhcpcd -q --nobackground

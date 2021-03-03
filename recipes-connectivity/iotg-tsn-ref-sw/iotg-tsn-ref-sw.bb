@@ -4,11 +4,11 @@ HOMEPAGE = "https://github.com/intel/iotg_tsn_ref_sw"
 AUTHOR = "Wong, Vincent Por Yin"
 LICENSE = "BSD-3-Clause"
 
-LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=665202835d998903d52afcb9c30ad9f5"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=665202835d998903d52afcb9c30ad9f5"
 
 SRC_URI = "git://github.com/intel/iotg_tsn_ref_sw.git;protocol=https;branch=master"
 
-SRCREV = "ea1f241b37200c4c9fa18062c7053c67ffc9cb88"
+SRCREV = "6159cb991d52d51c735847ed2a146394d5dc2c1a"
 PV = "1.0-git${SRCPV}"
 
 S = "${WORKDIR}/git"

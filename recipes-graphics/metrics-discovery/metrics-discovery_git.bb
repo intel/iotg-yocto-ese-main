@@ -15,10 +15,9 @@ MDAPI_GIT_URI ?= "git://github.com/intel/metrics-discovery"
 UPSTREAM_CHECK_URI = "https://github.com/intel/metrics-discovery/releases"
 UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>(\d+(\.\d+)+))"
 
-SRCREV_mdapi ?= "2601e0bffbfaaeec2353a08d18d86568b509425d"
+SRCREV_mdapi ?= "17f4240027df2dd8981200f6d8cf5e20f8015fd3"
 
 SRC_URI = "${MDAPI_GIT_URI};protocol=https;name=mdapi;destsuffix=git"
-SRC_URI_append = " file://0001-CMakeLists-consistently-install-.pc-file-into-correc.patch"
 
 DEPENDS = "libdrm ncurses"
 

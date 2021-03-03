@@ -87,5 +87,5 @@ python do_ese_boot_sign(){
 
 do_image[depends] += "virtual/secure-boot-certificates:do_deploy file-native:do_populate_sysroot"
 python(){
-    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_ese_boot_sign;')
+    d.appendVar('ESE_IMAGE_CALLS', ' do_ese_boot_sign;')
 }

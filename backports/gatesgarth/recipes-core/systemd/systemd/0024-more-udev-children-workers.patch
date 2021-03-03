@@ -1,0 +1,28 @@
+From af3fcb936a92294e30742be88b6ce3791d353f74 Mon Sep 17 00:00:00 2001
+From: Ng Shui Lei <shui.lei.ng@intel.com>
+Date: Wed, 6 May 2020 15:53:37 +0800
+Subject: [PATCH] [PATCH 24/39] more udev children workers
+
+Upstream-Status: Inappropriate [not author]
+
+From: Arjan van de Ven <arjan@linux.intel.com>
+---
+ units/systemd-udevd.service.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/units/systemd-udevd.service.in
+b/units/systemd-udevd.service.in
+index 9ada3a6a74..e838dca763 100644
+--- a/units/systemd-udevd.service.in
++++ b/units/systemd-udevd.service.in
+@@ -24,7 +24,7 @@ OOMScoreAdjust=-1000
+ Sockets=systemd-udevd-control.socket systemd-udevd-kernel.socket
+ Restart=always
+ RestartSec=0
+-ExecStart=@rootlibexecdir@/systemd-udevd
++ExecStart=@rootlibexecdir@/systemd-udevd --children-max=16
+ ExecReload=udevadm control --reload --timeout 0
+ KillMode=mixed
+ TasksMax=infinity
+--
+2.7.4

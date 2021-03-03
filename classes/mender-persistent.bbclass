@@ -1,6 +1,6 @@
 # this fixup should be inherited after rootfs-postcommands
 
-python do_mender_persistent_fixup(){
+fakeroot python do_mender_persistent_fixup(){
     import os, shutil, stat, subprocess
 
     rootfs = d.getVar("IMAGE_ROOTFS")
@@ -80,5 +80,5 @@ python do_mender_persistent_fixup(){
 }
 
 python(){
-    d.appendVar('IMAGE_PREPROCESS_COMMAND', ' do_mender_persistent_fixup;')
+    d.appendVar('ESE_IMAGE_CALLS', ' do_mender_persistent_fixup;')
 }
