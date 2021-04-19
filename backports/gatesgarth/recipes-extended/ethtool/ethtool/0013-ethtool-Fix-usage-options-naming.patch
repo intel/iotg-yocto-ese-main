@@ -1,0 +1,30 @@
+From 98b8025a9f64747747d8fb628e0ddd68bc58f2be Mon Sep 17 00:00:00 2001
+From: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
+Date: Fri, 19 Mar 2021 19:26:07 +0800
+Subject: [PATCH 13/13] ethtool: Fix usage options naming
+
+- Fix wrong usage option naming for add-frag-size.
+- Remove unused preemptible-queues-mask usage options.
+
+Signed-off-by: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
+---
+ ethtool.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/ethtool.c b/ethtool.c
+index 411efd6..469f549 100644
+--- a/ethtool.c
++++ b/ethtool.c
+@@ -6000,8 +6000,7 @@ static const struct option args[] = {
+ 		.func	= do_set_preempt,
+ 		.help	= "Set Frame Preemption settings",
+ 		.xhelp	= "		[ fp on|off ]\n"
+-			  "		[ preemptible-queues-mask %x ]\n"
+-			  "		[ min-frag-size %d ]\n",
++			  "		[ add-frag-size %d ]\n",
+ 	},
+ 	{
+ 		.opts	= "-Q|--per-queue",
+-- 
+2.17.1
+

@@ -14,9 +14,20 @@ while test -z "${SIZING}"; do
   echo "# Select install partitioning scheme:"
   echo "1. Standard (42GB)"
   echo "2. Minimal (21GB) (No Manageability Support)"
+  echo "99. Custom sizing (Expert)"
   echo "# Enter a number to select scheme"
   read SIZING_CHOICE
   case "${SIZING_CHOICE}" in
+  99)
+    echo "# You have selected a custom sizing option. This will start gptfdisk(1), the following partitions must be created:"
+    echo "#   1. efi (ef00 typecode)"
+    echo "#   2. primary (8304 typecode)"
+    echo "#   3. secondary (8304 typecode)"
+    echo "#   4. data (8300 typecode)"
+    echo "#   5. swap (8200 typecode)"
+    echo "#   Any other custom partitions after the others (will not be formatted or mounted), the first 1-5 partitions will be automatically gpt labeled."
+    SIZING="/usr/sbin/gdisk"
+    ;;
   1)
     SIZING="/usr/sbin/sgdisk -a 4096 -n 1:0:+128M --typecode=1:ef00 -n 2:0:+12G --typecode=2:8304 -n 3:0:+12G --typecode=3:8304 -n 4:0:+12G --typecode=4:8300 -n 5:0:+4G --typecode=5:8200"
     ;;
@@ -48,7 +59,7 @@ fi
 
 echo "Using ${DESTINATION} as install destination, this will destroy any data on it"
 echo "Using ${SOURCE} as install source"
-echo "Press any key to continue or CTRL-C to abort now"
+echo "Press the enter key to continue or CTRL-C to abort now"
 read
 
 try_get_part_node(){
@@ -102,7 +113,7 @@ mount -o rw "$(try_get_part_node ${DESTINATION} 4)" /tmp/DESTINATION/data
 # install here
 echo "Copying contents"
 rsync -rlt /tmp/SOURCE/boot/efi/ /tmp/DESTINATION/boot/efi/
-rsync -rltogDAX --exclude=/boot/efi/ /tmp/SOURCE/ /tmp/DESTINATION/
+rsync -rltogDAXS --exclude=/boot/efi/ /tmp/SOURCE/ /tmp/DESTINATION/
 
 # umount
 echo "Unmounting"

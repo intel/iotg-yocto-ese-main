@@ -46,7 +46,7 @@ class menderio_boot(SourcePlugin):
         # Removed in 2.04
         # grub_modules += " verify"
         # New in 2.04
-        grub_modules += " shim_lock tpm"
+        grub_modules += " tpm"
 
         libdir = get_bitbake_var("STAGING_LIBDIR")
         if not libdir:

@@ -7,6 +7,6 @@ SRC_URI = "git://github.com/lcp/mokutil.git;protocol=https;nobranch=1"
 S = "${WORKDIR}/git"
 SRCREV = "18e5eb052116221197a70e788afc414c1e1f4bb7"
 
-inherit autotools pkgconfig
+inherit autotools pkgconfig bash-completion
 
 DEPENDS += "efivar gnu-efi openssl virtual/crypt"

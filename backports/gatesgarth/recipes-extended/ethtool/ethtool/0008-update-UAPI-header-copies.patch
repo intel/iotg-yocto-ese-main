@@ -1,0 +1,135 @@
+From e7a343570a8e2367f4ebcd875990a95c00482029 Mon Sep 17 00:00:00 2001
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Mon, 28 Sep 2020 16:55:49 +0200
+Subject: [PATCH 08/12] update UAPI header copies
+
+Update to kernel commit 0675c285ea65.
+
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
+---
+ uapi/linux/ethtool.h         |  2 ++
+ uapi/linux/ethtool_netlink.h | 19 ++++++++++++++++++-
+ uapi/linux/if_link.h         | 31 +++++++++++++++----------------
+ 3 files changed, 35 insertions(+), 17 deletions(-)
+
+diff --git a/uapi/linux/ethtool.h b/uapi/linux/ethtool.h
+index 847ccd0b1fce..052689bcc90c 100644
+--- a/uapi/linux/ethtool.h
++++ b/uapi/linux/ethtool.h
+@@ -1615,6 +1615,8 @@ enum ethtool_link_mode_bit_indices {
+ 	ETHTOOL_LINK_MODE_400000baseLR4_ER4_FR4_Full_BIT = 87,
+ 	ETHTOOL_LINK_MODE_400000baseDR4_Full_BIT	 = 88,
+ 	ETHTOOL_LINK_MODE_400000baseCR4_Full_BIT	 = 89,
++	ETHTOOL_LINK_MODE_100baseFX_Half_BIT		 = 90,
++	ETHTOOL_LINK_MODE_100baseFX_Full_BIT		 = 91,
+ 	/* must be last entry */
+ 	__ETHTOOL_LINK_MODE_MASK_NBITS
+ };
+diff --git a/uapi/linux/ethtool_netlink.h b/uapi/linux/ethtool_netlink.h
+index cebdb52e6a05..c022883cdb22 100644
+--- a/uapi/linux/ethtool_netlink.h
++++ b/uapi/linux/ethtool_netlink.h
+@@ -79,6 +79,7 @@ enum {
+ 	ETHTOOL_MSG_TSINFO_GET_REPLY,
+ 	ETHTOOL_MSG_CABLE_TEST_NTF,
+ 	ETHTOOL_MSG_CABLE_TEST_TDR_NTF,
++	ETHTOOL_MSG_TUNNEL_INFO_GET_REPLY,
+ 
+ 	/* add new constants above here */
+ 	__ETHTOOL_MSG_KERNEL_CNT,
+@@ -91,9 +92,12 @@ enum {
+ #define ETHTOOL_FLAG_COMPACT_BITSETS	(1 << 0)
+ /* provide optional reply for SET or ACT requests */
+ #define ETHTOOL_FLAG_OMIT_REPLY	(1 << 1)
++/* request statistics, if supported by the driver */
++#define ETHTOOL_FLAG_STATS		(1 << 2)
+ 
+ #define ETHTOOL_FLAG_ALL (ETHTOOL_FLAG_COMPACT_BITSETS | \
+-			  ETHTOOL_FLAG_OMIT_REPLY)
++			  ETHTOOL_FLAG_OMIT_REPLY | \
++			  ETHTOOL_FLAG_STATS)
+ 
+ enum {
+ 	ETHTOOL_A_HEADER_UNSPEC,
+@@ -376,12 +380,25 @@ enum {
+ 	ETHTOOL_A_PAUSE_AUTONEG,			/* u8 */
+ 	ETHTOOL_A_PAUSE_RX,				/* u8 */
+ 	ETHTOOL_A_PAUSE_TX,				/* u8 */
++	ETHTOOL_A_PAUSE_STATS,				/* nest - _PAUSE_STAT_* */
+ 
+ 	/* add new constants above here */
+ 	__ETHTOOL_A_PAUSE_CNT,
+ 	ETHTOOL_A_PAUSE_MAX = (__ETHTOOL_A_PAUSE_CNT - 1)
+ };
+ 
++enum {
++	ETHTOOL_A_PAUSE_STAT_UNSPEC,
++	ETHTOOL_A_PAUSE_STAT_PAD,
++
++	ETHTOOL_A_PAUSE_STAT_TX_FRAMES,
++	ETHTOOL_A_PAUSE_STAT_RX_FRAMES,
++
++	/* add new constants above here */
++	__ETHTOOL_A_PAUSE_STAT_CNT,
++	ETHTOOL_A_PAUSE_STAT_MAX = (__ETHTOOL_A_PAUSE_STAT_CNT - 1)
++};
++
+ /* EEE */
+ 
+ enum {
+diff --git a/uapi/linux/if_link.h b/uapi/linux/if_link.h
+index 9d96890f9742..307e5c245e9f 100644
+--- a/uapi/linux/if_link.h
++++ b/uapi/linux/if_link.h
+@@ -7,24 +7,23 @@
+ 
+ /* This struct should be in sync with struct rtnl_link_stats64 */
+ struct rtnl_link_stats {
+-	__u32	rx_packets;		/* total packets received	*/
+-	__u32	tx_packets;		/* total packets transmitted	*/
+-	__u32	rx_bytes;		/* total bytes received 	*/
+-	__u32	tx_bytes;		/* total bytes transmitted	*/
+-	__u32	rx_errors;		/* bad packets received		*/
+-	__u32	tx_errors;		/* packet transmit problems	*/
+-	__u32	rx_dropped;		/* no space in linux buffers	*/
+-	__u32	tx_dropped;		/* no space available in linux	*/
+-	__u32	multicast;		/* multicast packets received	*/
++	__u32	rx_packets;
++	__u32	tx_packets;
++	__u32	rx_bytes;
++	__u32	tx_bytes;
++	__u32	rx_errors;
++	__u32	tx_errors;
++	__u32	rx_dropped;
++	__u32	tx_dropped;
++	__u32	multicast;
+ 	__u32	collisions;
+-
+ 	/* detailed rx_errors: */
+ 	__u32	rx_length_errors;
+-	__u32	rx_over_errors;		/* receiver ring buff overflow	*/
+-	__u32	rx_crc_errors;		/* recved pkt with crc error	*/
+-	__u32	rx_frame_errors;	/* recv'd frame alignment error */
+-	__u32	rx_fifo_errors;		/* recv'r fifo overrun		*/
+-	__u32	rx_missed_errors;	/* receiver missed packet	*/
++	__u32	rx_over_errors;
++	__u32	rx_crc_errors;
++	__u32	rx_frame_errors;
++	__u32	rx_fifo_errors;
++	__u32	rx_missed_errors;
+ 
+ 	/* detailed tx_errors */
+ 	__u32	tx_aborted_errors;
+@@ -37,7 +36,7 @@ struct rtnl_link_stats {
+ 	__u32	rx_compressed;
+ 	__u32	tx_compressed;
+ 
+-	__u32	rx_nohandler;		/* dropped, no handler found	*/
++	__u32	rx_nohandler;
+ };
+ 
+ /**
+-- 
+2.17.1
+

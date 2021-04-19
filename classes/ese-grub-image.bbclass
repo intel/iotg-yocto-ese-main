@@ -29,11 +29,7 @@ python fakeroot do_ese_grub_mkimage(){
     'sleep', 'syslinuxcfg', 'test', 'tftp', 'version', 'video', 'xfs', 'zstd', 'backtrace', \
     'chain', 'usb', 'usbserial_common', 'usbserial_pl2303', 'usbserial_ftdi', 'xzio', 'lzopio', \
     'usbserial_usbdebug', 'hashsum', 'cpio', 'newc', 'f2fs', 'squash4', 'efienv', 'memdisk', \
-    'eval', 'shim_lock', 'tpm']
-  # Removed in 2.04
-  # grub_modules += " verify"
-  # New in 2.04
-  grub_modules.extend(['shim_lock', 'tpm'])
+    'eval', 'tpm']
 
   grub_cpio = ['']
   grub_input = ['-d', '%s/grub/%s-efi' % (libdir, target)]
@@ -45,8 +41,14 @@ python fakeroot do_ese_grub_mkimage(){
     bb.build.exec_func('do_ese_grub_embed_cfg', d)
   else:
     grub_cpio = ['-p', efd]
-    
-  subprocess.run(args=['grub-mkimage'] + grub_cpio + grub_input + grub_format + grub_output + grub_modules, check=True)
+
+  mkimage = ['grub-mkimage']
+  deploydir = d.getVar('DEPLOY_DIR_IMAGE')
+  sbat = '%s/grub-efi.sbat.csv' % deploydir
+  if os.path.isfile(sbat):
+    mkimage += ['--sbat', sbat]
+
+  subprocess.run(args=mkimage + grub_cpio + grub_input + grub_format + grub_output + grub_modules, check=True)
 }
 
 python(){

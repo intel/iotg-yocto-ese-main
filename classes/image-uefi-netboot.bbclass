@@ -14,7 +14,7 @@ UEFI_NETBOOT_SECURE_BOOT_SIGN ?= "0"
 INITRAMFS_IMAGE_PATH ?= "${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE_NAME}-${MACHINE}.cpio"
 UEFI_NETBOOT_COPY_FS = ""
 UEFI_NETBOOT_GRUB_GPG_SIGN ?= "0"
-UEFI_NETBOOT_GRUB_MODULES ?= "shim_lock normal tftp linux verifiers gcry_sha256 gcry_dsa gcry_rsa gcry_sha512"
+UEFI_NETBOOT_GRUB_MODULES ?= "normal tftp linux gcry_sha256 gcry_dsa gcry_rsa gcry_sha512"
 GRUB_GPG_HOME = "${B}/gpghome"
 GPG_SOCKET = ""
 

@@ -1,7 +1,0 @@
-SRC_URI_append = "file://0001-Add-IGC-driver-support.patch \
-                  file://0001-ethtool-Add-support-for-configuring-frame-preemption.patch \
-                  file://0001-igc-Add-support-for-dumping-frame-preemption-stats-r.patch \
-"
-
-
-FILESEXTRAPATHS_prepend := "${THISDIR}/ethtool:"

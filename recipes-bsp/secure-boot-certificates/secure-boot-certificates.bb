@@ -15,7 +15,7 @@ S = "${WORKDIR}"
 # cert-to-efi-sig-list/sign-efi-sig-list from efitools is not available yet
 do_compile(){
   for name in db KEK PK shim yocto; do
-    openssl req -newkey "${SECURE_BOOT_CERT_GEN_ALGO}:${SECURE_BOOT_CERT_GEN_LENGTH}" -nodes -keyout "${name}.key" -new -x509 -"${SECURE_BOOT_CERT_GEN_HASH}" -days 3650 -subj "${SECURE_BOOT_CERT_GEN_SUBJECT}" -out "${name}.crt"
+    openssl req -newkey "${SECURE_BOOT_CERT_GEN_ALGO}:${SECURE_BOOT_CERT_GEN_LENGTH}" -nodes -keyout "${name}.key" -new -x509 -"${SECURE_BOOT_CERT_GEN_HASH}" -days 3650 -subj "${SECURE_BOOT_CERT_GEN_SUBJECT}" -addext "nsComment=${PN} ${name} certificate" -out "${name}.crt"
     openssl x509 -outform DER -in "${name}.crt" -out "${name}.cer"
   done
 }

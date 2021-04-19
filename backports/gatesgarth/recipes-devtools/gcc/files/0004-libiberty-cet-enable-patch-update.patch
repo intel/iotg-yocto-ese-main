@@ -1,0 +1,33 @@
+From 50cb87ba9a0573e6baed62731d66cbc0f06a31b4 Mon Sep 17 00:00:00 2001
+From: "RameshkrishnanX, Geddy Sekar" <rameshkrishnanx.geddy.sekar@intel.com>
+Date: Wed, 17 Mar 2021 13:39:14 +0530
+Subject: [PATCH] libiberty: cet-enable patch update
+
+HSDES ID: NA
+Source:
+https://gcc.gnu.org/git/?p=gcc.git;a=patch;h=4712bde3cabed644884a52386404765fca3b0ac2
+
+Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
+---
+ libiberty/configure | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libiberty/configure b/libiberty/configure
+index 3f82c5bb8..9cd364456 100755
+--- a/libiberty/configure
++++ b/libiberty/configure
+@@ -5330,9 +5330,9 @@ asm ("setssbsy");
+ }
+ _ACEOF
+ if ac_fn_c_try_compile "$LINENO"; then :
+-
++  support_cet=yes
+ else
+-  as_fn_error $? "assembler with CET support is required for --enable-cet" "$LINENO" 5
++  support_cet=no
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ 	;;
+-- 
+2.17.1
+

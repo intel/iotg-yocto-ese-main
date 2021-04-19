@@ -3,24 +3,22 @@ execute another application."
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
-SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1 \
-           file://0002-lib-console.c-fix-typo.patch \
-"
+SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1"
+SRC_URI_append = " file://0001-mok.c-fix-potential-buffer-overrun-in-import_mok_sta.patch"
 
 S = "${WORKDIR}/git"
-#SRCREV = "1f123ac2359cd923e9144f944a4bddf597fddbb5" is the latest as of writing
-PV_append = "+${SRCPV}"
-# SRCREV = "fecc2dfb8e408526221091923d9345796b8e294e" is bad, breaks dmidecode
-# last known good is fc4368fed53837e00d303600d8b628cb0392b629
-SRCREV = "fc4368fed53837e00d303600d8b628cb0392b629"
+B = "${WORKDIR}/build"
+PV_append = "${SRCPV}"
+SRCREV = "4068fd42c891ea6ebdec056f461babc6e4048844"
 
 inherit deploy
 
-DEPENDS += " gnu-efi nss openssl-native dos2unix-native sbsigntool-native elfutils-native"
+DEPENDS += "nss openssl-native dos2unix-native sbsigntool-native elfutils-native"
 
 ALLOW_EMPTY_${PN} = "1"
 
-TUNE_CCARGS_remove = "-mfpmath=sse"
+TUNE_CCARGS_remove_x86-64 = "-mfpmath=sse"
+CPPFLAGS_append = " -Wno-error=pointer-sign -Wno-error=incompatible-pointer-types -fno-strict-aliasing"
 
 export INCDIR = "${STAGING_INCDIR}"
 export LIBDIR = "${STAGING_LIBDIR}"
@@ -28,46 +26,39 @@ export ARCH = "${TARGET_ARCH}"
 
 # should be also arm compatible but untested
 COMPATIBLE_HOST = '(x86_64.*|i686)-linux'
-CLEANBROKEN = "1"
-B = "${S}/build"
+
 inherit gnu-efi
 
 do_configure[depends] += "virtual/secure-boot-certificates:do_deploy"
 do_configure_append() {
-	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt .
-	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key .
-	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.crt .
-	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.key .
-	touch -m yocto.key yocto.crt shim.key shim.crt
-	openssl x509 -outform DER -in yocto.crt -out yocto.cer
-	openssl x509 -outform DER -in shim.crt -out shim.cer
+	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt \
+	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.cer \
+	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key \
+	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.crt \
+	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.key \
+	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.cer .
 	openssl pkcs12 -export -in shim.crt -inkey shim.key -out shim.p12 -passout pass:
+
+	# ese sbat marker append, should really be in UTF-8 specifically
+	mkdir -p ${B}/data
+	echo 'shim.ese,1,ESE,${PN},${PV},https://github.com/intel/iotg-yocto-ese-main' > ${B}/data/sbat.ese.csv
 }
+
+EXTRA_OEMAKE = "VENDOR_CERT_FILE=yocto.cer CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
+ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 ${SHIM_DEFAULT_LOADER} EFI_CC="${CCLD}" \
+EFI_HOSTCC="${CCLD}" TOPDIR="${S}/" BUILDDIR="${B}/" -I "${B}" -f "${S}/Makefile""
 
 do_compile_prepend() {
-        unset CFLAGS LDFLAGS
-	mkdir -p "${B}"
-	cd "${B}"
-}
-
-do_compile() {
-	cd "${B}"
+	unset CFLAGS LDFLAGS LIBDIR prefix
 
 	# native tool used during install
 	${BUILD_CCLD} -o "${B}/buildid" ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS} "${S}/buildid.c" -lelf
-
-        oe_runmake VENDOR_CERT_FILE=yocto.crt CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
-	EFI_INCLUDE="${STAGING_INCDIR}/efi" EFI_PATH="${STAGING_LIBDIR}" \
-        ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 ${SHIM_DEFAULT_LOADER} \
-	EFI_CC="${CCLD}" EFI_HOSTCC="${CCLD}" TOPDIR="${S}/" BUILDDIR="${B}/" \
-	-I "${B}" -I "${STAGING_INCDIR}" -f "${S}/Makefile"
 }
 
 addtask deploy after do_install before do_build
 
 do_install() {
-	cd "${B}"
-	oe_runmake install-as-data DESTDIR=${D} TOPDIR="${S}/" BUILDDIR="${B}/" -I "${B}" -I "${STAGING_INCDIR}" -f ${S}/Makefile
+	oe_runmake install-as-data DESTDIR=${D}
 }
 
 do_deploy_class-native() {
@@ -91,3 +82,4 @@ python() {
 }
 
 FILES_${PN} += "${datadir}"
+RRECOMMENDS_${PN} = "mokutil"

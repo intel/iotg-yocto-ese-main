@@ -7,9 +7,11 @@ do_install_append(){
         if [ "${VIRTUAL-RUNTIME_init_manager}" = "systemd" ]; then
                 chmod 0644 ${D}${systemd_system_unitdir}/apparmor.service
         fi
-	install -m 0755 -d ${D}/usr/lib64
-	mv ${D}/usr/lib/* ${D}/usr/lib64/
-	rm -rf ${D}/usr/lib
+        if [ "${baselib}" = "lib64" ]; then
+                install -m 0755 -d ${D}/usr/lib64
+                mv ${D}/usr/lib/* ${D}/usr/lib64/
+                rm -rf ${D}/usr/lib
+        fi
 }
 
 python() {

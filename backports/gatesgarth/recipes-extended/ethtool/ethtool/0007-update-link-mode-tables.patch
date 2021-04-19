@@ -1,0 +1,158 @@
+From d03b55c76689110e623b9b757f34a0e0f1c4210b Mon Sep 17 00:00:00 2001
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Wed, 16 Sep 2020 23:12:18 +0200
+Subject: [PATCH 07/12] update link mode tables
+
+Update tables of link modes to cover all modes currently defined in uapi
+header:
+
+  - link_modes[] array in netlink/settings.c
+  - all_advertised_modes_bits[] array in ethtool.c
+  - table of modes and corresponding bit values in manual page
+
+In the manual page table, fix also whitespace and order inconsistencies.
+
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
+---
+ ethtool.8.in       | 32 ++++++++++++++++++++++++++------
+ ethtool.c          | 24 ++++++++++++++++++++++--
+ netlink/settings.c | 15 +++++++++++++++
+ 3 files changed, 63 insertions(+), 8 deletions(-)
+
+diff --git a/ethtool.8.in b/ethtool.8.in
+index 42c4767db33e..d0921949b37e 100644
+--- a/ethtool.8.in
++++ b/ethtool.8.in
+@@ -724,21 +724,21 @@ lB	l	lB.
+ 0x80000000000000000	100baseT1 Full
+ 0x010	1000baseT Half	(not supported by IEEE standards)
+ 0x020	1000baseT Full
+-0x100000000000000000	1000baseT1 Full
+ 0x20000	1000baseKX Full
+ 0x20000000000	1000baseX Full
+-0x800000000000	2500baseT Full
++0x100000000000000000	1000baseT1 Full
+ 0x8000	2500baseX Full	(not supported by IEEE standards)
++0x800000000000	2500baseT Full
+ 0x1000000000000	5000baseT Full
+ 0x1000	10000baseT Full
+ 0x40000	10000baseKX4 Full
+ 0x80000	10000baseKR Full
+ 0x100000	10000baseR_FEC
+-0x40000000000	10000baseCR  Full
+-0x80000000000	10000baseSR  Full
+-0x100000000000	10000baseLR  Full
++0x40000000000	10000baseCR Full
++0x80000000000	10000baseSR Full
++0x100000000000	10000baseLR Full
+ 0x200000000000	10000baseLRM Full
+-0x400000000000	10000baseER  Full
++0x400000000000	10000baseER Full
+ 0x200000	20000baseMLD2 Full	(not supported by IEEE standards)
+ 0x400000	20000baseKR2 Full	(not supported by IEEE standards)
+ 0x80000000	25000baseCR Full
+@@ -769,11 +769,31 @@ lB	l	lB.
+ 0x800000000000000	100000baseCR2 Full
+ 0x1000000000000000	100000baseLR2_ER2_FR2 Full
+ 0x2000000000000000	100000baseDR2 Full
++0x8000000000000000000	100000baseKR Full
++0x10000000000000000000	100000baseSR Full
++0x20000000000000000000	100000baseLR_ER_FR Full
++0x40000000000000000000	100000baseCR Full
++0x80000000000000000000	100000baseDR Full
+ 0x4000000000000000	200000baseKR4 Full
+ 0x8000000000000000	200000baseSR4 Full
+ 0x10000000000000000	200000baseLR4_ER4_FR4 Full
+ 0x20000000000000000	200000baseDR4 Full
+ 0x40000000000000000	200000baseCR4 Full
++0x100000000000000000000	200000baseKR2 Full
++0x200000000000000000000	200000baseSR2 Full
++0x400000000000000000000	200000baseLR2_ER2_FR2 Full
++0x800000000000000000000	200000baseDR2 Full
++0x1000000000000000000000	200000baseCR2 Full
++0x200000000000000000	400000baseKR8 Full
++0x400000000000000000	400000baseSR8 Full
++0x800000000000000000	400000baseLR8_ER8_FR8 Full
++0x1000000000000000000	400000baseDR8 Full
++0x2000000000000000000	400000baseCR8 Full
++0x2000000000000000000000	400000baseKR4 Full
++0x4000000000000000000000	400000baseSR4 Full
++0x8000000000000000000000	400000baseLR4_ER4_FR4 Full
++0x10000000000000000000000	400000baseDR4 Full
++0x20000000000000000000000	400000baseCR4 Full
+ .TE
+ .TP
+ .BI phyad \ N
+diff --git a/ethtool.c b/ethtool.c
+index 3df406304ae8..e0d09607c413 100644
+--- a/ethtool.c
++++ b/ethtool.c
+@@ -392,9 +392,9 @@ static void init_global_link_mode_masks(void)
+ 		ETHTOOL_LINK_MODE_100baseT_Full_BIT,
+ 		ETHTOOL_LINK_MODE_1000baseT_Half_BIT,
+ 		ETHTOOL_LINK_MODE_1000baseT_Full_BIT,
+-		ETHTOOL_LINK_MODE_1000baseKX_Full_BIT,
+-		ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
+ 		ETHTOOL_LINK_MODE_10000baseT_Full_BIT,
++		ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
++		ETHTOOL_LINK_MODE_1000baseKX_Full_BIT,
+ 		ETHTOOL_LINK_MODE_10000baseKX4_Full_BIT,
+ 		ETHTOOL_LINK_MODE_10000baseKR_Full_BIT,
+ 		ETHTOOL_LINK_MODE_10000baseR_FEC_BIT,
+@@ -443,6 +443,26 @@ static void init_global_link_mode_masks(void)
+ 		ETHTOOL_LINK_MODE_200000baseCR4_Full_BIT,
+ 		ETHTOOL_LINK_MODE_100baseT1_Full_BIT,
+ 		ETHTOOL_LINK_MODE_1000baseT1_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseKR8_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseSR8_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseLR8_ER8_FR8_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseDR8_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseCR8_Full_BIT,
++		ETHTOOL_LINK_MODE_100000baseKR_Full_BIT,
++		ETHTOOL_LINK_MODE_100000baseSR_Full_BIT,
++		ETHTOOL_LINK_MODE_100000baseLR_ER_FR_Full_BIT,
++		ETHTOOL_LINK_MODE_100000baseCR_Full_BIT,
++		ETHTOOL_LINK_MODE_100000baseDR_Full_BIT,
++		ETHTOOL_LINK_MODE_200000baseKR2_Full_BIT,
++		ETHTOOL_LINK_MODE_200000baseSR2_Full_BIT,
++		ETHTOOL_LINK_MODE_200000baseLR2_ER2_FR2_Full_BIT,
++		ETHTOOL_LINK_MODE_200000baseDR2_Full_BIT,
++		ETHTOOL_LINK_MODE_200000baseCR2_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseKR4_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseSR4_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseLR4_ER4_FR4_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseDR4_Full_BIT,
++		ETHTOOL_LINK_MODE_400000baseCR4_Full_BIT,
+ 	};
+ 	static const enum ethtool_link_mode_bit_indices
+ 		additional_advertised_flags_bits[] = {
+diff --git a/netlink/settings.c b/netlink/settings.c
+index 36f6e3b9fd5e..aa4b77324087 100644
+--- a/netlink/settings.c
++++ b/netlink/settings.c
+@@ -147,6 +147,21 @@ static const struct link_mode_info link_modes[] = {
+ 	[ETHTOOL_LINK_MODE_400000baseDR8_Full_BIT]	= __REAL(400000),
+ 	[ETHTOOL_LINK_MODE_400000baseCR8_Full_BIT]	= __REAL(400000),
+ 	[ETHTOOL_LINK_MODE_FEC_LLRS_BIT]		= __SPECIAL(FEC),
++	[ETHTOOL_LINK_MODE_100000baseKR_Full_BIT]	= __REAL(100000),
++	[ETHTOOL_LINK_MODE_100000baseSR_Full_BIT]	= __REAL(100000),
++	[ETHTOOL_LINK_MODE_100000baseLR_ER_FR_Full_BIT]	= __REAL(100000),
++	[ETHTOOL_LINK_MODE_100000baseCR_Full_BIT]	= __REAL(100000),
++	[ETHTOOL_LINK_MODE_100000baseDR_Full_BIT]	= __REAL(100000),
++	[ETHTOOL_LINK_MODE_200000baseKR2_Full_BIT]	= __REAL(200000),
++	[ETHTOOL_LINK_MODE_200000baseSR2_Full_BIT]	= __REAL(200000),
++	[ETHTOOL_LINK_MODE_200000baseLR2_ER2_FR2_Full_BIT] = __REAL(200000),
++	[ETHTOOL_LINK_MODE_200000baseDR2_Full_BIT]	= __REAL(200000),
++	[ETHTOOL_LINK_MODE_200000baseCR2_Full_BIT]	= __REAL(200000),
++	[ETHTOOL_LINK_MODE_400000baseKR4_Full_BIT]	= __REAL(400000),
++	[ETHTOOL_LINK_MODE_400000baseSR4_Full_BIT]	= __REAL(400000),
++	[ETHTOOL_LINK_MODE_400000baseLR4_ER4_FR4_Full_BIT] = __REAL(400000),
++	[ETHTOOL_LINK_MODE_400000baseDR4_Full_BIT]	= __REAL(400000),
++	[ETHTOOL_LINK_MODE_400000baseCR4_Full_BIT]	= __REAL(400000),
+ };
+ const unsigned int link_modes_count = ARRAY_SIZE(link_modes);
+ 
+-- 
+2.17.1
+

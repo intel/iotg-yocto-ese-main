@@ -1,6 +1,7 @@
 # should be in lowercase for filename comparison despite FAT being case insensitive
 ESE_UEFI_SIGNING_EARLY ??= "shim${GNU_EFI_ARCH}.efi boot${GNU_EFI_ARCH}.efi fwup${GNU_EFI_ARCH}.efi"
-ESE_UEFI_SIGNING_EXCLUDE ??= "mm${GNU_EFI_ARCH}.efi"
+ESE_UEFI_SIGNING_SHIM ??= "mm${GNU_EFI_ARCH}.efi"
+ESE_UEFI_SIGNING_EXCLUDE ??= ""
 
 python do_ese_boot_sign(){
   import os
@@ -19,9 +20,14 @@ python do_ese_boot_sign(){
     key = os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'secure-boot-certificates/db.key')
     sign_pe(d, file, crt, key)
 
-  def sign_pe_mok(d, file):
+  def sign_pe_shim(d, file):
     crt = os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'secure-boot-certificates/shim.crt')
     key = os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'secure-boot-certificates/shim.key')
+    sign_pe(d, file, crt, key)
+
+  def sign_pe_mok(d, file):
+    crt = os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'secure-boot-certificates/yocto.crt')
+    key = os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'secure-boot-certificates/yocto.key')
     sign_pe(d, file, crt, key)
 
   # libsign stub
@@ -49,12 +55,15 @@ python do_ese_boot_sign(){
     suffix = d.getVar('GNU_EFI_ARCH')
     magic = file_magic(d, file)
     early = set(d.getVar('ESE_UEFI_SIGNING_EARLY').split())
+    shim = set(d.getVar('ESE_UEFI_SIGNING_SHIM').split())
 
     if is_PE(magic):
       # warn if already signed
       sig = get_signature(filepath)
       if len(sig):
         bb.warn('File "%s" is already signed!:\n%s' % (filepath, sig))
+      if os.path.basename(file).lower() in shim:
+        return sign_pe_shim
       if os.path.basename(file).lower() in early:
         return sign_pe_db
       else:

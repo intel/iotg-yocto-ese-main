@@ -3,7 +3,7 @@ GALLIUMDRIVERS_append_x86 = ",iris"
 GALLIUMDRIVERS_append_x86-64 = ",iris"
 
 SRC_URI_append = " file://0001-Allow-enable-DRI-without-DRI-drivers.patch \  
-"
+                   file://0001-Workaround_push_constant_corruption_on_context_switch.patch"
 
 DRIDRIVERS_class-native_remove = " swrast"
 DRIDRIVERS_class-nativesdk_remove = " swrast"
