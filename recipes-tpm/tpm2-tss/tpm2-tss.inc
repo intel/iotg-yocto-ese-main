@@ -1,36 +1,24 @@
-SUMMARY = "Software stack for TPM2."
-DESCRIPTION = "OSS implementation of the TCG TPM2 Software Stack (TSS2) "
+SUMMARY = "The TCG TPM2 Software Stack"
+DESCRIPTION = "The TCG (Trusted Computing Group) Software Stack (TSS) \
+provides a standard API for accessing the functions of the TPM. \
+Application developers can use this software to develop interoperable \
+client applications."
+HOMEPAGE = "https://github.com/tpm2-software/tpm2-tss"
+SECTION = "security/tpm"
 LICENSE = "BSD-2-Clause"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=500b2e742befc3da00684d8a1d5fd9da"
-SECTION = "tpm"
+LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=500b2e742befc3da00684d8a1d5fd9da"
 
-DEPENDS = "autoconf-archive-native libgcrypt openssl"
-
-SRC_URI = "https://github.com/tpm2-software/${BPN}/releases/download/${PV}/${BPN}-${PV}.tar.gz \
-           file://0001-configure.ac-fix-compatibility-with-autoconf-2.70.patch \
-          "
-SRC_URI[sha256sum] = "78392be7309baf47f51b122f566ac915fd4d1760ea78571cba2e1484f9b5be17"
-
-inherit autotools pkgconfig systemd extrausers
-
-PACKAGECONFIG ??= ""
-PACKAGECONFIG[oxygen] = ",--disable-doxygen-doc, "
-PACKAGECONFIG[fapi] = "--enable-fapi,--disable-fapi,json-c "
-
-EXTRA_OECONF += "--enable-static --with-udevrulesdir=${base_prefix}/lib/udev/rules.d/"
-EXTRA_OECONF_remove = " --disable-static"
-
-
-EXTRA_USERS_PARAMS = "\
-	useradd -p '' tss; \
-	groupadd tss; \
-	"
+DEPENDS = "autoconf-archive-native openssl doxygen-native"
 
 PROVIDES = "${PACKAGES}"
+
+inherit autotools pkgconfig
+
+EXTRA_OECONF += " \
+    --with-udevrulesdir=${sysconfdir}/udev/rules.d \
+"
+
 PACKAGES = " \
-    ${PN} \
-    ${PN}-dbg \
-    ${PN}-doc \
     libtss2-mu \
     libtss2-mu-dev \
     libtss2-mu-staticdev \
@@ -43,6 +31,9 @@ PACKAGES = " \
     libtss2 \
     libtss2-dev \
     libtss2-staticdev \
+    ${PN} \
+    ${PN}-doc \
+    ${PN}-dbg \
 "
 
 FILES_libtss2-tcti-device = "${libdir}/libtss2-tcti-device.so.*"
@@ -72,7 +63,3 @@ FILES_libtss2-dev = " \
     ${libdir}/pkgconfig \
     ${libdir}/libtss2*so"
 FILES_libtss2-staticdev = "${libdir}/libtss*a"
-
-FILES_${PN} = "${libdir}/udev ${base_prefix}/lib/udev"
-
-RDEPENDS_libtss2 = "libgcrypt"

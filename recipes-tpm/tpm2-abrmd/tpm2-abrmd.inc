@@ -1,32 +1,27 @@
 SUMMARY = "TPM2 Access Broker & Resource Manager"
-DESCRIPTION = "This is a system daemon implementing the TPM2 access \
-broker (TAB) & Resource Manager (RM) spec from the TCG. The daemon (tpm2-abrmd) \
-is implemented using Glib and the GObject system. In this documentation and \
-in the code we use `tpm2-abrmd` and `tabrmd` interchangeably. \
-"
+DESCRIPTION = "This is a system daemon implementing the TPM2 Access Broker (AB) \
+and Resource Manager (RM) specification from the TCG (Trusted Computing Group). \
+The daemon (tpm2-abrmd) is implemented using Glib and the GObject system."
+HOMEPAGE = "https://github.com/tpm2-software/tpm2-abrmd"
 SECTION = "security/tpm"
-
 LICENSE = "BSD-2-Clause"
 LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=500b2e742befc3da00684d8a1d5fd9da"
 
-DEPENDS = "autoconf-archive dbus glib-2.0 tpm2-tss glib-2.0-native \
-            libtss2 libtss2-mu libtss2-tcti-device libtss2-tcti-mssim"
+DEPENDS += " \
+    autoconf-archive-native dbus glib-2.0 glib-2.0-native \
+    tpm2-tss libtss2 libtss2-mu libtss2-tcti-device libtss2-tcti-mssim \
+    "
 
 SRC_URI = "\
-    git://github.com/tpm2-software/tpm2-abrmd.git \
     file://tpm2-abrmd-init.sh \
     file://tpm2-abrmd.default \
 "
-
-SRCREV = "4f332013a02c422e186c4aaf127ab6a40b996028"
-
-S = "${WORKDIR}/git"
 
 inherit autotools pkgconfig systemd update-rc.d useradd
 
 SYSTEMD_PACKAGES += "${PN}"
 SYSTEMD_SERVICE_${PN} = "tpm2-abrmd.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "disable"
+SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 INITSCRIPT_NAME = "${PN}"
 INITSCRIPT_PARAMS = "start 99 2 3 4 5 . stop 19 0 1 6 ."
@@ -35,8 +30,10 @@ USERADD_PACKAGES = "${PN}"
 GROUPADD_PARAM_${PN} = "tss"
 USERADD_PARAM_${PN} = "--system -M -d /var/lib/tpm -s /bin/false -g tss tss"
 
-PACKAGECONFIG ?="${@bb.utils.contains('DISTRO_FEATURES','systemd','systemd', '', d)}"
-PACKAGECONFIG[systemd] = "--with-systemdsystemunitdir=${systemd_system_unitdir}, --with-systemdsystemunitdir=no"
+EXTRA_OECONF += "\
+    --with-systemdsystemunitdir=${systemd_system_unitdir} \
+    --with-systemdpresetdir=${systemd_unitdir}/system-preset \
+"
 
 do_install_append() {
     install -d "${D}${sysconfdir}/init.d"
@@ -46,9 +43,9 @@ do_install_append() {
     install -m 0644 "${WORKDIR}/tpm2-abrmd.default" "${D}${sysconfdir}/default/tpm2-abrmd"
 }
 
-FILES_${PN} += "${libdir}/systemd/system-preset \
-		${datadir}/dbus-1"
+FILES_${PN} += "\
+    ${systemd_unitdir}/system-preset \
+    ${datadir}/dbus-1/system-services/com.intel.tss2.Tabrmd.service \
+"
 
 RDEPENDS_${PN} += "tpm2-tss"
-
-BBCLASSEXTEND = "native"

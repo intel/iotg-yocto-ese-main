@@ -1,0 +1,27 @@
+From 5080bf4494906e605020f5fcca71fa97db513a1a Mon Sep 17 00:00:00 2001
+From: "Wong, Vincent Por Yin" <vincent.por.yin.wong@intel.com>
+Date: Mon, 23 Mar 2020 10:17:49 +0800
+Subject: [PATCH 2/2] makefile: don't preserve ownership when installing from
+ recipe
+
+Signed-off-by: Wong, Vincent Por Yin <vincent.por.yin.wong@intel.com>
+---
+ src/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index e81523e..3395778 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -123,7 +123,7 @@ define do_s_install
+ 	$(Q)if [ ! -d '$(DESTDIR)$2' ]; then		\
+ 		$(INSTALL) -d -m 755 '$(DESTDIR)$2';	\
+ 	fi;
+-	$(Q)cp -fpR $1 '$(DESTDIR)$2'
++	$(Q)cp -fR $1 '$(DESTDIR)$2'
+ endef
+ 
+ install: all install_headers install_pkgconfig
+-- 
+2.7.4
+
