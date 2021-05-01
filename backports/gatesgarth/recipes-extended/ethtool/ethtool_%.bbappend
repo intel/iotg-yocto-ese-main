@@ -10,6 +10,7 @@ SRC_URI_append = "file://0001-uapi-linux-update-kernel-UAPI-header-files.patch \
 		  file://0010-ethtool-Add-support-for-configuring-frame-preemption.patch \
                   file://0011-ethtool-Add-support-for-configuring-frame-preemption.patch \
 		  file://0012-igc-Add-support-for-dumping-frame-preemption-stats-r.patch \
+		  file://0013-ethtool-Fix-usage-options-naming.patch \
 "
 
 

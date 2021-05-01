@@ -1,0 +1,36 @@
+From 91dde5ac25447d636df72437aefbe15de1e00a78 Mon Sep 17 00:00:00 2001
+From: Jonathan Yong <jonathan.yong@intel.com>
+Date: Fri, 16 Apr 2021 09:59:03 +0800
+Subject: [PATCH] mok.c: fix potential buffer overrun in import_mok_state
+
+upstream-status: https://github.com/rhboot/shim/issues/249
+
+Signed-off-by: Jonathan Yong <jonathan.yong@intel.com>
+---
+ mok.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/mok.c b/mok.c
+index 9b8fc2bc..3b73e47a 100644
+--- a/mok.c
++++ b/mok.c
+@@ -1021,10 +1021,12 @@ EFI_STATUS import_mok_state(EFI_HANDLE image_handle)
+ 
+ 		config_template.data_size = v->data_size;
+ 
+-		CopyMem(p, &config_template, sizeof(config_template));
+-		p += sizeof(config_template);
+-		CopyMem(p, v->data, v->data_size);
+-		p += v->data_size;
++		if (v->data && v->data_size) {
++			CopyMem(p, &config_template, sizeof(config_template));
++			p += sizeof(config_template);
++			CopyMem(p, v->data, v->data_size);
++			p += v->data_size;
++		}
+ 	}
+ 	if (p) {
+ 		ZeroMem(&config_template, sizeof(config_template));
+-- 
+2.31.1
+
