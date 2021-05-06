@@ -16,7 +16,6 @@ S = "${WORKDIR}"
 do_compile(){
   for name in db KEK PK shim yocto; do
     openssl req -newkey "${SECURE_BOOT_CERT_GEN_ALGO}:${SECURE_BOOT_CERT_GEN_LENGTH}" -nodes -keyout "${name}.key" -new -x509 -"${SECURE_BOOT_CERT_GEN_HASH}" -days 3650 -subj "${SECURE_BOOT_CERT_GEN_SUBJECT}" -addext "nsComment=${PN} ${name} certificate" -out "${name}.crt"
-    openssl x509 -outform DER -in "${name}.crt" -out "${name}.cer"
   done
 }
 
@@ -25,7 +24,6 @@ do_install(){
   for name in db KEK PK shim yocto; do
     install -m 644 ${name}.key ${D}/${datadir}/secure-boot-certificates
     install -m 644 ${name}.crt ${D}/${datadir}/secure-boot-certificates
-    install -m 644 ${name}.cer ${D}/${datadir}/secure-boot-certificates
   done
 }
 
@@ -34,7 +32,6 @@ do_deploy(){
   for name in db KEK PK shim yocto; do
     install -m 644 ${name}.key ${DEPLOYDIR}/secure-boot-certificates
     install -m 644 ${name}.crt ${DEPLOYDIR}/secure-boot-certificates
-    install -m 644 ${name}.cer ${DEPLOYDIR}/secure-boot-certificates
   done
 }
 

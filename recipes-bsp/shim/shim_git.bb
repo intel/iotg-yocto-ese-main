@@ -32,12 +32,16 @@ inherit gnu-efi
 do_configure[depends] += "virtual/secure-boot-certificates:do_deploy"
 do_configure_append() {
 	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt \
-	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.cer \
 	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key \
 	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.crt \
 	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.key \
-	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.cer .
+	.
 	openssl pkcs12 -export -in shim.crt -inkey shim.key -out shim.p12 -passout pass:
+
+	# X509 DER form
+	for name in shim yocto; do
+		openssl x509 -outform DER -in "${name}.crt" -out "${name}.cer"
+	done
 
 	# ese sbat marker append, should really be in UTF-8 specifically
 	mkdir -p ${B}/data
