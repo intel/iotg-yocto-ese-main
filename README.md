@@ -89,6 +89,10 @@ PREFERRED_VERSION_gstreamer1.0="1.17.%"
 
 ```shell
 DISTRO_FEATURES_append = " opengl systemd"
+
+when systemd added as DISTO_FEATURES please add init_manager
+
+VIRTUAL-RUNTIME_init_manager = "systemd" 
 ```
 
 ### d. Additional and Special Use cases Variables
