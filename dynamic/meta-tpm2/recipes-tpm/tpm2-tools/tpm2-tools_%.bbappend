@@ -1,1 +1,0 @@
-inherit bash-completion

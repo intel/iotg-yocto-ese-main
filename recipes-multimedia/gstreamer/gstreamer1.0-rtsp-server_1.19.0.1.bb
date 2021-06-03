@@ -10,7 +10,7 @@ SRC_URI = "gitsm://github.com/GStreamer/gst-rtsp-server.git;protocol=https \
            "
 
 S = "${WORKDIR}/git"
-SRCREV = "c747711ac5562e53f90ed96e87776a2e6b9806ba"
+SRCREV = "6c9d6fd986303c3173cb2a8ef25e12d8bb18a102"
 
 
 inherit meson pkgconfig upstream-version-is-even gobject-introspection

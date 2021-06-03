@@ -17,10 +17,9 @@ S = "${WORKDIR}/git"
 
 SRC_URI = " \
     gitsm://github.com/GStreamer/gstreamer.git;protocol=https \
-    file://0001-gst-gstpluginloader.c-when-env-var-is-set-do-not-fal.patch \
 "
 
-SRCREV = "96ac9abb230944da41f9076a3feac297c14017a9"
+SRCREV = "2a710a484c6509e5bf08e1d70d3868f0d282c65a"
 
 PACKAGECONFIG ??= "${@bb.utils.contains('PTEST_ENABLED', '1', 'tests', '', d)} \
                    check \

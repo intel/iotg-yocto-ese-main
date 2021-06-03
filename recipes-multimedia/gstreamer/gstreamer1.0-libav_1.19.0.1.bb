@@ -11,7 +11,7 @@ SRC_URI = "gitsm://github.com/GStreamer/gst-libav.git;protocol=https \
            "
 
 S = "${WORKDIR}/git"
-SRCREV = "b6acd99239247aeb3dbb433508316ba709f550bb"
+SRCREV = "a98eafa5a7339dce56f028b0d45b97a5706f02bd"
 
 
 DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base ffmpeg"

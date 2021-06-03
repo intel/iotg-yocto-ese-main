@@ -1,0 +1,33 @@
+From 013f7434b42e8274ce799aaa70a1b498866930fd Mon Sep 17 00:00:00 2001
+From: Jordan Justen <jordan.l.justen@intel.com>
+Date: Thu, 10 Dec 2020 13:44:11 -0800
+Subject: [PATCH 3/3] isl: Round row pitch to a power-of-two for ADL GT2
+
+Signed-off-by: Jordan Justen <jordan.l.justen@intel.com>
+Signed-off-by: James Xiong <james.xiong@intel.com>
+---
+ src/intel/isl/isl.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/intel/isl/isl.c b/src/intel/isl/isl.c
+index 9d9ead7cf3e..53604555003 100644
+--- a/src/intel/isl/isl.c
++++ b/src/intel/isl/isl.c
+@@ -1564,9 +1564,13 @@ isl_calc_row_pitch(const struct isl_device *dev,
+          return false;
+    }
+ 
+-   const uint32_t row_pitch_B =
++   const uint32_t row_pitch_B_npot =
+       surf_info->row_pitch_B != 0 ? surf_info->row_pitch_B : min_row_pitch_B;
+ 
++   const uint32_t row_pitch_B =
++      (dev->info->is_alderlake && dev->info->gt > 1) ?
++      isl_round_up_to_power_of_two(row_pitch_B_npot) : row_pitch_B_npot;
++
+    const uint32_t row_pitch_tl = row_pitch_B / tile_info->phys_extent_B.width;
+ 
+    if (row_pitch_B == 0)
+-- 
+2.17.1
+

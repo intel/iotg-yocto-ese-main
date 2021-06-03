@@ -8,11 +8,11 @@ SRC_URI = " \
             file://0001-ENGR00312515-get-caps-from-src-pad-when-query-caps.patch \
             file://0003-viv-fb-Make-sure-config.h-is-included.patch \
             file://0002-ssaparse-enhance-SSA-text-lines-parsing.patch \
-            file://0004-glimagesink-Downrank-to-marginal.patch \
+            file://0001-glimagesink-rebased-downrank-to-marginal.patch \
             "
 
 S = "${WORKDIR}/git"
-SRCREV = "660b5e4a9864b843c3bc26cd6cdf7b42192f1f36"
+SRCREV = "57578529a0d017f945f5f0ed90fcc2d60580622a"
 
 DEPENDS += "iso-codes util-linux zlib"
 

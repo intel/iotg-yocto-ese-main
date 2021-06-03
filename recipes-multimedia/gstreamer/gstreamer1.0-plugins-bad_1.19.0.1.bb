@@ -6,13 +6,11 @@ SRC_URI = " \
     file://0002-avoid-including-sys-poll.h-directly.patch \
     file://0003-ensure-valid-sentinals-for-gst_structure_get-etc.patch \
     file://0004-opencv-resolve-missing-opencv-data-dir-in-yocto-buil.patch \
-    file://0001-msdkdec-allow-sub-class-to-add-extra-parameters-for-.patch \
-    file://0002-msdkh264dec-report-error-to-user.patch \
-    file://0003-msdkh265dec-Add-support-for-error-report-too.patch \
+    file://0001-msdk-fix-includedir-path-backport-from-poky.patch \
 "
 
 S = "${WORKDIR}/git"
-SRCREV = "470c79be61ed15f88e99c555663c2e45b0b20dd8"
+SRCREV = "bda11a3e735141b5b2740cc93abfcf0b934c7143"
 
 LICENSE = "GPLv2+ & LGPLv2+ & LGPLv2.1+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c"
@@ -155,7 +153,3 @@ FILES_${PN}-freeverb += "${datadir}/gstreamer-1.0/presets/GstFreeverb.prs"
 FILES_${PN}-opencv += "${datadir}/gst-plugins-bad/1.0/opencv*"
 FILES_${PN}-transcode += "${datadir}/gstreamer-1.0/encoding-profiles"
 FILES_${PN}-voamrwbenc += "${datadir}/gstreamer-1.0/presets/GstVoAmrwbEnc.prs"
-
-#Meson build to identify correct path
-export PKG_CONFIG_LIBMFX_INCLUDEDIR = "${STAGING_INCDIR}"
-export PKG_CONFIG_LIBMFX_LIBDIR = "${STAGING_LIBDIR}"

@@ -1,0 +1,32 @@
+From cddc79bd07f270f389325e70447a551fe31b3936 Mon Sep 17 00:00:00 2001
+From: jinchung <jin.chung.teng@intel.com>
+Date: Tue, 18 May 2021 14:39:08 +0800
+Subject: [PATCH] Enable ADL-P for Gmmlib
+
+ADL_P have stride restrictions that requires stride be power of two
+for non-linear buffers.
+
+Signed-off-by: jinchung <jin.chung.teng@intel.com>
+---
+ Source/GmmLib/Texture/GmmTextureAlloc.cpp | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Source/GmmLib/Texture/GmmTextureAlloc.cpp b/Source/GmmLib/Texture/GmmTextureAlloc.cpp
+index 481a8ed..b95f866 100644
+--- a/Source/GmmLib/Texture/GmmTextureAlloc.cpp
++++ b/Source/GmmLib/Texture/GmmTextureAlloc.cpp
+@@ -561,6 +561,11 @@ GMM_STATUS GmmLib::GmmTextureCalc::FillTexPitchAndSize(GMM_TEXTURE_INFO * pTexIn
+         }
+     }
+ 
++    if(GFX_GET_CURRENT_PRODUCT(pPlatform->Platform) == IGFX_ALDERLAKE_P)
++    {
++          pTexInfo->Pitch = GFX_POW2_SIZE(pTexInfo->Pitch);
++    }
++
+     { // Surface Sizes
+         int64_t Size;
+ 
+-- 
+2.7.4
+
