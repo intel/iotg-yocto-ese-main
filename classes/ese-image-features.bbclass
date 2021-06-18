@@ -8,7 +8,7 @@ ESE_EMBED_GRUB_CFG ??= "1"
 EFI_PREFIX ??= "/boot/efi"
 
 # extensions
-IMAGE_FEATURES[validitems] += "ese-grub-image ese-mender-persistent ese-shim-image efi-lockdown"
+IMAGE_FEATURES[validitems] += "ese-grub-image ese-mender-persistent ese-shim-image efi-lockdown slimboot"
 ESE_IMAGE_PREPROCESS ??= ""
 ESE_IMAGE_POSTPROCESS ??= ""
 ESE_IMAGE_CALLS ??= ""

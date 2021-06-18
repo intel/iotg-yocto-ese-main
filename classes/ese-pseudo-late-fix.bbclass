@@ -5,3 +5,6 @@ fakeroot python do_ese_image_fixup(){
 }
 
 addtask do_ese_image_fixup before do_flush_pseudodb after do_rootfs
+do_ese_image_fixup[depends] = "${ESE_IMAGE_FIXUP_DEPS}"
+
+ESE_IMAGE_FIXUP_DEPS ??= ""
