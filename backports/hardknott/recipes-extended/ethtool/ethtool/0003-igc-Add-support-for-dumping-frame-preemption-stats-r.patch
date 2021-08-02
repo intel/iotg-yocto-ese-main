@@ -1,7 +1,7 @@
-From e1adac295dddc19f403b7f32a424a08be0314d85 Mon Sep 17 00:00:00 2001
+From 73bb6c1178dd20c9218118f70687589490225bdd Mon Sep 17 00:00:00 2001
 From: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 Date: Fri, 15 May 2020 15:39:22 -0700
-Subject: [PATCH 2/3] igc: Add support for dumping frame preemption stats
+Subject: [PATCH 3/4] igc: Add support for dumping frame preemption stats
  registers
 
 Includes registers that help verify if frame preemption is indeed

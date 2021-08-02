@@ -6,7 +6,6 @@ SRC_URI = " \
     file://0002-avoid-including-sys-poll.h-directly.patch \
     file://0003-ensure-valid-sentinals-for-gst_structure_get-etc.patch \
     file://0004-opencv-resolve-missing-opencv-data-dir-in-yocto-buil.patch \
-    file://0001-msdk-fix-includedir-path-backport-from-poky.patch \
 "
 
 S = "${WORKDIR}/git"
@@ -153,3 +152,7 @@ FILES_${PN}-freeverb += "${datadir}/gstreamer-1.0/presets/GstFreeverb.prs"
 FILES_${PN}-opencv += "${datadir}/gst-plugins-bad/1.0/opencv*"
 FILES_${PN}-transcode += "${datadir}/gstreamer-1.0/encoding-profiles"
 FILES_${PN}-voamrwbenc += "${datadir}/gstreamer-1.0/presets/GstVoAmrwbEnc.prs"
+
+#Meson build to identify correct path
+export PKG_CONFIG_LIBMFX_INCLUDEDIR = "${STAGING_INCDIR}"
+export PKG_CONFIG_LIBMFX_LIBDIR = "${STAGING_LIBDIR}"

@@ -94,7 +94,8 @@ python do_ese_boot_sign(){
   do_signing_task(d, tasks)
 }
 
-do_image[depends] += "virtual/secure-boot-certificates:do_deploy file-native:do_populate_sysroot"
+do_rootfs[depends]     += "virtual/secure-boot-certificates:do_deploy file-native:do_populate_sysroot"
+do_rootfs[recideptask] += "virtual/secure-boot-certificates:do_deploy"
 python(){
     d.appendVar('ESE_IMAGE_CALLS', ' do_ese_boot_sign;')
 }

@@ -18,7 +18,7 @@ do_ese_copy_rtcm_slimboot(){
 	${PYTHON} ${STAGING_DIR_NATIVE}/${libexecdir}/slimboot/Tools/GenContainer.py create \
 		-cl RTCM:${DEPLOY_DIR_IMAGE}/sbl-rtcm/sbl-rtcm.efi -o ${WORKDIR}/sbl_rtcm \
 		-k ${DEPLOY_DIR_IMAGE}/secure-boot-certificates-slimboot/SigningKey.pem ${auth}
-	install -m644 ${WORKDIR}/sbl_rtcm "${IMAGE_ROOTFS}/${EFI_FILES_PATH}"
+	install -m644 ${WORKDIR}/sbl_rtcm "${IMAGE_ROOTFS}/boot"
 }
 
 python(){
