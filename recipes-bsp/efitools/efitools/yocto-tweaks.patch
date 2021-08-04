@@ -1,0 +1,203 @@
+diff --git a/Make.rules b/Make.rules
+index 903a5a4..6b33612 100644
+--- a/Make.rules
++++ b/Make.rules
+@@ -1,44 +1,35 @@
+ EFISIGNED = $(patsubst %.efi,%-signed.efi,$(EFIFILES))
+ MANPAGES = $(patsubst doc/%.1.in,doc/%.1,$(wildcard doc/*.1.in))
+ HELP2MAN = help2man
+-ARCH	 = $(shell uname -m | sed 's/i.86/ia32/;s/arm.*/arm/')
+-ifeq ($(ARCH),ia32)
+-ARCH3264 = -m32
+-else ifeq ($(ARCH),x86_64)
+-ARCH3264 =
+-else ifeq ($(ARCH),aarch64)
+-ARCH3264 =
+-else ifeq ($(ARCH),arm)
+-ARCH3264 =
+-else
+-$(error unknown architecture $(ARCH))
+-endif
+-INCDIR	   = -I$(TOPDIR)include/ -I/usr/include/efi -I/usr/include/efi/$(ARCH) -I/usr/include/efi/protocol
++INCDIR	   = -I$(TOPDIR)include/ -I$(EFI_INC)/efi -I$(EFI_INC)/efi/$(ARCH) -I$(EFI_INC)//efi/protocol
+ CPPFLAGS   = -DCONFIG_$(ARCH)
+-CFLAGS	   = -O2 -g $(ARCH3264) -fpic -Wall -fshort-wchar -fno-strict-aliasing -fno-merge-constants -fno-stack-protector -ffreestanding -fno-stack-check
+-LDFLAGS	   = -nostdlib
++CFLAGS +=  $(ARCH3264) -fpic -Wall -fshort-wchar -fno-strict-aliasing -fno-merge-constants -fno-stack-protector -ffreestanding -fno-stack-check
++LIBS	   += -nostdlib
+ CRTOBJ		= crt0-efi-$(ARCH).o
+-CRTPATHS	= /lib /lib64 /lib/efi /lib64/efi /usr/lib /usr/lib64 /usr/lib/efi /usr/lib64/efi /usr/lib/gnuefi /usr/lib64/gnuefi
++# CRTPATHS	= /lib /lib64 /lib/efi /lib64/efi /usr/lib /usr/lib64 /usr/lib/efi /usr/lib64/efi /usr/lib/gnuefi /usr/lib64/gnuefi
+ CRTPATH		= $(shell for f in $(CRTPATHS); do if [ -e $$f/$(CRTOBJ) ]; then echo $$f; break; fi; done)
+ CRTOBJS		= $(CRTPATH)/$(CRTOBJ)
+ # there's a bug in the gnu tools ... the .reloc section has to be
+ # aligned otherwise the file alignment gets screwed up
+ LDSCRIPT	= elf_$(ARCH)_efi.lds
+-LDFLAGS		+= -shared -Bsymbolic $(CRTOBJS) -L $(CRTPATH) -L /usr/lib -L /usr/lib64 -T $(LDSCRIPT)
++LIBS		+= -shared -Bsymbolic $(CRTOBJS) -L $(CRTPATH) -T $(LDSCRIPT)
+ LOADLIBES	= -lefi -lgnuefi $(shell $(CC) $(ARCH3264) -print-libgcc-file-name)
+ FORMAT		= --target=efi-app-$(ARCH)
+-OBJCOPY		= objcopy
++OBJCOPY		= $(CROSS_PREFIX)objcopy
++LD              = $(CROSS_PREFIX)ld
+ MYGUID		= 11111111-2222-3333-4444-123456789abc
+ INSTALL		= install
+-BINDIR		= $(DESTDIR)/usr/bin
+-MANDIR		= $(DESTDIR)/usr/share/man/man1
+-EFIDIR		= $(DESTDIR)/usr/share/efitools/efi
+-DOCDIR		= $(DESTDIR)/usr/share/efitools
++PREFIX          = /usr
++BINDIR		= $(DESTDIR)$(PREFIX)/bin
++MANDIR		= $(DESTDIR)$(PREFIX)/share/man/man1
++EFIDIR		= $(DESTDIR)$(PREFIX)/share/efitools/efi
++DOCDIR		= $(DESTDIR)$(PREFIX)/share/efitools
++CROSS_PREFIX    =
+ 
+ # globally use EFI calling conventions (requires gcc >= 4.7)
+ CFLAGS += -DGNU_EFI_USE_MS_ABI
+ 
+-ifeq ($(ARCH),x86_64)
++ifeq ($(ARCH),x64)
+   CFLAGS += -DEFI_FUNCTION_WRAPPER -mno-red-zone
+ endif
+ 
+@@ -47,12 +38,12 @@ ifeq ($(ARCH),ia32)
+ endif
+ 
+ ifeq ($(ARCH),arm)
+-  LDFLAGS += --defsym=EFI_SUBSYSTEM=0x0a
++  LIBS += --defsym=EFI_SUBSYSTEM=0x0a
+   FORMAT = -O binary
+ endif
+ 
+ ifeq ($(ARCH),aarch64)
+-  LDFLAGS += --defsym=EFI_SUBSYSTEM=0x0a
++  LIBS += --defsym=EFI_SUBSYSTEM=0x0a
+   FORMAT = -O binary
+ endif
+ 
+@@ -61,42 +52,42 @@ endif
+ 		   -j .rel -j .rela -j .rel.* -j .rela.* -j .rel* -j .rela* \
+ 		   -j .reloc $(FORMAT) $*.so $@
+ %.so: %.o
+-	$(LD) $(LDFLAGS) $^ -o $@ $(LOADLIBES)
++	$(LD) $(LIBS) $^ -o $@ $(LOADLIBES)
+ 	# check we have no undefined symbols
+-	nm -D $@ | grep ' U ' && exit 1 || exit 0
++	$(CROSS_PREFIX)nm -D $@ | grep ' U ' && exit 1 || exit 0
+ 
+ %.h: %.auth
+ 	./xxdi.pl $< > $@
+ 
+ %.hash: %.efi hash-to-efi-sig-list
+-	./hash-to-efi-sig-list $< $@
++	$(CROSS_BIN)hash-to-efi-sig-list $< $@
+ 
+ %-blacklist.esl: %.crt cert-to-efi-hash-list
+-	./cert-to-efi-sig-list $< $@
++	$(CROSS_BIN)cert-to-efi-sig-list $< $@
+ 
+ %-hash-blacklist.esl: %.crt cert-to-efi-hash-list
+-	./cert-to-efi-hash-list $< $@
++	$(CROSS_BIN)cert-to-efi-hash-list $< $@
+ 
+ %.esl: %.crt cert-to-efi-sig-list
+-	./cert-to-efi-sig-list -g $(MYGUID) $< $@
++	$(CROSS_BIN)cert-to-efi-sig-list -g $(MYGUID) $< $@
+ 
+ getcert = $(shell if [ "$(1)" = "PK" -o "$(1)" = "KEK" ]; then echo "-c PK.crt -k PK.key"; else echo "-c KEK.crt -k KEK.key"; fi)
+ getvar = $(shell if [ "$(1)" = "PK" -o "$(1)" = "KEK" ]; then echo $(1); else echo db; fi)
+ 
+ %.auth: %.esl PK.crt KEK.crt sign-efi-sig-list
+-	./sign-efi-sig-list $(call getcert,$*) $(call getvar,$*) $< $@
++	$(CROSS_BIN)sign-efi-sig-list $(call getcert,$*) $(call getvar,$*) $< $@
+ 
+ %-update.auth: %.esl PK.crt KEK.crt sign-efi-sig-list
+-	./sign-efi-sig-list -a $(call getcert,$*) $(call getvar,$*) $< $@
++	$(CROSS_BIN)sign-efi-sig-list -a $(call getcert,$*) $(call getvar,$*) $< $@
+ 
+ %-pkupdate.auth: %.esl PK.crt sign-efi-sig-list
+-	./sign-efi-sig-list -a -c PK.crt -k PK.key $(call getvar,$*) $< $@
++	$(CROSS_BIN)sign-efi-sig-list -a -c PK.crt -k PK.key $(call getvar,$*) $< $@
+ 
+ %-blacklist.auth: %-blacklist.esl KEK.crt sign-efi-sig-list
+-	./sign-efi-sig-list -a -c KEK.crt -k KEK.key dbx $< $@
++	$(CROSS_BIN)sign-efi-sig-list -a -c KEK.crt -k KEK.key dbx $< $@
+ 
+ %-pkblacklist.auth: %-blacklist.esl PK.crt sign-efi-sig-list
+-	./sign-efi-sig-list -a -c PK.crt -k PK.key dbx $< $@
++	$(CROSS_BIN)sign-efi-sig-list -a -c PK.crt -k PK.key dbx $< $@
+ 
+ %.o: %.c
+ 	$(CC) $(INCDIR) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+@@ -132,4 +123,4 @@ getvar = $(shell if [ "$(1)" = "PK" -o "$(1)" = "KEK" ]; then echo $(1); else ec
+ 	ar rcv $@ $^
+ 
+ doc/%.1: doc/%.1.in %
+-	$(HELP2MAN) --no-info -i $< -o $@ ./$*
++	$(HELP2MAN) --no-info -i $< -o $@ $(CROSS_BIN)$*
+diff --git a/Makefile b/Makefile
+index 7d471da..34b30d5 100644
+--- a/Makefile
++++ b/Makefile
+@@ -4,7 +4,7 @@ BINARIES = cert-to-efi-sig-list sig-list-to-certs sign-efi-sig-list \
+ 	hash-to-efi-sig-list efi-readvar efi-updatevar cert-to-efi-hash-list \
+ 	flash-var
+ 
+-ifeq ($(ARCH),x86_64)
++ifeq ($(ARCH),x64)
+ EFIFILES += PreLoader.efi
+ endif
+ 
+@@ -27,9 +27,7 @@ include Make.rules
+ 
+ EFISIGNED = $(patsubst %.efi,%-signed.efi,$(EFIFILES))
+ 
+-all: $(EFISIGNED) $(BINARIES) $(MANPAGES) noPK.auth $(KEYAUTH) \
+-	$(KEYUPDATEAUTH) $(KEYBLACKLISTAUTH) $(KEYHASHBLACKLISTAUTH)
+-
++all: $(BINARIES) $(EFIFILES) $(MANPAGES)
+ 
+ install: all
+ 	$(INSTALL) -m 755 -d $(MANDIR)
+@@ -88,31 +86,31 @@ HelloWorld.so: lib/lib-efi.a
+ ShimReplace.so: lib/lib-efi.a
+ 
+ cert-to-efi-sig-list: cert-to-efi-sig-list.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
+ 
+ sig-list-to-certs: sig-list-to-certs.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
+ 
+ sign-efi-sig-list: sign-efi-sig-list.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
+ 
+ hash-to-efi-sig-list: hash-to-efi-sig-list.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a
+ 
+ cert-to-efi-hash-list: cert-to-efi-hash-list.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
+ 
+ efi-keytool: efi-keytool.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a
+ 
+ efi-readvar: efi-readvar.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
+ 
+ efi-updatevar: efi-updatevar.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a -lcrypto
+ 
+ flash-var: flash-var.o lib/lib.a
+-	$(CC) $(ARCH3264) -o $@ $< lib/lib.a
++	$(CC) $(LDFLAGS) $(ARCH3264) -o $@ $< lib/lib.a
+ 
+ clean:
+ 	rm -f PK.* KEK.* DB.* $(EFIFILES) $(EFISIGNED) $(BINARIES) *.o *.so

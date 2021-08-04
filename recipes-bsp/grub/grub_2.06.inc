@@ -12,22 +12,21 @@ SECTION = "bootloaders"
 LICENSE = "GPLv3"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 SRC_URI = "git://github.com/rhboot/grub2.git;protocol=https;nobranch=1;name=grub"
-SRCREV_grub = "58ca5cb327000834be8cf39a44b68c8f2b6dcdb4"
+SRCREV_grub = "c0d482d92aaeafb389ddc0fe63f8755ce17930f0"
 
 SRC_URI_append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
 SRCREV_gnulib = "6db02d3d2febe5e6e855d94722bb24f097c80a6f"
 
 SRCREV_FORMAT = "grub_gnulib"
 S = "${WORKDIR}/git"
-PR = "r6+${SRCPV}"
-PV = "2.06~rc1"
+PR = "r2+${SRCPV}"
+PV = "2.06"
 SRC_URI_append = " \
   file://bootstrap.conf;subdir=. \
   file://bootstrap;subdir=. \
   file://gitignore \
   file://strtoull_test.c;subdir=grub-core/tests \
   http://unifoundry.com/unifont-5.1.20080820.pcf.gz;downloadfilename=unifont.pcf.gz;subdir=.;unpack=0;name=unifont \
-  file://0001-grub-rpm-sort-make-rpm-sort-actually-optional.patch \
   file://0001-bootp-fix-bootp-compile-if-EFI-disabled.patch \
   file://0001-configure.ac-check-if-fno-trampolines-is-supported.patch;apply=${GRUB_NATIVE_PATCH} \
 "

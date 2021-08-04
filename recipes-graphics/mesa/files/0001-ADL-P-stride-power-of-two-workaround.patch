@@ -1,0 +1,76 @@
+From 29c77f662661bbc01122d01b38d2cd069c9e4d6e Mon Sep 17 00:00:00 2001
+From: jinchung <jin.chung.teng@intel.com>
+Date: Fri, 18 Jun 2021 10:34:22 +0800
+Subject: [PATCH] ADL-P stride power of two workaround
+
+Signed-off-by: jinchung <jin.chung.teng@intel.com>
+---
+ src/gallium/drivers/iris/iris_resource.c | 9 ++++++++-
+ src/intel/isl/isl.c                      | 6 +++++-
+ src/intel/isl/isl_drm.c                  | 3 +++
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/drivers/iris/iris_resource.c b/src/gallium/drivers/iris/iris_resource.c
+index d60a955..3bf5744 100644
+--- a/src/gallium/drivers/iris/iris_resource.c
++++ b/src/gallium/drivers/iris/iris_resource.c
+@@ -125,6 +125,9 @@ modifier_is_supported(const struct intel_device_info *devinfo,
+       if (INTEL_DEBUG & DEBUG_NO_RBC)
+          return false;
+ 
++      if (devinfo->is_alderlake && devinfo->gt == 2 && devinfo->revision == 0)
++         return false;
++
+       enum isl_format rt_format =
+          iris_format_for_usage(devinfo, pfmt,
+                                ISL_SURF_USAGE_RENDER_TARGET_BIT).fmt;
+@@ -702,8 +705,12 @@ iris_resource_configure_aux(struct iris_screen *screen,
+    const bool has_hiz = !res->mod_info && !(INTEL_DEBUG & DEBUG_NO_HIZ) &&
+       isl_surf_get_hiz_surf(&screen->isl_dev, &res->surf, &res->aux.surf);
+ 
++   const bool disable_ccs =
++      (INTEL_DEBUG & DEBUG_NO_RBC) ||
++      (devinfo->is_alderlake && devinfo->gt == 2 && devinfo->revision == 0);
++
+    const bool has_ccs =
+-      ((!res->mod_info && !(INTEL_DEBUG & DEBUG_NO_RBC)) ||
++      ((!res->mod_info && !disable_ccs) ||
+        (res->mod_info && res->mod_info->aux_usage != ISL_AUX_USAGE_NONE)) &&
+       isl_surf_get_ccs_surf(&screen->isl_dev, &res->surf, &res->aux.surf,
+                             &res->aux.extra_aux.surf, 0);
+diff --git a/src/intel/isl/isl.c b/src/intel/isl/isl.c
+index 9c45798..583f12f 100644
+--- a/src/intel/isl/isl.c
++++ b/src/intel/isl/isl.c
+@@ -1576,9 +1576,13 @@ isl_calc_row_pitch(const struct isl_device *dev,
+          return false;
+    }
+ 
+-   const uint32_t row_pitch_B =
++   const uint32_t row_pitch_B_npot =
+       surf_info->row_pitch_B != 0 ? surf_info->row_pitch_B : min_row_pitch_B;
+ 
++   const uint32_t row_pitch_B =
++      (dev->info->is_alderlake && dev->info->gt > 1) ?
++      isl_round_up_to_power_of_two(row_pitch_B_npot) : row_pitch_B_npot;
++
+    const uint32_t row_pitch_tl = row_pitch_B / tile_info->phys_extent_B.width;
+ 
+    if (row_pitch_B == 0)
+diff --git a/src/intel/isl/isl_drm.c b/src/intel/isl/isl_drm.c
+index 9a495af..0c01ae6 100644
+--- a/src/intel/isl/isl_drm.c
++++ b/src/intel/isl/isl_drm.c
+@@ -154,6 +154,9 @@ isl_drm_modifier_get_score(const struct intel_device_info *devinfo,
+       if (devinfo->ver >= 12)
+          return 0;
+ 
++      if (devinfo->is_alderlake && devinfo->gt == 2 && devinfo->revision == 0)
++         return 0;
++
+       if (INTEL_DEBUG & DEBUG_NO_RBC)
+          return 0;
+ 
+-- 
+2.7.4
+

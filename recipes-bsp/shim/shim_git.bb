@@ -30,6 +30,7 @@ COMPATIBLE_HOST = '(x86_64.*|i686)-linux'
 inherit gnu-efi
 
 do_configure[depends] += "virtual/secure-boot-certificates:do_deploy"
+do_configure[recideptask] += "virtual/secure-boot-certificates:do_deploy"
 do_configure_append() {
 	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt \
 	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key \

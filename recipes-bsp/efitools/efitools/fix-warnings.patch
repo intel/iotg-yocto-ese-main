@@ -1,0 +1,12 @@
+diff --git a/sig-list-to-certs.c b/sig-list-to-certs.c
+index e56e048..973ddd4 100644
+--- a/sig-list-to-certs.c
++++ b/sig-list-to-certs.c
+@@ -3,6 +3,7 @@
+  *
+  * see COPYING file
+  */
++#define _XOPEN_SOURCE 1
+ #include <stdint.h>
+ #define __STDC_VERSION__ 199901L
+ #include <efi.h>

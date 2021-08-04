@@ -1,9 +1,16 @@
+#override SRC_URI and SRCREV
+SRC_URI = "git://gitlab.freedesktop.org/mesa/mesa.git;protocol=https;branch=main"
+SRCREV = "0e0633ca49425dbc869521cede6a82d2d91c8042"
+LIC_FILES_CHKSUM = "file://docs/license.rst;md5=17a4ea65de7a9ab42437f3131e616a7f"
+PV = "21.1.0+"
+S = "${WORKDIR}/git"
+
 ### prefer iris drivers
-GALLIUMDRIVERS_append_x86 = ",iris"
-GALLIUMDRIVERS_append_x86-64 = ",iris"
+GALLIUMDRIVERS_append_x86 = ",iris,kmsro"
+GALLIUMDRIVERS_append_x86-64 = ",iris,kmsro"
 
 SRC_URI_append = " file://0001-Allow-enable-DRI-without-DRI-drivers.patch \  
-                   file://0001-Workaround_push_constant_corruption_on_context_switch.patch"
+"
 
 DRIDRIVERS_class-native_remove = " swrast"
 DRIDRIVERS_class-nativesdk_remove = " swrast"
@@ -41,3 +48,5 @@ PACKAGECONFIG[osmesa] = "-Dosmesa=true,-Dosmesa=false"
 PACKAGECONFIG_remove = "elf-tls"
 PACKAGECONFIG[elf-tls] = ",,,"
 EXTRA_OEMESON_remove = "-Dasm=false"
+PACKAGECONFIG_append_class-native=" dri3"
+PACKAGECONFIG_append_class-nativesdk=" dri3"

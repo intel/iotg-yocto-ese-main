@@ -1,4 +1,4 @@
-# meta-intel-ese-main
+# meta-intel-iot-main
 This BSP layer provides information on building Yocto Project*-based BSP \
 on Intel IoT platforms.
 
@@ -30,8 +30,8 @@ The BSPs contained in this layer are compatible with the Yocto Project \
 as per the requirements listed here:
 
 ```shell
-a. Zeus
-b. Dunfell
+a. Dunfell
+b. Hardknott
 ```
 
 
@@ -42,24 +42,24 @@ git clone git://github.com/openembedded/openembedded-core.git
 cd openembedded-core
 git clone git://github.com/openembedded/bitbake.git
 git clone https://git.yoctoproject.org/git/meta-intel
-git clone https://gitlab.devtools.intel.com/OWR/IoTG/ESE/Linux-Integration/Yocto/meta-intel-ese-main-pre.git meta-intel-ese-main
+git clone https://github.com/intel-innersource/os.linux.yocto.build.meta-intel-iot-main.git meta-intel-iot-main
 
 $ . ./oe-init-build-env
 ```
-Add meta-intel and meta-intel-ese-main overlay
+Add meta-intel and meta-intel-iot-main overlay
 ```
 bitbake-layers add-layer ../meta-intel
-bitbake-layers add-layer ../meta-intel-ese-main
+bitbake-layers add-layer ../meta-intel-iot-main
 ```
 
-Check `conf/bblayers.conf` to see that meta-intel and meta-intel-ese-main
+Check `conf/bblayers.conf` to see that meta-intel and meta-intel-iot-main
 is added to layer mix e.g.
 
 ```shell
 BBLAYERS ?= " \
 /path/to/openembedded-core/meta \
 /path/to/meta-intel \
-/path/to/layer/meta-intel-ese-main \
+/path/to/layer/meta-intel-iot-main \
 "
 ```
 
@@ -82,7 +82,7 @@ MACHINE = "intel-corei7-64"
 ```shell
 PREFERRED_VERSION_gstreamer1.0="{version number}%"
 e.g.
-PREFERRED_VERSION_gstreamer1.0="1.17.%"
+PREFERRED_VERSION_gstreamer1.0="1.19.%"
 ```
 
 ### c. Set `DISTRO_FEATURES` if any
