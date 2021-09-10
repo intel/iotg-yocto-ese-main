@@ -201,11 +201,11 @@ This layer depends on:
 
 ```shell
 URI: git://github.com/openembedded/openembedded-core.git
-branch: dunfell
+branch: hardknott
 revision: HEAD
 
 URI: git://github.com/openembedded/bitbake.git
-branch: 1.46
+branch: 1.50
 revision: HEAD
 
 URI: https://git.yoctoproject.org/git/meta-intel

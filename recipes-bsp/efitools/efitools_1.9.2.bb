@@ -9,9 +9,13 @@ LICENSE = "GPL-2 & LGPL-2.1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=e28f66b16cb46be47b20a4cdfe6e99a1"
 
 CERT_DEP = ""
-CERT_DEP_class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates:do_deploy', '', d)}"
-do_compile[depends] += "${CERT_DEP}"
-do_compile[recideptask] += "${CERT_DEP}"
+CERT_DEP_DEPLOY = ""
+CERT_DEP_class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates', '', d)}"
+CERT_DEP_DEPLOY_class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates:do_deploy', '', d)}"
+# workaround for caching old keys causing key mismatch
+DEPENDS_append_class-target += "${CERT_DEP}"
+do_compile[depends] += "${CERT_DEP_DEPLOY}"
+do_compile[recideptask] += "${CERT_DEP_DEPLOY}"
 NEED_LOCKDOWN = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', '1', '', d)}"
 inherit ${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'gnu-efi', '', d)}
 

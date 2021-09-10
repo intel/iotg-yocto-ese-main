@@ -15,6 +15,9 @@ inherit deploy
 
 DEPENDS += "nss openssl-native dos2unix-native sbsigntool-native elfutils-native"
 
+# workaround: sometimes shim is not rebuilt even when new keys are generated
+DEPENDS += "virtual/secure-boot-certificates"
+
 ALLOW_EMPTY_${PN} = "1"
 
 TUNE_CCARGS_remove_x86-64 = "-mfpmath=sse"

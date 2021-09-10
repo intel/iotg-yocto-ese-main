@@ -5,6 +5,10 @@
             Disable MMC
             4
             1
+        [VALUE]
+            Enable HCP Scalability Decode
+            4
+            0
 [KEY]
     0x00000002
     UFKEY_INTERNAL\Report

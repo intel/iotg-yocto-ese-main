@@ -8,5 +8,3 @@ python() {
         d.appendVar('SRC_URI', ' file://0001-dri2-Sync-i965_pci_ids.h-from-mesa.patch')
         d.appendVar('SRC_URI', ' file://0001-Add-TGL-ID-for-enabling-the-E2E-GEN12-Compression-and-Decompression.patch')
 }
-
-RRECOMMENDS_${PN}_append = " xf86-video-qxl"

@@ -7,6 +7,7 @@ LICENSE = "LGPLv2.1+"
 LIC_FILES_CHKSUM = "file://COPYING.LIB;md5=4fbd65380cdd255951079008b364516c"
 
 SRC_URI = "gitsm://github.com/GStreamer/gstreamer-vaapi.git;protocol=https \
+           file://0001-Revert-vaapipostproc-Remove-YUV-to-from-RGB-color-pr.patch \
 "
 
 S = "${WORKDIR}/git"
