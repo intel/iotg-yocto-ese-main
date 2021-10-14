@@ -39,6 +39,30 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0001-linux-user-Tag-vsx-with-ieee128-fpbits.patch \
            file://CVE-2021-3527-1.patch \
            file://CVE-2021-3527-2.patch \
+           file://0001-ui-gtk-Allow-user-to-select-monitor-to-show-qemu-in-.patch \
+           file://0002-virtio-gpu-virtio-gpu-enablement-baseline.patch \
+           file://0003-ui-gtk-Create-a-common-release_dmabuf-helper.patch \
+           file://0004-ui-egl-Add-egl-helpers-to-help-with-synchronization.patch \
+           file://0005-ui-Create-sync-objects-and-fences-only-for-blobs.patch \
+           file://0006-ui-gtk-egl-Wait-for-the-draw-signal-for-dmabuf-blobs.patch \
+           file://0007-virtio-gpu-Add-gl_flushed-callback.patch \
+           file://0008-ui-gtk-skip-any-extra-draw-of-same-guest-scanout-blo.patch \
+           file://0009-ui-gtk-egl-un-tab-and-re-tab-should-destory-egl-surf.patch \
+           file://0010-ui-gtk-egl-make-sure-the-right-context-is-the-curren.patch \
+           file://0011-ui-gtk-gd_draw_event-returns-FALSE-when-no-cairo-sur.patch \
+           file://0012-ui-gtk-egl-guest-fb-texture-needs-to-be-regenerated-.patch \
+           file://0013-edid-Added-support-for-4k-60-Hz-monitor.patch \
+           file://0014-virtio-gpu-splitting-one-extended-mode-guest-fb-into.patch \
+           file://0015-ui-gtk-egl-blitting-partial-guest-fb-to-the-proper-s.patch \
+           file://0016-ui-Add-in-clipboard-infra.patch \
+           file://0017-ui-gtk-detach_all-option-for-making-all-VCs-detached.patch \
+           file://0018-ui-gtk-specify-detached-window-s-size-and-location.patch \
+           file://0019-ui-gtk-adds-status-bar-for-expressing-ups-and-fps.patch \
+           file://0020-ui-gtk-calling-gd_gl_frame_counter-at-every-draw-swa.patch \
+           file://0021-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
+           file://0022-hw-display-virtio-gpu-Fix-memory-leak-CID-1453811.patch \
+           file://0023-virtio-gpu-no-point-of-checking-res-iov.patch \
+           file://0024-ui-gtk-egl-dmabuf-scanout-only-when-scanout_mode-is-.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 

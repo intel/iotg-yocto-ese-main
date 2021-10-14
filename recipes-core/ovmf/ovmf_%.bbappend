@@ -18,3 +18,6 @@ do_install_append_class-target() {
 
 PACKAGES_append_class-target = " ${PN}-edk2"
 FILES_${PN}-edk2_class-target = "${datadir}/${PN}-edk2"
+
+# WA for fetch failure of cmocka . Added a mirror    
+MIRRORS_append = " gitsm://git.cryptomilk.org/projects/cmocka.git gitsm://github.com/tianocore/edk2-cmocka.git"
