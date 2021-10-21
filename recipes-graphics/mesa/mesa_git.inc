@@ -10,7 +10,9 @@ GALLIUMDRIVERS_append_x86 = ",iris,kmsro"
 GALLIUMDRIVERS_append_x86-64 = ",iris,kmsro"
 
 SRC_URI_append = " file://0001-Allow-enable-DRI-without-DRI-drivers.patch \  
-"
+                   file://0001-intel-dev-Add-display_ver-and-set-adl-p-to-13.patch \
+                   file://0002-iris-Disable-I915_FORMAT_MOD_Y_TILED_GEN12-on-adl-p-.patch \
+                 "
 
 DRIDRIVERS_class-native_remove = " swrast"
 DRIDRIVERS_class-nativesdk_remove = " swrast"

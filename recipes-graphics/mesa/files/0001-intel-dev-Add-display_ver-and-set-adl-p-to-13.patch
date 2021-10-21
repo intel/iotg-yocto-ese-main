@@ -1,0 +1,53 @@
+From efa36a28bd9bcc4083f6f9637b495c557828f41d Mon Sep 17 00:00:00 2001
+From: Jordan Justen <jordan.l.justen@intel.com>
+Date: Thu, 16 Sep 2021 15:39:11 -0700
+Subject: [PATCH 1/2] intel/dev: Add display_ver and set adl-p to 13
+
+Ref: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/12908
+Cc: mesa-stable
+Fixes: e435511b580 ("intel/dev: Add device info for ADL GT2")
+Signed-off-by: Jordan Justen <jordan.l.justen@intel.com>
+Reviewed-by: Lionel Landwerlin <lionel.g.landwerlin@intel.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/12973>
+---
+ src/intel/dev/intel_device_info.c | 4 ++++
+ src/intel/dev/intel_device_info.h | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/src/intel/dev/intel_device_info.c b/src/intel/dev/intel_device_info.c
+index 6962c93..b988606 100644
+--- a/src/intel/dev/intel_device_info.c
++++ b/src/intel/dev/intel_device_info.c
+@@ -992,6 +992,7 @@ static const struct intel_device_info intel_device_info_adl_gt1 = {
+ static const struct intel_device_info intel_device_info_adl_gt2 = {
+    GFX12_GT_FEATURES(2),
+    .is_alderlake = true,
++   .display_ver = 13,
+ };
+ 
+ #define GFX12_DG1_FEATURES                      \
+@@ -1317,6 +1318,9 @@ intel_get_device_info_from_pci_id(int pci_id,
+    if (devinfo->verx10 == 0)
+       devinfo->verx10 = devinfo->ver * 10;
+ 
++   if (devinfo->display_ver == 0)
++      devinfo->display_ver = devinfo->ver;
++
+    update_cs_workgroup_threads(devinfo);
+ 
+    devinfo->chipset_id = pci_id;
+diff --git a/src/intel/dev/intel_device_info.h b/src/intel/dev/intel_device_info.h
+index 30330f8..daa5b19 100644
+--- a/src/intel/dev/intel_device_info.h
++++ b/src/intel/dev/intel_device_info.h
+@@ -50,6 +50,7 @@ struct intel_device_info
+    /* Driver internal numbers used to differentiate platforms. */
+    int ver;
+    int verx10;
++   int display_ver;
+    int revision;
+    int gt;
+ 
+-- 
+2.7.4
+
