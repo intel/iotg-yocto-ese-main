@@ -8,6 +8,8 @@ SRC_URI = " \
     file://0004-opencv-resolve-missing-opencv-data-dir-in-yocto-buil.patch \
     file://0001-msdk-fix-includedir-path-backport-from-poky.patch \
     file://0001-msdk-make-sure-child-context-is-destroyed-first.patch \
+    file://0001-msdk-Adjust-the-plugin-and-factories-description-bas.patch \
+    file://0001-msdkmjpegdec-report-error-to-user.patch \
 "
 
 S = "${WORKDIR}/git"
@@ -147,10 +149,10 @@ EXTRA_OEMESON += " \
 
 export OPENCV_PREFIX = "${STAGING_DIR_TARGET}${prefix}"
 
-ARM_INSTRUCTION_SET_armv4 = "arm"
-ARM_INSTRUCTION_SET_armv5 = "arm"
+ARM_INSTRUCTION_SET:armv4 = "arm"
+ARM_INSTRUCTION_SET:armv5 = "arm"
 
-FILES_${PN}-freeverb += "${datadir}/gstreamer-1.0/presets/GstFreeverb.prs"
-FILES_${PN}-opencv += "${datadir}/gst-plugins-bad/1.0/opencv*"
-FILES_${PN}-transcode += "${datadir}/gstreamer-1.0/encoding-profiles"
-FILES_${PN}-voamrwbenc += "${datadir}/gstreamer-1.0/presets/GstVoAmrwbEnc.prs"
+FILES:${PN}-freeverb += "${datadir}/gstreamer-1.0/presets/GstFreeverb.prs"
+FILES:${PN}-opencv += "${datadir}/gst-plugins-bad/1.0/opencv*"
+FILES:${PN}-transcode += "${datadir}/gstreamer-1.0/encoding-profiles"
+FILES:${PN}-voamrwbenc += "${datadir}/gstreamer-1.0/presets/GstVoAmrwbEnc.prs"

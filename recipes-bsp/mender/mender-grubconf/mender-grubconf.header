@@ -2,6 +2,13 @@ search -l efi --no-floppy --set root
 set prefix=($root)/EFI/BOOT
 search -l primary --no-floppy --set rootfs2
 search -l secondary --no-floppy --set rootfs3
+### this part assumes gpt partition 2/3 are alternate rootfs systems
+# not all filesystems support labeling, eg squashfs
+if test ( -z "${rootfs2}" -o -z "${rootfs3}" ); then
+  regexp --set hdbase "^hd([0-9]+)" "$root"
+  eval rootfs2=hd${hdbase},gpt2
+  eval rootfs3=hd${hdbase},gpt3
+fi
 
 mender_rootfsa_part=2
 mender_rootfsb_part=3

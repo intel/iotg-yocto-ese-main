@@ -1,8 +1,3 @@
-SUMMARY = "The Intel(R) Graphics Compiler for OpenCL(TM)"
-DESCRIPTION = "The Intel(R) Graphics Compiler for OpenCL(TM) is an \
-llvm based compiler for OpenCL(TM) targeting Intel Gen graphics \
-hardware architecture."
-
 EXTRA_OECMAKE += " -DLLVMGenXIntrinsics_DIR=${STAGING_LIBDIR}"
 
 #fix lib64 for vc-intrinsics

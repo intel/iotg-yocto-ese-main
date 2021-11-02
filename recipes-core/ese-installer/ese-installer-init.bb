@@ -2,10 +2,10 @@ SUMMARY = "Helper startup script"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 SRC_URI = "file://installer-init.sh file://S00sysinit.sh file://inittab file://ese-installer"
-RDEPENDS_${PN} += "busybox eudev screen gptfdisk base-passwd rsync findutils grep dosfstools e2fsprogs"
-RDEPENDS_${PN} += "e2fsprogs-badblocks e2fsprogs-dumpe2fs e2fsprogs-e2fsck e2fsprogs-e2scrub e2fsprogs-mke2fs e2fsprogs-resize2fs e2fsprogs-tune2fs"
-RDEPENDS_${PN} += "util-linux util-linux-blockdev util-linux util-linux-findfs util-linux-blkid util-linux-blkdiscard util-linux-lsblk util-linux-sfdisk"
-RDEPENDS_${PN} += "efibootmgr efivar"
+RDEPENDS:${PN} += "busybox eudev screen gptfdisk base-passwd rsync findutils grep dosfstools e2fsprogs"
+RDEPENDS:${PN} += "e2fsprogs-badblocks e2fsprogs-dumpe2fs e2fsprogs-e2fsck e2fsprogs-e2scrub e2fsprogs-mke2fs e2fsprogs-resize2fs e2fsprogs-tune2fs"
+RDEPENDS:${PN} += "util-linux util-linux-blockdev util-linux util-linux-findfs util-linux-blkid util-linux-blkdiscard util-linux-lsblk util-linux-sfdisk"
+RDEPENDS:${PN} += "efibootmgr efivar"
 
 S = "${WORKDIR}"
 
@@ -23,4 +23,4 @@ do_install() {
 
 inherit allarch
 
-FILES_${PN} += "/init /dev/console ${sysconfdir} ${bindir}"
+FILES:${PN} += "/init /dev/console ${sysconfdir} ${bindir}"

@@ -14,4 +14,4 @@ inherit autotools pkgconfig
 
 EXTRA_OEMAKE += "shared_library"
 
-ALLOW_EMPTY_${PN} = "1"
+ALLOW_EMPTY:${PN} = "1"

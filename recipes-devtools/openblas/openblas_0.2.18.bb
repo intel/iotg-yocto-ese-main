@@ -48,11 +48,11 @@ do_install() {
                                 PREFIX=${D}/usr install
 }
 
-do_install_append() {
+do_install:append() {
         rm -rf ${D}/usr/bin
         rm -rf ${D}/usr/lib/cmake
 }
 
-FILES_${PN}     = "${libdir}/*"
-FILES_${PN}-dev = "${includedir} ${libdir}/lib${PN}.so"
+FILES:${PN}     = "${libdir}/*"
+FILES:${PN}-dev = "${includedir} ${libdir}/lib${PN}.so"
 

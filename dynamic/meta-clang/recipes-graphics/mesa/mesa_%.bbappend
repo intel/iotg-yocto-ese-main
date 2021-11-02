@@ -1,17 +1,17 @@
-LDFLAGS_append_toolchain-clang = " -latomic -lm"
-DEPENDS_append_toolchain-clang = " libatomic-ops"
+LDFLAGS:append:toolchain-clang = " -latomic -lm"
+DEPENDS:append:toolchain-clang = " libatomic-ops"
 
-EXTRA_OEMASON_append_toolchain-clang_x86 = " -Dasm=false"
-EXTRA_OEMASON_append_toolchain-clang_x86-64 = " -Dasm=false"
+EXTRA_OEMASON:append:toolchain-clang:x86 = " -Dasm=false"
+EXTRA_OEMASON:append:toolchain-clang:x86-64 = " -Dasm=false"
 
 export YOCTO_ALTERNATE_EXE_PATH = "${STAGING_LIBDIR}/llvm-config"
 export LLVM_CONFIG = "${STAGING_BINDIR_NATIVE}/llvm-config"
 
 inherit qemu
-DEPENDS_append = " qemu-native"
-SYSROOT_DIRS_append = " ${bindir}"
+DEPENDS:append = " qemu-native"
+SYSROOT_DIRS:append = " ${bindir}"
 
-do_configure_prepend(){
+do_configure:prepend(){
        sed -e 's@llvm-config${LLVMVERSION}@${LLVM_CONFIG}@g' -i "${WORKDIR}/meson.cross"
 }
 
