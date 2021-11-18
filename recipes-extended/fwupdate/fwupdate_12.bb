@@ -16,14 +16,14 @@ SRCREV = "6101b6b304da06644bd7a90444f729d0fc44940e"
 S = "${WORKDIR}/git"
 
 inherit gettext pkgconfig bash-completion
-RDEPENDS:${PN}-bash-completion:append = " ${PN} bash"
+RDEPENDS_${PN}-bash-completion_append = " ${PN} bash"
 
 inherit gnu-efi
 CFLAGS += "-I${RECIPE_SYSROOT}${includedir}/efi -I${RECIPE_SYSROOT}${includedir}/efi/${GNU_EFI_ARCH} -I${RECIPE_SYSROOT}${includedir}/efivar"
 
 # Does not work in combination with the -mno-sse that is needed
 # for the EFI app.
-CC:remove = "-mfpmath=sse"
+CC_remove = "-mfpmath=sse"
 
 EXTRA_OEMAKE += " \
     CC='${CC}' \
@@ -61,9 +61,9 @@ do_install () {
 # TODO: deploy the files into the image dir instead and build images
 # with them via the EFI_PROVIDER mechanism.
 PACKAGES += "${PN}-boot"
-FILES:${PN}-boot += "/boot"
+FILES_${PN}-boot += "/boot"
 
-FILES:${PN} += " \
+FILES_${PN} += " \
     ${datadir}/cache/fwupdate \
     ${systemd_system_unitdir} \
 "
@@ -71,8 +71,8 @@ FILES:${PN} += " \
 # The EFI app doesn't pass the test because it needs to be (?) compiled
 # differently. We therefore disable the check to avoid:
 # do_package_qa: QA Issue: No GNU_HASH in the elf binary: '.../packages-split/fwupdate-dbg/usr/lib/debug/boot/efi/EFI/refkit/fwupx64.efi.debug' [ldflags]
-WARN_QA:remove = "ldflags"
-ERROR_QA:remove = "ldflags"
+WARN_QA_remove = "ldflags"
+ERROR_QA_remove = "ldflags"
 
 # Copy for Wic image
 do_deploy() {

@@ -99,8 +99,8 @@ python do_install () {
         f.write(d.getVar('dmverity_script'))
 }
 
-FILES:${PN} = "/init.d /etc"
-RDEPENDS:${PN} += " \
+FILES_${PN} = "/init.d /etc"
+RDEPENDS_${PN} += " \
     initramfs-framework-base \
     cryptsetup \
 "

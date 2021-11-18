@@ -11,7 +11,7 @@ SRC_URI = "git://github.com/intel/Intel-Distribution-of-Weston.git;protocol=http
            file://xwayland.weston-start \
 "
 
-SRC_URI:append:libc-musl = " file://dont-use-plane-add-prop.patch "
+SRC_URI_append_libc-musl = " file://dont-use-plane-add-prop.patch "
 
 SRCREV = "cb204532c4d6626a8b5ec599350c1ef6e358683b"
 PV = "9.0.0+git${SRCPV}"
@@ -85,7 +85,7 @@ PACKAGECONFIG[shell-ivi] = "-Dshell-ivi=true,-Dshell-ivi=false"
 # JPEG image loading support
 PACKAGECONFIG[image-jpeg] = "-Dimage-jpeg=true,-Dimage-jpeg=false, jpeg"
 
-do_install:append() {
+do_install_append() {
 	# Weston doesn't need the .la files to load modules, so wipe them
 	rm -f ${D}/${libdir}/libweston-${WESTON_MAJOR_VERSION}/*.la
 
@@ -110,20 +110,20 @@ do_install:append() {
 PACKAGES += "${@bb.utils.contains('PACKAGECONFIG', 'xwayland', '${PN}-xwayland', '', d)} \
              libweston-${WESTON_MAJOR_VERSION} ${PN}-examples"
 
-FILES:${PN}-dev += "${libdir}/${BPN}/libexec_weston.so"
-FILES:${PN} = "${bindir}/weston ${bindir}/weston-terminal ${bindir}/weston-info ${bindir}/weston-launch ${bindir}/wcap-decode ${libexecdir} ${libdir}/${BPN}/*.so* ${datadir}"
+FILES_${PN}-dev += "${libdir}/${BPN}/libexec_weston.so"
+FILES_${PN} = "${bindir}/weston ${bindir}/weston-terminal ${bindir}/weston-info ${bindir}/weston-launch ${bindir}/wcap-decode ${libexecdir} ${libdir}/${BPN}/*.so* ${datadir}"
 
-FILES:libweston-${WESTON_MAJOR_VERSION} = "${libdir}/lib*${SOLIBS} ${libdir}/libweston-${WESTON_MAJOR_VERSION}/*.so"
-SUMMARY:libweston-${WESTON_MAJOR_VERSION} = "Helper library for implementing 'wayland window managers'."
+FILES_libweston-${WESTON_MAJOR_VERSION} = "${libdir}/lib*${SOLIBS} ${libdir}/libweston-${WESTON_MAJOR_VERSION}/*.so"
+SUMMARY_libweston-${WESTON_MAJOR_VERSION} = "Helper library for implementing 'wayland window managers'."
 
-FILES:${PN}-examples = "${bindir}/*"
+FILES_${PN}-examples = "${bindir}/*"
 
-FILES:${PN}-xwayland = "${libdir}/libweston-${WESTON_MAJOR_VERSION}/xwayland.so"
-RDEPENDS:${PN}-xwayland += "xserver-xorg-xwayland"
+FILES_${PN}-xwayland = "${libdir}/libweston-${WESTON_MAJOR_VERSION}/xwayland.so"
+RDEPENDS_${PN}-xwayland += "xserver-xorg-xwayland"
 
-RDEPENDS:${PN} += "xkeyboard-config"
-RRECOMMENDS:${PN} = "weston-init liberation-fonts"
-RRECOMMENDS:${PN}-dev += "wayland-protocols"
+RDEPENDS_${PN} += "xkeyboard-config"
+RRECOMMENDS_${PN} = "weston-init liberation-fonts"
+RRECOMMENDS_${PN}-dev += "wayland-protocols"
 
 USERADD_PACKAGES = "${PN}"
-GROUPADD_PARAM:${PN} = "--system weston-launch"
+GROUPADD_PARAM_${PN} = "--system weston-launch"

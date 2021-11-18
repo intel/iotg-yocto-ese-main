@@ -18,7 +18,7 @@ SRC_URI = "https://github.com/mesonbuild/meson/releases/download/${PV}/meson-${P
            "
 SRC_URI[sha256sum] = "3b5741f884e04928bdfa1947467ff06afa6c98e623c25cef75adf71ca39ce080"
 
-SRC_URI:append:class-native = " \
+SRC_URI_append_class-native = " \
     file://0001-Make-CPU-family-warnings-fatal.patch \
     file://0002-Support-building-allarch-recipes-again.patch \
 "
@@ -28,6 +28,6 @@ UPSTREAM_CHECK_REGEX = "meson-(?P<pver>\d+(\.\d+)+)\.tar"
 
 inherit setuptools3
 
-RDEPENDS:${PN} = "ninja python3-modules python3-pkg-resources"
+RDEPENDS_${PN} = "ninja python3-modules python3-pkg-resources"
 
-FILES:${PN} += "${datadir}/polkit-1"
+FILES_${PN} += "${datadir}/polkit-1"

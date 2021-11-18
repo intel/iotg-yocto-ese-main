@@ -1,5 +1,5 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/hostapd:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/hostapd:"
 
-SRC_URI:append = " \ 
+SRC_URI_append = " \ 
 		file://defconfig \
 		"

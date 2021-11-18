@@ -10,10 +10,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=e28f66b16cb46be47b20a4cdfe6e99a1"
 
 CERT_DEP = ""
 CERT_DEP_DEPLOY = ""
-CERT_DEP:class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates', '', d)}"
-CERT_DEP_DEPLOY:class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates:do_deploy', '', d)}"
+CERT_DEP_class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates', '', d)}"
+CERT_DEP_DEPLOY_class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates:do_deploy', '', d)}"
 # workaround for caching old keys causing key mismatch
-DEPENDS:append:class-target += "${CERT_DEP}"
+DEPENDS_append_class-target += "${CERT_DEP}"
 do_compile[depends] += "${CERT_DEP_DEPLOY}"
 do_compile[recideptask] += "${CERT_DEP_DEPLOY}"
 NEED_LOCKDOWN = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', '1', '', d)}"
@@ -22,18 +22,18 @@ inherit ${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'gnu-efi', '', d)
 S = "${WORKDIR}/git"
 DEPENDS = "openssl gnu-efi libfile-slurp-perl-native help2man-native openssl-native efitools-native"
 inherit gnu-efi perlnative
-TUNE_CCARGS:remove = "-mfpmath=sse"
+TUNE_CCARGS_remove = "-mfpmath=sse"
 
 EXTRA_OEMAKE += "CRTPATH=${STAGING_LIBDIR}/gnuefi/${GNU_EFI_ARCH} \
   ARCH=${GNU_EFI_ARCH} LDSCRIPT=efi.lds EFI_INC=${STAGING_INCDIR} \
   CRTOBJ=crt0.o PREFIX=${prefix} CROSS_PREFIX=${TARGET_PREFIX} \
 "
 
-EXTRA_OEMAKE:append:class-native = " CROSS_BIN=./"
-EXTRA_OEMAKE:append:class-target = " CROSS_BIN="
-EXTRA_OEMAKE:append:x86-64 = " FORMAT=--target=efi-app-x86_64"
+EXTRA_OEMAKE_append_class-native = " CROSS_BIN=./"
+EXTRA_OEMAKE_append_class-target = " CROSS_BIN="
+EXTRA_OEMAKE_append_x86-64 = " FORMAT=--target=efi-app-x86_64"
 
-do_compile:prepend:class-target(){
+do_compile_prepend_class-target(){
 	if test -n "${NEED_LOCKDOWN}"; then
 		cp "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/db.crt" DB.crt
 		cp "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/db.key" DB.key
@@ -58,7 +58,7 @@ inherit deploy
 do_deploy(){
 	:
 }
-do_deploy:append:class-target(){
+do_deploy_append_class-target(){
 	if test -n "${NEED_LOCKDOWN}"; then
 		install -m 755 -d ${DEPLOYDIR}/${BPN}
 		install -m 644 LockDown.efi ${DEPLOYDIR}/${BPN}/LockDown${GNU_EFI_ARCH}.efi

@@ -10,18 +10,18 @@ SRC_URI[sha256sum] = "a168e73879619b467072509a223282a02c8047d932a48b74fbd498f272
 
 inherit pypi
 
-RDEPENDS:${PN} += " \
+RDEPENDS_${PN} += " \
     ${PYTHON_PN}-io \
     ${PYTHON_PN}-math \
 "
 
-RDEPENDS:${PN}-tests += " \
+RDEPENDS_${PN}-tests += " \
     ${PYTHON_PN}-unittest \
 "
 
 PACKAGES =+ "${PN}-tests"
 
-FILES:${PN}-tests = " \
+FILES_${PN}-tests = " \
     ${PYTHON_SITEPACKAGES_DIR}/Crypto/SelfTest/ \
     ${PYTHON_SITEPACKAGES_DIR}/Crypto/SelfTest/__pycache__/ \
 "

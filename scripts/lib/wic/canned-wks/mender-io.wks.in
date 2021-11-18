@@ -2,9 +2,9 @@
 # long-description: Creates a partitioned EFI disk image that the user
 # can directly dd to boot media. The selected bootloader is grub-efi.
 
-part /boot/efi --part-type="c12a7328-f81f-11d2-ba4b-00a0c93ec93b" --fstype=vfat --fixed-size ${WKS_BOOT_SIZE_MB} --source rootfs --part-name efi --label efi --rootfs-dir=${IMAGE_ROOTFS}${EFI_PREFIX} --use-uuid --align 4096 --fsoptions sync
-part / --part-type="${WKS_ROOT_TYPE}" --source rootfs --fstype=${WKS_ROOT_FS} --part-name primary --label primary --align 4096 --use-uuid --exclude-path ${IMAGE_ROOTFS_EXCLUDE_PATH} --fixed-size ${WKS_ROOT_SIZE_MB} --fsoptions noatime --active
-part --part-type="${WKS_ROOT_TYPE}" --fstype=${WKS_ROOT_FS} --part-name secondary --label secondary --align 4096 --use-uuid --fixed-size ${WKS_ROOT_SIZE_MB}
-part /data --part-type="0fc63daf-8483-4772-8e79-3d69d8477de4" --source rootfs --fstype=ext4 --part-name data --label data --align 4096 --use-uuid --rootfs-dir=${IMAGE_ROOTFS} --change-directory=./data --fixed-size ${WKS_DATA_SIZE_MB} --fsoptions rw,noatime
-part swap --part-type="0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" --use-uuid --align 4096 --part-name swap --label swap --fstype swap --size ${WKS_SWAP_SIZE_MB}
+part /boot/efi --part-type="c12a7328-f81f-11d2-ba4b-00a0c93ec93b" --fstype=vfat --fixed-size ${WKS_BOOT_SIZE_MB} --source rootfs --label efi --rootfs-dir=${IMAGE_ROOTFS}${EFI_PREFIX} --use-uuid --align 4096 --fsoptions sync
+part / --part-type="${WKS_ROOT_TYPE}" --source rootfs --fstype=${WKS_ROOT_FS} --label primary --align 4096 --use-uuid --exclude-path ${IMAGE_ROOTFS_EXCLUDE_PATH} --fixed-size ${WKS_ROOT_SIZE_MB} --fsoptions noatime --active
+part --part-type="${WKS_ROOT_TYPE}" --fstype=${WKS_ROOT_FS} --label secondary --align 4096 --use-uuid --fixed-size ${WKS_ROOT_SIZE_MB}
+part /data --part-type="0fc63daf-8483-4772-8e79-3d69d8477de4" --source rootfs --fstype=ext4 --label data --align 4096 --use-uuid --rootfs-dir=${IMAGE_ROOTFS} --change-directory=./data --fixed-size ${WKS_DATA_SIZE_MB} --fsoptions rw,noatime
+part swap --part-type="0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" --use-uuid --align 4096 --label swap --fstype swap --size ${WKS_SWAP_SIZE_MB}
 bootloader --ptable gpt --timeout=5 --append="${APPEND}"

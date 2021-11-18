@@ -29,7 +29,7 @@ python fakeroot do_ese_grub_mkimage(){
     'sleep', 'syslinuxcfg', 'test', 'tftp', 'version', 'video', 'xfs', 'zstd', 'backtrace', \
     'chain', 'usb', 'usbserial_common', 'usbserial_pl2303', 'usbserial_ftdi', 'xzio', 'lzopio', \
     'usbserial_usbdebug', 'hashsum', 'cpio', 'newc', 'f2fs', 'squash4', 'efienv', 'memdisk', \
-    'eval', 'tpm', 'regexp' ]
+    'eval', 'tpm']
 
   grub_cpio = ['']
   grub_input = ['-d', '%s/grub/%s-efi' % (libdir, target)]

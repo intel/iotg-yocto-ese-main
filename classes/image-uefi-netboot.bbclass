@@ -68,8 +68,8 @@ python(){
 }
 
 GRUB_LIBDIR = "INVALID"
-GRUB_LIBDIR:x86-64 = "x86_64-efi"
-GRUB_LIBDIR:x86 = "i386-efi"
+GRUB_LIBDIR_x86-64 = "x86_64-efi"
+GRUB_LIBDIR_x86 = "i386-efi"
 
 uefi_netboot_do_sign() {
 	sbsign --key "$1" --cert "$2" --output "$4" "$3"
@@ -163,4 +163,4 @@ do_bootimg[fakeroot] = "1"
 do_bootimg[cleandirs] += "${GRUB_GPG_HOME} ${UEFI_NETBOOT_DIR}/${UEFI_NETBOOT_TFTPROOT}"
 addtask bootimg before do_image_complete
 do_image_uefi_netboot_tar[depends] += "${PN}:do_bootimg"
-IMAGE_CMD:uefi-netboot.tar = "${IMAGE_CMD_TAR} --numeric-owner -cf ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.uefi-netboot.tar -C ${UEFI_NETBOOT_DIR} . || [ $? -eq 1 ]"
+IMAGE_CMD_uefi-netboot.tar = "${IMAGE_CMD_TAR} --numeric-owner -cf ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.uefi-netboot.tar -C ${UEFI_NETBOOT_DIR} . || [ $? -eq 1 ]"

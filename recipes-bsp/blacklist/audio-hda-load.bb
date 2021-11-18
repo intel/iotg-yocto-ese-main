@@ -11,7 +11,7 @@ do_install() {
 	ln -s ${sbindir}/audio-hda.sh ${D}${sysconfdir}/preinit-env/
 }
 
-FILES:${PN} += "\
+FILES_${PN} += "\
     ${sbindir}/audio-hda.sh \
     ${sysconfdir} \
 "

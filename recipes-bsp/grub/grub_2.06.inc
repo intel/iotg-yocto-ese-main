@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SUMMARY = "GRUB2 is the next-generation GRand Unified Bootloader"
 
 DESCRIPTION = "GRUB2 is the next generaion of a GPLed bootloader \
@@ -12,16 +12,16 @@ SECTION = "bootloaders"
 LICENSE = "GPLv3"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 SRC_URI = "git://github.com/rhboot/grub2.git;protocol=https;nobranch=1;name=grub"
-SRCREV_grub = "a05051f3af0c20c7506f359be9c0fb2f0086f10d"
+SRCREV_grub = "c0d482d92aaeafb389ddc0fe63f8755ce17930f0"
 
-SRC_URI:append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
+SRC_URI_append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
 SRCREV_gnulib = "6db02d3d2febe5e6e855d94722bb24f097c80a6f"
 
 SRCREV_FORMAT = "grub_gnulib"
 S = "${WORKDIR}/git"
-PR = "r7+${SRCPV}"
+PR = "r2+${SRCPV}"
 PV = "2.06"
-SRC_URI:append = " \
+SRC_URI_append = " \
   file://bootstrap.conf;subdir=. \
   file://bootstrap;subdir=. \
   file://gitignore \
@@ -32,7 +32,7 @@ SRC_URI:append = " \
 "
 
 GRUB_NATIVE_PATCH = "no"
-GRUB_NATIVE_PATCH:class-native = "yes"
+GRUB_NATIVE_PATCH_class-native = "yes"
 
 SRC_URI[unifont.md5sum] = "8c28087c5fcb3188f1244b390efffdbe"
 SRC_URI[unifont.sha256sum] = "122b9c470f29b70223b0e07404a6dfa7f339fcfa6ae74c024f478945af7a9a63"
@@ -40,14 +40,14 @@ SRC_URI[unifont.sha256sum] = "122b9c470f29b70223b0e07404a6dfa7f339fcfa6ae74c024f
 DEPENDS = "flex-native bison-native gettext-native"
 
 COMPATIBLE_HOST = '(x86_64.*|i.86.*|arm.*|aarch64.*)-(linux.*|freebsd.*)'
-COMPATIBLE_HOST:armv7a = 'null'
-COMPATIBLE_HOST:armv7ve = 'null'
+COMPATIBLE_HOST_armv7a = 'null'
+COMPATIBLE_HOST_armv7ve = 'null'
 
 # configure.ac has code to set this automagically from the target tuple
 # but the OE freeform one (core2-foo-bar-linux) don't work with that.
 
-GRUBPLATFORM:arm = "efi"
-GRUBPLATFORM:aarch64 = "efi"
+GRUBPLATFORM_arm = "efi"
+GRUBPLATFORM_aarch64 = "efi"
 GRUBPLATFORM ??= "pc"
 
 inherit autotools gettext texinfo
@@ -69,11 +69,11 @@ PACKAGECONFIG ??= ""
 PACKAGECONFIG[grub-mount] = "--enable-grub-mount,--disable-grub-mount,fuse"
 PACKAGECONFIG[device-mapper] = "--enable-device-mapper,--disable-device-mapper,libdevmapper"
 
-CFLAGS:append:class-native = " -I${STAGING_INCDIR_NATIVE}"
+CFLAGS_append_class-native = " -I${STAGING_INCDIR_NATIVE}"
 
 export PYTHON = "python3"
 
-RDEPENDS:${PN}:class-native = ""
+RDEPENDS_${PN}_class-native = ""
 
 do_prepatch(){
 	cp -f ${WORKDIR}/gitignore ${S}/.gitignore
@@ -88,7 +88,7 @@ do_patch[prefuncs] += "do_prepatch"
 do_patch[postfuncs] += "do_postpatch"
 
 # avoid bootstrapping twice, causing problems with missing files
-do_configure:prepend(){
+do_configure_prepend(){
 	( cd ${S}
 	chmod +x ${S}/bootstrap
 	[ ! -f ${S}/.bootstrap_done ] && ${S}/bootstrap --no-git --gnulib-srcdir="${S}/gnulib"
@@ -96,10 +96,10 @@ do_configure:prepend(){
 }
 
 # fix warnings with CFLAGS
-TUNE_CCARGS:remove = "-mfpmath=sse"
-EXTRA_OECONF:append:x86-64 = " TARGET_LDLFAGS="${LDFLAGS} -no-pie""
+TUNE_CCARGS_remove = "-mfpmath=sse"
+EXTRA_OECONF_append_x86-64 = " TARGET_LDLFAGS="${LDFLAGS} -no-pie""
 
-do_install:append() {
+do_install_append() {
     # Remove build host references...
     find "${D}" -name modinfo.sh -type f -exec \
         sed -i \

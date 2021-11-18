@@ -37,6 +37,6 @@ EXTRA_OECMAKE = "-DBUILD_SHARED_LIBS=ON \
                  -DUA_ENABLE_PUBSUB_ETH_UADP_XDP=ON"
 
 # do not install .cmake files that may clash with upstream versions
-do_install:append(){
+do_install_append(){
 	rm -rf ${D}${libdir}/cmake
 }
