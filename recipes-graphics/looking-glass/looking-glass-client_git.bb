@@ -12,7 +12,7 @@ SRCREV = "163a2e5d0a1168637da2524717b1328165c3c0b0"
 
 inherit cmake pkgconfig
 
-TUNE_CCARGS_append_intel-corei7-64 = " -mno-avx512f"
+TUNE_CCARGS:append_intel-corei7-64 = " -mno-avx512f"
 
 #Looking-Glass Client Directory
 S = "${WORKDIR}/git"

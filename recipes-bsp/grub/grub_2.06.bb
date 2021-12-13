@@ -1,43 +1,43 @@
 require ./grub_${PV}.inc
 
 inherit bash-completion
-RDEPENDS_${PN}-common += "${PN}-editenv"
-RDEPENDS_${PN} += "diffutils freetype ${PN}-common"
+RDEPENDS:${PN}-common += "${PN}-editenv"
+RDEPENDS:${PN} += "diffutils freetype ${PN}-common"
 
-RPROVIDES_${PN}-editenv += "${PN}-efi-editenv"
+RPROVIDES:${PN}-editenv += "${PN}-efi-editenv"
 
 #### transitional
-PROVIDES_append_class-native = " grub-efi-native"
-RPROVIDES_${PN}-common_append_class-native = " grub-efi-native"
-RREPLACES_${PN}-common_append_class-native = " grub-efi-native"
-RCONFLICTS_${PN}-common_append_class-native = " grub-efi-native"
+PROVIDES:append:class-native = " grub-efi-native"
+RPROVIDES:${PN}-common:append:class-native = " grub-efi-native"
+RREPLACES:${PN}-common:append:class-native = " grub-efi-native"
+RCONFLICTS:${PN}-common:append:class-native = " grub-efi-native"
 # fix meta-mender conflict
-DEPENDS_remove = "grub-efi-native"
+DEPENDS:remove = "grub-efi-native"
 ####
 
 PACKAGES =+ "${PN}-editenv ${PN}-common ${PN}-systemd"
-FILES_${PN}-editenv = "${bindir}/grub-editenv"
-FILES_${PN}-common = " \
+FILES:${PN}-editenv = "${bindir}/grub-editenv"
+FILES:${PN}-common = " \
     ${bindir} \
     ${sysconfdir} \
     ${sbindir} \
     ${datadir}/grub \
 "
 
-do_install_append () {
+do_install:append () {
     install -d ${D}${sysconfdir}/grub.d
 }
 
-INSANE_SKIP_${PN} = "arch"
-INSANE_SKIP_${PN}-dbg = "arch"
+INSANE_SKIP:${PN} = "arch"
+INSANE_SKIP:${PN}-dbg = "arch"
 BBCLASSEXTEND = "native"
 
 TESTtest[string___bo] = "test*test"
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}-systemd"
-FILES_${PN}-systemd = "${systemd_unitdir}"
-do_install_append(){
+FILES:${PN}-systemd = "${systemd_unitdir}"
+do_install:append(){
   if test -n "${systemd_unitdir}" -a "${systemd_unitdir}" != "${prefix}/lib/systemd/system" -a -d "${D}${prefix}/lib/systemd/system" ; then
     install -m 755 -d "${D}${systemd_unitdir}"
     mv -T "${D}${prefix}/lib/systemd/system" "${D}${systemd_unitdir}"

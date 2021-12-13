@@ -6,5 +6,5 @@ architecture."
 
 
 # The developers are not aware of Unix soname conventions
-FILES_${PN}-dev = "${includedir}"
-ALLOW_EMPTY_${PN}-dev = "1"
+FILES:${PN}-dev = "${includedir}"
+ALLOW_EMPTY:${PN}-dev = "1"

@@ -10,7 +10,7 @@ INHIBIT_DEFAULT_DEPS = "1"
 
 inherit allarch deploy
 PROVIDES = "virtual/secure-boot-certificates-slimboot"
-RPROVIDES_${PN} = "virtual/secure-boot-certificates-slimboot"
+RPROVIDES:${PN} = "virtual/secure-boot-certificates-slimboot"
 S = "${WORKDIR}"
 
 SRC_URI = "file://${DOWNLOAD_KEY};downloadfilename=${BPN}.pem"
@@ -27,7 +27,7 @@ do_deploy(){
 
 addtask do_deploy before do_build after do_compile
 
-FILES_${PN} = "${datadir}"
+FILES:${PN} = "${datadir}"
 # Should be set by user to a valid key
 PREGENERATED_SIGNING_KEY_SLIMBOOT_KEY ??= "/dev/null"
 SBL_KEY_PATH = "${PREGENERATED_SIGNING_KEY_SLIMBOOT_KEY}"

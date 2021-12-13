@@ -23,7 +23,7 @@ do_compile () {
 	oe_runmake world.opt
 }
 
-do_compile_class-native () {
+do_compile:class-native () {
 	oe_runmake world
 }
 

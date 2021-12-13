@@ -8,4 +8,4 @@ SRC_URI[sha256sum] = "c5e2ea108212b3445051b35953ec267f9f3469e1d5c67ac034ab559849
 
 # CFLAGS are computed in Makefile and reference CCOPTS
 #
-EXTRA_OEMAKE_append = " CCOPTS='${CFLAGS}'"
+EXTRA_OEMAKE:append = " CCOPTS='${CFLAGS}'"

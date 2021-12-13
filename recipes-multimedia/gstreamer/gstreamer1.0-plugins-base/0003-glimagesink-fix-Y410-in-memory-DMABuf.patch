@@ -1,0 +1,70 @@
+From d7013996dd0b921680ff7ae9a9409a634ddc485c Mon Sep 17 00:00:00 2001
+From: Haihao Xiang <haihao.xiang@intel.com>
+Date: Fri, 2 Jul 2021 16:01:19 +0800
+Subject: [PATCH 3/4] glimagesink: fix Y410 in memory:DMABuf
+
+---
+ gst-libs/gst/gl/egl/gsteglimage.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/gst-libs/gst/gl/egl/gsteglimage.c b/gst-libs/gst/gl/egl/gsteglimage.c
+index 4114eecd5..93fdc5eb6 100644
+--- a/gst-libs/gst/gl/egl/gsteglimage.c
++++ b/gst-libs/gst/gl/egl/gsteglimage.c
+@@ -99,6 +99,18 @@
+ #define DRM_FORMAT_Y212         fourcc_code('Y', '2', '1', '2')
+ #endif
+ 
++#ifndef DRM_FORMAT_ABGR2101010
++#define DRM_FORMAT_ABGR2101010    fourcc_code('A', 'B', '3', '0')
++#endif
++
++#ifndef DRM_FORMAT_RGBA1010102
++#define DRM_FORMAT_RGBA1010102    fourcc_code('R', 'A', '3', '0')
++#endif
++
++#ifndef DRM_FORMAT_Y410
++#define DRM_FORMAT_Y410           fourcc_code('Y', '4', '1', '0')
++#endif
++
+ #ifndef EGL_LINUX_DMA_BUF_EXT
+ #define EGL_LINUX_DMA_BUF_EXT 0x3270
+ #endif
+@@ -477,11 +489,13 @@ _drm_rgba_fourcc_from_info (const GstVideoInfo * info, int plane,
+   const gint rgb_fourcc = DRM_FORMAT_BGR888;
+   const gint rg_fourcc = DRM_FORMAT_GR88;
+   const gint rg16_fourcc = DRM_FORMAT_GR1616;
++  const gint rgb10a2_fourcc = DRM_FORMAT_ABGR2101010;
+ #else
+   const gint rgba_fourcc = DRM_FORMAT_RGBA8888;
+   const gint rgb_fourcc = DRM_FORMAT_RGB888;
+   const gint rg_fourcc = DRM_FORMAT_RG88;
+   const gint rg16_fourcc = DRM_FORMAT_RG1616;
++  const gint rgb10a2_fourcc = DRM_FORMAT_RGBA1010102;
+ #endif
+ 
+   GST_DEBUG ("Getting DRM fourcc for %s plane %i",
+@@ -571,6 +585,10 @@ _drm_rgba_fourcc_from_info (const GstVideoInfo * info, int plane,
+       *out_format = GST_GL_RG16;
+       return DRM_FORMAT_RG1616;
+ 
++    case GST_VIDEO_FORMAT_Y410:
++      *out_format = GST_GL_RGB10_A2;
++      return rgb10a2_fourcc;
++
+     default:
+       GST_ERROR ("Unsupported format for DMABuf.");
+       return -1;
+@@ -744,6 +762,9 @@ _drm_direct_fourcc_from_info (const GstVideoInfo * info)
+     case GST_VIDEO_FORMAT_Y212_LE:
+       return DRM_FORMAT_Y212;
+ 
++    case GST_VIDEO_FORMAT_Y410:
++      return DRM_FORMAT_Y410;
++
+     default:
+       GST_INFO ("Unsupported format for direct DMABuf.");
+       return -1;
+-- 
+2.24.3
+

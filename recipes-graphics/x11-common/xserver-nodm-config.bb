@@ -8,7 +8,7 @@ SRC_URI = " \
 	file://igfx_user_feature.txt \
 "
 
-FILES_${PN} = "${sysconfdir}"
+FILES:${PN} = "${sysconfdir}"
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"

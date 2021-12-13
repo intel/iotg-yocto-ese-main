@@ -1,6 +1,6 @@
-From e7622d5dd8a2f215e3200a725797edb542e5190d Mon Sep 17 00:00:00 2001
+From b278967b83c004ea98d425245fd112ee4e2d8f2e Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
-Date: Wed, 4 Aug 2021 22:27:09 +0800
+Date: Mon, 1 Nov 2021 11:48:16 +0800
 Subject: [PATCH] Revert "vaapipostproc: Remove YUV to/from RGB color primary
  quirk since iHD driver has fixed in"
 
@@ -20,10 +20,10 @@ signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
  3 files changed, 25 insertions(+)
 
 diff --git a/gst-libs/gst/vaapi/gstvaapidisplay.c b/gst-libs/gst/vaapi/gstvaapidisplay.c
-index 26c216e7..5e8a135d 100644
+index 878761af..0a95bda3 100644
 --- a/gst-libs/gst/vaapi/gstvaapidisplay.c
 +++ b/gst-libs/gst/vaapi/gstvaapidisplay.c
-@@ -805,6 +805,7 @@ set_driver_quirks (GstVaapiDisplay * display)
+@@ -806,6 +806,7 @@ set_driver_quirks (GstVaapiDisplay * display)
      /* @XXX(victor): is this string enough to identify it */
      { "AMD", GST_VAAPI_DRIVER_QUIRK_NO_CHECK_SURFACE_PUT_IMAGE },
      { "i965", GST_VAAPI_DRIVER_QUIRK_NO_CHECK_VPP_COLOR_STD },
@@ -85,5 +85,5 @@ index 675c481b..aa425ad0 100644
    pipeline_param->surface_color_standard = VAProcColorStandardNone;
    pipeline_param->output_color_standard = VAProcColorStandardNone;
 -- 
-2.17.1
+2.33.1
 

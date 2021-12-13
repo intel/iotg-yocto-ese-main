@@ -1,0 +1,32 @@
+From f30092732d6f867ef8033f8062b0f7a20e0bdaab Mon Sep 17 00:00:00 2001
+From: Jordan Justen <jordan.l.justen@intel.com>
+Date: Thu, 16 Sep 2021 15:40:21 -0700
+Subject: [PATCH 2/2] iris: Disable I915_FORMAT_MOD_Y_TILED_GEN12* on
+ adl-p/display 13
+
+Ref: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/12908
+Cc: mesa-stable
+Fixes: e435511b580 ("intel/dev: Add device info for ADL GT2")
+Signed-off-by: Jordan Justen <jordan.l.justen@intel.com>
+Reviewed-by: Lionel Landwerlin <lionel.g.landwerlin@intel.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/12973>
+---
+ src/gallium/drivers/iris/iris_resource.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/gallium/drivers/iris/iris_resource.c b/src/gallium/drivers/iris/iris_resource.c
+index 95af0d1..05c0f86 100644
+--- a/src/gallium/drivers/iris/iris_resource.c
++++ b/src/gallium/drivers/iris/iris_resource.c
+@@ -97,6 +97,8 @@ modifier_is_supported(const struct intel_device_info *devinfo,
+    case I915_FORMAT_MOD_Y_TILED_GEN12_RC_CCS_CC:
+       if (devinfo->ver != 12)
+          return false;
++      if (devinfo->display_ver != 12)
++         return false;
+       break;
+    case DRM_FORMAT_MOD_INVALID:
+    default:
+-- 
+2.7.4
+

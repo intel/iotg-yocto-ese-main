@@ -8,12 +8,12 @@ python() {
     d.setVar("MUSL_LOADER_BASENAME", hint)
 }
 
-do_install_append(){
+do_install:append(){
 	if [ "${base_libdir}" != "${nonarch_base_libdir}" -a ! -f "${D}/${nonarch_base_libdir}/${MUSL_LOADER_BASENAME}" ]; then
 		mkdir -p "${D}/${nonarch_base_libdir}"
 		lnr "${D}/${base_libdir}/${MUSL_LOADER_BASENAME}" "${D}/${nonarch_base_libdir}/${MUSL_LOADER_BASENAME}"
 	fi
 }
 
-FILES_${PN} += "${nonarch_base_libdir}"
-INSANE_SKIP_${PN} += "libdir"
+FILES:${PN} += "${nonarch_base_libdir}"
+INSANE_SKIP:${PN} += "libdir"

@@ -1,4 +1,4 @@
-DESCRIPTION = "Grub boot configuration file to support mender updates"
+DESCRIPTION = "Grub boot configuration file to support mender updates (UEFI)"
 
 # In local.conf, do
 # grubconf settings (does not handle kernel image dependecies)
@@ -119,4 +119,4 @@ do_install(){
 	install -m 644 ${WORKDIR}/${BPN}.conf.sample ${D}${EFI_PREFIX}${MENDER_GRUBCONF_PREFIX}/grub.cfg	
 }
 
-FILES_${PN} = "${datadir} ${EFI_PREFIX}${MENDER_GRUBCONF_PREFIX}"
+FILES:${PN} = "${datadir} ${EFI_PREFIX}${MENDER_GRUBCONF_PREFIX}"

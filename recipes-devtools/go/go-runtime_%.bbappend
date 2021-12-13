@@ -1,9 +1,9 @@
 PACKAGES =+ "${PN}-cmd"
 
-FILES_${PN}-cmd = "\
+FILES:${PN}-cmd = "\
     ${libdir}/go/src/cmd/* \
 "
 
-RDEPENDS_${PN}-cmd = "bash"
-RRECOMMENDS_${PN}-dev += "${PN}-cmd"
-RCONFLICTS_${PN}-cmd += "go-dev"
+RDEPENDS:${PN}-cmd = "bash"
+RRECOMMENDS:${PN}-dev += "${PN}-cmd"
+RCONFLICTS:${PN}-cmd += "go-dev"

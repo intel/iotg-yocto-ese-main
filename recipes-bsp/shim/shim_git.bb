@@ -4,12 +4,11 @@ LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
 SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1"
-SRC_URI_append = " file://0001-mok.c-fix-potential-buffer-overrun-in-import_mok_sta.patch"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
-PV_append = "${SRCPV}"
-SRCREV = "4068fd42c891ea6ebdec056f461babc6e4048844"
+PV:append = "${SRCPV}"
+SRCREV = "e54e5858844242d2900a036af07cef9e3bff8d02"
 
 inherit deploy
 
@@ -18,10 +17,10 @@ DEPENDS += "nss openssl-native dos2unix-native sbsigntool-native elfutils-native
 # workaround: sometimes shim is not rebuilt even when new keys are generated
 DEPENDS += "virtual/secure-boot-certificates"
 
-ALLOW_EMPTY_${PN} = "1"
+ALLOW_EMPTY:${PN} = "1"
 
-TUNE_CCARGS_remove_x86-64 = "-mfpmath=sse"
-CPPFLAGS_append = " -Wno-error=pointer-sign -Wno-error=incompatible-pointer-types -fno-strict-aliasing"
+TUNE_CCARGS:remove:x86-64 = "-mfpmath=sse"
+CPPFLAGS:append = " -Wno-error=pointer-sign -Wno-error=incompatible-pointer-types -fno-strict-aliasing"
 
 export INCDIR = "${STAGING_INCDIR}"
 export LIBDIR = "${STAGING_LIBDIR}"
@@ -34,7 +33,7 @@ inherit gnu-efi
 
 do_configure[depends] += "virtual/secure-boot-certificates:do_deploy"
 do_configure[recideptask] += "virtual/secure-boot-certificates:do_deploy"
-do_configure_append() {
+do_configure:append() {
 	cp ${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt \
 	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key \
 	${DEPLOY_DIR_IMAGE}/secure-boot-certificates/shim.crt \
@@ -50,13 +49,17 @@ do_configure_append() {
 	# ese sbat marker append, should really be in UTF-8 specifically
 	mkdir -p ${B}/data
 	echo 'shim.ese,1,ESE,${PN},${PV},https://github.com/intel/iotg-yocto-ese-main' > ${B}/data/sbat.ese.csv
+
+	# Makefile doesn't have an explicit dependencies
+	# force invalidate
+	rm -f shim.o cert.o
 }
 
 EXTRA_OEMAKE = "VENDOR_CERT_FILE=yocto.cer CROSS_COMPILE=${TARGET_PREFIX} CC="${CCLD}" \
 ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1 ENABLE_HTTPBOOT=1 ${SHIM_DEFAULT_LOADER} EFI_CC="${CCLD}" \
 EFI_HOSTCC="${CCLD}" TOPDIR="${S}/" BUILDDIR="${B}/" -I "${B}" -f "${S}/Makefile""
 
-do_compile_prepend() {
+do_compile:prepend() {
 	unset CFLAGS LDFLAGS LIBDIR prefix
 
 	# native tool used during install
@@ -69,7 +72,7 @@ do_install() {
 	oe_runmake install-as-data DESTDIR=${D}
 }
 
-do_deploy_class-native() {
+do_deploy:class-native() {
 	:
 }
 
@@ -89,5 +92,5 @@ python() {
     d.setVar('SHIM_DEFAULT_LOADER', '')
 }
 
-FILES_${PN} += "${datadir}"
-RRECOMMENDS_${PN} = "mokutil"
+FILES:${PN} += "${datadir}"
+RRECOMMENDS:${PN} = "mokutil"
