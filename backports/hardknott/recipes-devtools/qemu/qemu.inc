@@ -63,6 +63,9 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0022-hw-display-virtio-gpu-Fix-memory-leak-CID-1453811.patch \
            file://0023-virtio-gpu-no-point-of-checking-res-iov.patch \
            file://0024-ui-gtk-egl-dmabuf-scanout-only-when-scanout_mode-is-.patch \
+           file://0025-ui-gtk-graphic_hw_gl_flushed-after-closing-dmabuf-fe.patch \
+           file://0026-ui-gtk-revert-full-screen-on.-optional-param.patch \
+           file://0027-ui-gtk-new-param-monitor-to-specify-target-monitor-f.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
