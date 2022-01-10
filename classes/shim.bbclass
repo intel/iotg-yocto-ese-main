@@ -27,7 +27,7 @@ python(){
 # yocto.key ditto
 # db.key - DB key inserted into firmware
 # db.crt - DB cert inserted into firmware
-efi_populate_common:append() {
+efi_populate_common_append() {
 	sbsign --key "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key" --cert "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt" --output "${DEST}${EFIDIR}/${SHIM_LOADER_IMAGE}" "${DEST}${EFIDIR}/${EFI_BOOT_IMAGE}"
 	rm "${DEST}${EFIDIR}/${EFI_BOOT_IMAGE}"
 	sbsign --key "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/db.key" --cert "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/db.crt" -o "${DEST}${EFIDIR}/${EFI_BOOT_IMAGE}" "${DEPLOY_DIR_IMAGE}/shim${SHIM_LOADER_SUFFIX}.efi"
@@ -35,7 +35,7 @@ efi_populate_common:append() {
 }
 
 # sign the kernel
-populate_kernel:append() {
+populate_kernel_append() {
 	if [ -f $dest/${KERNEL_IMAGETYPE} ]; then
 		sbsign --key "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.key" --cert "${DEPLOY_DIR_IMAGE}/secure-boot-certificates/yocto.crt" -o "$dest/${KERNEL_IMAGETYPE}".signed "$dest/${KERNEL_IMAGETYPE}"
 		mv $dest/${KERNEL_IMAGETYPE}.signed $dest/${KERNEL_IMAGETYPE}

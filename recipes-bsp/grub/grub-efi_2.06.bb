@@ -2,11 +2,11 @@ require ./grub_${PV}.inc conf/image-uefi.conf
 
 GRUBPLATFORM = "efi"
 
-DEPENDS:append = " grub-native"
-RDEPENDS:${PN} = "diffutils freetype grub-common virtual/grub-bootconf"
-RRECOMMENDS:${PN} = "mokutil"
+DEPENDS_append = " grub-native"
+RDEPENDS_${PN} = "diffutils freetype grub-common virtual/grub-bootconf"
+RRECOMMENDS_${PN} = "mokutil"
 
-SRC_URI:append = " file://cfg"
+SRC_URI_append = " file://cfg"
 
 # Determine the target arch for the grub modules
 python __anonymous () {
@@ -40,7 +40,7 @@ EXTRA_OECONF += "--enable-efiemu=no"
 
 # ldm.c:114:7: error: trampoline generated for nested function 'hook' [-Werror=trampolines]
 # and many other places in the grub code when compiled with some native gcc compilers (specifically, gentoo)
-CFLAGS:append:class-native = " -Wno-error=trampolines"
+CFLAGS_append_class-native = " -Wno-error=trampolines"
 
 do_mkimage() {
 	cd ${B}
@@ -53,13 +53,13 @@ do_mkimage() {
 
 addtask mkimage before do_install after do_compile
 
-do_install:append() {
+do_install_append() {
 	install -d ${D}${EFI_FILES_PATH}
 	install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}${EFI_FILES_PATH}/${GRUB_IMAGE}
 }
 
 # make race condition fix
-do_compile:prepend() {
+do_compile_prepend() {
 	oe_runmake grub_script.tab.h
 	oe_runmake grub_script.tab.c
 	oe_runmake grub_script.yy.h
@@ -84,16 +84,16 @@ __END
 
 addtask deploy after do_install before do_build
 
-FILES:${PN} = "${libdir}/grub/${GRUB_TARGET}-efi \
+FILES_${PN} = "${libdir}/grub/${GRUB_TARGET}-efi \
                ${datadir}/grub \
                "
 
 PACKAGES += "${PN}-bootimg"
-FILES:${PN}-bootimg = "${EFI_FILES_PATH}/${GRUB_IMAGE}"
-ALLOW_EMPTY:${PN}-bootimg = "1"
+FILES_${PN}-bootimg = "${EFI_FILES_PATH}/${GRUB_IMAGE}"
+ALLOW_EMPTY_${PN}-bootimg = "1"
 
 # 64-bit binaries are expected for the bootloader with an x32 userland
-INSANE_SKIP:${PN}:append:linux-gnux32 = " arch"
-INSANE_SKIP:${PN}-dbg:append:linux-gnux32 = " arch"
-INSANE_SKIP:${PN}:append:linux-muslx32 = " arch"
-INSANE_SKIP:${PN}-dbg:append:linux-muslx32 = " arch"
+INSANE_SKIP_${PN}_append_linux-gnux32 = " arch"
+INSANE_SKIP_${PN}-dbg_append_linux-gnux32 = " arch"
+INSANE_SKIP_${PN}_append_linux-muslx32 = " arch"
+INSANE_SKIP_${PN}-dbg_append_linux-muslx32 = " arch"

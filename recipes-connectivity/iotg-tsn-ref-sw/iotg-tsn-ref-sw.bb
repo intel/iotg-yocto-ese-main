@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=665202835d998903d52afcb9c30ad9f5"
 
 SRC_URI = "git://github.com/intel/iotg_tsn_ref_sw.git;protocol=https;branch=master"
 
-SRCREV = "62f3d0ca89352d84b7fd86f1a678f666ee16f844"
+SRCREV = "bf5229bde2735bb0b449b482be7915b8233988e4"
 PV = "1.0-git${SRCPV}"
 
 S = "${WORKDIR}/git"
@@ -17,17 +17,17 @@ inherit autotools pkgconfig
 
 DEPENDS += " elfutils libbpf open62541-iotg json-c"
 
-RDEPENDS:${PN} += "\
+RDEPENDS_${PN} += "\
                     gnuplot-x11 \
                     iperf3 \
                     "
 
-do_install:append(){
+do_install_append(){
     mkdir -p ${D}${datadir}/${BPN}
     cd ${S} && git archive HEAD | tar -C ${D}${datadir}/${BPN} -xf -
 }
 
-RRECOMMENDS:${PN}-src = "\
+RRECOMMENDS_${PN}-src = "\
                         libbpf-dev \
                         open62541-iotg-dev \
                         "

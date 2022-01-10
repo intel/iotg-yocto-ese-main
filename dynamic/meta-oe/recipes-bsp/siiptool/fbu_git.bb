@@ -9,7 +9,7 @@ SRCREV = "c1483b06bb03d4393177d86346ef52fc70c772c4"
 S = "${WORKDIR}/git"
 inherit python3native
 DEPENDS += "${PYTHON_PN}-cryptography ${PYTHON_PN}-click openssl"
-RDEPENDS:${PN} += "${PYTHON_PN}-cryptography ${PYTHON_PN}-click"
+RDEPENDS_${PN} += "${PYTHON_PN}-cryptography ${PYTHON_PN}-click"
 BBCLASSEXTEND = "native"
 
 do_configure[noexec] = "1"
@@ -19,4 +19,4 @@ do_install() {
 	cp -r ${S}/siiptool ${D}${libexecdir}/${PN}
 }
 
-FILES:${PN} = "${libexecdir}"
+FILES_${PN} = "${libexecdir}"

@@ -23,7 +23,7 @@ def meson_endian(prefix, d):
 #   real paths by meson-setup.sh when the SDK is extracted.
 # - Some overrides aren't needed, since the SDK injects paths that take care of
 #   them.
-do_install:append() {
+do_install_append() {
     install -d ${D}${datadir}/meson
     cat >${D}${datadir}/meson/meson.cross.template <<EOF
 [binaries]
@@ -56,10 +56,10 @@ EOF
     install -m 0755 ${WORKDIR}/meson-wrapper ${D}${bindir}/meson
 }
 
-RDEPENDS:${PN} += "\
+RDEPENDS_${PN} += "\
     nativesdk-ninja \
     nativesdk-python3 \
     nativesdk-python3-setuptools \
     "
 
-FILES:${PN} += "${datadir}/meson ${SDKPATHNATIVE}"
+FILES_${PN} += "${datadir}/meson ${SDKPATHNATIVE}"

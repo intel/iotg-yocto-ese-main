@@ -14,7 +14,7 @@ SRC_URI = "https://github.com/DOCGroup/ACE_TAO/releases/download/ACE%2BTAO-6_5_8
 SRC_URI[md5sum] = "a6ba6a944612fe0696c90cbb5c3078ee"
 SRC_URI[sha256sum] = "cda2a960dbb9970a907663627711b2e2b14b3484a2859ae936370bcad0b16923"
 
-COMPATIBLE_HOST:libc-musl = "null"
+COMPATIBLE_HOST_libc-musl = "null"
 
 S = "${WORKDIR}/ACE_wrappers"
 B = "${WORKDIR}/ACE_wrappers/ace"
@@ -22,7 +22,7 @@ export ACE_ROOT="${WORKDIR}/ACE_wrappers"
 
 inherit pkgconfig
 
-CXXFLAGS:append = " -fpermissive -Wnodeprecated-declarations"
+CXXFLAGS_append = " -fpermissive -Wnodeprecated-declarations"
 
 do_install() {
     export D="${D}"

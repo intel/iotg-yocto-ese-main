@@ -1,6 +1,6 @@
 inherit siteinfo python3native
 
-DEPENDS:append = " meson-native ninja-native"
+DEPENDS_append = " meson-native ninja-native"
 
 # As Meson enforces out-of-tree builds we can just use cleandirs
 B = "${WORKDIR}/build"
@@ -28,11 +28,11 @@ MESONOPTS = " --prefix ${prefix} \
               --sharedstatedir ${sharedstatedir} \
               --wrap-mode nodownload"
 
-EXTRA_OEMESON:append = " ${PACKAGECONFIG_CONFARGS}"
+EXTRA_OEMESON_append = " ${PACKAGECONFIG_CONFARGS}"
 
 MESON_CROSS_FILE = ""
-MESON_CROSS_FILE:class-target = "--cross-file ${WORKDIR}/meson.cross"
-MESON_CROSS_FILE:class-nativesdk = "--cross-file ${WORKDIR}/meson.cross"
+MESON_CROSS_FILE_class-target = "--cross-file ${WORKDIR}/meson.cross"
+MESON_CROSS_FILE_class-nativesdk = "--cross-file ${WORKDIR}/meson.cross"
 
 def meson_array(var, d):
     items = d.getVar(var).split()
@@ -153,15 +153,15 @@ override_native_tools() {
     unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
 }
 
-meson_do_configure:prepend:class-target() {
+meson_do_configure_prepend_class-target() {
     override_native_tools
 }
 
-meson_do_configure:prepend:class-nativesdk() {
+meson_do_configure_prepend_class-nativesdk() {
     override_native_tools
 }
 
-meson_do_configure:prepend:class-native() {
+meson_do_configure_prepend_class-native() {
     export PKG_CONFIG="pkg-config-native"
 }
 

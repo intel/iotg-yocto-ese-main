@@ -1,6 +1,6 @@
 # Fix the missing BUILD-ID
 
-python do_compile:prepend () {
+python do_compile_prepend () {
     release_fields = d.getVar("OS_RELEASE_FIELDS")
     release_fields += " BUILD_ID"
     d.setVar("OS_RELEASE_FIELDS",release_fields)

@@ -18,7 +18,7 @@ PACKAGECONFIG[oxygen] = ",--disable-doxygen-doc, "
 PACKAGECONFIG[fapi] = "--enable-fapi,--disable-fapi,json-c "
 
 EXTRA_OECONF += "--enable-static --with-udevrulesdir=${base_prefix}/lib/udev/rules.d/"
-EXTRA_OECONF:remove = " --disable-static"
+EXTRA_OECONF_remove = " --disable-static"
 
 
 EXTRA_USERS_PARAMS = "\
@@ -45,34 +45,34 @@ PACKAGES = " \
     libtss2-staticdev \
 "
 
-FILES:libtss2-tcti-device = "${libdir}/libtss2-tcti-device.so.*"
-FILES:libtss2-tcti-device-dev = " \
+FILES_libtss2-tcti-device = "${libdir}/libtss2-tcti-device.so.*"
+FILES_libtss2-tcti-device-dev = " \
     ${includedir}/tss2/tss2_tcti_device.h \
     ${libdir}/pkgconfig/tss2-tcti-device.pc \
     ${libdir}/libtss2-tcti-device.so"
-FILES:libtss2-tcti-device-staticdev = "${libdir}/libtss2-tcti-device.*a"
+FILES_libtss2-tcti-device-staticdev = "${libdir}/libtss2-tcti-device.*a"
 
-FILES:libtss2-tcti-mssim = "${libdir}/libtss2-tcti-mssim.so.*"
-FILES:libtss2-tcti-mssim-dev = " \
+FILES_libtss2-tcti-mssim = "${libdir}/libtss2-tcti-mssim.so.*"
+FILES_libtss2-tcti-mssim-dev = " \
     ${includedir}/tss2/tss2_tcti_mssim.h \
     ${libdir}/pkgconfig/tss2-tcti-mssim.pc \
     ${libdir}/libtss2-tcti-mssim.so"
-FILES:libtss2-tcti-mssim-staticdev = "${libdir}/libtss2-tcti-mssim.*a"
+FILES_libtss2-tcti-mssim-staticdev = "${libdir}/libtss2-tcti-mssim.*a"
 
-FILES:libtss2-mu = "${libdir}/libtss2-mu.so.*"
-FILES:libtss2-mu-dev = " \
+FILES_libtss2-mu = "${libdir}/libtss2-mu.so.*"
+FILES_libtss2-mu-dev = " \
     ${includedir}/tss2/tss2_mu.h \
     ${libdir}/pkgconfig/tss2-mu.pc \
     ${libdir}/libtss2-mu.so"
-FILES:libtss2-mu-staticdev = "${libdir}/libtss2-mu.*a"
+FILES_libtss2-mu-staticdev = "${libdir}/libtss2-mu.*a"
 
-FILES:libtss2 = "${libdir}/libtss2*so.*"
-FILES:libtss2-dev = " \
+FILES_libtss2 = "${libdir}/libtss2*so.*"
+FILES_libtss2-dev = " \
     ${includedir} \
     ${libdir}/pkgconfig \
     ${libdir}/libtss2*so"
-FILES:libtss2-staticdev = "${libdir}/libtss*a"
+FILES_libtss2-staticdev = "${libdir}/libtss*a"
 
-FILES:${PN} = "${libdir}/udev ${base_prefix}/lib/udev"
+FILES_${PN} = "${libdir}/udev ${base_prefix}/lib/udev"
 
-RDEPENDS:libtss2 = "libgcrypt"
+RDEPENDS_libtss2 = "libgcrypt"

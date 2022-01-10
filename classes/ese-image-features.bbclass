@@ -1,4 +1,4 @@
-# image post processing (to be used with IMGCLASSES:append)
+# image post processing (to be used with IMGCLASSES_append)
 # these are listed in order of execution by appending ESE_IMAGE_CALLS
 require ${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'conf/image-uefi.conf', '', d)}
 

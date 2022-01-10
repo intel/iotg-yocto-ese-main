@@ -6,9 +6,9 @@ case "$platform_type" in
 		;;
 	*)
 		if [ -f "/sys/kernel/debug/dri/1/i915_sriov_info" ]; then
-			is_vf=`cat /sys/kernel/debug/dri/1/i915_sriov_info | grep SR-IOV | cut -d " " -f3`
+			is_vf=`cat /sys/kernel/debug/dri/1/i915_sriov_info | grep sriov | cut -d " " -f2`
 		elif [ -f "/sys/kernel/debug/dri/0/i915_sriov_info" ]; then
-			is_vf=`cat /sys/kernel/debug/dri/0/i915_sriov_info | grep SR-IOV | cut -d " " -f3`
+			is_vf=`cat /sys/kernel/debug/dri/0/i915_sriov_info | grep sriov | cut -d " " -f2`
 		fi
 
 		if [[ $is_vf == "VF" ]]; then

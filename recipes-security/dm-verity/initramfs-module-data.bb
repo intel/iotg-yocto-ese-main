@@ -2,11 +2,11 @@ SUMMARY = "initramfs support for locating and mounting the data partition"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-RDEPENDS:${PN} = "initramfs-framework-base"
+RDEPENDS_${PN} = "initramfs-framework-base"
 
 SRC_URI = "file://data"
 
-FILES:${PN} = "/init.d/91-data"
+FILES_${PN} = "/init.d/91-data"
 
 do_install() {
     install -d ${D}/init.d/
