@@ -19,7 +19,7 @@ PACKAGE_INSTALL = "initramfs-framework-dm-verity busybox initramfs-module-udev l
 # unless bitbake finds dependencies on these packages
 BAD_RECOMMENDATIONS += "busybox-udhcpc busybox-udhcpd busybox-dbg busybox-syslog"
 
-IMAGE_INSTALL_remove = "mender"
-DISTRO_FEATURES_remove = "mender-install mender-uboot"
+IMAGE_INSTALL:remove = "mender"
+DISTRO_FEATURES:remove = "mender-install mender-uboot"
 
-IMAGE_FEATURES_remove = "dev-pkgs debug-tweaks package-management"
+IMAGE_FEATURES:remove = "dev-pkgs debug-tweaks package-management"

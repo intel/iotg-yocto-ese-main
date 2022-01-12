@@ -1,3 +1,3 @@
-LDFLAGS_append_class-native = " -fuse-ld=lld"
+LDFLAGS:append:class-native = " -fuse-ld=lld"
 
-TOOLCHAIN_class-native = "clang"
+TOOLCHAIN:class-native = "clang"

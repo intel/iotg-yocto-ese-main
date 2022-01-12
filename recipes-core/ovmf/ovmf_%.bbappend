@@ -1,4 +1,4 @@
-do_install_append_class-target() {
+do_install:append:class-target() {
     # For qemu
     install -d ${D}/${datadir}/${PN}-edk2
     install ${WORKDIR}/ovmf/Shell.efi ${D}/${datadir}/${PN}-edk2
@@ -16,8 +16,8 @@ do_install_append_class-target() {
     done
 }
 
-PACKAGES_append_class-target = " ${PN}-edk2"
-FILES_${PN}-edk2_class-target = "${datadir}/${PN}-edk2"
+PACKAGES:append:class-target = " ${PN}-edk2"
+FILES:${PN}-edk2:class-target = "${datadir}/${PN}-edk2"
 
 # WA for fetch failure of cmocka . Added a mirror    
-MIRRORS_append = " gitsm://git.cryptomilk.org/projects/cmocka.git gitsm://github.com/tianocore/edk2-cmocka.git"
+MIRRORS:append = " gitsm://git.cryptomilk.org/projects/cmocka.git gitsm://github.com/tianocore/edk2-cmocka.git"

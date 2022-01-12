@@ -1,7 +1,7 @@
 # This should not be installed into an actual production system
 # Mainly for bitbake build-time signing and debugging only
 
-FILESEXTRAPATHS_prepend := "${PREGENERATED_SIGNING_KEY_DIR}:"
+FILESEXTRAPATHS:prepend := "${PREGENERATED_SIGNING_KEY_DIR}:"
 DESCRIPTION = "Secure Boot Certificates"
 LICENSE = "MIT"
 SECTION = "security"
@@ -15,7 +15,7 @@ SRC_URI = " \
 DEPENDS += "openssl-native"
 inherit allarch deploy
 PROVIDES = "virtual/secure-boot-certificates"
-RPROVIDES_${PN} = "virtual/secure-boot-certificates"
+RPROVIDES:${PN} = "virtual/secure-boot-certificates"
 # normalize names
 do_configure(){
   cp ${WORKDIR}/${PREGENERATED_SIGNING_KEY_PK_KEY} PK.key
@@ -56,7 +56,7 @@ do_deploy(){
 }
 addtask do_deploy before do_build after do_compile
 
-FILES_${PN} = "${datadir}"
+FILES:${PN} = "${datadir}"
 
 # suppress warnings with /dev/null, install would fail if these are not set to point to the key files
 PREGENERATED_SIGNING_KEY_DIR ??= "/dev"

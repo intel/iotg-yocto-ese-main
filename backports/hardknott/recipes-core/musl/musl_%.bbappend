@@ -1,5 +1,5 @@
 #fix compilation issues on hardknott
 
-do_install_prepend(){
+do_install:prepend(){
 	install -d ${D}/${base_libdir}
 }

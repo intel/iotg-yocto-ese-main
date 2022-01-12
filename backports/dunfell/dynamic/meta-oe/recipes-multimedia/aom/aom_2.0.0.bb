@@ -10,7 +10,7 @@ SRCREV = "d1d1226af626a61f7ca664b270dd473b92228984"
 
 S = "${WORKDIR}/git"
 
-DEPENDS_append = " yasm-native"
+DEPENDS:append = " yasm-native"
 
 inherit pkgconfig cmake perlnative python3native
-EXTRA_OECMAKE_append = " -DBUILD_SHARED_LIBS=1"
+EXTRA_OECMAKE:append = " -DBUILD_SHARED_LIBS=1"

@@ -1,0 +1,26 @@
+From 7c097b20c8de813eb4afb0d36ff18c57a906d966 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Sun, 31 Oct 2021 10:20:03 +0800
+Subject: [PATCH] Fixed openjpeg_dep undeclare on tests folder during build.
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ tests/check/meson.build | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tests/check/meson.build b/tests/check/meson.build
+index c87dd367a..ac8541cc3 100644
+--- a/tests/check/meson.build
++++ b/tests/check/meson.build
+@@ -12,6 +12,8 @@ libparser_dep = declare_dependency(link_with: libparser,
+ # FIXME: automagic
+ exif_dep = dependency('libexif', version : '>= 0.6.16', required : false)
+ 
++openjpeg_dep = dependency('libopenjp2', version : '>=2.2', required: false)
++
+ # Since nalutils API is internal, need to build it again
+ nalutils_dep = gstcodecparsers_dep.partial_dependency (compile_args: true, includes: true)
+ 
+-- 
+2.33.1
+

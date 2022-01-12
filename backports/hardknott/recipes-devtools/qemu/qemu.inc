@@ -6,7 +6,7 @@ a variety of guest operating systems"
 HOMEPAGE = "http://qemu.org"
 LICENSE = "GPLv2 & LGPLv2.1"
 
-RDEPENDS_${PN}-ptest = "bash"
+RDEPENDS:${PN}-ptest = "bash"
 
 require qemu-targets.inc
 inherit pkgconfig ptest
@@ -63,13 +63,16 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0022-hw-display-virtio-gpu-Fix-memory-leak-CID-1453811.patch \
            file://0023-virtio-gpu-no-point-of-checking-res-iov.patch \
            file://0024-ui-gtk-egl-dmabuf-scanout-only-when-scanout_mode-is-.patch \
+           file://0025-ui-gtk-graphic_hw_gl_flushed-after-closing-dmabuf-fe.patch \
+           file://0026-ui-gtk-revert-full-screen-on.-optional-param.patch \
+           file://0027-ui-gtk-new-param-monitor-to-specify-target-monitor-f.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
 SRC_URI[sha256sum] = "87bc1a471ca24b97e7005711066007d443423d19aacda3d442558ae032fa30b9"
 
-SRC_URI_append_class-target = " file://cross.patch"
-SRC_URI_append_class-nativesdk = " file://cross.patch"
+SRC_URI:append:class-target = " file://cross.patch"
+SRC_URI:append:class-nativesdk = " file://cross.patch"
 
 # Applies against virglrender < 0.6.0 and not qemu itself
 CVE_CHECK_WHITELIST += "CVE-2017-5957"
@@ -82,14 +85,14 @@ CVE_CHECK_WHITELIST += "CVE-2007-0998"
 # https://bugzilla.redhat.com/show_bug.cgi?id=1609015#c11
 CVE_CHECK_WHITELIST += "CVE-2018-18438"
 
-COMPATIBLE_HOST_mipsarchn32 = "null"
-COMPATIBLE_HOST_mipsarchn64 = "null"
+COMPATIBLE_HOST:mipsarchn32 = "null"
+COMPATIBLE_HOST:mipsarchn64 = "null"
 
 # Per https://lists.nongnu.org/archive/html/qemu-devel/2020-09/msg03873.html
 # upstream states qemu doesn't work without optimization
 DEBUG_BUILD = "0"
 
-do_install_append() {
+do_install:append() {
     # Prevent QA warnings about installed ${localstatedir}/run
     if [ -d ${D}${localstatedir}/run ]; then rmdir ${D}${localstatedir}/run; fi
 }
@@ -134,9 +137,9 @@ export LIBTOOL="${HOST_SYS}-libtool"
 
 B = "${WORKDIR}/build"
 
-#EXTRA_OECONF_append = " --python=${HOSTTOOLS_DIR}/python3"
+#EXTRA_OECONF:append = " --python=${HOSTTOOLS_DIR}/python3"
 
-do_configure_prepend_class-native() {
+do_configure:prepend:class-native() {
 	# Append build host pkg-config paths for native target since the host may provide sdl
 	BHOST_PKGCONFIG_PATH=$(PATH=/usr/bin:/bin pkg-config --variable pc_path pkg-config || echo "")
 	if [ ! -z "$BHOST_PKGCONFIG_PATH" ]; then
@@ -160,7 +163,7 @@ do_install () {
 # This will trigger a MMU access fault in the virtual CPU. With this change,
 # the qemu-mips works fine.
 # IMPORTANT: This piece needs to be removed once the root cause is fixed!
-do_install_append() {
+do_install:append() {
 	if [ -e "${D}/${bindir}/qemu-mips" ]; then
 		create_wrapper ${D}/${bindir}/qemu-mips \
 			QEMU_RESERVED_VA=0x0
@@ -180,8 +183,8 @@ make_qemu_wrapper() {
 }
 
 # Disable kvm/virgl/mesa on targets that do not support it
-PACKAGECONFIG_remove_darwin = "kvm virglrenderer glx gtk+"
-PACKAGECONFIG_remove_mingw32 = "kvm virglrenderer glx gtk+"
+PACKAGECONFIG:remove:darwin = "kvm virglrenderer glx gtk+"
+PACKAGECONFIG:remove:mingw32 = "kvm virglrenderer glx gtk+"
 
 PACKAGECONFIG[sdl] = "--enable-sdl,--disable-sdl,libsdl2"
 PACKAGECONFIG[virtfs] = "--enable-virtfs --enable-attr --enable-cap-ng,--disable-virtfs,libcap-ng attr,"
@@ -227,6 +230,6 @@ PACKAGECONFIG[ust] = "--enable-trace-backend=ust,--enable-trace-backend=nop,lttn
 PACKAGECONFIG[pie] = "--enable-pie,--disable-pie,,"
 PACKAGECONFIG[seccomp] = "--enable-seccomp,--disable-seccomp,libseccomp"
 
-INSANE_SKIP_${PN} = "arch"
+INSANE_SKIP:${PN} = "arch"
 
-FILES_${PN} += "${datadir}/icons"
+FILES:${PN} += "${datadir}/icons"
