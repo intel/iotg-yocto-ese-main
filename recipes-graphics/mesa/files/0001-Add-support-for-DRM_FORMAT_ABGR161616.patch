@@ -1,7 +1,11 @@
-From 27598f1b002dd2a4473f0040db9facb787ebb709 Mon Sep 17 00:00:00 2001
+From bfbb38e18253ac1a237fcb45c8c053b57ede3f57 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
-Date: Thu, 23 Sep 2021 17:13:32 -0700
-Subject: [PATCH] Add support for DRM_FORMAT_ABGR161616
+Date: Thu, 11 Nov 2021 13:23:04 -0800
+Subject: [PATCH] egl/gallium/dri: Adding DRM_FORMAT_ABGR16161616 support
+
+Adding DRM_FORMAT_ABGR16161616 support to egl/gallium/dri
+
+v2: Fixed typo
 
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
@@ -10,10 +14,10 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  2 files changed, 4 insertions(+)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
-index 9e5a55a287c..4578a523313 100644
+index b1e4a9dfe13..abc8261a29b 100644
 --- a/src/egl/drivers/dri2/egl_dri2.c
 +++ b/src/egl/drivers/dri2/egl_dri2.c
-@@ -2640,6 +2640,7 @@ dri2_num_fourcc_format_planes(EGLint format)
+@@ -2651,6 +2651,7 @@ dri2_num_fourcc_format_planes(EGLint format)
     case DRM_FORMAT_BGRA1010102:
     case DRM_FORMAT_XBGR16161616F:
     case DRM_FORMAT_ABGR16161616F:
@@ -22,19 +26,19 @@ index 9e5a55a287c..4578a523313 100644
     case DRM_FORMAT_YVYU:
     case DRM_FORMAT_UYVY:
 diff --git a/src/gallium/frontends/dri/dri_helpers.c b/src/gallium/frontends/dri/dri_helpers.c
-index 583ce67978d..342d25e4856 100644
+index a2c864ae101..418c9249b2c 100644
 --- a/src/gallium/frontends/dri/dri_helpers.c
 +++ b/src/gallium/frontends/dri/dri_helpers.c
-@@ -420,6 +420,9 @@ static const struct dri2_format_mapping dri2_format_table[] = {
+@@ -436,6 +436,9 @@ static const struct dri2_format_mapping dri2_format_table[] = {
        { DRM_FORMAT_XBGR16161616F, __DRI_IMAGE_FORMAT_XBGR16161616F,
          __DRI_IMAGE_COMPONENTS_RGB,       PIPE_FORMAT_R16G16B16X16_FLOAT, 1,
          { { 0, 0, 0, __DRI_IMAGE_FORMAT_XBGR16161616F } } },
-+      { DRM_FORMAT_ABGR16161616, __DRI_IMAGE_FORMAT_ABGR16161616,
++      { DRM_FORMAT_ABGR16161616,  __DRI_IMAGE_FORMAT_ABGR16161616,
 +        __DRI_IMAGE_COMPONENTS_RGBA,      PIPE_FORMAT_R16G16B16A16_UNORM, 1,
-+        { { 0, 0, 0, __DRI_IMAGE_FORMAT_XBGR16161616F } } },
++        { { 0, 0, 0, __DRI_IMAGE_FORMAT_ABGR16161616 } } },
        { __DRI_IMAGE_FOURCC_RGBA16161616, __DRI_IMAGE_FORMAT_ABGR16161616,
          __DRI_IMAGE_COMPONENTS_RGBA,      PIPE_FORMAT_R16G16B16A16_UNORM, 1,
          { { 0, 0, 0, __DRI_IMAGE_FORMAT_ABGR16161616 } } },
 -- 
-2.24.3
+GitLab
 

@@ -12,21 +12,21 @@ SECTION = "bootloaders"
 LICENSE = "GPLv3"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 SRC_URI = "git://github.com/rhboot/grub2.git;protocol=https;nobranch=1;name=grub"
-SRCREV_grub = "a05051f3af0c20c7506f359be9c0fb2f0086f10d"
+SRCREV_grub = "8c68222cbb8e7527c447bd6908578b72b7302f80"
 
 SRC_URI:append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
 SRCREV_gnulib = "6db02d3d2febe5e6e855d94722bb24f097c80a6f"
 
 SRCREV_FORMAT = "grub_gnulib"
 S = "${WORKDIR}/git"
-PR = "r7+${SRCPV}"
+PR = "r14+${SRCPV}"
 PV = "2.06"
 SRC_URI:append = " \
   file://bootstrap.conf;subdir=. \
   file://bootstrap;subdir=. \
   file://gitignore \
   file://strtoull_test.c;subdir=grub-core/tests \
-  http://unifoundry.com/unifont-5.1.20080820.pcf.gz;downloadfilename=unifont.pcf.gz;subdir=.;unpack=0;name=unifont \
+  http://unifoundry.com/pub/unifont/unifont-13.0.06/font-builds/unifont-13.0.06.pcf.gz;downloadfilename=unifont.pcf.gz;subdir=.;unpack=0;name=unifont \
   file://0001-bootp-fix-bootp-compile-if-EFI-disabled.patch \
   file://0001-configure.ac-check-if-fno-trampolines-is-supported.patch;apply=${GRUB_NATIVE_PATCH} \
 "
@@ -34,8 +34,8 @@ SRC_URI:append = " \
 GRUB_NATIVE_PATCH = "no"
 GRUB_NATIVE_PATCH:class-native = "yes"
 
-SRC_URI[unifont.md5sum] = "8c28087c5fcb3188f1244b390efffdbe"
-SRC_URI[unifont.sha256sum] = "122b9c470f29b70223b0e07404a6dfa7f339fcfa6ae74c024f478945af7a9a63"
+SRC_URI[unifont.md5sum] = "4fbc33c8d8d25985f1bcdd4d28bc2420"
+SRC_URI[unifont.sha256sum] = "aea0ea746353c6c2b5b8874e65facd087bb0346ec198993f8aaaa21eea040378"
 
 DEPENDS = "flex-native bison-native gettext-native"
 

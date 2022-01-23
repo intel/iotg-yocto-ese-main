@@ -9,10 +9,7 @@ SRC_URI = " \
             file://0003-viv-fb-Make-sure-config.h-is-included.patch \
             file://0002-ssaparse-enhance-SSA-text-lines-parsing.patch \
             file://0001-glimagesink-rebased-downrank-to-marginal.patch \
-            file://0001-glimagesink-fix-Y210-in-memory-DMABuf.patch \
-            file://0002-glimagesink-fix-Y212_LE-Y212_BE-in-memory-DMABuf.patch \
-            file://0003-glimagesink-fix-Y410-in-memory-DMABuf.patch \
-            file://0004-glimagesink-fix-Y412_LE-in-memory-DMABuf.patch \
+            file://eglimage-add-Y210-Y212_LE-Y212_BE-Y410-Y412_LE-DMABuf-support.patch \
             "
 
 S = "${WORKDIR}/git"

@@ -1,8 +1,0 @@
-[Unit]
-Description="DRI graphics interface gating unit"
-
-[Path]
-PathExists=/dev/dri/card0
-
-[Install]
-WantedBy=graphical.target
