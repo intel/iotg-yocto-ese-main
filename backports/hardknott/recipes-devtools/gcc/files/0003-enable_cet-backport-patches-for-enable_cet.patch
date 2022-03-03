@@ -1,20 +1,20 @@
-From 8d8d0e94a3ae034722aafb7e7a67a73379aec7ee Mon Sep 17 00:00:00 2001
-From: "RameshkrishnanX, Geddy Sekar" <rameshkrishnanx.geddy.sekar@intel.com>
-Date: Wed, 17 Mar 2021 12:13:11 +0530
+From 51fe85d842e532e3449902ce75ffdd3bb9072eb3 Mon Sep 17 00:00:00 2001
+From: Preeti Sachan <preeti.sachan@intel.com>
+Date: Fri, 4 Feb 2022 00:47:05 -0500
 Subject: [PATCH] enable_cet: backport patches for enable_cet
 
 HSDES ID: NA
 Source:
 https://gcc.gnu.org/git/?p=gcc.git;a=patch;h=4712bde3cabed644884a52386
 
-Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
+Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
 ---
- gcc/configure        |  8 ++++++--
+ gcc/configure        |  6 ++++--
  lto-plugin/configure | 21 +++++++++++++++++----
- 2 files changed, 29 insertions(+), 6 deletions(-)
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/gcc/configure b/gcc/configure
-index 02c6112b3..7111837fb 100755
+index 8fe9c91fd7c..b5de9a0aa35 100755
 --- a/gcc/configure
 +++ b/gcc/configure
 @@ -784,6 +784,8 @@ manext
@@ -26,35 +26,26 @@ index 02c6112b3..7111837fb 100755
  ZSTD_LIB
  ZSTD_INCLUDE
  DL_LIB
-@@ -9975,6 +9977,8 @@ ZSTD_LIB=
- ZSTD_CPPFLAGS=
- ZSTD_LDFLAGS=
- 
-+
-+
- # Check whether --with-zstd was given.
- if test "${with_zstd+set}" = set; then :
-   withval=$with_zstd;
-@@ -19032,7 +19036,7 @@ else
+@@ -19022,7 +19024,7 @@ else
    lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
    lt_status=$lt_dlunknown
    cat > conftest.$ac_ext <<_LT_EOF
--#line 19018 "configure"
-+#line 19039 "configure"
+-#line 19025 "configure"
++#line 19044 "configure"
  #include "confdefs.h"
  
  #if HAVE_DLFCN_H
-@@ -19138,7 +19142,7 @@ else
+@@ -19128,7 +19130,7 @@ else
    lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
    lt_status=$lt_dlunknown
    cat > conftest.$ac_ext <<_LT_EOF
--#line 19124 "configure"
-+#line 19145 "configure"
+-#line 19131 "configure"
++#line 19150 "configure"
  #include "confdefs.h"
  
  #if HAVE_DLFCN_H
 diff --git a/lto-plugin/configure b/lto-plugin/configure
-index 36c6ecc58..07020cd9e 100755
+index 36c6ecc5875..07020cd9efd 100755
 --- a/lto-plugin/configure
 +++ b/lto-plugin/configure
 @@ -5726,11 +5726,24 @@ asm ("setssbsy");
@@ -103,5 +94,5 @@ index 36c6ecc58..07020cd9e 100755
  
  #if HAVE_DLFCN_H
 -- 
-2.17.1
+2.25.1
 

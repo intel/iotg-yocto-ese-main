@@ -1,16 +1,24 @@
-Remove VTV build time rpath from libstdc++
+From 55f3c2a36c9c3588774af42b24bf7fae073ae578 Mon Sep 17 00:00:00 2001
+From: "Yong, Jonathan" <jonathan.yong@intel.com>
+Date: Tue, 8 Feb 2022 02:13:04 +0000
+Subject: [PATCH] Remove VTV build time rpath from libstdc++
 
 There is no need for this unless we are running the gcc testsuite, which we are not.
 The rpath length is also causing the nativesdk build to fail.
 
 Upstream-Status: Inappropriate [OE Specific]
+
 Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+---
+ libstdc++-v3/acinclude.m4 | 8 ++++----
+ libstdc++-v3/configure    | 8 ++++----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/libstdc++-v3/acinclude.m4 b/libstdc++-v3/acinclude.m4
-index 4f37b6a..86c1e8b 100644
+index b6557a4..113b99f 100644
 --- a/libstdc++-v3/acinclude.m4
 +++ b/libstdc++-v3/acinclude.m4
-@@ -2754,20 +2754,20 @@ AC_DEFUN([GLIBCXX_ENABLE_VTABLE_VERIFY], [
+@@ -2744,20 +2744,20 @@ AC_DEFUN([GLIBCXX_ENABLE_VTABLE_VERIFY], [
      case ${target_os} in
        cygwin*|mingw32*)
          VTV_CXXFLAGS="-fvtable-verify=std -Wl,-lvtv,-u_vtable_map_vars_start,-u_vtable_map_vars_end"
@@ -36,10 +44,10 @@ index 4f37b6a..86c1e8b 100644
      esac
      VTV_PCH_CXXFLAGS="-fvtable-verify=std"
 diff --git a/libstdc++-v3/configure b/libstdc++-v3/configure
-index 13d793f..16ebd09 100755
+index 766a0a8..ad8d4c8 100755
 --- a/libstdc++-v3/configure
 +++ b/libstdc++-v3/configure
-@@ -18138,20 +18138,20 @@ $as_echo "$enable_vtable_verify" >&6; }
+@@ -18673,20 +18673,20 @@ $as_echo "$enable_vtable_verify" >&6; }
      case ${target_os} in
        cygwin*|mingw32*)
          VTV_CXXFLAGS="-fvtable-verify=std -Wl,-lvtv,-u_vtable_map_vars_start,-u_vtable_map_vars_end"
@@ -64,3 +72,6 @@ index 13d793f..16ebd09 100755
          ;;
      esac
      VTV_PCH_CXXFLAGS="-fvtable-verify=std"
+-- 
+2.30.2
+
