@@ -7,9 +7,10 @@ SRC_URI = " \
     file://0003-ensure-valid-sentinals-for-gst_structure_get-etc.patch \
     file://0004-opencv-resolve-missing-opencv-data-dir-in-yocto-buil.patch \
     file://0001-msdk-fix-includedir-path-backport-from-poky.patch \
-    file://0001-msdkmjpegdec-report-error-to-user.patch \
     file://0001-Fixed-openjpeg_dep-undeclare-on-tests-folder-during-.patch \
     file://0001-msdkvpp-Add-12bit-formats.patch \
+    file://0001-msdkmjpegdec-Add-support-for-error-report.patch \
+    file://0001-msdkenc-fix-vp9enc-initialization-fail.patch \
 "
 
 S = "${WORKDIR}/git"
