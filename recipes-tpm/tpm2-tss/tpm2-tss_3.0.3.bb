@@ -7,30 +7,24 @@ SECTION = "tpm"
 DEPENDS = "autoconf-archive-native libgcrypt openssl"
 
 SRC_URI = "https://github.com/tpm2-software/${BPN}/releases/download/${PV}/${BPN}-${PV}.tar.gz \
-           file://fixup_hosttools.patch \
-           "
-
-SRC_URI[sha256sum] = "8900a6603f74310b749b65f23c3461cde6e2a23a5f61058b21004c25f9cf19e8"
+           file://0001-configure.ac-fix-compatibility-with-autoconf-2.70.patch \
+          "
+SRC_URI[sha256sum] = "78392be7309baf47f51b122f566ac915fd4d1760ea78571cba2e1484f9b5be17"
 
 inherit autotools pkgconfig systemd extrausers
 
 PACKAGECONFIG ??= ""
 PACKAGECONFIG[oxygen] = ",--disable-doxygen-doc, "
-PACKAGECONFIG[fapi] = "--enable-fapi,--disable-fapi,curl json-c "
+PACKAGECONFIG[fapi] = "--enable-fapi,--disable-fapi,json-c "
 
-EXTRA_OECONF += "--enable-static --with-udevrulesdir=${nonarch_base_libdir}/udev/rules.d/"
-EXTRA_OECONF += "--runstatedir=/run"
+EXTRA_OECONF += "--enable-static --with-udevrulesdir=${base_prefix}/lib/udev/rules.d/"
 EXTRA_OECONF:remove = " --disable-static"
+
 
 EXTRA_USERS_PARAMS = "\
 	useradd -p '' tss; \
 	groupadd tss; \
 	"
-
-do_install:append() {
-    # Remove /run as it is created on startup
-    rm -rf ${D}/run
-}
 
 PROVIDES = "${PACKAGES}"
 PACKAGES = " \
@@ -79,13 +73,6 @@ FILES:libtss2-dev = " \
     ${libdir}/libtss2*so"
 FILES:libtss2-staticdev = "${libdir}/libtss*a"
 
-FILES:${PN} = "\
-    ${libdir}/udev \
-    /var/lib/tpm2-tss \
-    /var/run \
-    ${nonarch_base_libdir}/udev \
-    ${sysconfdir}/tmpfiles.d \
-    ${sysconfdir}/tpm2-tss \
-    ${sysconfdir}/sysusers.d"
+FILES:${PN} = "${libdir}/udev ${base_prefix}/lib/udev"
 
 RDEPENDS:libtss2 = "libgcrypt"
