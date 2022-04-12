@@ -12,14 +12,14 @@ SECTION = "bootloaders"
 LICENSE = "GPLv3"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 SRC_URI = "git://github.com/rhboot/grub2.git;protocol=https;nobranch=1;name=grub"
-SRCREV_grub = "47606ca02ee74eb9562af1ec56101f3470197b25"
+SRCREV_grub = "80b97bef3ca5426b49ad95b63a99675a63977280"
 
-SRC_URI:append = " git://github.com/rhboot/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
-SRCREV_gnulib = "6db02d3d2febe5e6e855d94722bb24f097c80a6f"
+SRC_URI:append = " git://git.savannah.gnu.org/git/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
+SRCREV_gnulib = "9f48fb992a3d7e96610c4ce8be969cff2d61a01b"
 
 SRCREV_FORMAT = "grub_gnulib"
 S = "${WORKDIR}/git"
-PR = "r20+${SRCPV}"
+PR = "r29+${SRCPV}"
 PV = "2.06"
 SRC_URI:append = " \
   file://bootstrap.conf;subdir=. \
@@ -61,6 +61,7 @@ EXTRA_OECONF = "--with-platform=${GRUBPLATFORM} \
                 --disable-werror \
                 --with-utils=host \
                 --disable-rpm-sort \
+                --disable-grub-themes \
 "
 
 export HOST_LDFLAGS = "${LDFLAGS}"
