@@ -66,7 +66,6 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0025-ui-gtk-graphic_hw_gl_flushed-after-closing-dmabuf-fe.patch \
            file://0026-ui-gtk-revert-full-screen-on.-optional-param.patch \
            file://0027-ui-gtk-new-param-monitor-to-specify-target-monitor-f.patch \
-           file://0028-ui-gtk-UPDATE-detach_all-option-for-making-all-VCs-d.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
