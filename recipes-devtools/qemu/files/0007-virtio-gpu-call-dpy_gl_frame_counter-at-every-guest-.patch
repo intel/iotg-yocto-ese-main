@@ -1,0 +1,38 @@
+From a9c78e15753948ab57dc7971d881345b92af8327 Mon Sep 17 00:00:00 2001
+From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
+Date: Thu, 19 Aug 2021 23:24:53 +0800
+Subject: [PATCH 7/7] virtio-gpu: call dpy_gl_frame_counter at every guest
+ scanout flush
+
+dpy_gl_frame_counter needs to be called for guest scanout frame count
+to calculate and display the performance figure - ups, the guest FB
+update per seconds.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ hw/display/virtio-gpu.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/display/virtio-gpu.c b/hw/display/virtio-gpu.c
+index d78b9700c7de..165fd8e1781c 100644
+--- a/hw/display/virtio-gpu.c
++++ b/hw/display/virtio-gpu.c
+@@ -519,6 +519,7 @@ static void virtio_gpu_resource_flush(VirtIOGPU *g,
+                               scanout->height);
+             }
+         }
++        dpy_gl_count_frame(scanout->con, true);
+         return;
+     }
+ 
+@@ -564,6 +565,7 @@ static void virtio_gpu_resource_flush(VirtIOGPU *g,
+         pixman_region_fini(&region);
+         pixman_region_fini(&finalregion);
+     }
++    dpy_gl_count_frame(scanout->con, true);
+     pixman_region_fini(&flush_region);
+ }
+ 
+-- 
+2.34.1
+

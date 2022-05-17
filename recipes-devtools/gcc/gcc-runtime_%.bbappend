@@ -7,6 +7,6 @@ RRECOMMENDS:libstdc++-dev:append = " libvtv-dev"
 RRECOMMENDS:libstdc++-staticdev:append = " libvtv-staticdev"
 
 # fix libvtv using a different variable for calling gcc
-do_compile:prepend(){
-	export CC_FOR_TARGET="${CXX} -nostdinc++ -nostdlib++"
+do_compile:prepend() {
+	export CC_FOR_TARGET="${CXX} -nostdinc++"
 }

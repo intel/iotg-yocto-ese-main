@@ -1,0 +1,61 @@
+From 9facc79db5ce7f240061d35dc9e51fa51da231d9 Mon Sep 17 00:00:00 2001
+From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
+Date: Thu, 19 Aug 2021 23:20:12 +0800
+Subject: [PATCH 6/7] ui/gtk: calling gd_gl_frame_counter at every draw/swap
+
+For FPS calculation, gd_gl_frame_counter is called at every
+draw(gtk-gl-area) or swap(gtk-egl) activity.
+
+Signed-off-by: Dongwon, Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c     |  2 ++
+ ui/gtk-gl-area.c | 13 +++++++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index 45cb67712df0..9975f094f8bb 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -114,6 +114,7 @@ void gd_egl_draw(VirtualConsole *vc)
+ 
+         eglSwapBuffers(qemu_egl_display, vc->gfx.esurface);
+ 
++        gd_gl_count_frame(&vc->gfx.dcl, false);
+         vc->gfx.scale_x = (double)ww / surface_width(vc->gfx.ds);
+         vc->gfx.scale_y = (double)wh / surface_height(vc->gfx.ds);
+ 
+@@ -332,6 +333,7 @@ void gd_egl_scanout_flush(DisplayChangeListener *dcl,
+ #endif
+ 
+     eglSwapBuffers(qemu_egl_display, vc->gfx.esurface);
++    gd_gl_count_frame(&vc->gfx.dcl, false);
+ }
+ 
+ void gd_egl_flush(DisplayChangeListener *dcl,
+diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
+index 01e4e74ee361..8bf81f70763a 100644
+--- a/ui/gtk-gl-area.c
++++ b/ui/gtk-gl-area.c
+@@ -102,6 +102,19 @@ void gd_gl_area_draw(VirtualConsole *vc)
+         surface_gl_render_texture(vc->gfx.gls, vc->gfx.ds);
+     }
+ 
++    if (dmabuf) {
++        egl_dmabuf_create_sync(dmabuf);
++    }
++    glFlush();
++    gd_gl_count_frame(&vc->gfx.dcl, false);
++    if (dmabuf) {
++        egl_dmabuf_create_fence(dmabuf);
++        if (dmabuf->fence_fd > 0) {
++            qemu_set_fd_handler(dmabuf->fence_fd, gd_hw_gl_flushed, NULL, vc);
++            return;
++        }
++        graphic_hw_gl_block(vc->gfx.dcl.con, false);
++    }
+     graphic_hw_gl_flushed(vc->gfx.dcl.con);
+ }
+ 
+-- 
+2.34.1
+

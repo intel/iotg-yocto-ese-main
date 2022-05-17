@@ -100,7 +100,7 @@ VIRTUAL-RUNTIME_init_manager = "systemd"
 For ffmpeg its needs commercial license flag
 
 ```shell
-LICENSE_FLAGS_WHITELIST += "commercial"
+LICENSE_FLAGS_ACCEPTED += "commercial"
 ```
 
 ## Special Purpose Bitbake Recipes and Classes

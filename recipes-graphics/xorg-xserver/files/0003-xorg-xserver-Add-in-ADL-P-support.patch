@@ -1,0 +1,41 @@
+From b7ffe39ec2191b4f35d733f9ce682e362b35b8a8 Mon Sep 17 00:00:00 2001
+From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
+Date: Sun, 20 Mar 2022 22:00:40 +0800
+Subject: [PATCH xserver 3/6] xorg-xserver: Add in ADL-P support
+
+Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
+---
+ hw/xfree86/dri2/pci_ids/iris_pci_ids.h | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
+index 0376497ce739..e59df534ab24 100644
+--- a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
++++ b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
+@@ -21,3 +21,23 @@ CHIPSET(0x4692, adl_gt1, "Intel(R) Graphics ADL-S GT1")
+ CHIPSET(0x4693, adl_gt05, "Intel(R) Graphics ADL-S GT0.5")
+ CHIPSET(0x4698, adl_gt1, "Intel(R) Graphics ADL-S GT1")
+ CHIPSET(0x4699, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++
++/*ADL-P Platform*/
++CHIPSET(0x46A0, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46A1, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46A2, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46A3, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46A6, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x4626, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46B0, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46B1, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46B2, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46B3, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46A8, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x4628, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46C0, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46C1, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46C2, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46C3, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x46AA, adl_gt2, "Intel(R) Graphics ADL-P GT2")
++CHIPSET(0x462A, adl_gt2, "Intel(R) Graphics ADL-P GT2")
+-- 
+2.34.1
+

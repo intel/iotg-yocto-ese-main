@@ -23,7 +23,7 @@ do_compile(){
     openssl req -newkey "${SBLIMAGE_CERT_GEN_ALGO}:${SBLIMAGE_BOOT_CERT_GEN_LENGTH}" -nodes -keyout "${name}.key" -new -x509 -sha256 -days 3650 -subj "${SBLIMAGE_BOOT_CERT_GEN_SUBJECT}" -addext "nsComment=${PN} ${name} certificate" -out "${name}.crt"
     openssl x509 -outform DER -in "${name}.crt" -out "${name}.cer"
     # slimboot tools uses PKCS#1, not PKCS#8
-    openssl rsa -in "${name}.key" -out "${name}.pem"
+    openssl rsa -traditional -in "${name}.key" -out "${name}.pem"
   done
 }
 

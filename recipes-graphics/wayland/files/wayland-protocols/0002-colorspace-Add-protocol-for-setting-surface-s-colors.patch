@@ -1,48 +1,55 @@
-From 798499fa73ad8116b53e8705ebc604bad91c9303 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
-Date: Tue, 12 Mar 2019 01:06:07 +0530
+From e6eaaf99df2bd11fc432767ed90ad41576a58f28 Mon Sep 17 00:00:00 2001
+From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
+Date: Mon, 21 Mar 2022 00:33:47 +0800
 Subject: [PATCH 2/2] colorspace: Add protocol for setting surface's colorspace
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
 v2: Add description for the set request.
+v3: Rebase on top of 1.25
 
 Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
+Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
 ---
- Makefile.am                                   |  1 +
- unstable/colorspace/README                    |  4 +
+ meson.build                                   |  1 +
+ unstable/colorspace/README                    |  5 ++
  .../colorspace/colorspace-unstable-v1.xml     | 79 +++++++++++++++++++
- 3 files changed, 84 insertions(+)
+ 3 files changed, 85 insertions(+)
  create mode 100644 unstable/colorspace/README
  create mode 100644 unstable/colorspace/colorspace-unstable-v1.xml
 
-diff --git a/Makefile.am b/Makefile.am
-index 8956c1b..285d216 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -24,6 +24,7 @@ unstable_protocols =								\
- 	unstable/linux-explicit-synchronization/linux-explicit-synchronization-unstable-v1.xml \
- 	unstable/primary-selection/primary-selection-unstable-v1.xml		\
- 	unstable/hdr-metadata/hdr-metadata-unstable-v1.xml			\
-+	unstable/colorspace/colorspace-unstable-v1.xml				\
- 	$(NULL)
+diff --git a/meson.build b/meson.build
+index 13f70e3bb460..51ba17078fd5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -34,6 +34,7 @@ unstable_protocols = {
+ 	'xdg-shell': ['v5', 'v6'],
+ 	'xwayland-keyboard-grab': ['v1'],
+ 	'hdr-metadata': ['v1'],
++	'colorspace': ['v1'],
+ }
  
- stable_protocols =								\
+ staging_protocols = {
 diff --git a/unstable/colorspace/README b/unstable/colorspace/README
 new file mode 100644
-index 0000000..6fa751a
+index 000000000000..aa2d4c7987b9
 --- /dev/null
 +++ b/unstable/colorspace/README
-@@ -0,0 +1,4 @@
+@@ -0,0 +1,5 @@
 +Colorspace protocol
 +
 +Maintainers:
 +Ville Syrjälä <ville.syrjala@linux.intel.com>
++
 diff --git a/unstable/colorspace/colorspace-unstable-v1.xml b/unstable/colorspace/colorspace-unstable-v1.xml
 new file mode 100644
-index 0000000..73309a1
+index 000000000000..1493f7f4cabb
 --- /dev/null
 +++ b/unstable/colorspace/colorspace-unstable-v1.xml
 @@ -0,0 +1,79 @@
@@ -108,23 +115,23 @@ index 0000000..73309a1
 +
 +    <request name="destroy" type="destructor">
 +      <description summary="delete this object">
-+	Deleting this object does not affect the surfaces' colorspace set using
-+	this interface.
++       Deleting this object does not affect the surfaces' colorspace set using
++       this interface.
 +      </description>
 +    </request>
 +
 +    <request name="set">
 +      <description summary="set the colorspace for a surface">
-+	The colorspace set for the surface is double buffered and will be applied
-+	on the next wl_surface::commit
++       The colorspace set for the surface is double buffered and will be applied
++       on the next wl_surface::commit
 +      </description>
 +      <arg name="surface" type="object" interface="wl_surface" summary="surface"/>
 +      <arg name="chromacities" type="uint" enum="chromacities"
-+	   summary="chromacities for primaries and white point"/>
++          summary="chromacities for primaries and white point"/>
 +    </request>
 +  </interface>
 +
 +</protocol>
 -- 
-2.21.3
+2.34.1
 

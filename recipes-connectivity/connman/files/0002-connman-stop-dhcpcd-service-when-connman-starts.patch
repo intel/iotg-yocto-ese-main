@@ -1,0 +1,28 @@
+From b3660e14492f896adaaa80e48b59ee1270e6dbb9 Mon Sep 17 00:00:00 2001
+From: "RameshkrishnanX, Geddy Sekar" <rameshkrishnanx.geddy.sekar@intel.com>
+Date: Thu, 11 Feb 2021 11:27:54 +0530
+Subject: [PATCH] connman: stop dhcpcd service when connman starts
+
+HSDES ID: NA
+
+Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
+---
+ src/connman.service.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/connman.service.in b/src/connman.service.in
+index 79e75d6..7b65a5c 100644
+--- a/src/connman.service.in
++++ b/src/connman.service.in
+@@ -6,7 +6,7 @@ RequiresMountsFor=@localstatedir@/lib/connman
+ After=dbus.service network-pre.target systemd-sysusers.service
+ Before=network.target multi-user.target shutdown.target
+ Wants=network.target
+-Conflicts=systemd-resolved.service
++Conflicts=systemd-resolved.service dhcpcd.service
+ 
+ [Service]
+ Type=dbus
+-- 
+2.17.1
+

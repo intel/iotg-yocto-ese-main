@@ -1,7 +1,7 @@
 SUMMARY = "Automated upstream mirror for libbpf stand-alone build"
 HOMEPAGE = "https://github.com/libbpf/libbpf"
 AUTHOR = "Nakryiko, Andrii"
-LICENSE = "LGPL-2.1 | BSD-2-Clause"
+LICENSE = "LGPL-2.1-only | BSD-2-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE.BSD-2-Clause;md5=5d6306d1b08f8df623178dfd81880927 \
                     file://LICENSE.LPGL-2.1;md5=b370887980db5dd40659b50909238dbd "
 

@@ -1,0 +1,33 @@
+From 117901d7f47bd3646c7e2089c4c1aa8660a6af2a Mon Sep 17 00:00:00 2001
+From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
+Date: Sun, 20 Mar 2022 21:56:27 +0800
+Subject: [PATCH xserver 2/6] Imported the ADL-S GFX device id to the xorg
+
+Signed-off-by: Chew, Tong Liang <tong.liang.chew@intel.com>
+Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
+---
+ hw/xfree86/dri2/pci_ids/iris_pci_ids.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
+index cb4c6dc32c48..0376497ce739 100644
+--- a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
++++ b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
+@@ -10,3 +10,14 @@ CHIPSET(0x9AC9, tgl_gt2, "Intel(R) UHD Graphics TGL GT2")
+ CHIPSET(0x9AD9, tgl_gt2, "Intel(R) UHD Graphics TGL GT2")
+ CHIPSET(0x9AF8, tgl_gt2, "Intel(R) UHD Graphics TGL GT2")
+ 
++/*ADL-S Platform*/
++CHIPSET(0x4680, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4681, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4682, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4683, adl_gt05,"Intel(R) Graphics ADL-S GT0.5")
++CHIPSET(0x4690, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4691, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4692, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4693, adl_gt05, "Intel(R) Graphics ADL-S GT0.5")
++CHIPSET(0x4698, adl_gt1, "Intel(R) Graphics ADL-S GT1")
++CHIPSET(0x4699, adl_gt1, "Intel(R) Graphics ADL-S GT1")
+-- 
+2.34.1
+

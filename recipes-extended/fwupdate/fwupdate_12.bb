@@ -1,5 +1,5 @@
 SUMMARY = "Tools for using the ESRT and UpdateCapsule() to apply firmware updates"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://${S}/COPYING;md5=6d7bfc784f89da02599036c034adfb34"
 DEPENDS = " \
     efibootmgr \
@@ -11,6 +11,7 @@ SRC_URI = "git://github.com/rhboot/fwupdate.git \
            file://0001-efi-Makefile-remove-standard-system-header-file-dire.patch \
            file://132.patch \
            file://0001-efi-Makefile-use-gnu-efi-provided-linker-script.patch \
+           file://0002-fix-compiling-with-efivar-version-38.patch \
            "
 SRCREV = "6101b6b304da06644bd7a90444f729d0fc44940e"
 S = "${WORKDIR}/git"

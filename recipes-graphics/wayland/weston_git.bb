@@ -73,7 +73,7 @@ PACKAGECONFIG[clients] = "-Dsimple-clients=all -Ddemo-clients=true,-Dsimple-clie
 # Virtual remote output with GStreamer on DRM backend
 PACKAGECONFIG[remoting] = "-Dremoting=true,-Dremoting=false,gstreamer1.0 gstreamer1.0-plugins-base"
 # Weston with PAM support
-PACKAGECONFIG[pam] = "-Dpam=true,-Dpam=false,libpam"
+#PACKAGECONFIG[pam] = "-Dpam=true,-Dpam=false,libpam"
 # Weston with screen-share support
 PACKAGECONFIG[screenshare] = "-Dscreenshare=true,-Dscreenshare=false"
 # Traditional desktop shell

@@ -1,0 +1,28 @@
+From ff4b3879e20610b870d29270383611f7e5275aa3 Mon Sep 17 00:00:00 2001
+From: "RameshkrishnanX, Geddy Sekar" <rameshkrishnanx.geddy.sekar@intel.com>
+Date: Wed, 17 Mar 2021 14:47:26 +0530
+Subject: [PATCH] libiberty: fix for unrecognized command line option
+ fcf-protection
+
+HSDES ID: NA
+Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
+---
+ libiberty/configure | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libiberty/configure b/libiberty/configure
+index 9cd364456..1f4718056 100755
+--- a/libiberty/configure
++++ b/libiberty/configure
+@@ -5431,7 +5431,7 @@ else
+   have_cet=yes
+ fi
+ if test x$enable_cet = xyes; then
+-  CET_HOST_FLAGS="-fcf-protection"
++  CET_HOST_FLAGS=""
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+ $as_echo "yes" >&6; }
+ else
+-- 
+2.17.1
+

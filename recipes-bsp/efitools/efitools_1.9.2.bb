@@ -5,7 +5,7 @@ SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/jejb/efitools.git;proto
            file://fix-warnings.patch \
 "
 SRCREV = "392836a46ce3c92b55dc88a1aebbcfdfc5dcddce"
-LICENSE = "GPL-2 & LGPL-2.1"
+LICENSE = "GPL-2.0-only & LGPL-2.1-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=e28f66b16cb46be47b20a4cdfe6e99a1"
 
 CERT_DEP = ""

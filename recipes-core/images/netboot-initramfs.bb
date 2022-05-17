@@ -13,4 +13,4 @@ python() {
 }
 
 # needs to be embedded into a signed kernel
-INCOMPATIBLE_LICENSE = "GPL-3.0 LGPL-3.0 AGPL-3.0"
+INCOMPATIBLE_LICENSE = "GPL-3.0-only LGPL-3.0-only AGPL-3.0-only"
