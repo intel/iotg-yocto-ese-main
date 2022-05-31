@@ -17,7 +17,7 @@ UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>(\d+(\.\d+)+))"
 
 SRCREV_mdapi ?= "17f4240027df2dd8981200f6d8cf5e20f8015fd3"
 
-SRC_URI = "${MDAPI_GIT_URI};protocol=https;name=mdapi;destsuffix=git"
+SRC_URI = "${MDAPI_GIT_URI};protocol=https;name=mdapi;destsuffix=git;branch=master"
 
 DEPENDS = "libdrm ncurses"
 

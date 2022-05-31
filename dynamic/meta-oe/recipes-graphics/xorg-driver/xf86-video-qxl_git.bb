@@ -9,6 +9,6 @@ SRCREV = "52c421c650f8813665b31890df691b31fabc366a"
 PV = "0.15+git${SRCPV}"
 S = "${WORKDIR}/git"
 
-SRC_URI = "git://gitlab.freedesktop.org/xorg/driver/xf86-video-qxl.git;protocol=https"
+SRC_URI = "git://gitlab.freedesktop.org/xorg/driver/xf86-video-qxl.git;protocol=https;branch=master"
 
 DEPENDS += "virtual/libx11 drm spice-protocol python3"

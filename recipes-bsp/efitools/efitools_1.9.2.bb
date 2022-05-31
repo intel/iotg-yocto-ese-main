@@ -13,7 +13,7 @@ CERT_DEP_DEPLOY = ""
 CERT_DEP:class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates', '', d)}"
 CERT_DEP_DEPLOY:class-target = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', 'virtual/secure-boot-certificates:do_deploy', '', d)}"
 # workaround for caching old keys causing key mismatch
-DEPENDS:append:class-target += "${CERT_DEP}"
+DEPENDS:append:class-target = " ${CERT_DEP}"
 do_compile[depends] += "${CERT_DEP_DEPLOY}"
 do_compile[recideptask] += "${CERT_DEP_DEPLOY}"
 NEED_LOCKDOWN = "${@bb.utils.contains('IMAGE_FEATURES', 'efi-lockdown', '1', '', d)}"

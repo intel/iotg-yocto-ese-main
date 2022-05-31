@@ -5,7 +5,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d79ee9e66bb0f95d3386a7acae780b70 \
                     file://libweston/compositor.c;endline=27;md5=6c53bbbd99273f4f7c4affa855c33c0a"
 
-SRC_URI = "git://github.com/intel/Intel-Distribution-of-Weston.git;protocol=https \
+SRC_URI = "git://github.com/intel/Intel-Distribution-of-Weston.git;protocol=https;branch=master \
            file://weston.png \
            file://weston.desktop \
            file://xwayland.weston-start \

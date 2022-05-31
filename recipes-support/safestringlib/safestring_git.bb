@@ -4,7 +4,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE&COPYING.txt;md5=edd6f8c4c1072d72645ae28cb04bdbce \
                     file://LICENSE;md5=54f68ba2c33474320fcc46b1f2d01249"
 
-SRC_URI = "git://github.com/intel/safestringlib.git;protocol=https \
+SRC_URI = "git://github.com/intel/safestringlib.git;protocol=https;branch=master \
            file://0001-CMakeLists.txt-remove-ROP-mitigation.patch"
 
 PV = "1.0.0+git${SRCPV}"

@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.BSD-2-Clause;md5=5d6306d1b08f8df623178dfd8188
                     file://LICENSE.LPGL-2.1;md5=b370887980db5dd40659b50909238dbd "
 
 SRC_URI =" \
-          git://github.com/libbpf/libbpf.git \
+          git://github.com/libbpf/libbpf.git;protocol=https;branch=master \
           file://0002-makefile-don-t-preserve-ownership-when-installing-fr.patch \
           file://0001-libbpf-add-txtime-field-in-xdp_desc-struct.patch \
           "

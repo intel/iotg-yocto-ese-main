@@ -4,7 +4,7 @@ AUTHOR = "Wong, Vincent Por Yin"
 LICENSE = "MPL-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=815ca599c9df247a0c7f619bab123dad"
 
-SRC_URI = "git://github.com/open62541/open62541.git;protocol=https \
+SRC_URI = "git://github.com/open62541/open62541.git;protocol=https;branch=master \
            file://0001-CMakeLists.txt-Mark-as-IOTG-fork.patch \
            file://0001-fix-PubSub-Enable-dynamic-compilation-of-pubsub-exam.patch \
            file://0009-fix-PubSub-Fix-ETF-XDP-plugin-buffer-overflow.patch \
