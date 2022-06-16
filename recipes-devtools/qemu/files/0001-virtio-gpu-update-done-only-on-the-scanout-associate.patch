@@ -1,0 +1,31 @@
+From 4a8bd42359cba796524c0c21e0eac5426994e0cb Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 5 May 2022 12:39:30 -0700
+Subject: [PATCH] virtio-gpu: update done only on the scanout associated
+ with rect
+
+It only needs to update the scanouts containing the rect area
+coming with the resource-flush request from the guest.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ hw/display/virtio-gpu.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hw/display/virtio-gpu.c b/hw/display/virtio-gpu.c
+index 529b5246b2..165ecafd7a 100644
+--- a/hw/display/virtio-gpu.c
++++ b/hw/display/virtio-gpu.c
+@@ -514,6 +514,9 @@ static void virtio_gpu_resource_flush(VirtIOGPU *g,
+         for (i = 0; i < g->parent_obj.conf.max_outputs; i++) {
+             scanout = &g->parent_obj.scanout[i];
+             if (scanout->resource_id == res->resource_id &&
++                rf.r.x >= scanout->x && rf.r.y >= scanout->y &&
++                rf.r.x + rf.r.width <= scanout->x + scanout->width &&
++                rf.r.y + rf.r.height <= scanout->y + scanout->height &&
+                 console_has_gl(scanout->con)) {
+                 dpy_gl_update(scanout->con, 0, 0, scanout->width,
+                               scanout->height);
+-- 
+2.30.2
+
