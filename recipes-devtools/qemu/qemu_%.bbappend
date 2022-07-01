@@ -8,5 +8,4 @@ SRC_URI:append = "\
         file://0005-ui-gtk-adds-status-bar-for-expressing-ups-and-fps.patch \
         file://0006-ui-gtk-calling-gd_gl_frame_counter-at-every-draw-swa.patch \
         file://0007-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
-        file://0001-virtio-gpu-update-done-only-on-the-scanout-associate.patch \
        "
