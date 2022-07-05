@@ -1,0 +1,46 @@
+From 3783d5f8cfbe897d2b558f7b5e956ca37492360e Mon Sep 17 00:00:00 2001
+From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
+Date: Sun, 20 Mar 2022 00:38:38 +0800
+Subject: [PATCH] intel: RPL-P enablement
+
+Bspecs: 55374
+HSDES ID: NA
+
+Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
+---
+ intel/i915_pciids.h   | 8 ++++++++
+ intel/intel_chipset.c | 1 +
+ 2 files changed, 9 insertions(+)
+
+diff --git a/intel/i915_pciids.h b/intel/i915_pciids.h
+index 8076d40c977b..1d8d192069e6 100644
+--- a/intel/i915_pciids.h
++++ b/intel/i915_pciids.h
+@@ -681,4 +681,12 @@
+         INTEL_VGA_DEVICE(0xA788, info), \
+         INTEL_VGA_DEVICE(0xA789, info)
+ 
++#define INTEL_RPLP_IDS(info) \
++       INTEL_VGA_DEVICE(0xA7A0, info), \
++       INTEL_VGA_DEVICE(0xA720, info), \
++       INTEL_VGA_DEVICE(0xA7A8, info), \
++       INTEL_VGA_DEVICE(0xA7A1, info), \
++       INTEL_VGA_DEVICE(0xA721, info), \
++       INTEL_VGA_DEVICE(0xA7A9, info)
++
+ #endif /* _I915_PCIIDS_H */
+diff --git a/intel/intel_chipset.c b/intel/intel_chipset.c
+index 42e2053463f4..4c535df212aa 100644
+--- a/intel/intel_chipset.c
++++ b/intel/intel_chipset.c
+@@ -36,6 +36,7 @@ static const struct pci_device {
+ } pciids[] = {
+ 	/* Keep ids sorted by gen; latest gen first */
+ 	INTEL_RPLS_IDS(12),
++	INTEL_RPLP_IDS(12),
+ 	INTEL_ADLN_IDS(12),
+ 	INTEL_ADLP_IDS(12),
+ 	INTEL_ADLS_IDS(12),
+-- 
+2.34.1
+

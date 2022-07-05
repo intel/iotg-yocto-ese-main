@@ -1,0 +1,130 @@
+From 0f6b9dcff30f47464b354ba1a1baa398eac96ccd Mon Sep 17 00:00:00 2001
+From: "Yew, Chang Ching" <chang.ching.yew@intel.com>
+Date: Thu, 27 Jan 2022 16:08:31 +0800
+Subject: [PATCH 1/3] onevpl-intel-gpu: Enable RPL-S support
+
+Signed-off-by: Chew, Tong Liang <tong.liang.chew@intel.com>
+Signed-off-by: Yew, Chang Ching <chang.ching.yew@intel.com>
+---
+ .../cmrt_cross_platform/include/cmrt_cross_platform.h      | 1 +
+ _studio/mfx_lib/ext/h264/src/mfx_h264_encode_cm.cpp        | 1 +
+ _studio/mfx_lib/shared/src/mfx_common_int.cpp              | 1 +
+ _studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp                     | 1 +
+ _studio/shared/asc/src/asc.cpp                             | 1 +
+ _studio/shared/include/mfxstructures-int.h                 | 7 +++++++
+ _studio/shared/src/cm_mem_copy.cpp                         | 1 +
+ api/vpl/mfxcommon.h                                        | 1 +
+ 8 files changed, 14 insertions(+)
+
+diff --git a/_studio/mfx_lib/cmrt_cross_platform/include/cmrt_cross_platform.h b/_studio/mfx_lib/cmrt_cross_platform/include/cmrt_cross_platform.h
+index a335f10ae22f..1846829da156 100644
+--- a/_studio/mfx_lib/cmrt_cross_platform/include/cmrt_cross_platform.h
++++ b/_studio/mfx_lib/cmrt_cross_platform/include/cmrt_cross_platform.h
+@@ -717,6 +717,7 @@ typedef enum _GPU_PLATFORM {
+     PLATFORM_INTEL_ADL_S = 21,  //AlderLake
+     PLATFORM_INTEL_DG2 = 22,  //DG2
+     PLATFORM_INTEL_ADL_P = 23, //AlderLake
++    PLATFORM_INTEL_RPL_S = 25, //RaptorLake
+ } GPU_PLATFORM;
+ 
+ //Time in seconds before kernel should timeout
+diff --git a/_studio/mfx_lib/ext/h264/src/mfx_h264_encode_cm.cpp b/_studio/mfx_lib/ext/h264/src/mfx_h264_encode_cm.cpp
+index 7e70cb05eb45..6bc50916f15b 100644
+--- a/_studio/mfx_lib/ext/h264/src/mfx_h264_encode_cm.cpp
++++ b/_studio/mfx_lib/ext/h264/src/mfx_h264_encode_cm.cpp
+@@ -860,6 +860,7 @@ void CmContext::Setup(
+     case MFX_HW_RKL:
+     case MFX_HW_ADL_S:
+     case MFX_HW_ADL_P:
++    case MFX_HW_RPL_S:
+         m_program = ReadProgram(m_device, genx_simple_me_gen12lp, SizeOf(genx_simple_me_gen12lp));
+         m_programHist = ReadProgram(m_device, genx_histogram_gen12lp, SizeOf(genx_histogram_gen12lp));
+         break;
+diff --git a/_studio/mfx_lib/shared/src/mfx_common_int.cpp b/_studio/mfx_lib/shared/src/mfx_common_int.cpp
+index 403fafbb47f2..18f32bf60159 100644
+--- a/_studio/mfx_lib/shared/src/mfx_common_int.cpp
++++ b/_studio/mfx_lib/shared/src/mfx_common_int.cpp
+@@ -1195,6 +1195,7 @@ mfxPlatform MakePlatform(eMFXHWType type, mfxU16 device_id)
+                          platform.CodeName = MFX_PLATFORM_TIGERLAKE;     break;
+     case MFX_HW_ADL_S  : platform.CodeName = MFX_PLATFORM_ALDERLAKE_S;   break;
+     case MFX_HW_ADL_P  : platform.CodeName = MFX_PLATFORM_ALDERLAKE_P;   break;
++    case MFX_HW_RPL_S  : platform.CodeName = MFX_PLATFORM_RAPTORLAKE_S;   break;
+     case MFX_HW_DG2    :
+                          platform.MediaAdapterType = MFX_MEDIA_DISCRETE;
+                          platform.CodeName = MFX_PLATFORM_DG2;           break;
+diff --git a/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp b/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
+index 779a0fae62b6..09b42e902ef9 100644
+--- a/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
++++ b/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
+@@ -2440,6 +2440,7 @@ mfxStatus  VideoVPPHW::Init(
+             case MFX_HW_RKL:
+             case MFX_HW_ADL_S:
+             case MFX_HW_ADL_P:
++            case MFX_HW_RPL_S:
+                 res = m_pCmDevice->LoadProgram((void*)genx_fcopy_gen12lp,sizeof(genx_fcopy_gen12lp),m_pCmProgram,"nojitter");
+                 break;
+             default:
+diff --git a/_studio/shared/asc/src/asc.cpp b/_studio/shared/asc/src/asc.cpp
+index 4886dfecb5da..c5022eac4078 100644
+--- a/_studio/shared/asc/src/asc.cpp
++++ b/_studio/shared/asc/src/asc.cpp
+@@ -304,6 +304,7 @@ mfxStatus ASC::InitGPUsurf(CmDevice* pCmDevice) {
+     case PLATFORM_INTEL_ICLLP:
+         return MFX_ERR_UNSUPPORTED;
+     case PLATFORM_INTEL_ADL_S:
++    case PLATFORM_INTEL_RPL_S:
+     case PLATFORM_INTEL_TGLLP:
+     case PLATFORM_INTEL_RKL:
+     case PLATFORM_INTEL_DG1:
+diff --git a/_studio/shared/include/mfxstructures-int.h b/_studio/shared/include/mfxstructures-int.h
+index c71ce0ed2f0c..04284317a368 100644
+--- a/_studio/shared/include/mfxstructures-int.h
++++ b/_studio/shared/include/mfxstructures-int.h
+@@ -79,6 +79,7 @@ enum eMFXHWType
+     MFX_HW_DG1       = MFX_HW_TGL_LP + 3,
+     MFX_HW_ADL_S     = MFX_HW_TGL_LP + 4,
+     MFX_HW_ADL_P     = MFX_HW_TGL_LP + 5,
++    MFX_HW_RPL_S     = MFX_HW_TGL_LP + 6,
+     MFX_HW_DG2       = MFX_HW_TGL_LP + 7,
+ 
+ };
+@@ -489,6 +490,12 @@ typedef struct {
+     { 0x56C0, MFX_HW_DG2, MFX_GT4 }, // DG2
+     { 0x56C1, MFX_HW_DG2, MFX_GT4 }, // DG2
+ 
++    /* RPL-S */
++    { 0x4600, MFX_HW_RPL_S, MFX_GT1 },//RPL-S
++    { 0xA780, MFX_HW_RPL_S, MFX_GT1 },//RPL-S
++    { 0xA781, MFX_HW_RPL_S, MFX_GT1 },//RPL-S
++    { 0xA782, MFX_HW_RPL_S, MFX_GT1 },//RPL-S
++    { 0xA783, MFX_HW_RPL_S, MFX_GT1 },//RPL-S
+ };
+ 
+ /*
+diff --git a/_studio/shared/src/cm_mem_copy.cpp b/_studio/shared/src/cm_mem_copy.cpp
+index b19b4859a969..ca69a16c6949 100644
+--- a/_studio/shared/src/cm_mem_copy.cpp
++++ b/_studio/shared/src/cm_mem_copy.cpp
+@@ -2498,6 +2498,7 @@ mfxStatus CmCopyWrapper::InitializeSwapKernels(eMFXHWType hwtype)
+     case MFX_HW_RKL:
+     case MFX_HW_ADL_S:
+     case MFX_HW_ADL_P:
++    case MFX_HW_RPL_S:
+         cmSts = m_pCmDevice->LoadProgram((void*)genx_copy_kernel_gen12lp,sizeof(genx_copy_kernel_gen12lp),m_pCmProgram,"nojitter");
+         break;
+     default:
+diff --git a/api/vpl/mfxcommon.h b/api/vpl/mfxcommon.h
+index 0c39e24eaec5..69619b39744d 100644
+--- a/api/vpl/mfxcommon.h
++++ b/api/vpl/mfxcommon.h
+@@ -201,6 +201,7 @@ enum {
+     MFX_PLATFORM_XEHP_SDV       = 45, /*!< Code name XeHP SDV. */
+     MFX_PLATFORM_DG2            = 46, /*!< Code name DG2. */
+     MFX_PLATFORM_ATS_M          = 46, /*!< Code name ATS-M, same media functionality as DG2. */
++    MFX_PLATFORM_RAPTORLAKE_S   = 46, /*!< Code name Raptor Lake. */
+     MFX_PLATFORM_KEEMBAY        = 50, /*!< Code name Keem Bay. */
+ };
+ 
+-- 
+2.34.1
+

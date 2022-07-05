@@ -1,0 +1,57 @@
+From 5da2b5beaeaae6fe40115479d1e84a51f35ea97c Mon Sep 17 00:00:00 2001
+From: Filip Hazubski <filip.hazubski@intel.com>
+Date: Wed, 6 Apr 2022 12:25:30 +0000
+Subject: [PATCH 1/2] Add RPL-P device IDs
+
+Signed-off-by: Filip Hazubski <filip.hazubski@intel.com>
+---
+ .../gen12lp/adlp/linux/dll/device_id_tests_adlp.cpp       | 8 +++++++-
+ shared/source/dll/devices/devices_additional.inl          | 7 +++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/opencl/test/unit_test/gen12lp/adlp/linux/dll/device_id_tests_adlp.cpp b/opencl/test/unit_test/gen12lp/adlp/linux/dll/device_id_tests_adlp.cpp
+index f856f111218f..c306186b8958 100644
+--- a/opencl/test/unit_test/gen12lp/adlp/linux/dll/device_id_tests_adlp.cpp
++++ b/opencl/test/unit_test/gen12lp/adlp/linux/dll/device_id_tests_adlp.cpp
+@@ -10,7 +10,7 @@
+ using namespace NEO;
+ 
+ TEST_F(DeviceIdTests, GivenAdlpSupportedDeviceIdThenDeviceDescriptorTableExists) {
+-    std::array<DeviceDescriptor, 18> expectedDescriptors = {{
++    std::array<DeviceDescriptor, 24> expectedDescriptors = {{
+         {0x46A0, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
+         {0x46B0, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
+         {0x46A1, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
+@@ -29,6 +29,12 @@ TEST_F(DeviceIdTests, GivenAdlpSupportedDeviceIdThenDeviceDescriptorTableExists)
+         {0x46C1, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
+         {0x46C2, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
+         {0x46C3, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
++        {0xA7A0, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
++        {0xA720, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
++        {0xA7A8, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
++        {0xA7A1, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
++        {0xA721, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
++        {0xA7A9, &ADLP_CONFIG::hwInfo, &ADLP_CONFIG::setupHardwareInfo},
+     }};
+ 
+     testImpl(expectedDescriptors);
+diff --git a/shared/source/dll/devices/devices_additional.inl b/shared/source/dll/devices/devices_additional.inl
+index 09785b0101ac..a366358430dd 100644
+--- a/shared/source/dll/devices/devices_additional.inl
++++ b/shared/source/dll/devices/devices_additional.inl
+@@ -57,5 +57,12 @@ DEVICE(0x46C0, ADLP_CONFIG)
+ DEVICE(0x46C1, ADLP_CONFIG)
+ DEVICE(0x46C2, ADLP_CONFIG)
+ DEVICE(0x46C3, ADLP_CONFIG)
++// RPL-P
++DEVICE(0xA7A0, ADLP_CONFIG)
++DEVICE(0xA720, ADLP_CONFIG)
++DEVICE(0xA7A8, ADLP_CONFIG)
++DEVICE(0xA7A1, ADLP_CONFIG)
++DEVICE(0xA721, ADLP_CONFIG)
++DEVICE(0xA7A9, ADLP_CONFIG)
+ #endif
+ #endif
+-- 
+2.34.1
+

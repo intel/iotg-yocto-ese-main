@@ -5,5 +5,6 @@ SRC_URI:append = " file://0001-dri2-Add-support-for-TGL.patch \
                    file://0003-xorg-xserver-Add-in-ADL-P-support.patch \
                    file://0004-xorg-xserver-Add-support-for-ADL-N.patch \
                    file://0005-xorg-xserver-Add-support-for-RPL-S.patch \
+                   file://0001-xorg-xserver-Add-support-for-RPL-P.patch \
                  "
 
