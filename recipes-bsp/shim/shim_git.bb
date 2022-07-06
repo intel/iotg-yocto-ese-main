@@ -93,4 +93,3 @@ python() {
 }
 
 FILES:${PN} += "${datadir}"
-RRECOMMENDS:${PN} = "mokutil"
