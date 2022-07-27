@@ -20,7 +20,7 @@ S = "${WORKDIR}"
 # cert-to-efi-sig-list/sign-efi-sig-list from efitools is not available yet
 do_compile(){
   for name in SigningKey; do
-    openssl req -newkey "${SBLIMAGE_CERT_GEN_ALGO}:${SBLIMAGE_BOOT_CERT_GEN_LENGTH}" -nodes -keyout "${name}.key" -new -x509 -${SBLIMAGE_BOOT_CERT_GEN_HASH} -days 3650 -subj "${SBLIMAGE_BOOT_CERT_GEN_SUBJECT}" -addext "nsComment=${PN} ${name} certificate" -out "${name}.crt"
+    openssl req -newkey "${SBLIMAGE_CERT_GEN_ALGO}:${SBLIMAGE_BOOT_CERT_GEN_LENGTH}" -nodes -keyout "${name}.key" -new -x509 -sha256 -days 3650 -subj "${SBLIMAGE_BOOT_CERT_GEN_SUBJECT}" -addext "nsComment=${PN} ${name} certificate" -out "${name}.crt"
     openssl x509 -outform DER -in "${name}.crt" -out "${name}.cer"
     # slimboot tools uses PKCS#1, not PKCS#8
     openssl rsa -traditional -in "${name}.key" -out "${name}.pem"

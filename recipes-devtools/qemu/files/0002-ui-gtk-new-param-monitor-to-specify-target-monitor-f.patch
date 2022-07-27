@@ -1,0 +1,97 @@
+From 62d58287f3f76779cb96a7b0292c83fa2ebdf39e Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 23 Nov 2021 18:30:42 -0800
+Subject: [PATCH 2/7] ui/gtk: new param monitor to specify target monitor for
+ launching QEMU
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(currently upstreaming wip)
+
+Introducing a new integer parameter to specify the monitor where the
+Qemu window is placed upon launching.
+
+Monitor can be any number between 0 and (total number of monitors - 1).
+
+It can be used together with full-screen=on, which will make the QEMU
+window full-screened on the targeted monitor.
+
+v2: fixed typos and updated commit subject and msg
+    (Philippe Mathieu-Daudé)
+
+    changed param name to monitor, removed unnecessary condition check
+    on the parameter
+    (Paolo Bonzini)
+
+Cc: Philippe Mathieu-Daudé <philmd@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gerd Hoffmann <kraxel@redhat.com>
+Cc: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Cc: sweeaun <swee.aun.khor@intel.com>
+Cc: Khairul Anuar Romli <khairul.anuar.romli@intel.com>
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ qapi/ui.json    | 6 +++++-
+ qemu-options.hx | 2 +-
+ ui/gtk.c        | 9 ++++++++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/qapi/ui.json b/qapi/ui.json
+index d7567ac86683..950a8862db03 100644
+--- a/qapi/ui.json
++++ b/qapi/ui.json
+@@ -1100,12 +1100,16 @@
+ #               the window size then.  Otherwise it defaults to "off".
+ #               Since 3.1
+ #
++# @monitor:     Indicate monitor where QEMU window is lauched. monitor
++#               could be any number from 0 to (total num of monitors - 1).
++#               since 7.0
+ # Since: 2.12
+ #
+ ##
+ { 'struct'  : 'DisplayGTK',
+   'data'    : { '*grab-on-hover' : 'bool',
+-                '*zoom-to-fit'   : 'bool'  } }
++                '*zoom-to-fit'   : 'bool',
++                '*monitor'       : 'uint32' } }
+ 
+ ##
+ # @DisplayEGLHeadless:
+diff --git a/qemu-options.hx b/qemu-options.hx
+index ae2c6dbbfc00..95e825b78681 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -1851,7 +1851,7 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
+     "            [,grab-mod=<mod>][,show-cursor=on|off][,window-close=on|off]\n"
+ #endif
+ #if defined(CONFIG_GTK)
+-    "-display gtk[,full-screen=on|off][,gl=on|off][,grab-on-hover=on|off]\n"
++    "-display gtk[,grab-on-hover=on|off][,gl=on|off][,monitor=<value>]\n"
+     "            [,show-cursor=on|off][,window-close=on|off]\n"
+ #endif
+ #if defined(CONFIG_VNC)
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 428f02f2dfe1..cc3a06cacb31 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -2316,7 +2316,14 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+     gtk_widget_set_sensitive(s->copy_item,
+                              vc && vc->type == GD_VC_VTE);
+ #endif
+-
++    if (opts->u.gtk.has_monitor &&
++        opts->u.gtk.monitor < gdk_display_get_n_monitors(window_display)) {
++        GdkRectangle mon_dest;
++        gdk_monitor_get_geometry(
++            gdk_display_get_monitor(window_display, opts->u.gtk.monitor),
++            &mon_dest);
++        gtk_window_move(GTK_WINDOW(s->window), mon_dest.x, mon_dest.y);
++    }
+     if (opts->has_full_screen &&
+         opts->full_screen) {
+         gtk_menu_item_activate(GTK_MENU_ITEM(s->full_screen_item));
+-- 
+2.34.1
+

@@ -1,4 +1,4 @@
-From fb7c8328f880ca1b039f16961e7f4afa743deed6 Mon Sep 17 00:00:00 2001
+From 9facc79db5ce7f240061d35dc9e51fa51da231d9 Mon Sep 17 00:00:00 2001
 From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Thu, 19 Aug 2021 23:20:12 +0800
 Subject: [PATCH 6/7] ui/gtk: calling gd_gl_frame_counter at every draw/swap
@@ -13,7 +13,7 @@ Signed-off-by: Dongwon, Kim <dongwon.kim@intel.com>
  2 files changed, 15 insertions(+)
 
 diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
-index 45cb67712d..9975f094f8 100644
+index 45cb67712df0..9975f094f8bb 100644
 --- a/ui/gtk-egl.c
 +++ b/ui/gtk-egl.c
 @@ -114,6 +114,7 @@ void gd_egl_draw(VirtualConsole *vc)
@@ -33,7 +33,7 @@ index 45cb67712d..9975f094f8 100644
  
  void gd_egl_flush(DisplayChangeListener *dcl,
 diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
-index 01e4e74ee3..8bf81f7076 100644
+index 01e4e74ee361..8bf81f70763a 100644
 --- a/ui/gtk-gl-area.c
 +++ b/ui/gtk-gl-area.c
 @@ -102,6 +102,19 @@ void gd_gl_area_draw(VirtualConsole *vc)
@@ -57,5 +57,5 @@ index 01e4e74ee3..8bf81f7076 100644
  }
  
 -- 
-2.20.1
+2.34.1
 

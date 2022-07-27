@@ -4,6 +4,7 @@ GRUBPLATFORM = "efi"
 
 DEPENDS:append = " grub-native"
 RDEPENDS:${PN} = "diffutils freetype grub-common virtual/grub-bootconf"
+RRECOMMENDS:${PN} = "mokutil"
 
 SRC_URI:append = " file://cfg"
 

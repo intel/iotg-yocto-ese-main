@@ -1,4 +1,4 @@
-From 876433cffeebb08bea674e793143e73f1d1bdb57 Mon Sep 17 00:00:00 2001
+From 9966008a47bfe595e08dc5cbd880ba921f7bc97f Mon Sep 17 00:00:00 2001
 From: Satyeshwar Singh <satyeshwar.singh@intel.com>
 Date: Fri, 9 Jul 2021 14:03:17 -0700
 Subject: [PATCH 1/7] edid: Added support for 4k@60 Hz monitor
@@ -16,7 +16,7 @@ Signed-off-by: Satyeshwar Singh <satyeshwar.singh@intel.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/hw/display/edid-generate.c b/hw/display/edid-generate.c
-index f2b874d5e3..397af0bd63 100644
+index f2b874d5e358..397af0bd63e2 100644
 --- a/hw/display/edid-generate.c
 +++ b/hw/display/edid-generate.c
 @@ -24,6 +24,9 @@ static const struct edid_mode {
@@ -30,5 +30,5 @@ index f2b874d5e3..397af0bd63 100644
      { .xres = 1920,   .yres = 1200,   .xtra3 = 10,   .bit = 0 },
      { .xres = 1600,   .yres = 1200,   .xtra3 =  9,   .bit = 2 },
 -- 
-2.20.1
+2.34.1
 
