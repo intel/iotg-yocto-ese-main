@@ -1,5 +1,10 @@
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 EXTRA_OECMAKE += " -DLLVMGenXIntrinsics_DIR=${STAGING_LIBDIR}"
 
+SRC_URI:append = " file://0001-Add-ADL-N-enum-value.patch \
+                   file://0002-Added-some-Alderlake-related-functionality.patch \
+                 "
+                 
 #fix lib64 for vc-intrinsics
 do_fix_lib64() {
     libsubstr="lib64"

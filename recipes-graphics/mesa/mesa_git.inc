@@ -6,6 +6,7 @@ SRC_URI:append = " file://0001-egl-gallium-dri-Adding-DRM_FORMAT_ABGR16161616-su
                    file://0002-iris-Add-renderonly-support.patch \
                    file://0003-kmsro-Add-iris-renderonly-support.patch \
                    file://0004-iris-kmsro-use-ro-device-to-allocate-scanout-for-ren.patch \
+                   file://0005-Revert-iris-Return-non-zero-stride-for-clear-color-p.patch \
                  "
 DRIDRIVERS ?= ""
 DRIDRIVERS:class-native:remove = " swrast"

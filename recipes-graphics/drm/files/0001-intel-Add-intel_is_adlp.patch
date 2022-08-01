@@ -1,7 +1,7 @@
-From 5fc76a5504666a9440a4eb2e8691482ecb0c3f9c Mon Sep 17 00:00:00 2001
+From 9176f133eefe2cfb71a23cda6c0a566d8fc57d7b Mon Sep 17 00:00:00 2001
 From: Tejas Upadhyay <tejaskumarx.surendrakumar.upadhyay@intel.com>
 Date: Mon, 17 May 2021 15:36:24 +0530
-Subject: [PATCH 2/3] intel: Add intel_is_adlp()
+Subject: [PATCH 1/2] intel: Add intel_is_adlp()
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -18,10 +18,10 @@ Signed-off-by: Tejas Upadhyay <tejaskumarx.surendrakumar.upadhyay@intel.com>
  2 files changed, 18 insertions(+)
 
 diff --git a/intel/intel_chipset.c b/intel/intel_chipset.c
-index f0da6d8..b97c4fc 100644
+index 99ad04ae011e..42e2053463f4 100644
 --- a/intel/intel_chipset.c
 +++ b/intel/intel_chipset.c
-@@ -90,3 +90,20 @@ drm_private bool intel_get_genx(unsigned int devid, int *gen)
+@@ -92,3 +92,20 @@ drm_private bool intel_get_genx(unsigned int devid, int *gen)
  
  	return false;
  }
@@ -43,7 +43,7 @@ index f0da6d8..b97c4fc 100644
 +	return intel_is_platform(devid, p);
 +}
 diff --git a/intel/intel_chipset.h b/intel/intel_chipset.h
-index 0a48e0d..e217913 100644
+index 0a48e0dabce9..e217913951df 100644
 --- a/intel/intel_chipset.h
 +++ b/intel/intel_chipset.h
 @@ -333,6 +333,7 @@
@@ -55,5 +55,5 @@ index 0a48e0d..e217913 100644
  #define IS_GEN9(devid) intel_is_genx(devid, 9)
  #define IS_GEN10(devid) intel_is_genx(devid, 10)
 -- 
-2.7.4
+2.34.1
 

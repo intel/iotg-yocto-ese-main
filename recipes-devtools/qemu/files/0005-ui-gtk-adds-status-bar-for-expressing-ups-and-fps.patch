@@ -1,4 +1,4 @@
-From 5c7d0e98b06fb6376b0faa03897953f84a1d3cb1 Mon Sep 17 00:00:00 2001
+From edae9ccf5be3724bf25f28e354c54786a01cb30e Mon Sep 17 00:00:00 2001
 From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Thu, 19 Aug 2021 22:10:47 +0800
 Subject: [PATCH 5/7] ui/gtk: adds status bar for expressing ups and fps
@@ -17,13 +17,13 @@ Signed-off-by: Kim, Dongwon <dongwon.kim@intel.com>
 ---
  include/ui/console.h |  4 ++++
  include/ui/gtk.h     |  2 ++
- qapi/ui.json         |  6 ++++--
+ qapi/ui.json         |  5 ++++-
  ui/console.c         |  6 ++++++
  ui/gtk.c             | 51 ++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 67 insertions(+), 2 deletions(-)
+ 5 files changed, 67 insertions(+), 1 deletion(-)
 
 diff --git a/include/ui/console.h b/include/ui/console.h
-index 6d678924f6fd..13768c3c56cc 100644
+index 6d678924f6..13768c3c56 100644
 --- a/include/ui/console.h
 +++ b/include/ui/console.h
 @@ -252,6 +252,8 @@ typedef struct DisplayChangeListenerOps {
@@ -45,7 +45,7 @@ index 6d678924f6fd..13768c3c56cc 100644
                                  QEMUGLParams *params);
  void dpy_gl_ctx_destroy(QemuConsole *con, QEMUGLContext ctx);
 diff --git a/include/ui/gtk.h b/include/ui/gtk.h
-index 7d22affd381a..a38dd4dae3df 100644
+index 7d22affd38..a38dd4dae3 100644
 --- a/include/ui/gtk.h
 +++ b/include/ui/gtk.h
 @@ -122,6 +122,7 @@ struct GtkDisplayState {
@@ -65,31 +65,30 @@ index 7d22affd381a..a38dd4dae3df 100644
  /* ui/gtk-egl.c */
  void gd_egl_init(VirtualConsole *vc);
 diff --git a/qapi/ui.json b/qapi/ui.json
-index cb6bd427985e..c1f0e5ac7007 100644
+index 0ddb24a532..08f0a47113 100644
 --- a/qapi/ui.json
 +++ b/qapi/ui.json
-@@ -1217,7 +1217,8 @@
+@@ -1217,6 +1217,8 @@
+ # @show-cursor:   Force showing the mouse cursor (default: off).
  #                 (since: 5.0)
  # @gl:            Enable OpenGL support (default: off).
- # @detach-all:    Detatch all VirtualConsoles from beginning (default: off).
--#
 +# @show-fps:      Enable showing Guest Scanout's update rate (UPS) and
 +#                 Surface render swap rate (FPS) on a status bar (default: off).
+ #
  # Since: 2.12
  #
- ##
-@@ -1227,7 +1228,8 @@
+@@ -1226,7 +1228,8 @@
+                 '*full-screen'   : 'bool',
                  '*window-close'  : 'bool',
                  '*show-cursor'   : 'bool',
-                 '*gl'            : 'DisplayGLMode',
--                '*detach-all'    : 'bool' },
-+                '*detach-all'    : 'bool',
+-                '*gl'            : 'DisplayGLMode' },
++                '*gl'            : 'DisplayGLMode',
 +                '*show-fps'      : 'bool' },
    'discriminator' : 'type',
    'data'    : {
        'gtk': { 'type': 'DisplayGTK', 'if': 'CONFIG_GTK' },
 diff --git a/ui/console.c b/ui/console.c
-index 29a3e3f0f51c..342e04e1cd80 100644
+index 29a3e3f0f5..342e04e1cd 100644
 --- a/ui/console.c
 +++ b/ui/console.c
 @@ -1863,6 +1863,12 @@ void dpy_gl_update(QemuConsole *con,
@@ -106,7 +105,7 @@ index 29a3e3f0f51c..342e04e1cd80 100644
  /* register display */
  
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 89b8020c7375..eebcfab1d536 100644
+index cd3f821c73..15c33f10be 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -550,6 +550,47 @@ static void gd_switch(DisplayChangeListener *dcl,
@@ -173,7 +172,7 @@ index 89b8020c7375..eebcfab1d536 100644
  };
  
  #endif
-@@ -2282,6 +2325,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2272,6 +2315,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      s->notebook = gtk_notebook_new();
      s->menu_bar = gtk_menu_bar_new();
  
@@ -184,7 +183,7 @@ index 89b8020c7375..eebcfab1d536 100644
      s->free_scale = FALSE;
  
      /* Mostly LC_MESSAGES only. See early_gtk_display_init() for details. For
-@@ -2322,6 +2369,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2312,6 +2359,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      gtk_box_pack_start(GTK_BOX(s->vbox), s->menu_bar, FALSE, TRUE, 0);
      gtk_box_pack_start(GTK_BOX(s->vbox), s->notebook, TRUE, TRUE, 0);
  
@@ -196,5 +195,5 @@ index 89b8020c7375..eebcfab1d536 100644
  
      gtk_widget_show_all(s->window);
 -- 
-2.34.1
+2.20.1
 

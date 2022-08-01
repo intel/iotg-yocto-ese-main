@@ -1,0 +1,1242 @@
+From 569e3f056dfb405adb2c799271f5a0b729e5e197 Mon Sep 17 00:00:00 2001
+From: "Naklicki, Mateusz" <mateusz.naklicki@intel.com>
+Date: Thu, 2 Jun 2022 15:12:55 +0000
+Subject: [PATCH] Enabled adln support
+
+Related-To: NEO-6818
+Signed-off-by: Naklicki, Mateusz <mateusz.naklicki@intel.com>
+---
+ cmake/setup_platform_flags.cmake              |  13 +-
+ .../core/source/gen12lp/adln/CMakeLists.txt   |  18 ++
+ .../core/source/gen12lp/adln/cmdlist_adln.cpp |  19 ++
+ .../source/gen12lp/adln/cmdqueue_adln.cpp     |  18 ++
+ .../core/source/gen12lp/adln/image_adln.cpp   |  25 +++
+ .../core/source/gen12lp/adln/kernel_adln.cpp  |  16 ++
+ .../core/source/gen12lp/adln/sampler_adln.cpp |  21 +++
+ .../unit_test/gen12lp/adln/CMakeLists.txt     |  12 ++
+ .../gen12lp/adln/excludes_ocl_adln.cmake      |  18 ++
+ .../gen12lp/adln/excludes_ocl_adln.cpp        |  10 ++
+ .../gen12lp/adln/linux/CMakeLists.txt         |   9 +
+ .../gen12lp/adln/linux/dll/CMakeLists.txt     |  11 ++
+ .../adln/linux/dll/device_id_tests_adln.cpp   |  39 +++++
+ .../gen12lp/adln/ail_configuration_adln.cpp   |  19 ++
+ .../aub_mem_dump/definitions/aub_services.h   |   3 +-
+ shared/source/dll/devices/devices_base.inl    |   7 +
+ shared/source/dll/devices/platforms.h         |   1 +
+ .../dll/devices/product_config_base.inl       |   3 +
+ .../adln/os_agnostic_hw_info_config_adln.inl  |  29 ++++
+ .../gen12lp/definitions/hw_cmds_adln.inl      |   6 +
+ .../definitions/hw_info_setup_adln.inl        |  15 ++
+ shared/source/gen12lp/enable_gen12lp.cpp      |   4 +
+ .../gen12lp/enable_hw_info_config_adln.cpp    |  15 ++
+ shared/source/gen12lp/hw_cmds.h               |   5 +-
+ shared/source/gen12lp/hw_cmds_adln.h          |  38 ++++
+ shared/source/gen12lp/hw_info.h               |   5 +-
+ shared/source/gen12lp/hw_info_adln.cpp        | 162 ++++++++++++++++++
+ shared/source/gen12lp/hw_info_adln.h          |  23 +++
+ .../gen12lp/linux/hw_info_config_adln.cpp     |  21 +++
+ .../gen12lp/windows/hw_info_config_adln.cpp   |  21 +++
+ .../test/common/gen12lp/adln/CMakeLists.txt   |  17 ++
+ .../gen12lp/adln/test_hw_info_config_adln.cpp |  67 ++++++++
+ .../header/per_product_test_definitions.h     |  13 +-
+ .../unit_test/gen12lp/adln/CMakeLists.txt     |  13 ++
+ .../gen12lp/adln/linux/CMakeLists.txt         |  11 ++
+ .../adln/linux/hw_info_config_tests_adln.cpp  |  72 ++++++++
+ .../gen12lp/adln/test_device_caps_adln.cpp    |  41 +++++
+ target_unit_tests/gen12lp/adln/CMakeLists.txt |   9 +
+ .../gen12lp/adln/enable_adln_testing.cmake    |  10 ++
+ 39 files changed, 854 insertions(+), 5 deletions(-)
+ create mode 100644 level_zero/core/source/gen12lp/adln/CMakeLists.txt
+ create mode 100644 level_zero/core/source/gen12lp/adln/cmdlist_adln.cpp
+ create mode 100644 level_zero/core/source/gen12lp/adln/cmdqueue_adln.cpp
+ create mode 100644 level_zero/core/source/gen12lp/adln/image_adln.cpp
+ create mode 100644 level_zero/core/source/gen12lp/adln/kernel_adln.cpp
+ create mode 100644 level_zero/core/source/gen12lp/adln/sampler_adln.cpp
+ create mode 100644 opencl/test/unit_test/gen12lp/adln/CMakeLists.txt
+ create mode 100644 opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cmake
+ create mode 100644 opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cpp
+ create mode 100644 opencl/test/unit_test/gen12lp/adln/linux/CMakeLists.txt
+ create mode 100644 opencl/test/unit_test/gen12lp/adln/linux/dll/CMakeLists.txt
+ create mode 100644 opencl/test/unit_test/gen12lp/adln/linux/dll/device_id_tests_adln.cpp
+ create mode 100644 shared/source/ail/gen12lp/adln/ail_configuration_adln.cpp
+ create mode 100644 shared/source/gen12lp/adln/os_agnostic_hw_info_config_adln.inl
+ create mode 100644 shared/source/gen12lp/definitions/hw_cmds_adln.inl
+ create mode 100644 shared/source/gen12lp/definitions/hw_info_setup_adln.inl
+ create mode 100644 shared/source/gen12lp/enable_hw_info_config_adln.cpp
+ create mode 100644 shared/source/gen12lp/hw_cmds_adln.h
+ create mode 100644 shared/source/gen12lp/hw_info_adln.cpp
+ create mode 100644 shared/source/gen12lp/hw_info_adln.h
+ create mode 100644 shared/source/gen12lp/linux/hw_info_config_adln.cpp
+ create mode 100644 shared/source/gen12lp/windows/hw_info_config_adln.cpp
+ create mode 100644 shared/test/common/gen12lp/adln/CMakeLists.txt
+ create mode 100644 shared/test/common/gen12lp/adln/test_hw_info_config_adln.cpp
+ create mode 100644 shared/test/unit_test/gen12lp/adln/CMakeLists.txt
+ create mode 100644 shared/test/unit_test/gen12lp/adln/linux/CMakeLists.txt
+ create mode 100644 shared/test/unit_test/gen12lp/adln/linux/hw_info_config_tests_adln.cpp
+ create mode 100644 shared/test/unit_test/gen12lp/adln/test_device_caps_adln.cpp
+ create mode 100644 target_unit_tests/gen12lp/adln/CMakeLists.txt
+ create mode 100644 target_unit_tests/gen12lp/adln/enable_adln_testing.cmake
+
+diff --git a/cmake/setup_platform_flags.cmake b/cmake/setup_platform_flags.cmake
+index 51cbdf470b0b..a1919798c654 100644
+--- a/cmake/setup_platform_flags.cmake
++++ b/cmake/setup_platform_flags.cmake
+@@ -7,7 +7,7 @@
+ SET_FLAGS_FOR("GEN8" "BDW")
+ SET_FLAGS_FOR("GEN9" "SKL" "KBL" "BXT" "GLK" "CFL")
+ SET_FLAGS_FOR("GEN11" "ICLLP" "LKF" "EHL")
+-SET_FLAGS_FOR("GEN12LP" "TGLLP" "RKL" "ADLS" "ADLP" "DG1")
++SET_FLAGS_FOR("GEN12LP" "TGLLP" "RKL" "ADLS" "ADLP" "DG1" "ADLN")
+ SET_FLAGS_FOR("XE_HP_CORE" "XE_HP_SDV")
+ SET_FLAGS_FOR("XE_HPG_CORE" "DG2")
+ SET_FLAGS_FOR("XE_HPC_CORE" "PVC")
+@@ -223,6 +223,17 @@ if(SUPPORT_GEN12LP)
+       ADD_PRODUCT("TESTED" "ADLP" "IGFX_ALDERLAKE_P")
+     endif()
+   endif()
++
++  if(SUPPORT_ADLN)
++    ADD_PRODUCT("SUPPORTED" "ADLN" "IGFX_ALDERLAKE_N")
++    ADD_PLATFORM_FOR_CORE_TYPE("SUPPORTED" "GEN12LP" "ADLN" "LP")
++    ADD_PLATFORM_FOR_CORE_TYPE("SUPPORTED_IMAGES" "GEN12LP" "ADLN" "LP")
++    ADD_PLATFORM_FOR_CORE_TYPE("SUPPORTED_AUX_TRANSLATION" "GEN12LP" "ADLN" "LP")
++    if(TESTS_ADLN)
++      ADD_ITEM_FOR_CORE_TYPE("PLATFORMS" "TESTED" "GEN12LP" "ADLN")
++      ADD_PRODUCT("TESTED" "ADLN" "IGFX_ALDERLAKE_N")
++    endif()
++  endif()
+ endif()
+ 
+ if(SUPPORT_XE_HP_CORE)
+diff --git a/level_zero/core/source/gen12lp/adln/CMakeLists.txt b/level_zero/core/source/gen12lp/adln/CMakeLists.txt
+new file mode 100644
+index 000000000000..a6b20bc5126f
+--- /dev/null
++++ b/level_zero/core/source/gen12lp/adln/CMakeLists.txt
+@@ -0,0 +1,18 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(SUPPORT_ADLN)
++  set(HW_SOURCES_GEN12LP
++      ${HW_SOURCES_GEN12LP}
++      ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
++      ${CMAKE_CURRENT_SOURCE_DIR}/cmdlist_adln.cpp
++      ${CMAKE_CURRENT_SOURCE_DIR}/cmdqueue_adln.cpp
++      ${CMAKE_CURRENT_SOURCE_DIR}/kernel_adln.cpp
++      ${CMAKE_CURRENT_SOURCE_DIR}/image_adln.cpp
++      ${CMAKE_CURRENT_SOURCE_DIR}/sampler_adln.cpp
++      PARENT_SCOPE
++  )
++endif()
+diff --git a/level_zero/core/source/gen12lp/adln/cmdlist_adln.cpp b/level_zero/core/source/gen12lp/adln/cmdlist_adln.cpp
+new file mode 100644
+index 000000000000..307d1d93fa47
+--- /dev/null
++++ b/level_zero/core/source/gen12lp/adln/cmdlist_adln.cpp
+@@ -0,0 +1,19 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_base.h"
++
++#include "level_zero/core/source/gen12lp/cmdlist_gen12lp.h"
++
++namespace L0 {
++static CommandListPopulateFactory<IGFX_ALDERLAKE_N, CommandListProductFamily<IGFX_ALDERLAKE_N>>
++    populateADLN;
++
++static CommandListImmediatePopulateFactory<IGFX_ALDERLAKE_N, CommandListImmediateProductFamily<IGFX_ALDERLAKE_N>>
++    populateADLNImmediate;
++
++} // namespace L0
+diff --git a/level_zero/core/source/gen12lp/adln/cmdqueue_adln.cpp b/level_zero/core/source/gen12lp/adln/cmdqueue_adln.cpp
+new file mode 100644
+index 000000000000..559155e902b8
+--- /dev/null
++++ b/level_zero/core/source/gen12lp/adln/cmdqueue_adln.cpp
+@@ -0,0 +1,18 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "level_zero/core/source/cmdqueue/cmdqueue_hw.inl"
++#include "level_zero/core/source/cmdqueue/cmdqueue_hw_base.inl"
++
++#include "cmdqueue_extended.inl"
++
++namespace L0 {
++template struct CommandQueueHw<IGFX_GEN12LP_CORE>;
++static CommandQueuePopulateFactory<IGFX_ALDERLAKE_N, CommandQueueHw<IGFX_GEN12LP_CORE>>
++    populateADLN;
++
++} // namespace L0
+diff --git a/level_zero/core/source/gen12lp/adln/image_adln.cpp b/level_zero/core/source/gen12lp/adln/image_adln.cpp
+new file mode 100644
+index 000000000000..5645b0da105d
+--- /dev/null
++++ b/level_zero/core/source/gen12lp/adln/image_adln.cpp
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_base.h"
++
++#include "level_zero/core/source/image/image_hw.inl"
++
++namespace L0 {
++
++template <>
++struct ImageProductFamily<IGFX_ALDERLAKE_N> : public ImageCoreFamily<IGFX_GEN12LP_CORE> {
++    using ImageCoreFamily::ImageCoreFamily;
++
++    ze_result_t initialize(Device *device, const ze_image_desc_t *desc) override {
++        return ImageCoreFamily<IGFX_GEN12LP_CORE>::initialize(device, desc);
++    };
++};
++
++static ImagePopulateFactory<IGFX_ALDERLAKE_N, ImageProductFamily<IGFX_ALDERLAKE_N>> populateADLN;
++
++} // namespace L0
+diff --git a/level_zero/core/source/gen12lp/adln/kernel_adln.cpp b/level_zero/core/source/gen12lp/adln/kernel_adln.cpp
+new file mode 100644
+index 000000000000..f92c2173ba17
+--- /dev/null
++++ b/level_zero/core/source/gen12lp/adln/kernel_adln.cpp
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_base.h"
++
++#include "level_zero/core/source/kernel/kernel_hw.h"
++
++namespace L0 {
++
++static KernelPopulateFactory<IGFX_ALDERLAKE_N, KernelHw<IGFX_GEN12LP_CORE>> populateADLN;
++
++} // namespace L0
+diff --git a/level_zero/core/source/gen12lp/adln/sampler_adln.cpp b/level_zero/core/source/gen12lp/adln/sampler_adln.cpp
+new file mode 100644
+index 000000000000..0e5c60dddddc
+--- /dev/null
++++ b/level_zero/core/source/gen12lp/adln/sampler_adln.cpp
+@@ -0,0 +1,21 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_base.h"
++
++#include "level_zero/core/source/sampler/sampler_hw.inl"
++
++namespace L0 {
++
++template <>
++struct SamplerProductFamily<IGFX_ALDERLAKE_N> : public SamplerCoreFamily<IGFX_GEN12LP_CORE> {
++    using SamplerCoreFamily::SamplerCoreFamily;
++};
++
++static SamplerPopulateFactory<IGFX_ALDERLAKE_N, SamplerProductFamily<IGFX_ALDERLAKE_N>> populateADLN;
++
++} // namespace L0
+diff --git a/opencl/test/unit_test/gen12lp/adln/CMakeLists.txt b/opencl/test/unit_test/gen12lp/adln/CMakeLists.txt
+new file mode 100644
+index 000000000000..e5418fc456a4
+--- /dev/null
++++ b/opencl/test/unit_test/gen12lp/adln/CMakeLists.txt
+@@ -0,0 +1,12 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(TESTS_ADLN)
++  include(${CMAKE_CURRENT_SOURCE_DIR}${BRANCH_DIR_SUFFIX}excludes_ocl_adln.cmake)
++  add_subdirectories()
++  neo_copy_test_files_with_revision(copy_test_files_adln_0 adln 0)
++  add_dependencies(copy_test_files_per_product copy_test_files_adln_0)
++endif()
+diff --git a/opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cmake b/opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cmake
+new file mode 100644
+index 000000000000..3f5a15bf630d
+--- /dev/null
++++ b/opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cmake
+@@ -0,0 +1,18 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(TESTS_ADLN)
++  set(IGDRCL_SRCS_tests_gen12lp_adln_excludes
++      ${CMAKE_CURRENT_SOURCE_DIR}/excludes_ocl_adln.cpp
++  )
++  set_property(GLOBAL APPEND PROPERTY IGDRCL_SRCS_tests_excludes ${IGDRCL_SRCS_tests_gen12lp_adln_excludes})
++
++  set(IGDRCL_SRCS_tests_gen12lp_adln
++      ${IGDRCL_SRCS_tests_gen12lp_adln_excludes}
++      ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
++  )
++  target_sources(igdrcl_tests PRIVATE ${IGDRCL_SRCS_tests_gen12lp_adln})
++endif()
+\ No newline at end of file
+diff --git a/opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cpp b/opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cpp
+new file mode 100644
+index 000000000000..e21cace85ff3
+--- /dev/null
++++ b/opencl/test/unit_test/gen12lp/adln/excludes_ocl_adln.cpp
+@@ -0,0 +1,10 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/test/common/test_macros/test.h"
++
++HWTEST_EXCLUDE_PRODUCT(DeviceFactoryTest, givenInvalidHwConfigStringWhenPrepareDeviceEnvironmentsForProductFamilyOverrideThenThrowsException, IGFX_ALDERLAKE_N);
+diff --git a/opencl/test/unit_test/gen12lp/adln/linux/CMakeLists.txt b/opencl/test/unit_test/gen12lp/adln/linux/CMakeLists.txt
+new file mode 100644
+index 000000000000..70088dd96291
+--- /dev/null
++++ b/opencl/test/unit_test/gen12lp/adln/linux/CMakeLists.txt
+@@ -0,0 +1,9 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(UNIX)
++  add_subdirectory(dll)
++endif()
+diff --git a/opencl/test/unit_test/gen12lp/adln/linux/dll/CMakeLists.txt b/opencl/test/unit_test/gen12lp/adln/linux/dll/CMakeLists.txt
+new file mode 100644
+index 000000000000..3449d1a48a8c
+--- /dev/null
++++ b/opencl/test/unit_test/gen12lp/adln/linux/dll/CMakeLists.txt
+@@ -0,0 +1,11 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++set(IGDRCL_SRCS_linux_dll_tests_gen12_adln
++    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
++    ${CMAKE_CURRENT_SOURCE_DIR}/device_id_tests_adln.cpp
++)
++target_sources(igdrcl_linux_dll_tests PRIVATE ${IGDRCL_SRCS_linux_dll_tests_gen12_adln})
+diff --git a/opencl/test/unit_test/gen12lp/adln/linux/dll/device_id_tests_adln.cpp b/opencl/test/unit_test/gen12lp/adln/linux/dll/device_id_tests_adln.cpp
+new file mode 100644
+index 000000000000..a824e9eedd6a
+--- /dev/null
++++ b/opencl/test/unit_test/gen12lp/adln/linux/dll/device_id_tests_adln.cpp
+@@ -0,0 +1,39 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_adln.h"
++#include "shared/source/os_interface/linux/drm_neo.h"
++#include "shared/test/common/test_macros/test.h"
++
++#include <array>
++
++using namespace NEO;
++
++TEST(AdlnDeviceIdTest, GivenSupportedDeviceIdThenHardwareInfoIsCorrect) {
++    std::array<DeviceDescriptor, 1> expectedDescriptors = {{
++        {0x46D0, &ADLN_CONFIG::hwInfo, &ADLN_CONFIG::setupHardwareInfo},
++        {0x46D1, &ADLN_CONFIG::hwInfo, &ADLN_CONFIG::setupHardwareInfo},
++        {0x46D2, &ADLN_CONFIG::hwInfo, &ADLN_CONFIG::setupHardwareInfo},
++    }};
++
++    auto compareStructs = [](const DeviceDescriptor *first, const DeviceDescriptor *second) {
++        return first->deviceId == second->deviceId && first->pHwInfo == second->pHwInfo &&
++               first->setupHardwareInfo == second->setupHardwareInfo;
++    };
++
++    size_t startIndex = 0;
++    while (!compareStructs(&expectedDescriptors[0], &deviceDescriptorTable[startIndex]) &&
++           deviceDescriptorTable[startIndex].deviceId != 0) {
++        startIndex++;
++    };
++    EXPECT_NE(0u, deviceDescriptorTable[startIndex].deviceId);
++
++    for (auto &expected : expectedDescriptors) {
++        EXPECT_TRUE(compareStructs(&expected, &deviceDescriptorTable[startIndex]));
++        startIndex++;
++    }
++}
+diff --git a/shared/source/ail/gen12lp/adln/ail_configuration_adln.cpp b/shared/source/ail/gen12lp/adln/ail_configuration_adln.cpp
+new file mode 100644
+index 000000000000..65a8a21f35c9
+--- /dev/null
++++ b/shared/source/ail/gen12lp/adln/ail_configuration_adln.cpp
+@@ -0,0 +1,19 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/ail/ail_configuration.h"
++
++#include <map>
++namespace NEO {
++static EnableAIL<IGFX_ALDERLAKE_N> enableAILADLN;
++
++std::map<std::string_view, std::vector<AILEnumeration>> applicationMapADLN = {};
++
++template <>
++inline void AILConfigurationHw<IGFX_ALDERLAKE_N>::applyExt(RuntimeCapabilityTable &runtimeCapabilityTable) {
++}
++} // namespace NEO
+diff --git a/shared/source/aub_mem_dump/definitions/aub_services.h b/shared/source/aub_mem_dump/definitions/aub_services.h
+index de9c45d0d96e..40041c5b8d31 100644
+--- a/shared/source/aub_mem_dump/definitions/aub_services.h
++++ b/shared/source/aub_mem_dump/definitions/aub_services.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2018-2021 Intel Corporation
++ * Copyright (C) 2018-2022 Intel Corporation
+  *
+  * SPDX-License-Identifier: MIT
+  *
+@@ -105,6 +105,7 @@ struct CmdServicesMemTraceVersion {
+             Adls = 37,
+             XeHP_SDV = 29,
+             Adlp = 34,
++            Adln = 34,
+             Dg2 = 36,
+             Pvc = 39,
+         };
+diff --git a/shared/source/dll/devices/devices_base.inl b/shared/source/dll/devices/devices_base.inl
+index bacfd168fd99..6f9f0131a5d2 100644
+--- a/shared/source/dll/devices/devices_base.inl
++++ b/shared/source/dll/devices/devices_base.inl
+@@ -71,6 +71,13 @@ DEVICE( 0xA783, ADLS_HW_CONFIG )
+ DEVICE( 0xA788, ADLS_HW_CONFIG )
+ DEVICE( 0xA789, ADLS_HW_CONFIG )
+ #endif
++
++#ifdef SUPPORT_ADLN
++DEVICE(0x46D0, ADLN_CONFIG)
++DEVICE(0x46D1, ADLN_CONFIG)
++DEVICE(0x46D2, ADLN_CONFIG)
++#endif
++
+ #endif
+ 
+ #ifdef SUPPORT_GEN11
+diff --git a/shared/source/dll/devices/platforms.h b/shared/source/dll/devices/platforms.h
+index 2ea3200b8346..e3b679220439 100644
+--- a/shared/source/dll/devices/platforms.h
++++ b/shared/source/dll/devices/platforms.h
+@@ -27,6 +27,7 @@ typedef enum {
+     RPL_S = 0x0c0000,
+     ADL_P = 0x0c0000,
+     ADL_S = 0x0c0000,
++    ADL_N = 0x0c0000,
+     RKL = 0x0c0000,
+     TGL = 0x0c0000,
+     XEHP_SDV = 0x0c0100,
+diff --git a/shared/source/dll/devices/product_config_base.inl b/shared/source/dll/devices/product_config_base.inl
+index aeb542afeb94..b7608e1ca719 100644
+--- a/shared/source/dll/devices/product_config_base.inl
++++ b/shared/source/dll/devices/product_config_base.inl
+@@ -46,6 +46,9 @@ DEVICE_CONFIG(ADL_S, ADLS_HW_CONFIG)
+ #ifdef SUPPORT_ADLP
+ DEVICE_CONFIG(ADL_P, ADLP_CONFIG)
+ #endif
++#ifdef SUPPORT_ADLN
++DEVICE_CONFIG(ADL_N, ADLN_CONFIG)
++#endif
+ #endif
+ 
+ #ifdef SUPPORT_GEN11
+diff --git a/shared/source/gen12lp/adln/os_agnostic_hw_info_config_adln.inl b/shared/source/gen12lp/adln/os_agnostic_hw_info_config_adln.inl
+new file mode 100644
+index 000000000000..85bb68f22bd6
+--- /dev/null
++++ b/shared/source/gen12lp/adln/os_agnostic_hw_info_config_adln.inl
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++template <>
++uint32_t HwInfoConfigHw<gfxProduct>::getHwRevIdFromStepping(uint32_t stepping, const HardwareInfo &hwInfo) const {
++    switch (stepping) {
++    case REVISION_A0:
++        return 0x0;
++    }
++    return CommonConstants::invalidStepping;
++}
++
++template <>
++PRODUCT_CONFIG HwInfoConfigHw<gfxProduct>::getProductConfigFromHwInfo(const HardwareInfo &hwInfo) const {
++    return PRODUCT_CONFIG::ADL_N;
++}
++
++template <>
++uint32_t HwInfoConfigHw<gfxProduct>::getSteppingFromHwRevId(const HardwareInfo &hwInfo) const {
++    switch (hwInfo.platform.usRevId) {
++    case 0x0:
++        return REVISION_A0;
++    }
++    return CommonConstants::invalidStepping;
++}
+diff --git a/shared/source/gen12lp/definitions/hw_cmds_adln.inl b/shared/source/gen12lp/definitions/hw_cmds_adln.inl
+new file mode 100644
+index 000000000000..9b9ddd479953
+--- /dev/null
++++ b/shared/source/gen12lp/definitions/hw_cmds_adln.inl
+@@ -0,0 +1,6 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
+diff --git a/shared/source/gen12lp/definitions/hw_info_setup_adln.inl b/shared/source/gen12lp/definitions/hw_info_setup_adln.inl
+new file mode 100644
+index 000000000000..e3ad7c705927
+--- /dev/null
++++ b/shared/source/gen12lp/definitions/hw_info_setup_adln.inl
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++const uint64_t ADLN::defaultHardwareInfoConfig = 0x0;
++const HardwareInfo ADLN::hwInfo = ADLN_CONFIG::hwInfo;
++
++void setupADLNHardwareInfoImpl(HardwareInfo *hwInfo, bool setupFeatureTableAndWorkaroundTable, uint64_t hwInfoConfig) {
++    ADLN_CONFIG::setupHardwareInfo(hwInfo, setupFeatureTableAndWorkaroundTable);
++}
++
++void (*ADLN::setupHardwareInfo)(HardwareInfo *, bool, const uint64_t) = setupADLNHardwareInfoImpl;
+diff --git a/shared/source/gen12lp/enable_gen12lp.cpp b/shared/source/gen12lp/enable_gen12lp.cpp
+index ca7608b3e2a6..589783a15739 100644
+--- a/shared/source/gen12lp/enable_gen12lp.cpp
++++ b/shared/source/gen12lp/enable_gen12lp.cpp
+@@ -35,4 +35,8 @@ static EnableCompilerHwInfoConfig<IGFX_ALDERLAKE_S> enableCompilerHwInfoConfigAD
+ static EnableGfxProductHw<IGFX_ALDERLAKE_P> enableGfxProductHwADLP;
+ static EnableCompilerHwInfoConfig<IGFX_ALDERLAKE_P> enableCompilerHwInfoConfigADLP;
+ #endif
++#ifdef SUPPORT_ADLN
++static EnableGfxProductHw<IGFX_ALDERLAKE_N> enableGfxProductHwADLN;
++static EnableCompilerHwInfoConfig<IGFX_ALDERLAKE_N> enableCompilerHwInfoConfigADLN;
++#endif
+ } // namespace NEO
+diff --git a/shared/source/gen12lp/enable_hw_info_config_adln.cpp b/shared/source/gen12lp/enable_hw_info_config_adln.cpp
+new file mode 100644
+index 000000000000..d6fc68cee14c
+--- /dev/null
++++ b/shared/source/gen12lp/enable_hw_info_config_adln.cpp
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds.h"
++#include "shared/source/os_interface/hw_info_config.h"
++
++namespace NEO {
++
++static EnableProductHwInfoConfig<IGFX_ALDERLAKE_N> enableADLN;
++
++} // namespace NEO
+diff --git a/shared/source/gen12lp/hw_cmds.h b/shared/source/gen12lp/hw_cmds.h
+index 900acb4d518e..58cfa38a9d3d 100644
+--- a/shared/source/gen12lp/hw_cmds.h
++++ b/shared/source/gen12lp/hw_cmds.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2019-2021 Intel Corporation
++ * Copyright (C) 2019-2022 Intel Corporation
+  *
+  * SPDX-License-Identifier: MIT
+  *
+@@ -22,3 +22,6 @@
+ #ifdef SUPPORT_ADLP
+ #include "hw_cmds_adlp.h"
+ #endif
++#ifdef SUPPORT_ADLN
++#include "hw_cmds_adln.h"
++#endif
+diff --git a/shared/source/gen12lp/hw_cmds_adln.h b/shared/source/gen12lp/hw_cmds_adln.h
+new file mode 100644
+index 000000000000..1adadcfa770b
+--- /dev/null
++++ b/shared/source/gen12lp/hw_cmds_adln.h
+@@ -0,0 +1,38 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#pragma once
++#include "shared/source/gen12lp/hw_cmds_base.h"
++namespace NEO {
++
++struct ADLN : public TGLLPFamily {
++    static const PLATFORM platform;
++    static const HardwareInfo hwInfo;
++    static const uint64_t defaultHardwareInfoConfig;
++    static FeatureTable featureTable;
++    static WorkaroundTable workaroundTable;
++    static const uint32_t threadsPerEu = 7;
++    static const uint32_t maxEuPerSubslice = 16;
++    static const uint32_t maxSlicesSupported = 1;
++    static const uint32_t maxSubslicesSupported = 6;
++    static const uint32_t maxDualSubslicesSupported = 12;
++    static const RuntimeCapabilityTable capabilityTable;
++    static void (*setupHardwareInfo)(HardwareInfo *hwInfo, bool setupFeatureTableAndWorkaroundTable, uint64_t hwInfoConfig);
++    static void setupFeatureAndWorkaroundTable(HardwareInfo *hwInfo);
++    static void setupHardwareInfoBase(HardwareInfo *hwInfo, bool setupFeatureTableAndWorkaroundTable);
++};
++class ADLN_CONFIG : public ADLN {
++  public:
++    static void setupHardwareInfo(HardwareInfo *hwInfo, bool setupFeatureTableAndWorkaroundTable);
++    static const HardwareInfo hwInfo;
++
++  private:
++    static GT_SYSTEM_INFO gtSystemInfo;
++};
++
++#include "hw_cmds_adln.inl"
++} // namespace NEO
+diff --git a/shared/source/gen12lp/hw_info.h b/shared/source/gen12lp/hw_info.h
+index fa16724bfd4d..79a3febb0d25 100644
+--- a/shared/source/gen12lp/hw_info.h
++++ b/shared/source/gen12lp/hw_info.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2019-2021 Intel Corporation
++ * Copyright (C) 2019-2022 Intel Corporation
+  *
+  * SPDX-License-Identifier: MIT
+  *
+@@ -20,4 +20,7 @@
+ #endif
+ #ifdef SUPPORT_ADLP
+ #include "hw_info_adlp.h"
++#endif
++#ifdef SUPPORT_ADLN
++#include "hw_info_adln.h"
+ #endif
+\ No newline at end of file
+diff --git a/shared/source/gen12lp/hw_info_adln.cpp b/shared/source/gen12lp/hw_info_adln.cpp
+new file mode 100644
+index 000000000000..ec81cb68dd10
+--- /dev/null
++++ b/shared/source/gen12lp/hw_info_adln.cpp
+@@ -0,0 +1,162 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/aub_mem_dump/definitions/aub_services.h"
++#include "shared/source/gen12lp/hw_cmds.h"
++#include "shared/source/helpers/constants.h"
++
++#include "engine_node.h"
++
++namespace NEO {
++
++const char *HwMapper<IGFX_ALDERLAKE_N>::abbreviation = "adln";
++
++bool isSimulationADLN(unsigned short deviceId) {
++    return false;
++};
++
++const PLATFORM ADLN::platform = {
++    IGFX_ALDERLAKE_N,
++    PCH_UNKNOWN,
++    IGFX_GEN12LP_CORE,
++    IGFX_GEN12LP_CORE,
++    PLATFORM_NONE, // default init
++    0,             // usDeviceID
++    0,             // usRevId. 0 sets the stepping to A0
++    0,             // usDeviceID_PCH
++    0,             // usRevId_PCH
++    GTTYPE_UNDEFINED};
++
++const RuntimeCapabilityTable ADLN::capabilityTable{
++    EngineDirectSubmissionInitVec{
++        {aub_stream::ENGINE_RCS, {true, true}},
++        {aub_stream::ENGINE_CCS, {true, true}}},    // directSubmissionEngines
++    {0, 0, 0, 0, false, false, false, false},       // kmdNotifyProperties
++    MemoryConstants::max64BitAppAddress,            // gpuAddressSpace
++    0,                                              // sharedSystemMemCapabilities
++    83.333,                                         // defaultProfilingTimerResolution
++    MemoryConstants::pageSize,                      // requiredPreemptionSurfaceSize
++    &isSimulationADLN,                              // isSimulation
++    "lp",                                           // platformType
++    "",                                             // deviceName
++    PreemptionMode::MidThread,                      // defaultPreemptionMode
++    aub_stream::ENGINE_RCS,                         // defaultEngineType
++    0,                                              // maxRenderFrequency
++    30,                                             // clVersionSupport
++    CmdServicesMemTraceVersion::DeviceValues::Adln, // aubDeviceId
++    1,                                              // extraQuantityThreadsPerEU
++    64,                                             // slmSize
++    sizeof(ADLN::GRF),                              // grfSize
++    36u,                                            // timestampValidBits
++    32u,                                            // kernelTimestampValidBits
++    false,                                          // blitterOperationsSupported
++    true,                                           // ftrSupportsInteger64BitAtomics
++    false,                                          // ftrSupportsFP64
++    false,                                          // ftrSupports64BitMath
++    true,                                           // ftrSvm
++    false,                                          // ftrSupportsCoherency
++    false,                                          // ftrSupportsVmeAvcTextureSampler
++    false,                                          // ftrSupportsVmeAvcPreemption
++    false,                                          // ftrRenderCompressedBuffers
++    false,                                          // ftrRenderCompressedImages
++    true,                                           // instrumentationEnabled
++    true,                                           // ftr64KBpages
++    true,                                           // sourceLevelDebuggerSupported
++    false,                                          // supportsVme
++    false,                                          // supportCacheFlushAfterWalker
++    true,                                           // supportsImages
++    false,                                          // supportsDeviceEnqueue
++    false,                                          // supportsPipes
++    true,                                           // supportsOcl21Features
++    false,                                          // supportsOnDemandPageFaults
++    false,                                          // supportsIndependentForwardProgress
++    false,                                          // hostPtrTrackingEnabled
++    true,                                           // levelZeroSupported
++    true,                                           // isIntegratedDevice
++    true,                                           // supportsMediaBlock
++    false,                                          // p2pAccessSupported
++    false,                                          // p2pAtomicAccessSupported
++    true                                            // fusedEuEnabled
++};
++
++WorkaroundTable ADLN::workaroundTable = {};
++FeatureTable ADLN::featureTable = {};
++
++void ADLN::setupFeatureAndWorkaroundTable(HardwareInfo *hwInfo) {
++    FeatureTable *featureTable = &hwInfo->featureTable;
++    WorkaroundTable *workaroundTable = &hwInfo->workaroundTable;
++
++    featureTable->flags.ftrL3IACoherency = true;
++    featureTable->flags.ftrPPGTT = true;
++    featureTable->flags.ftrSVM = true;
++    featureTable->flags.ftrIA32eGfxPTEs = true;
++    featureTable->flags.ftrStandardMipTailFormat = true;
++
++    featureTable->flags.ftrTranslationTable = true;
++    featureTable->flags.ftrUserModeTranslationTable = true;
++    featureTable->flags.ftrTileMappedResource = true;
++    featureTable->flags.ftrEnableGuC = true;
++
++    featureTable->flags.ftrFbc = true;
++    featureTable->flags.ftrFbc2AddressTranslation = true;
++    featureTable->flags.ftrFbcBlitterTracking = true;
++    featureTable->flags.ftrFbcCpuTracking = true;
++    featureTable->flags.ftrTileY = true;
++
++    featureTable->flags.ftrAstcHdr2D = true;
++    featureTable->flags.ftrAstcLdr2D = true;
++
++    featureTable->flags.ftr3dMidBatchPreempt = true;
++    featureTable->flags.ftrGpGpuMidBatchPreempt = true;
++    featureTable->flags.ftrGpGpuThreadGroupLevelPreempt = true;
++    featureTable->flags.ftrPerCtxtPreemptionGranularityControl = true;
++
++    workaroundTable->flags.wa4kAlignUVOffsetNV12LinearSurface = true;
++    workaroundTable->flags.waEnablePreemptionGranularityControlByUMD = true;
++    workaroundTable->flags.waUntypedBufferCompression = true;
++};
++
++void ADLN::setupHardwareInfoBase(HardwareInfo *hwInfo, bool setupFeatureTableAndWorkaroundTable) {
++    GT_SYSTEM_INFO *gtSysInfo = &hwInfo->gtSystemInfo;
++    gtSysInfo->ThreadCount = gtSysInfo->EUCount * ADLN::threadsPerEu;
++    gtSysInfo->TotalPsThreadsWindowerRange = 64;
++    gtSysInfo->CsrSizeInMb = 8;
++    gtSysInfo->MaxEuPerSubSlice = ADLN::maxEuPerSubslice;
++    gtSysInfo->MaxSlicesSupported = ADLN::maxSlicesSupported;
++    gtSysInfo->MaxSubSlicesSupported = ADLN::maxSubslicesSupported;
++    gtSysInfo->MaxDualSubSlicesSupported = ADLN::maxDualSubslicesSupported;
++    gtSysInfo->IsL3HashModeEnabled = false;
++    gtSysInfo->IsDynamicallyPopulated = false;
++
++    if (setupFeatureTableAndWorkaroundTable) {
++        setupFeatureAndWorkaroundTable(hwInfo);
++    }
++}
++
++const HardwareInfo ADLN_CONFIG::hwInfo = {
++    &ADLN::platform,
++    &ADLN::featureTable,
++    &ADLN::workaroundTable,
++    &ADLN_CONFIG::gtSystemInfo,
++    ADLN::capabilityTable,
++};
++
++GT_SYSTEM_INFO ADLN_CONFIG::gtSystemInfo = {0};
++void ADLN_CONFIG::setupHardwareInfo(HardwareInfo *hwInfo, bool setupFeatureTableAndWorkaroundTable) {
++    ADLN::setupHardwareInfoBase(hwInfo, setupFeatureTableAndWorkaroundTable);
++
++    GT_SYSTEM_INFO *gtSysInfo = &hwInfo->gtSystemInfo;
++    gtSysInfo->L3CacheSizeInKb = 1920;
++    gtSysInfo->L3BankCount = 4;
++    gtSysInfo->MaxFillRate = 8;
++    gtSysInfo->CCSInfo.IsValid = true;
++    gtSysInfo->CCSInfo.NumberOfCCSEnabled = 1;
++    gtSysInfo->CCSInfo.Instances.CCSEnableMask = 0b1;
++};
++
++#include "hw_info_setup_adln.inl"
++} // namespace NEO
+diff --git a/shared/source/gen12lp/hw_info_adln.h b/shared/source/gen12lp/hw_info_adln.h
+new file mode 100644
+index 000000000000..bf2f741b0899
+--- /dev/null
++++ b/shared/source/gen12lp/hw_info_adln.h
+@@ -0,0 +1,23 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#pragma once
++#include "shared/source/gen12lp/hw_info_gen12lp.h"
++
++namespace NEO {
++
++struct ADLN;
++
++template <>
++struct HwMapper<IGFX_ALDERLAKE_N> {
++    enum { gfxFamily = IGFX_GEN12LP_CORE };
++
++    static const char *abbreviation;
++    using GfxFamily = GfxFamilyMapper<static_cast<GFXCORE_FAMILY>(gfxFamily)>::GfxFamily;
++    using GfxProduct = ADLN;
++};
++} // namespace NEO
+diff --git a/shared/source/gen12lp/linux/hw_info_config_adln.cpp b/shared/source/gen12lp/linux/hw_info_config_adln.cpp
+new file mode 100644
+index 000000000000..370eb5ae32d4
+--- /dev/null
++++ b/shared/source/gen12lp/linux/hw_info_config_adln.cpp
+@@ -0,0 +1,21 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_base.h"
++#include "shared/source/helpers/hw_info.h"
++#include "shared/source/os_interface/hw_info_config.h"
++#include "shared/source/os_interface/hw_info_config.inl"
++#include "shared/source/os_interface/hw_info_config_bdw_and_later.inl"
++
++namespace NEO {
++constexpr static auto gfxProduct = IGFX_ALDERLAKE_N;
++
++#include "shared/source/gen12lp/adln/os_agnostic_hw_info_config_adln.inl"
++#include "shared/source/gen12lp/os_agnostic_hw_info_config_gen12lp.inl"
++
++template class HwInfoConfigHw<gfxProduct>;
++} // namespace NEO
+diff --git a/shared/source/gen12lp/windows/hw_info_config_adln.cpp b/shared/source/gen12lp/windows/hw_info_config_adln.cpp
+new file mode 100644
+index 000000000000..370eb5ae32d4
+--- /dev/null
++++ b/shared/source/gen12lp/windows/hw_info_config_adln.cpp
+@@ -0,0 +1,21 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/gen12lp/hw_cmds_base.h"
++#include "shared/source/helpers/hw_info.h"
++#include "shared/source/os_interface/hw_info_config.h"
++#include "shared/source/os_interface/hw_info_config.inl"
++#include "shared/source/os_interface/hw_info_config_bdw_and_later.inl"
++
++namespace NEO {
++constexpr static auto gfxProduct = IGFX_ALDERLAKE_N;
++
++#include "shared/source/gen12lp/adln/os_agnostic_hw_info_config_adln.inl"
++#include "shared/source/gen12lp/os_agnostic_hw_info_config_gen12lp.inl"
++
++template class HwInfoConfigHw<gfxProduct>;
++} // namespace NEO
+diff --git a/shared/test/common/gen12lp/adln/CMakeLists.txt b/shared/test/common/gen12lp/adln/CMakeLists.txt
+new file mode 100644
+index 000000000000..720571675298
+--- /dev/null
++++ b/shared/test/common/gen12lp/adln/CMakeLists.txt
+@@ -0,0 +1,17 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(TESTS_ADLN)
++  set(NEO_CORE_TESTS_GEN12LP_ADLN
++      ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
++      ${CMAKE_CURRENT_SOURCE_DIR}/test_hw_info_config_adln.cpp
++  )
++  set_property(GLOBAL PROPERTY NEO_CORE_TESTS_GEN12LP_ADLN ${NEO_CORE_TESTS_GEN12LP_ADLN})
++  add_subdirectories()
++  target_sources(${TARGET_NAME} PRIVATE
++                 ${NEO_CORE_TESTS_GEN12LP_ADLN}
++  )
++endif()
+diff --git a/shared/test/common/gen12lp/adln/test_hw_info_config_adln.cpp b/shared/test/common/gen12lp/adln/test_hw_info_config_adln.cpp
+new file mode 100644
+index 000000000000..d48cef6c5215
+--- /dev/null
++++ b/shared/test/common/gen12lp/adln/test_hw_info_config_adln.cpp
+@@ -0,0 +1,67 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/helpers/hw_helper.h"
++#include "shared/test/common/helpers/default_hw_info.h"
++#include "shared/test/common/test_macros/test.h"
++
++using namespace NEO;
++
++using AdlnHwInfo = ::testing::Test;
++
++ADLNTEST_F(AdlnHwInfo, givenBoolWhenCallAdlnHardwareInfoSetupThenFeatureTableAndWorkaroundTableAreSetCorrect) {
++    static bool boolValue[]{
++        true, false};
++    HardwareInfo hwInfo = *defaultHwInfo;
++    GT_SYSTEM_INFO &gtSystemInfo = hwInfo.gtSystemInfo;
++    FeatureTable &featureTable = hwInfo.featureTable;
++    WorkaroundTable &workaroundTable = hwInfo.workaroundTable;
++
++    uint64_t config = 0x0;
++    for (auto setParamBool : boolValue) {
++
++        gtSystemInfo = {0};
++        featureTable = {};
++        workaroundTable = {};
++        hardwareInfoSetup[productFamily](&hwInfo, setParamBool, config);
++
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrL3IACoherency);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrPPGTT);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrSVM);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrIA32eGfxPTEs);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrStandardMipTailFormat);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrTranslationTable);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrUserModeTranslationTable);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrTileMappedResource);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrEnableGuC);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrFbc);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrFbc2AddressTranslation);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrFbcBlitterTracking);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrFbcCpuTracking);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrTileY);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrAstcHdr2D);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrAstcLdr2D);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftr3dMidBatchPreempt);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrGpGpuMidBatchPreempt);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrGpGpuThreadGroupLevelPreempt);
++        EXPECT_EQ(setParamBool, featureTable.flags.ftrPerCtxtPreemptionGranularityControl);
++
++        EXPECT_EQ(setParamBool, workaroundTable.flags.wa4kAlignUVOffsetNV12LinearSurface);
++        EXPECT_EQ(setParamBool, workaroundTable.flags.waEnablePreemptionGranularityControlByUMD);
++        EXPECT_EQ(setParamBool, workaroundTable.flags.waUntypedBufferCompression);
++    }
++}
++
++ADLNTEST_F(AdlnHwInfo, whenPlatformIsAdlnThenExpectSvmIsSet) {
++    const HardwareInfo &hardwareInfo = ADLN::hwInfo;
++    EXPECT_TRUE(hardwareInfo.capabilityTable.ftrSvm);
++}
++
++ADLNTEST_F(AdlnHwInfo, givenAdlnWhenCheckL0ThenReturnTrue) {
++    const HardwareInfo &hardwareInfo = ADLN::hwInfo;
++    EXPECT_TRUE(hardwareInfo.capabilityTable.levelZeroSupported);
++}
+diff --git a/shared/test/common/test_macros/header/per_product_test_definitions.h b/shared/test/common/test_macros/header/per_product_test_definitions.h
+index 9213defae5fb..2eef4b9adbce 100644
+--- a/shared/test/common/test_macros/header/per_product_test_definitions.h
++++ b/shared/test/common/test_macros/header/per_product_test_definitions.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2021 Intel Corporation
++ * Copyright (C) 2021-2022 Intel Corporation
+  *
+  * SPDX-License-Identifier: MIT
+  *
+@@ -180,6 +180,17 @@
+                       IGFX_ALDERLAKE_P)
+ #endif
+ 
++#ifdef TESTS_ADLN
++#define ADLNTEST_F(test_fixture, test_name)                          \
++    FAMILYTEST_TEST_(test_fixture, test_name, test_fixture,          \
++                     ::testing::internal::GetTypeId<test_fixture>(), \
++                     IGFX_GEN12LP_CORE, IGFX_ALDERLAKE_N)
++#define ADLNTEST_P(test_suite_name, test_name)    \
++    FAMILYTEST_TEST_P(test_suite_name, test_name, \
++                      IGFX_GEN12LP_CORE,          \
++                      IGFX_ALDERLAKE_N)
++#endif
++
+ #ifdef TESTS_XE_HP_SDV
+ #define XEHPTEST_F(test_fixture, test_name)                          \
+     FAMILYTEST_TEST_(test_fixture, test_name, test_fixture,          \
+diff --git a/shared/test/unit_test/gen12lp/adln/CMakeLists.txt b/shared/test/unit_test/gen12lp/adln/CMakeLists.txt
+new file mode 100644
+index 000000000000..72392c5f95bd
+--- /dev/null
++++ b/shared/test/unit_test/gen12lp/adln/CMakeLists.txt
+@@ -0,0 +1,13 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(TESTS_ADLN)
++  target_sources(neo_shared_tests PRIVATE
++                 ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
++                 ${CMAKE_CURRENT_SOURCE_DIR}/test_device_caps_adln.cpp
++  )
++  add_subdirectories()
++endif()
+diff --git a/shared/test/unit_test/gen12lp/adln/linux/CMakeLists.txt b/shared/test/unit_test/gen12lp/adln/linux/CMakeLists.txt
+new file mode 100644
+index 000000000000..5b0ac6a624db
+--- /dev/null
++++ b/shared/test/unit_test/gen12lp/adln/linux/CMakeLists.txt
+@@ -0,0 +1,11 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(UNIX)
++  target_sources(neo_shared_tests PRIVATE
++                 ${CMAKE_CURRENT_SOURCE_DIR}/hw_info_config_tests_adln.cpp
++  )
++endif()
+diff --git a/shared/test/unit_test/gen12lp/adln/linux/hw_info_config_tests_adln.cpp b/shared/test/unit_test/gen12lp/adln/linux/hw_info_config_tests_adln.cpp
+new file mode 100644
+index 000000000000..67179e8f0379
+--- /dev/null
++++ b/shared/test/unit_test/gen12lp/adln/linux/hw_info_config_tests_adln.cpp
+@@ -0,0 +1,72 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/source/os_interface/os_interface.h"
++#include "shared/test/common/libult/linux/drm_mock.h"
++#include "shared/test/unit_test/helpers/gtest_helpers.h"
++#include "shared/test/unit_test/os_interface/linux/hw_info_config_linux_tests.h"
++
++using namespace NEO;
++
++struct HwInfoConfigTestLinuxAdln : HwInfoConfigTestLinux {
++    void SetUp() override {
++        HwInfoConfigTestLinux::SetUp();
++
++        drm = new DrmMock(*executionEnvironment->rootDeviceEnvironments[0]);
++        osInterface->setDriverModel(std::unique_ptr<DriverModel>(drm));
++    }
++};
++
++ADLNTEST_F(HwInfoConfigTestLinuxAdln, WhenConfiguringHwInfoThenConfigIsCorrect) {
++    auto hwInfoConfig = HwInfoConfig::get(productFamily);
++    int ret = hwInfoConfig->configureHwInfoDrm(&pInHwInfo, &outHwInfo, osInterface);
++    EXPECT_EQ(0, ret);
++    EXPECT_EQ(static_cast<uint32_t>(drm->storedEUVal), outHwInfo.gtSystemInfo.EUCount);
++    EXPECT_EQ(static_cast<uint32_t>(drm->storedSSVal), outHwInfo.gtSystemInfo.SubSliceCount);
++    EXPECT_EQ(1u, outHwInfo.gtSystemInfo.SliceCount);
++
++    EXPECT_FALSE(outHwInfo.featureTable.flags.ftrTileY);
++}
++
++ADLNTEST_F(HwInfoConfigTestLinuxAdln, GivenIncorrectDataWhenConfiguringHwInfoThenErrorIsReturned) {
++    auto hwInfoConfig = HwInfoConfig::get(productFamily);
++
++    drm->failRetTopology = true;
++    drm->storedRetValForEUVal = -1;
++    auto ret = hwInfoConfig->configureHwInfoDrm(&pInHwInfo, &outHwInfo, osInterface);
++    EXPECT_EQ(-1, ret);
++
++    drm->storedRetValForEUVal = 0;
++    drm->storedRetValForSSVal = -1;
++    ret = hwInfoConfig->configureHwInfoDrm(&pInHwInfo, &outHwInfo, osInterface);
++    EXPECT_EQ(-1, ret);
++}
++
++TEST(AdlnHwInfoTests, WhenSettingUpHwInfoThenConfigIsCorrect) {
++    HardwareInfo hwInfo = *defaultHwInfo;
++    auto executionEnvironment = std::make_unique<ExecutionEnvironment>();
++    executionEnvironment->prepareRootDeviceEnvironments(1);
++    executionEnvironment->rootDeviceEnvironments[0]->setHwInfo(defaultHwInfo.get());
++    DrmMock drm(*executionEnvironment->rootDeviceEnvironments[0]);
++    DeviceDescriptor device = {0, &hwInfo, &ADLN_CONFIG::setupHardwareInfo};
++
++    int ret = drm.setupHardwareInfo(&device, false);
++
++    const auto &gtSystemInfo = executionEnvironment->rootDeviceEnvironments[0]->getHardwareInfo()->gtSystemInfo;
++
++    EXPECT_EQ(ret, 0);
++    EXPECT_GT(gtSystemInfo.EUCount, 0u);
++    EXPECT_GT(gtSystemInfo.ThreadCount, 0u);
++    EXPECT_GT(gtSystemInfo.SliceCount, 0u);
++    EXPECT_GT(gtSystemInfo.SubSliceCount, 0u);
++    EXPECT_GT(gtSystemInfo.DualSubSliceCount, 0u);
++    EXPECT_GT_VAL(gtSystemInfo.L3CacheSizeInKb, 0u);
++    EXPECT_EQ(gtSystemInfo.CsrSizeInMb, 8u);
++    EXPECT_FALSE(gtSystemInfo.IsDynamicallyPopulated);
++    EXPECT_GT(gtSystemInfo.DualSubSliceCount, 0u);
++    EXPECT_GT(gtSystemInfo.MaxDualSubSlicesSupported, 0u);
++}
+diff --git a/shared/test/unit_test/gen12lp/adln/test_device_caps_adln.cpp b/shared/test/unit_test/gen12lp/adln/test_device_caps_adln.cpp
+new file mode 100644
+index 000000000000..bac3f388f207
+--- /dev/null
++++ b/shared/test/unit_test/gen12lp/adln/test_device_caps_adln.cpp
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (C) 2022 Intel Corporation
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ */
++
++#include "shared/test/common/fixtures/device_fixture.h"
++#include "shared/test/common/test_macros/test.h"
++
++using namespace NEO;
++
++using AdlnUsDeviceIdTest = Test<DeviceFixture>;
++
++ADLNTEST_F(AdlnUsDeviceIdTest, WhenCheckingIsSimulationThenTrueReturnedOnlyForSimulationId) {
++    unsigned short adlnSimulationIds[1] = {
++        0, // default, non-simulation
++    };
++    NEO::MockDevice *mockDevice = nullptr;
++
++    for (auto id : adlnSimulationIds) {
++        mockDevice = createWithUsDeviceIdRevId(id, 0u);
++        ASSERT_NE(mockDevice, nullptr);
++
++        if (id == 0)
++            EXPECT_FALSE(mockDevice->isSimulation());
++        else
++            EXPECT_TRUE(mockDevice->isSimulation());
++        delete mockDevice;
++    }
++}
++
++ADLNTEST_F(AdlnUsDeviceIdTest, givenAdlnWhenCheckFtrSupportsInteger64BitAtomicsThenReturnFalse) {
++    EXPECT_TRUE(pDevice->getHardwareInfo().capabilityTable.ftrSupportsInteger64BitAtomics);
++}
++
++ADLNTEST_F(AdlnUsDeviceIdTest, givenAdlnWhenRequestedVmeFlagsThenReturnFalse) {
++    EXPECT_FALSE(pDevice->getHardwareInfo().capabilityTable.supportsVme);
++    EXPECT_FALSE(pDevice->getHardwareInfo().capabilityTable.ftrSupportsVmeAvcTextureSampler);
++    EXPECT_FALSE(pDevice->getHardwareInfo().capabilityTable.ftrSupportsVmeAvcPreemption);
++}
+diff --git a/target_unit_tests/gen12lp/adln/CMakeLists.txt b/target_unit_tests/gen12lp/adln/CMakeLists.txt
+new file mode 100644
+index 000000000000..4cb4f6fce967
+--- /dev/null
++++ b/target_unit_tests/gen12lp/adln/CMakeLists.txt
+@@ -0,0 +1,9 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(TESTS_ADLN)
++  include(${CMAKE_CURRENT_SOURCE_DIR}${BRANCH_DIR_SUFFIX}enable_adln_testing.cmake)
++endif()
+diff --git a/target_unit_tests/gen12lp/adln/enable_adln_testing.cmake b/target_unit_tests/gen12lp/adln/enable_adln_testing.cmake
+new file mode 100644
+index 000000000000..01ff0edb2925
+--- /dev/null
++++ b/target_unit_tests/gen12lp/adln/enable_adln_testing.cmake
+@@ -0,0 +1,10 @@
++#
++# Copyright (C) 2022 Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++#
++
++if(TESTS_ADLN)
++  set(unit_test_config "adln/1/2/8/0") # non-zero values for unit tests
++  include(${NEO_SOURCE_DIR}/cmake/run_ult_target.cmake)
++endif()
+-- 
+2.34.1
+

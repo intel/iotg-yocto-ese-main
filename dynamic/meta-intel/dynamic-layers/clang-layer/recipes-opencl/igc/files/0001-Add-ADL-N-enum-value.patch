@@ -1,0 +1,31 @@
+From fe6445259590c18d894ecf0440bf5bc989a2ad7f Mon Sep 17 00:00:00 2001
+From: "Szymichowski, Pawel" <pawel.szymichowski@intel.com>
+Date: Thu, 23 Jun 2022 08:29:51 +0000
+Subject: [PATCH 1/2]  Add ADL-N enum value
+
+.
+---
+ inc/common/igfxfmid.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/inc/common/igfxfmid.h b/inc/common/igfxfmid.h
+index 9795be193f4e..6f20e514fd86 100644
+--- a/inc/common/igfxfmid.h
++++ b/inc/common/igfxfmid.h
+@@ -25,10 +25,13 @@ typedef enum {
+     IGFX_LAKEFIELD,
+     IGFX_JASPERLAKE,
+     IGFX_ELKHARTLAKE = IGFX_JASPERLAKE,
++
+     IGFX_TIGERLAKE_LP,
+     IGFX_ROCKETLAKE,
+     IGFX_ALDERLAKE_S,
+     IGFX_ALDERLAKE_P,
++    IGFX_ALDERLAKE_N,
++
+     IGFX_DG1 = 1210,
+     IGFX_XE_HP_SDV = 1250,
+     IGFX_DG2 = 1270, // aka - ACM/Alchemist
+-- 
+2.34.1
+

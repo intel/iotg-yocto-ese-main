@@ -1,7 +1,7 @@
-From 532a1603c1eb9289a01fd34dfcf42eb22ab5844f Mon Sep 17 00:00:00 2001
+From feece75c855534ff202e25b3786276822b0a8a5c Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Wed, 26 Jan 2022 18:58:07 +0800
-Subject: [PATCH] Enable RPL-S
+Subject: [PATCH 1/2] Enable RPL-S
 
 Signed-off-by: Chew, Tong Liang <tong.liang.chew@intel.com
 Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
@@ -11,7 +11,7 @@ Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
  2 files changed, 9 insertions(+)
 
 diff --git a/Source/GmmLib/Platform/GmmGen12Platform.cpp b/Source/GmmLib/Platform/GmmGen12Platform.cpp
-index 5f53888..a881bd9 100644
+index 5f53888c93f3..a881bd9174e9 100644
 --- a/Source/GmmLib/Platform/GmmGen12Platform.cpp
 +++ b/Source/GmmLib/Platform/GmmGen12Platform.cpp
 @@ -315,6 +315,7 @@ FCRECTALIGN(TILE__64_2D_128bpe, 128,  32,  32,   32, 32);
@@ -23,7 +23,7 @@ index 5f53888..a881bd9 100644
      {
          Data.NoOfBitsSupported                = 46;
 diff --git a/Source/inc/common/igfxfmid.h b/Source/inc/common/igfxfmid.h
-index 26cf727..bd27503 100644
+index 26cf7270ec3f..bd275032cdae 100644
 --- a/Source/inc/common/igfxfmid.h
 +++ b/Source/inc/common/igfxfmid.h
 @@ -71,6 +71,7 @@ typedef enum {

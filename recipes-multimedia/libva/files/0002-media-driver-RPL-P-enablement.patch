@@ -1,0 +1,45 @@
+From d92d963db4d85e460e237943513ed3fd7c75fbbe Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Tue, 17 May 2022 09:51:28 +0800
+Subject: [PATCH 2/2] media-driver: RPL-P enablement
+
+HSDES ID: NA
+
+Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ .../linux/gen12/ddi/media_sysinfo_g12.cpp      | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/media_driver/linux/gen12/ddi/media_sysinfo_g12.cpp b/media_driver/linux/gen12/ddi/media_sysinfo_g12.cpp
+index f5da82388e1d..c64b0f3c8a1a 100644
+--- a/media_driver/linux/gen12/ddi/media_sysinfo_g12.cpp
++++ b/media_driver/linux/gen12/ddi/media_sysinfo_g12.cpp
+@@ -486,6 +486,24 @@ static bool adlpGt2Device462A = DeviceInfoFactory<GfxDeviceInfo>::
+ static bool adlpGt2Device4626 = DeviceInfoFactory<GfxDeviceInfo>::
+     RegisterDevice(0x4626, &adlpGt2Info);
+ 
++static bool rplpGt2DeviceA7A0 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xA7A0, &adlpGt2Info);
++
++static bool rplpGt2DeviceA720 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xA720, &adlpGt2Info);
++
++static bool rplpGt2DeviceA7A8 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xA7A8, &adlpGt2Info);
++
++static bool rplpGt2DeviceA7A1 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xA7A1, &adlpGt2Info);
++
++static bool rplpGt2DeviceA721 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xA721, &adlpGt2Info);
++
++static bool rplpGt2DeviceA7A9 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xA7A9, &adlpGt2Info);
++
+ #endif
+ 
+ #ifdef IGFX_GEN12_ADLN_SUPPORTED
+-- 
+2.34.1
+
