@@ -1,5 +1,8 @@
 # BUG! firmware should into /lib/firmware, not lib64
 # New split format for newer kernels, overwrites main recipe do_install
+
+SRCREV = "925555515555dfcfafd4997f39459967c33dc5d5"
+
 do_install() {
 	install -d ${D}${nonarch_base_libdir}/firmware/intel-ucode/
 	${STAGING_DIR_NATIVE}${sbindir_native}/iucode_tool \

@@ -20,6 +20,6 @@ PACKAGE_INSTALL = "initramfs-framework-dm-verity busybox initramfs-module-udev l
 BAD_RECOMMENDATIONS += "busybox-udhcpc busybox-udhcpd busybox-dbg busybox-syslog"
 
 IMAGE_INSTALL:remove = "mender-client"
-MENDER_FEATURES_DISABLE:append = "mender-client-install mender-uboot"
+MENDER_FEATURES_DISABLE:append = " mender-client-install mender-uboot"
 
 IMAGE_FEATURES:remove = "dev-pkgs debug-tweaks package-management"

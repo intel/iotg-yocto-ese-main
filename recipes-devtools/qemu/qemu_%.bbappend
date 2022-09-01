@@ -9,4 +9,5 @@ SRC_URI:append = "\
         file://0006-ui-gtk-calling-gd_gl_frame_counter-at-every-draw-swa.patch \
         file://0007-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
         file://0001-virtio-gpu-not-deleting-resources-when-resetting-GPU.patch \
+        file://0001-ui-gtk-set-the-size-of-detached-window-to-default.patch \
        "

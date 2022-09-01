@@ -143,14 +143,14 @@ function maybe_pause {
     echo
 }
 
-MENDER_ENV1=${prefix}/mender_grubenv1/env
-MENDER_ENVPREFIX1=${prefix}/mender_grubenv1/
-MENDER_LOCK1=${prefix}/mender_grubenv1/lock
-MENDER_LOCKSUM1=${prefix}/mender_grubenv1/lock.sha256sum
-MENDER_ENV2=${prefix}/mender_grubenv2/env
-MENDER_ENVPREFIX2=${prefix}/mender_grubenv2/
-MENDER_LOCK2=${prefix}/mender_grubenv2/lock
-MENDER_LOCKSUM2=${prefix}/mender_grubenv2/lock.sha256sum
+MENDER_ENV1=($root)/grub-mender-grubenv/mender_grubenv1/env
+MENDER_ENVPREFIX1=($root)/grub-mender-grubenv/mender_grubenv1/
+MENDER_LOCK1=($root)/grub-mender-grubenv/mender_grubenv1/lock
+MENDER_LOCKSUM1=($root)/grub-mender-grubenv/mender_grubenv1/lock.sha256sum
+MENDER_ENV2=($root)/grub-mender-grubenv/mender_grubenv2/env
+MENDER_ENVPREFIX2=($root)/grub-mender-grubenv/mender_grubenv2/
+MENDER_LOCK2=($root)/grub-mender-grubenv/mender_grubenv2/lock
+MENDER_LOCKSUM2=($root)/grub-mender-grubenv/mender_grubenv2/lock.sha256sum
 
 function mender_check_and_restore_env {
     if ! hashsum --hash sha256 --prefix ${MENDER_ENVPREFIX2} --check ${MENDER_LOCKSUM2}; then
