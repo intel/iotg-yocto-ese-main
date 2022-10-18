@@ -1,7 +1,7 @@
-From edae9ccf5be3724bf25f28e354c54786a01cb30e Mon Sep 17 00:00:00 2001
-From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
-Date: Thu, 19 Aug 2021 22:10:47 +0800
-Subject: [PATCH 5/7] ui/gtk: adds status bar for expressing ups and fps
+From 93c749a268bfbe4f00df4f6279ed28d5228f5da8 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Sun, 11 Sep 2022 10:43:29 -0700
+Subject: [PATCH 7/8] ui/gtk: adds status bar for expressing ups and fps
 
 With a display option, "show-fps=on", qemu adds a status bar and print
 following performance numbers on the bar,
@@ -11,31 +11,31 @@ fps = frame per seconds - the frame rate of VC's GL drawing area
 
 One function, gd_gl_count_frame is added to count # frames
 and calculate ups and fps every 100 frames or guest scanout updates.
-(rebased)
+(rebased for 7.1.0)
 
-Signed-off-by: Kim, Dongwon <dongwon.kim@intel.com>
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
  include/ui/console.h |  4 ++++
  include/ui/gtk.h     |  2 ++
  qapi/ui.json         |  5 ++++-
- ui/console.c         |  6 ++++++
+ ui/console.c         | 17 +++++++++++++++
  ui/gtk.c             | 51 ++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 67 insertions(+), 1 deletion(-)
+ 5 files changed, 78 insertions(+), 1 deletion(-)
 
 diff --git a/include/ui/console.h b/include/ui/console.h
-index 6d678924f6..13768c3c56 100644
+index c0520c694c..5bb90b8b01 100644
 --- a/include/ui/console.h
 +++ b/include/ui/console.h
-@@ -252,6 +252,8 @@ typedef struct DisplayChangeListenerOps {
+@@ -270,6 +270,8 @@ typedef struct DisplayChangeListenerOps {
+     /* required if GL */
      void (*dpy_gl_update)(DisplayChangeListener *dcl,
                            uint32_t x, uint32_t y, uint32_t w, uint32_t h);
- 
 +    /* optional */
 +    void (*dpy_gl_count_frame)(DisplayChangeListener *dcl, bool ups);
+ 
  } DisplayChangeListenerOps;
  
- struct DisplayChangeListener {
-@@ -323,6 +325,8 @@ void dpy_gl_release_dmabuf(QemuConsole *con,
+@@ -367,6 +369,8 @@ void dpy_gl_release_dmabuf(QemuConsole *con,
  void dpy_gl_update(QemuConsole *con,
                     uint32_t x, uint32_t y, uint32_t w, uint32_t h);
  
@@ -45,10 +45,10 @@ index 6d678924f6..13768c3c56 100644
                                  QEMUGLParams *params);
  void dpy_gl_ctx_destroy(QemuConsole *con, QEMUGLContext ctx);
 diff --git a/include/ui/gtk.h b/include/ui/gtk.h
-index 7d22affd38..a38dd4dae3 100644
+index ae0f53740d..bd560029a1 100644
 --- a/include/ui/gtk.h
 +++ b/include/ui/gtk.h
-@@ -122,6 +122,7 @@ struct GtkDisplayState {
+@@ -123,6 +123,7 @@ struct GtkDisplayState {
      GtkWidget *show_tabs_item;
      GtkWidget *untabify_item;
      GtkWidget *show_menubar_item;
@@ -56,28 +56,28 @@ index 7d22affd38..a38dd4dae3 100644
  
      GtkWidget *vbox;
      GtkWidget *notebook;
-@@ -156,6 +157,7 @@ extern bool gtk_use_gl_area;
+@@ -157,6 +158,7 @@ extern bool gtk_use_gl_area;
  void gd_update_windowsize(VirtualConsole *vc);
- int gd_monitor_update_interval(GtkWidget *widget);
+ void gd_update_monitor_refresh_rate(VirtualConsole *vc, GtkWidget *widget);
  void gd_hw_gl_flushed(void *vc);
 +void gd_gl_count_frame(DisplayChangeListener *dcl, bool ups);
  
  /* ui/gtk-egl.c */
  void gd_egl_init(VirtualConsole *vc);
 diff --git a/qapi/ui.json b/qapi/ui.json
-index 0ddb24a532..08f0a47113 100644
+index fe8d5cf104..3edd1bd163 100644
 --- a/qapi/ui.json
 +++ b/qapi/ui.json
-@@ -1217,6 +1217,8 @@
- # @show-cursor:   Force showing the mouse cursor (default: off).
- #                 (since: 5.0)
- # @gl:            Enable OpenGL support (default: off).
+@@ -1390,6 +1390,8 @@
+ # @window-close: Allow to quit qemu with window close button (default: on).
+ # @show-cursor: Force showing the mouse cursor (default: off). (since: 5.0)
+ # @gl: Enable OpenGL support (default: off).
 +# @show-fps:      Enable showing Guest Scanout's update rate (UPS) and
 +#                 Surface render swap rate (FPS) on a status bar (default: off).
  #
  # Since: 2.12
- #
-@@ -1226,7 +1228,8 @@
+ ##
+@@ -1398,7 +1400,8 @@
                  '*full-screen'   : 'bool',
                  '*window-close'  : 'bool',
                  '*show-cursor'   : 'bool',
@@ -88,24 +88,35 @@ index 0ddb24a532..08f0a47113 100644
    'data'    : {
        'gtk': { 'type': 'DisplayGTK', 'if': 'CONFIG_GTK' },
 diff --git a/ui/console.c b/ui/console.c
-index 29a3e3f0f5..342e04e1cd 100644
+index 765892f84f..afea5c377e 100644
 --- a/ui/console.c
 +++ b/ui/console.c
-@@ -1863,6 +1863,12 @@ void dpy_gl_update(QemuConsole *con,
-     con->gl->ops->dpy_gl_update(con->gl, x, y, w, h);
+@@ -2100,6 +2100,23 @@ void dpy_gl_update(QemuConsole *con,
+     graphic_hw_gl_block(con, false);
  }
  
 +void dpy_gl_count_frame(QemuConsole *con, bool ups)
 +{
++    DisplayState *s = con->ds;
++    DisplayChangeListener *dcl;
++
 +    assert(con->gl);
-+    con->gl->ops->dpy_gl_count_frame(con->gl, ups);
++
++    QLIST_FOREACH(dcl, &s->listeners, next) {
++        if (con != (dcl->con ? dcl->con : active_console)) {
++            continue;
++        }
++        if (dcl->ops->dpy_gl_release_dmabuf) {
++            dcl->ops->dpy_gl_count_frame(dcl, ups);
++        }
++    }
 +}
 +
  /***********************************************************/
  /* register display */
  
 diff --git a/ui/gtk.c b/ui/gtk.c
-index cd3f821c73..15c33f10be 100644
+index 67e0d0ded5..d694fa6a3e 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -550,6 +550,47 @@ static void gd_switch(DisplayChangeListener *dcl,
@@ -164,26 +175,26 @@ index cd3f821c73..15c33f10be 100644
  };
  
  
-@@ -640,6 +682,7 @@ static const DisplayChangeListenerOps dcl_egl_ops = {
+@@ -646,6 +688,7 @@ static const DisplayChangeListenerOps dcl_egl_ops = {
      .dpy_gl_update           = gd_egl_flush,
      .dpy_gl_release_dmabuf   = gd_gl_release_dmabuf,
      .dpy_has_dmabuf          = gd_has_dmabuf,
 +    .dpy_gl_count_frame      = gd_gl_count_frame,
  };
  
- #endif
-@@ -2272,6 +2315,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+ static bool
+@@ -2342,6 +2385,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      s->notebook = gtk_notebook_new();
      s->menu_bar = gtk_menu_bar_new();
  
-+     if (opts->show_fps) {
++    if (opts->show_fps) {
 +        s->status_bar = gtk_statusbar_new();
 +    }
 +
      s->free_scale = FALSE;
  
      /* Mostly LC_MESSAGES only. See early_gtk_display_init() for details. For
-@@ -2312,6 +2359,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2382,6 +2429,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      gtk_box_pack_start(GTK_BOX(s->vbox), s->menu_bar, FALSE, TRUE, 0);
      gtk_box_pack_start(GTK_BOX(s->vbox), s->notebook, TRUE, TRUE, 0);
  

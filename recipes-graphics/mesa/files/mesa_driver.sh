@@ -11,7 +11,7 @@ case "$platform_type" in
 			is_vf=`cat /sys/kernel/debug/dri/0/i915_sriov_info | grep SR-IOV | cut -d " " -f3`
 		fi
 
-		if [[ $is_vf == "VF" ]]; then
+		if [ "$is_vf" = "VF" ]; then
 			export MESA_LOADER_DRIVER_OVERRIDE=pl111
 		else
 			export MESA_LOADER_DRIVER_OVERRIDE=iris

@@ -1,0 +1,30 @@
+From ab484e85b8b002325365f68446d138d0db1d40ce Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Sun, 11 Sep 2022 10:31:44 -0700
+Subject: [PATCH 5/8] ui/gtk-egl: make sure to unbind the egl context from the
+ thread
+
+EglContext needs to be unbound in gd_egl_switch to be sure the context
+is claimed later by another thread.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index b5bffbab25..57ab445eec 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -195,6 +195,8 @@ void gd_egl_switch(DisplayChangeListener *dcl,
+     if (resized) {
+         gd_update_windowsize(vc);
+     }
++    eglMakeCurrent(qemu_egl_display, EGL_NO_CONTEXT, EGL_NO_SURFACE,
++                   EGL_NO_SURFACE);
+ }
+ 
+ QEMUGLContext gd_egl_create_context(DisplayGLCtx *dgc,
+-- 
+2.20.1
+

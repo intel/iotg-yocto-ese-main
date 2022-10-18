@@ -1,19 +1,19 @@
-From fb7c8328f880ca1b039f16961e7f4afa743deed6 Mon Sep 17 00:00:00 2001
-From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
-Date: Thu, 19 Aug 2021 23:20:12 +0800
-Subject: [PATCH 6/7] ui/gtk: calling gd_gl_frame_counter at every draw/swap
+From c5545b7fb7969e2c92fca2484750dcf89643ae97 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Sun, 11 Sep 2022 10:48:41 -0700
+Subject: [PATCH 8/8] ui/gtk: calling gd_gl_frame_counter at every draw/swap
 
 For FPS calculation, gd_gl_frame_counter is called at every
 draw(gtk-gl-area) or swap(gtk-egl) activity.
 
-Signed-off-by: Dongwon, Kim <dongwon.kim@intel.com>
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
- ui/gtk-egl.c     |  2 ++
- ui/gtk-gl-area.c | 13 +++++++++++++
- 2 files changed, 15 insertions(+)
+ ui/gtk-egl.c     | 2 ++
+ ui/gtk-gl-area.c | 1 +
+ 2 files changed, 3 insertions(+)
 
 diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
-index 45cb67712d..9975f094f8 100644
+index 57ab445eec..3298be8dca 100644
 --- a/ui/gtk-egl.c
 +++ b/ui/gtk-egl.c
 @@ -114,6 +114,7 @@ void gd_egl_draw(VirtualConsole *vc)
@@ -33,29 +33,17 @@ index 45cb67712d..9975f094f8 100644
  
  void gd_egl_flush(DisplayChangeListener *dcl,
 diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
-index 01e4e74ee3..8bf81f7076 100644
+index 682638a197..3e57013d2d 100644
 --- a/ui/gtk-gl-area.c
 +++ b/ui/gtk-gl-area.c
-@@ -102,6 +102,19 @@ void gd_gl_area_draw(VirtualConsole *vc)
+@@ -101,6 +101,7 @@ void gd_gl_area_draw(VirtualConsole *vc)
+         surface_gl_setup_viewport(vc->gfx.gls, vc->gfx.ds, ww, wh);
          surface_gl_render_texture(vc->gfx.gls, vc->gfx.ds);
      }
- 
-+    if (dmabuf) {
-+        egl_dmabuf_create_sync(dmabuf);
-+    }
-+    glFlush();
 +    gd_gl_count_frame(&vc->gfx.dcl, false);
-+    if (dmabuf) {
-+        egl_dmabuf_create_fence(dmabuf);
-+        if (dmabuf->fence_fd > 0) {
-+            qemu_set_fd_handler(dmabuf->fence_fd, gd_hw_gl_flushed, NULL, vc);
-+            return;
-+        }
-+        graphic_hw_gl_block(vc->gfx.dcl.con, false);
-+    }
-     graphic_hw_gl_flushed(vc->gfx.dcl.con);
  }
  
+ void gd_gl_area_update(DisplayChangeListener *dcl,
 -- 
 2.20.1
 

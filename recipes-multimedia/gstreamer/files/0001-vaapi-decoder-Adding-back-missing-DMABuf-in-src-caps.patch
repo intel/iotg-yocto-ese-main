@@ -1,0 +1,30 @@
+From b4b1e8be118ff4dddff42ac8ee75eacce2e24144 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Thu, 18 Aug 2022 17:09:17 +0800
+Subject: [PATCH 1/2] vaapi: decoder: Adding back missing DMABuf in src caps
+
+Found out dmabuf src caps is missing in vaapi decoder in 1.20.3 version.
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/f04dd7f33100ead30d98e5c76d42ee24290fa771
+
+upstream status: merged
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ gst/vaapi/gstvaapidecode.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gst/vaapi/gstvaapidecode.c b/gst/vaapi/gstvaapidecode.c
+index c60571b..8edbe4f 100644
+--- a/gst/vaapi/gstvaapidecode.c
++++ b/gst/vaapi/gstvaapidecode.c
+@@ -71,6 +71,7 @@ char *gst_vaapidecode_sink_caps_str = NULL;
+ 
+ static const char gst_vaapidecode_src_caps_str[] =
+     GST_VAAPI_MAKE_SURFACE_CAPS "; "
++    GST_VIDEO_CAPS_MAKE_WITH_FEATURES(GST_CAPS_FEATURE_MEMORY_DMABUF, GST_VAAPI_FORMATS_ALL) " ;"
+ #if (USE_GLX || USE_EGL)
+     GST_VAAPI_MAKE_GLTEXUPLOAD_CAPS "; "
+ #endif
+-- 
+2.37.2
+

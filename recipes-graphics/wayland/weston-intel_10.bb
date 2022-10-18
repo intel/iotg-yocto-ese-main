@@ -3,41 +3,64 @@ DESCRIPTION = "Weston is the reference implementation of a Wayland compositor"
 HOMEPAGE = "http://wayland.freedesktop.org"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d79ee9e66bb0f95d3386a7acae780b70 \
-                    file://libweston/compositor.c;endline=27;md5=6c53bbbd99273f4f7c4affa855c33c0a"
+                    file://libweston/compositor.c;endline=27;md5=eb6d5297798cabe2ddc65e2af519bcf0 \
+                    "
 
-SRC_URI = "git://github.com/intel/Intel-Distribution-of-Weston.git;protocol=https;branch=master \
+SRC_URI = "git://github.com/intel/Intel-Distribution-of-Weston.git;branch=HDR-weston-10;protocol=https \
            file://weston.png \
            file://weston.desktop \
            file://xwayland.weston-start \
-"
+           file://systemd-notify.weston-start \
+           "
 
 SRC_URI:append:libc-musl = " file://dont-use-plane-add-prop.patch "
 
-SRCREV = "cb204532c4d6626a8b5ec599350c1ef6e358683b"
-PV = "9.0.0+git${SRCPV}"
-
+SRCREV = "15be88a46d03ddf8bb4b03ce9ad41dae126e74fa"
+PV = "10.0.0-custom+git${SRCPV}"
 S = "${WORKDIR}/git"
 
-inherit meson pkgconfig useradd features_check
-# depends on virtual/egl
-REQUIRED_DISTRO_FEATURES = "opengl"
+PROVIDES += "weston"
+PN = "weston"
+#RPROVIDES_${PN} += "weston"
+#RPROVIDES_${PN}-examples += "weston-examples"
+#RPROVIDES_${PN}-staticdev += "weston-staticdev"
+#RPROVIDES_${PN}-locale = "weston-locale"
+#RPROVIDES_${PN}-doc = "weston-doc"
+#RPROVIDES_${PN}-src = "weston-src"
+#RPROVIDES_${PN}-dev = "weston-dev"
+#RPROVIDES_${PN}-dbg = "weston-dbg"
+#RPROVIDES_${PN}-xwayland = "weston-xwayland"
+#RPROVIDES_\^${PN}-weston-locale-\.\* = "^weston-locale-.*"
 
-DEPENDS = "libxkbcommon gdk-pixbuf pixman cairo glib-2.0 wayland wayland-protocols libinput virtual/egl pango wayland-native ffmpeg gstreamer1.0 gstreamer1.0-plugins-base"
+inherit meson pkgconfig useradd
+
+# depends on virtual/egl
+#
+require recipes-graphics/wayland/required-distro-features.inc
+
+DEPENDS = "libxkbcommon gdk-pixbuf pixman cairo glib-2.0"
+DEPENDS += "wayland wayland-protocols libinput virtual/egl pango wayland-native"
+DEPENDS += "ffmpeg"
+
+LDFLAGS += "${@bb.utils.contains('DISTRO_FEATURES', 'lto', '-Wl,-z,undefs', '', d)}"
 
 WESTON_MAJOR_VERSION = "${@'.'.join(d.getVar('PV').split('.')[0:1])}"
 
-EXTRA_OEMESON += "-Dbackend-default=auto -Dbackend-rdp=false -Dpipewire=false"
+EXTRA_OEMESON += "-Dpipewire=false"
 
-PACKAGECONFIG ??= "${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'kms fbdev wayland egl clients', '', d)} \
+PACKAGECONFIG ??= "${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'kms wayland egl clients', '', d)} \
                    ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'xwayland', '', d)} \
-                   ${@bb.utils.filter('DISTRO_FEATURES', 'pam systemd x11', d)} \
+                   ${@bb.utils.filter('DISTRO_FEATURES', 'systemd x11', d)} \
                    ${@bb.utils.contains_any('DISTRO_FEATURES', 'wayland x11', '', 'headless', d)} \
-                   launch \
+                   ${@oe.utils.conditional('VIRTUAL-RUNTIME_init_manager', 'sysvinit', 'launcher-libseat', '', d)} \
                    image-jpeg \
                    screenshare \
                    shell-desktop \
                    shell-fullscreen \
                    shell-ivi"
+
+# Can be 'damage', 'im', 'egl', 'shm', 'touch', 'dmabuf-feedback', 'dmabuf-v4l', 'dmabuf-egl' or 'all'
+SIMPLECLIENTS ?= "all"
 
 #
 # Compositor choices
@@ -51,9 +74,11 @@ PACKAGECONFIG[x11] = "-Dbackend-x11=true,-Dbackend-x11=false,virtual/libx11 libx
 # Headless Weston
 PACKAGECONFIG[headless] = "-Dbackend-headless=true,-Dbackend-headless=false"
 # Weston on framebuffer
-PACKAGECONFIG[fbdev] = "-Dbackend-fbdev=true,-Dbackend-fbdev=false,udev mtdev"
+PACKAGECONFIG[fbdev] = "-Ddeprecated-backend-fbdev=true,-Ddeprecated-backend-fbdev=false,udev mtdev"
+# Weston on RDP
+PACKAGECONFIG[rdp] = "-Dbackend-rdp=true,-Dbackend-rdp=false,freerdp"
 # weston-launch
-PACKAGECONFIG[launch] = "-Dweston-launch=true,-Dweston-launch=false,drm"
+PACKAGECONFIG[launch] = "-Ddeprecated-weston-launch=true,-Ddeprecated-weston-launch=false,drm"
 # VA-API desktop recorder
 PACKAGECONFIG[vaapi] = "-Dbackend-drm-screencast-vaapi=true,-Dbackend-drm-screencast-vaapi=false,libva"
 # Weston with EGL support
@@ -69,11 +94,9 @@ PACKAGECONFIG[xwayland] = "-Dxwayland=true,-Dxwayland=false"
 # colord CMS support
 PACKAGECONFIG[colord] = "-Dcolor-management-colord=true,-Dcolor-management-colord=false,colord"
 # Clients support
-PACKAGECONFIG[clients] = "-Dsimple-clients=all -Ddemo-clients=true,-Dsimple-clients= -Ddemo-clients=false"
+PACKAGECONFIG[clients] = "-Dsimple-clients=${SIMPLECLIENTS} -Ddemo-clients=true,-Dsimple-clients= -Ddemo-clients=false"
 # Virtual remote output with GStreamer on DRM backend
 PACKAGECONFIG[remoting] = "-Dremoting=true,-Dremoting=false,gstreamer1.0 gstreamer1.0-plugins-base"
-# Weston with PAM support
-#PACKAGECONFIG[pam] = "-Dpam=true,-Dpam=false,libpam"
 # Weston with screen-share support
 PACKAGECONFIG[screenshare] = "-Dscreenshare=true,-Dscreenshare=false"
 # Traditional desktop shell
@@ -84,6 +107,8 @@ PACKAGECONFIG[shell-fullscreen] = "-Dshell-fullscreen=true,-Dshell-fullscreen=fa
 PACKAGECONFIG[shell-ivi] = "-Dshell-ivi=true,-Dshell-ivi=false"
 # JPEG image loading support
 PACKAGECONFIG[image-jpeg] = "-Dimage-jpeg=true,-Dimage-jpeg=false, jpeg"
+# support libseat based launch
+PACKAGECONFIG[launcher-libseat] = "-Dlauncher-libseat=true,-Dlauncher-libseat=false,seatd"
 
 do_install:append() {
 	# Weston doesn't need the .la files to load modules, so wipe them
@@ -102,6 +127,10 @@ do_install:append() {
 		install -Dm 644 ${WORKDIR}/xwayland.weston-start ${D}${datadir}/weston-start/xwayland
 	fi
 
+	if [ "${@bb.utils.contains('PACKAGECONFIG', 'systemd', 'yes', 'no', d)}" = "yes" ]; then
+		install -Dm 644 ${WORKDIR}/systemd-notify.weston-start ${D}${datadir}/weston-start/systemd-notify
+	fi
+
 	if [ "${@bb.utils.contains('PACKAGECONFIG', 'launch', 'yes', 'no', d)}" = "yes" ]; then
 		chmod u+s ${D}${bindir}/weston-launch
 	fi
@@ -110,8 +139,8 @@ do_install:append() {
 PACKAGES += "${@bb.utils.contains('PACKAGECONFIG', 'xwayland', '${PN}-xwayland', '', d)} \
              libweston-${WESTON_MAJOR_VERSION} ${PN}-examples"
 
-FILES:${PN}-dev += "${libdir}/${BPN}/libexec_weston.so"
-FILES:${PN} = "${bindir}/weston ${bindir}/weston-terminal ${bindir}/weston-info ${bindir}/weston-launch ${bindir}/wcap-decode ${libexecdir} ${libdir}/${BPN}/*.so* ${datadir}"
+FILES:${PN}-dev += "${libdir}/weston/libexec_weston.so"
+FILES:${PN} = "${bindir}/weston ${bindir}/weston-terminal ${bindir}/weston-info ${bindir}/weston-launch ${bindir}/wcap-decode ${libexecdir} ${libdir}/weston/*.so* ${datadir}"
 
 FILES:libweston-${WESTON_MAJOR_VERSION} = "${libdir}/lib*${SOLIBS} ${libdir}/libweston-${WESTON_MAJOR_VERSION}/*.so"
 SUMMARY:libweston-${WESTON_MAJOR_VERSION} = "Helper library for implementing 'wayland window managers'."
@@ -119,7 +148,7 @@ SUMMARY:libweston-${WESTON_MAJOR_VERSION} = "Helper library for implementing 'wa
 FILES:${PN}-examples = "${bindir}/*"
 
 FILES:${PN}-xwayland = "${libdir}/libweston-${WESTON_MAJOR_VERSION}/xwayland.so"
-RDEPENDS:${PN}-xwayland += "xserver-xorg-xwayland"
+RDEPENDS:${PN}-xwayland += "xwayland"
 
 RDEPENDS:${PN} += "xkeyboard-config"
 RRECOMMENDS:${PN} = "weston-init liberation-fonts"

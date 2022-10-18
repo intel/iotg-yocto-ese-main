@@ -1,7 +1,7 @@
-From 58b7fead79d09425813c690c918bc3af1a07aeec Mon Sep 17 00:00:00 2001
+From 291cb3cf16dcc2425b27a20a8b244683ad14fa2b Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 26 May 2022 10:36:34 -0700
-Subject: [PATCH 3/7] ui/gtk: a new array param monitor to specify the target
+Subject: [PATCH 2/8] ui/gtk: a new array param monitor to specify the target
  displays
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,53 +27,55 @@ Cc: Gerd Hoffmann <kraxel@redhat.com>
 Cc: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
- qapi/ui.json    |  7 ++++++-
- qemu-options.hx |  2 +-
+ qapi/ui.json    |  8 ++++++--
+ qemu-options.hx |  3 ++-
  ui/gtk.c        | 32 +++++++++++++++++++++++++++++++-
- 3 files changed, 38 insertions(+), 3 deletions(-)
+ 3 files changed, 39 insertions(+), 4 deletions(-)
 
 diff --git a/qapi/ui.json b/qapi/ui.json
-index d7567ac866..0ddb24a532 100644
+index cf58ab4283..fe8d5cf104 100644
 --- a/qapi/ui.json
 +++ b/qapi/ui.json
-@@ -1099,13 +1099,18 @@
- #               assuming the guest will resize the display to match
- #               the window size then.  Otherwise it defaults to "off".
- #               Since 3.1
+@@ -1199,14 +1199,18 @@
+ #               interfaces (e.g. VGA and virtual console character devices)
+ #               by default.
+ #               Since 7.1
 +# @monitor:     Array of numbers, each of which represents physical
 +#               monitor where individual QEMU window is placed in case
 +#               there are multiple of them
 +#               since 7.1
  #
  # Since: 2.12
- #
  ##
  { 'struct'  : 'DisplayGTK',
    'data'    : { '*grab-on-hover' : 'bool',
--                '*zoom-to-fit'   : 'bool'  } }
-+                '*zoom-to-fit'   : 'bool',
+                 '*zoom-to-fit'   : 'bool',
+-                '*show-tabs'     : 'bool'  } }
+-
++                '*show-tabs'     : 'bool',
 +                '*monitor'       : ['uint16']  } }
- 
  ##
  # @DisplayEGLHeadless:
+ #
 diff --git a/qemu-options.hx b/qemu-options.hx
-index ae2c6dbbfc..9d298084de 100644
+index 31c04f7eea..58e425b570 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -1852,7 +1852,7 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
+@@ -1944,7 +1944,8 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
  #endif
  #if defined(CONFIG_GTK)
      "-display gtk[,full-screen=on|off][,gl=on|off][,grab-on-hover=on|off]\n"
--    "            [,show-cursor=on|off][,window-close=on|off]\n"
-+    "            [,monitor.<order>=<value>][,show-cursor=on|off][,window-close=on|off]\n"
+-    "            [,show-tabs=on|off][,show-cursor=on|off][,window-close=on|off]\n"
++    "            [,show-tabs=on|off][,monitor.<order>=<value>][,show-cursor=on|off]\n"
++    "            [,window-close=on|off]\n"
  #endif
  #if defined(CONFIG_VNC)
      "-display vnc=<display>[,<optargs>]\n"
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 91202484c3..cd3f821c73 100644
+index a3fc507e90..6828945e0e 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
-@@ -2246,6 +2246,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2311,6 +2311,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      GtkDisplayState *s = g_malloc0(sizeof(*s));
      GdkDisplay *window_display;
      GtkIconTheme *theme;
@@ -84,7 +86,7 @@ index 91202484c3..cd3f821c73 100644
      int n_gfx_vcs = 0;
      int i;
      char *dir;
-@@ -2326,7 +2330,33 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2391,7 +2395,33 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
              n_gfx_vcs++;
          }
      }

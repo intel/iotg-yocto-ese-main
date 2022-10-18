@@ -1,0 +1,44 @@
+From c47dda335aad7bf80294139e63401c4b6e0d1869 Mon Sep 17 00:00:00 2001
+From: "Ung, Teng En" <teng.en.ung@intel.com>
+Date: Mon, 1 Aug 2022 17:41:35 +0000
+Subject: [PATCH 1/4] [H264d] When using SFC, allocate surface output base on
+ the size and format.
+
+---
+ .../decode/h264/src/mfx_h264_dec_decode.cpp   | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/_studio/mfx_lib/decode/h264/src/mfx_h264_dec_decode.cpp b/_studio/mfx_lib/decode/h264/src/mfx_h264_dec_decode.cpp
+index 137a125e..8bd2afaa 100644
+--- a/_studio/mfx_lib/decode/h264/src/mfx_h264_dec_decode.cpp
++++ b/_studio/mfx_lib/decode/h264/src/mfx_h264_dec_decode.cpp
+@@ -911,6 +911,26 @@ mfxStatus VideoDECODEH264::QueryIOSurf(VideoCORE *core, mfxVideoParam *par, mfxF
+ 
+     request->Type |= MFX_MEMTYPE_EXTERNAL_FRAME;
+ 
++#ifndef MFX_DEC_VIDEO_POSTPROCESS_DISABLE
++    mfxExtDecVideoProcessing * videoProcessing = (mfxExtDecVideoProcessing *)GetExtendedBuffer(par->ExtParam, par->NumExtParam, MFX_EXTBUFF_DEC_VIDEO_PROCESSING);
++    if (videoProcessing)
++    {
++        // need to substitute output format
++        // number of surfaces is same
++        request->Info.FourCC = videoProcessing->Out.FourCC;
++        request->Info.ChromaFormat = videoProcessing->Out.ChromaFormat;
++        sts = UpdateCscOutputFormat(par, request);
++        MFX_CHECK_STS(sts);
++
++        request->Info.Width = videoProcessing->Out.Width;
++        request->Info.Height = videoProcessing->Out.Height;
++        request->Info.CropX = videoProcessing->Out.CropX;
++        request->Info.CropY = videoProcessing->Out.CropY;
++        request->Info.CropW = videoProcessing->Out.CropW;
++        request->Info.CropH = videoProcessing->Out.CropH;
++    }
++#endif
++
+     if (platform != core->GetPlatformType())
+     {
+         assert(platform == MFX_PLATFORM_SOFTWARE);
+-- 
+2.35.3
+

@@ -1,7 +1,7 @@
-From f46e77d3106cf8d3ce8903c28c154b3137e84d57 Mon Sep 17 00:00:00 2001
+From 4beb72a142170ada4c8930835e133076eef15079 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 26 May 2022 08:17:59 -0700
-Subject: [PATCH 2/7] ui/gtk: detach VCS for additional guest displays
+Subject: [PATCH 1/8] ui/gtk: detach VCS for additional guest displays
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,10 +22,10 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 428f02f2df..91202484c3 100644
+index 1467b8c7d7..a3fc507e90 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
-@@ -2246,6 +2246,8 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2311,6 +2311,8 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      GtkDisplayState *s = g_malloc0(sizeof(*s));
      GdkDisplay *window_display;
      GtkIconTheme *theme;
@@ -34,7 +34,7 @@ index 428f02f2df..91202484c3 100644
      char *dir;
  
      if (!gtkinit) {
-@@ -2316,7 +2318,14 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2381,7 +2383,14 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      gtk_widget_set_sensitive(s->copy_item,
                               vc && vc->type == GD_VC_VTE);
  #endif

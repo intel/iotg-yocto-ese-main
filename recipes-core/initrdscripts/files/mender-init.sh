@@ -34,7 +34,7 @@ fail() {
 find_part_nofatal=""
 find_part() {
     name="$1"
-    hint="$(grep \\W${name}=\\S\\+ -o < /proc/cmdline | cut -d= -f2- )"
+    hint="$(grep '\(^\|\W\)'${name}'=\S\+' -o < /proc/cmdline | cut -d= -f2- )"
     if [ -z "find_part_nofatal" -a -z "${hint}" ]; then
         say "Cannot find ${name}"
         fail
