@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=665202835d998903d52afcb9c30ad9f5"
 
 SRC_URI = "git://github.com/intel/iotg_tsn_ref_sw.git;protocol=https;branch=master"
 
-SRCREV = "4eac9960d230b1c825f46430fb7ba7220014e744"
+SRCREV = "a60ebf8fbfb55306e36aec20021e7a13e7a574d7"
 PV = "1.0-git${SRCPV}"
 
 S = "${WORKDIR}/git"

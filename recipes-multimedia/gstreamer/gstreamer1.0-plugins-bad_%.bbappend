@@ -6,7 +6,6 @@ SRC_URI:append = "\
         file://0001-msdkmjpegdec-Add-support-for-error-report.patch \
         file://0001-msdk-Use-local-cflags-for-configuration.patch \
         file://0002-msdk-Add-extra-build-for-another-msdk-onevpl.patch \
-        file://0001-Add-jpeg-error-report-to-GST-MSDK-onevpl.patch \
         "
 
 PACKAGECONFIG += "\
