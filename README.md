@@ -30,8 +30,7 @@ The BSPs contained in this layer are compatible with the Yocto Project \
 as per the requirements listed here:
 
 ```shell
-a. Dunfell
-b. Hardknott
+a. kirkstone
 ```
 
 
@@ -42,7 +41,12 @@ git clone git://github.com/openembedded/openembedded-core.git
 cd openembedded-core
 git clone git://github.com/openembedded/bitbake.git
 git clone https://git.yoctoproject.org/git/meta-intel
-git clone https://github.com/intel-innersource/os.linux.yocto.build.meta-intel-iot-main.git meta-intel-iot-main
+
+For EA custormer, please use:
+git clone https://github.com/otcshare/IOTG-Yocto-ESE-Main.git  meta-intel-iot-main
+
+For other, please use:
+git clone https://github.com/intel/iotg-yocto-ese-main.git meta-intel-iot-main
 
 $ . ./oe-init-build-env
 ```
@@ -201,11 +205,11 @@ This layer depends on:
 
 ```shell
 URI: git://github.com/openembedded/openembedded-core.git
-branch: hardknott
+branch: kirkstone
 revision: HEAD
 
 URI: git://github.com/openembedded/bitbake.git
-branch: 1.50
+branch: 2.00
 revision: HEAD
 
 URI: https://git.yoctoproject.org/git/meta-intel
