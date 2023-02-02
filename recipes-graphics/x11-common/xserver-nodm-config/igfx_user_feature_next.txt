@@ -1,0 +1,6 @@
+[config]
+Enable HCP Scalability Decode=0
+
+[report]
+MemNinja Counter=0
+OCA Status=0

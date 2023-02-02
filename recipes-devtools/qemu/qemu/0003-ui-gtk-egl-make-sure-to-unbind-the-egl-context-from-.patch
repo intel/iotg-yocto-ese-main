@@ -1,8 +1,8 @@
-From ab484e85b8b002325365f68446d138d0db1d40ce Mon Sep 17 00:00:00 2001
+From c307e8011b5c533cb3581d0c6b7f40d700a5ef1a Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Sun, 11 Sep 2022 10:31:44 -0700
-Subject: [PATCH 5/8] ui/gtk-egl: make sure to unbind the egl context from the
- thread
+Subject: [PATCH 03/34] ui/gtk-egl: make sure to unbind the egl context from
+ the thread
 
 EglContext needs to be unbound in gd_egl_switch to be sure the context
 is claimed later by another thread.
@@ -26,5 +26,5 @@ index b5bffbab25..57ab445eec 100644
  
  QEMUGLContext gd_egl_create_context(DisplayGLCtx *dgc,
 -- 
-2.20.1
+2.30.2
 

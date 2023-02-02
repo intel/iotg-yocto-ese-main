@@ -26,14 +26,37 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0007-qemu-Determinism-fixes.patch \
            file://0008-tests-meson.build-use-relative-path-to-refer-to-file.patch \
            file://0009-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
-           file://0001-ui-gtk-detach-VCS-for-additional-guest-displays.patch \
-           file://0002-ui-gtk-a-new-array-param-monitor-to-specify-the-targ.patch \
-           file://0003-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
-           file://0004-ui-gtk-set-the-size-of-detached-window-to-default.patch \
-           file://0005-ui-gtk-egl-make-sure-to-unbind-the-egl-context-from-.patch \
-           file://0006-ui-gtk-hide-the-memu-bar-when-full-screening.patch \
-           file://0007-ui-gtk-adds-status-bar-for-expressing-ups-and-fps.patch \
-           file://0008-ui-gtk-calling-gd_gl_frame_counter-at-every-draw-swa.patch \
+           file://0001-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
+           file://0002-ui-gtk-set-the-size-of-detached-window-to-default.patch \
+           file://0003-ui-gtk-egl-make-sure-to-unbind-the-egl-context-from-.patch \
+           file://0004-ui-gtk-adds-status-bar-for-expressing-ups-and-fps.patch \
+           file://0005-ui-gtk-calling-gd_gl_frame_counter-at-every-draw-swa.patch \
+           file://0006-ui-gtk-skip-drawing-guest-scanout-when-associated-VC.patch \
+           file://0007-ui-gtk-set-the-ui-size-to-0-when-invisible.patch \
+           file://0008-ui-gtk-reset-visible-flag-when-window-is-minimized.patch \
+           file://0009-ui-gtk-Handle-relative-mode-events-correctly-with-Wa.patch \
+           file://0010-ui-gtk-Disable-the-scanout-when-a-detached-tab-is-cl.patch \
+           file://0011-ui-gtk-Factor-out-tab-window-creation-into-a-separat.patch \
+           file://0012-ui-gtk-Add-a-new-parameter-to-assign-connectors-moni.patch \
+           file://0013-ui-egl-helpers-display-EGL-error-if-eglCreateImageKH.patch \
+           file://0014-ui-gtk-skip-drawing-if-any-of-ctx-surface-image-don-.patch \
+           file://0015-ui-gtk-egl-should-assume-dmabuf-is-unusable-once-ren.patch \
+           file://0016-ui-gtk-skip-refresh-rendering-if-VC-is-invisible.patch \
+           file://0017-ui-gtk-unblock-gl-if-draw-submitted-already-or-fence.patch \
+           file://0018-ui-gtk-remove-hp-timer-since-it-could-cause-invalid-.patch \
+           file://0019-ui-gtk-make-sure-window-is-in-shown-state.patch \
+           file://0020-ui-gtk-configure-the-area-of-the-texture-correctly.patch \
+           file://0021-ui-gtk-making-dmabuf-NULL-when-dmabuf-is-not-valid-a.patch \
+           file://0022-virtio-gpu-Provide-position-info-x-y-to-the-Guest.patch \
+           file://0023-ui-gtk-Include-the-position-info-while-setting-the-u.patch \
+           file://0024-ui-gtk-Add-support-for-extended-absolute-mode-for-th.patch \
+           file://0025-i386-do-kvm_put_msr_feature_control-first-thing-when.patch \
+           file://0026-i386-reset-KVM-nested-state-upon-CPU-reset.patch \
+           file://0029-ui-console-call-dpy_gl_count_frame-only-if-it-exists.patch \
+           file://0030-virtio-gpu-udmabuf-create-udmabuf-for-blob-when-iov_.patch \
+           file://0031-ui-gtk-handling-placement-of-QEMU-windows-when-monit.patch \
+           file://0032-hw-virtio-Adds-support-for-VIRTIO_GPU_FORMAT_R8G8B8A.patch \
+           file://0033-ui-gtk-WA-for-Yocto-IceWM.patch \
            "
 BAR = "           file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"

@@ -1,0 +1,343 @@
+From b037c5ac163580aee20c1adcaaf1c521a5ba6ccf Mon Sep 17 00:00:00 2001
+From: Vincent Cheah Beng Keat <vincent.beng.keat.cheah@intel.com>
+Date: Wed, 23 Nov 2022 05:17:24 +0800
+Subject: [PATCH] Enable xdg_shell for weston10
+
+Platform: TGL
+OS: Yocto native wayland weston
+Tested: ./sample_decode h264 -vaapi -hw -i test.h264 -rwld -rgb4
+
+Issue: #2995
+
+Signed-off-by: Cheah, Vincent Beng Keat <vincent.beng.keat.cheah@intel.com>
+---
+ builder/FindPackages.cmake                         | 13 ++-
+ samples/sample_misc/wayland/CMakeLists.txt         | 29 +++++++
+ .../sample_misc/wayland/include/class_wayland.h    |  8 ++
+ .../sample_misc/wayland/include/listener_wayland.h | 21 +++++
+ samples/sample_misc/wayland/src/class_wayland.cpp  | 92 +++++++++++++++++++---
+ .../sample_misc/wayland/src/listener_wayland.cpp   | 32 ++++++++
+ 6 files changed, 180 insertions(+), 15 deletions(-)
+
+diff --git a/builder/FindPackages.cmake b/builder/FindPackages.cmake
+index dcca141..05606dc 100644
+--- a/builder/FindPackages.cmake
++++ b/builder/FindPackages.cmake
+@@ -195,6 +195,9 @@ function(configure_wayland_target target)
+   if(WAYLAND_LINUX_DMABUF_XML_PATH AND WAYLAND_SCANNER_BINARY_PATH)
+     set(SCOPE_CFLAGS "${SCOPE_CFLAGS} -DWAYLAND_LINUX_DMABUF_SUPPORT")
+   endif()
++  if(WAYLAND_LINUX_XDG_SHELL_XML_PATH AND WAYLAND_SCANNER_BINARY_PATH)
++    set(SCOPE_CFLAGS "${SCOPE_CFLAGS} -DWAYLAND_LINUX_XDG_SHELL_SUPPORT")
++  endif()
+   set(SCOPE_CFLAGS "${SCOPE_CFLAGS}" PARENT_SCOPE)
+   set(SCOPE_LINKFLAGS ${SCOPE_LINKFLAGS} PARENT_SCOPE)
+   set(SCOPE_LIBS ${SCOPE_LIBS} drm_intel drm wayland-client PARENT_SCOPE)
+@@ -261,6 +264,9 @@ function(configure_universal_target target)
+     if(WAYLAND_LINUX_DMABUF_XML_PATH AND WAYLAND_SCANNER_BINARY_PATH)
+       set(LOCAL_CFLAGS "${LOCAL_CFLAGS} -DWAYLAND_LINUX_DMABUF_SUPPORT")
+     endif()
++    if(WAYLAND_LINUX_XDG_SHELL_XML_PATH AND WAYLAND_SCANNER_BINARY_PATH)
++      set(LOCAL_CFLAGS "${LOCAL_CFLAGS} -DWAYLAND_LINUX_XDG_SHELL_SUPPORT")
++    endif()
+   endif()
+ 
+   set(SCOPE_CFLAGS "${SCOPE_CFLAGS} ${LOCAL_CFLAGS}" PARENT_SCOPE)
+@@ -520,15 +526,18 @@ if( Linux )
+     pkg_check_modules(PKG_WAYLAND_CLIENT REQUIRED wayland-client)
+ 
+     pkg_check_modules(PKG_WAYLAND_SCANNER "wayland-scanner>=1.15")
+-    pkg_check_modules(PKG_WAYLAND_PROTCOLS "wayland-protocols>=1.15")
++    pkg_check_modules(PKG_WAYLAND_PROTOCOLS "wayland-protocols>=1.15")
+ 
+-    if ( PKG_WAYLAND_SCANNER_FOUND AND PKG_WAYLAND_PROTCOLS_FOUND )
++    if ( PKG_WAYLAND_SCANNER_FOUND AND PKG_WAYLAND_PROTOCOLS_FOUND )
+       pkg_get_variable(WAYLAND_PROTOCOLS_PATH wayland-protocols pkgdatadir)
+       if(WAYLAND_PROTOCOLS_PATH)
+         find_file(
+             WAYLAND_LINUX_DMABUF_XML_PATH linux-dmabuf-unstable-v1.xml
+             PATHS ${WAYLAND_PROTOCOLS_PATH}/unstable/linux-dmabuf
+             NO_DEFAULT_PATH)
++        find_file(WAYLAND_LINUX_XDG_SHELL_XML_PATH xdg-shell.xml
++            PATHS ${WAYLAND_PROTOCOLS_PATH}/stable/xdg-shell
++            NO_DEFAULT_PATH)
+       endif()
+ 
+       pkg_get_variable(WAYLAND_SCANNER_BIN_PATH wayland-scanner bindir)
+diff --git a/samples/sample_misc/wayland/CMakeLists.txt b/samples/sample_misc/wayland/CMakeLists.txt
+index 9a01a09..95b7868 100644
+--- a/samples/sample_misc/wayland/CMakeLists.txt
++++ b/samples/sample_misc/wayland/CMakeLists.txt
+@@ -12,6 +12,35 @@ set(DEPENDENCIES  libva libdrm wayland-client)
+ 
+ make_library(mfx_wayland none shared )
+ 
++if (WAYLAND_LINUX_XDG_SHELL_XML_PATH AND WAYLAND_SCANNER_BINARY_PATH)
++  execute_process(
++          COMMAND "${WAYLAND_SCANNER_BINARY_PATH}"
++	  "client-header" "${WAYLAND_LINUX_XDG_SHELL_XML_PATH}"
++              "samples/sample_misc/wayland/xdg-shell-client-protocol.h"
++      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
++      RESULT_VARIABLE WAYLAND_SCANNER_RESULT)
++  if (WAYLAND_SCANNER_RESULT)
++    message(FATAL_ERROR "Failed to generate xdg-shell-client-protocol.h")
++  endif()
++
++  execute_process(
++      COMMAND "${WAYLAND_SCANNER_BINARY_PATH}"
++      "private-code" "${WAYLAND_LINUX_XDG_SHELL_XML_PATH}"
++              "samples/sample_misc/wayland/xdg-shell-protocol.c"
++      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
++      RESULT_VARIABLE WAYLAND_SCANNER_RESULT)
++  if (WAYLAND_SCANNER_RESULT)
++    message(FATAL_ERROR "Failed to generate xdg-shell-protocol.c")
++  endif()
++
++  include_directories(
++    ${CMAKE_BINARY_DIR}/samples/sample_misc/wayland
++  )
++  target_sources(
++    ${target}
++    PRIVATE ${CMAKE_BINARY_DIR}/samples/sample_misc/wayland/xdg-shell-protocol.c)
++endif()
++
+ if (WAYLAND_LINUX_DMABUF_XML_PATH AND WAYLAND_SCANNER_BINARY_PATH)
+   execute_process(
+ 	  COMMAND "${WAYLAND_SCANNER_BINARY_PATH}"
+diff --git a/samples/sample_misc/wayland/include/class_wayland.h b/samples/sample_misc/wayland/include/class_wayland.h
+index 26b4d26..1f65fb0 100644
+--- a/samples/sample_misc/wayland/include/class_wayland.h
++++ b/samples/sample_misc/wayland/include/class_wayland.h
+@@ -36,6 +36,9 @@ extern "C"
+ #if defined(WAYLAND_LINUX_DMABUF_SUPPORT)
+ #include "linux-dmabuf-unstable-v1.h"
+ #endif
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++#include "xdg-shell-client-protocol.h"
++#endif
+ 
+ typedef struct buffer wld_buffer;
+ 
+@@ -156,6 +159,11 @@ class Wayland: public CBuffering {
+ #endif
+         volatile int m_pending_frame;
+         struct ShmPool *m_shm_pool;
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++        struct xdg_wm_base* m_xdg_wm_base;
++        struct xdg_surface* m_xdg_surface;
++        struct xdg_toplevel* m_xdg_toplevel;
++#endif
+         int m_display_fd;
+         int m_fd;
+         struct pollfd m_poll;
+diff --git a/samples/sample_misc/wayland/include/listener_wayland.h b/samples/sample_misc/wayland/include/listener_wayland.h
+index 1bbaa91..6eae38d 100644
+--- a/samples/sample_misc/wayland/include/listener_wayland.h
++++ b/samples/sample_misc/wayland/include/listener_wayland.h
+@@ -63,4 +63,25 @@ void shell_surface_configure(void *data
+ void handle_done(void *data, struct wl_callback *callback, uint32_t time);
+ 
+ void buffer_release(void *data, struct wl_buffer *buffer);
++
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++/* xdg shell */
++void xdg_wm_base_ping(void* data
++    , struct xdg_wm_base* xdg_wm_base
++    , uint32_t serial);
++
++void xdg_surface_configure(void* data
++    , struct xdg_surface* xdg_surface
++    , uint32_t serial);
++
++void xdg_toplevel_configure(void* data
++    , struct xdg_toplevel* xdg_toplevel
++    , int32_t width
++    , int32_t height
++    , struct wl_array* states);
++
++void xdg_toplevel_close(void* data
++    , struct xdg_toplevel* xdg_toplevel);
++#endif
++
+ #endif /* LISTENER_WAYLAND_H */
+diff --git a/samples/sample_misc/wayland/src/class_wayland.cpp b/samples/sample_misc/wayland/src/class_wayland.cpp
+index 39aa10b..fb6b56a 100644
+--- a/samples/sample_misc/wayland/src/class_wayland.cpp
++++ b/samples/sample_misc/wayland/src/class_wayland.cpp
+@@ -66,6 +66,11 @@ Wayland::Wayland()
+ #endif
+     , m_pending_frame(0)
+     , m_shm_pool(NULL)
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++    , m_xdg_wm_base(NULL)
++    , m_xdg_surface(NULL)
++    , m_xdg_toplevel(NULL)
++#endif
+     , m_display_fd(-1)
+     , m_fd(-1)
+     , m_bufmgr(NULL)
+@@ -112,6 +117,18 @@ int Wayland::DisplayRoundtrip()
+ 
+ bool Wayland::CreateSurface()
+ {
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++    static struct xdg_surface_listener
++        xdg_surface_listener   = {
++            xdg_surface_configure
++        };
++
++    static struct xdg_toplevel_listener
++        xdg_toplevel_listener = {
++            xdg_toplevel_configure,
++            xdg_toplevel_close
++        };
++#endif
+     static const struct wl_shell_surface_listener
+         shell_surface_listener = {
+             shell_surface_ping,
+@@ -122,20 +139,45 @@ bool Wayland::CreateSurface()
+     if (NULL == m_surface)
+         return false;
+ 
+-    m_shell_surface = wl_shell_get_shell_surface(m_shell
+-        , m_surface);
+-    if(NULL == m_shell_surface)
+-    {
+-        wl_surface_destroy(m_surface);
+-        return false;
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++    if (m_xdg_wm_base) {
++        m_xdg_surface = xdg_wm_base_get_xdg_surface(m_xdg_wm_base
++            , m_surface);
++        if (nullptr == m_xdg_surface) {
++            xdg_surface_destroy(m_xdg_surface);
++            return false;
++        }
++
++        xdg_surface_add_listener(m_xdg_surface
++            , &xdg_surface_listener
++            , 0);
++        m_xdg_toplevel = xdg_surface_get_toplevel(m_xdg_surface);
++        if (nullptr == m_xdg_toplevel)
++            return false;
++
++        xdg_toplevel_add_listener(m_xdg_toplevel
++            , &xdg_toplevel_listener
++            , 0);
++        wl_surface_commit(m_surface);
++        wl_display_dispatch(m_display);
+     }
++    else if (m_shell)
++#endif
++    {
++        m_shell_surface = wl_shell_get_shell_surface(m_shell
++            , m_surface);
++        if (NULL == m_shell_surface) {
++            wl_surface_destroy(m_surface);
++            return false;
++        }
+ 
+-    wl_shell_surface_add_listener(m_shell_surface
+-        , &shell_surface_listener
+-        , 0);
+-    wl_shell_surface_set_toplevel(m_shell_surface);
+-    wl_shell_surface_set_user_data(m_shell_surface, m_surface);
+-    wl_surface_set_user_data(m_surface, NULL);
++        wl_shell_surface_add_listener(m_shell_surface
++            , &shell_surface_listener
++            , 0);
++        wl_shell_surface_set_toplevel(m_shell_surface);
++        wl_shell_surface_set_user_data(m_shell_surface, m_surface);
++        wl_surface_set_user_data(m_surface, NULL);
++    }
+     return true;
+ }
+ 
+@@ -146,6 +188,12 @@ void Wayland::FreeSurface()
+         wl_shell_surface_destroy(m_shell_surface);
+     if(NULL != m_surface)
+         wl_surface_destroy(m_surface);
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++    if (nullptr != m_xdg_toplevel)
++        xdg_toplevel_destroy(m_xdg_toplevel);
++    if (nullptr != m_xdg_surface)
++        xdg_surface_destroy(m_xdg_surface);
++#endif
+ }
+ 
+ void Wayland::Sync()
+@@ -436,12 +484,30 @@ void Wayland::RegistryGlobal(struct wl_registry *registry
+             , name
+             , &wl_compositor_interface
+             , version));
+-    else if(0 == strcmp(interface, "wl_shell"))
++    else if(0 == strcmp(interface, "wl_shell")) {
+         m_shell = static_cast<wl_shell*>
+             (wl_registry_bind(registry
+             , name
+             , &wl_shell_interface
+             , version));
++    }
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++    else if (0 == strcmp(interface, "xdg_wm_base")) {
++        static const struct xdg_wm_base_listener
++            xdg_wm_base_listener = {
++                xdg_wm_base_ping
++            };
++        m_xdg_wm_base =
++            static_cast<xdg_wm_base*>(wl_registry_bind(registry
++            , name
++            , &xdg_wm_base_interface
++            , 1));
++
++        xdg_wm_base_add_listener(m_xdg_wm_base
++           , &xdg_wm_base_listener
++           , this);
++    }
++#endif
+     else if(0 == strcmp(interface, "wl_drm")) {
+         static const struct wl_drm_listener drm_listener = {
+             drm_handle_device,
+diff --git a/samples/sample_misc/wayland/src/listener_wayland.cpp b/samples/sample_misc/wayland/src/listener_wayland.cpp
+index 90f582a..e72b4ce 100644
+--- a/samples/sample_misc/wayland/src/listener_wayland.cpp
++++ b/samples/sample_misc/wayland/src/listener_wayland.cpp
+@@ -103,3 +103,35 @@ void buffer_release(void *data, struct wl_buffer *buffer)
+     wl_buffer_destroy(buffer);
+     buffer = NULL;
+ }
++
++#if defined(WAYLAND_LINUX_XDG_SHELL_SUPPORT)
++/* xdg shell */
++void xdg_wm_base_ping(void* data
++    , struct xdg_wm_base* xdg_wm_base
++    , uint32_t serial)
++{
++    xdg_wm_base_pong(xdg_wm_base, serial);
++}
++
++void xdg_surface_configure(void* data
++    , struct xdg_surface* xdg_surface
++    , uint32_t serial)
++{
++    xdg_surface_ack_configure(xdg_surface, serial);
++}
++
++void xdg_toplevel_configure(void* data
++    , struct xdg_toplevel* xdg_toplevel
++    , int32_t width
++    , int32_t height,
++    struct wl_array* states)
++{
++    /* NOT IMPLEMENTED */
++}
++
++void xdg_toplevel_close(void* data
++    , struct xdg_toplevel* xdg_toplevel)
++{
++    /* NOT IMPLEMENTED */
++}
++#endif
+-- 
+2.7.4
+

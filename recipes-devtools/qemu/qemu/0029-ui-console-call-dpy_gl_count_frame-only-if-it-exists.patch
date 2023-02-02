@@ -1,0 +1,28 @@
+From 178830f2425e9fa61f93243a5a57e4d934375af0 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Sat, 10 Dec 2022 18:02:34 -0800
+Subject: [PATCH 29/34] ui/console: call dpy_gl_count_frame only if it exists
+
+Call dpy_gl_count_frame only if the func ptr exists.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/console.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ui/console.c b/ui/console.c
+index c01a377c8b..fdf9597143 100644
+--- a/ui/console.c
++++ b/ui/console.c
+@@ -2111,7 +2111,7 @@ void dpy_gl_count_frame(QemuConsole *con, bool ups)
+         if (con != (dcl->con ? dcl->con : active_console)) {
+             continue;
+         }
+-        if (dcl->ops->dpy_gl_release_dmabuf) {
++        if (dcl->ops->dpy_gl_count_frame) {
+             dcl->ops->dpy_gl_count_frame(dcl, ups);
+         }
+     }
+-- 
+2.30.2
+

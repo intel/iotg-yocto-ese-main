@@ -1,6 +1,6 @@
-From 3143212e129ad544a698ee89357a85e6c14f837c Mon Sep 17 00:00:00 2001
-From: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
-Date: Thu, 28 Jul 2022 14:43:04 +0800
+From b200f4bfda8cbd47f6c8b137ef32084abbfa2066 Mon Sep 17 00:00:00 2001
+From: Vinicius Costa Gomes <vinicius.gomes@intel.com>
+Date: Wed, 3 Feb 2021 17:08:41 -0800
 Subject: [PATCH] taprio: Add support for 'preempt' parameter
 
 Adds the 'preempt' parameter to taprio, so the user can select which
@@ -8,17 +8,24 @@ traffic classes are marked as preemptible (1) and which are marked as
 express (0).
 
 Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@intel.com>
-Signed-off-by: Muhammad Husaini Zulkifli <muhammad.husaini.zulkifli@intel.com>
 ---
- include/uapi/linux/pkt_sched.h |  1 +
+ include/uapi/linux/pkt_sched.h |  2 ++
  tc/q_taprio.c                  | 32 ++++++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+)
+ 2 files changed, 34 insertions(+)
 
 diff --git a/include/uapi/linux/pkt_sched.h b/include/uapi/linux/pkt_sched.h
-index f292b46..98d3c93 100644
+index f292b467..198574b6 100644
 --- a/include/uapi/linux/pkt_sched.h
 +++ b/include/uapi/linux/pkt_sched.h
-@@ -1245,6 +1245,7 @@ enum {
+@@ -738,6 +738,7 @@ enum {
+ 	TCA_MQPRIO_SHAPER,
+ 	TCA_MQPRIO_MIN_RATE64,
+ 	TCA_MQPRIO_MAX_RATE64,
++	TCA_MQPRIO_PREEMPT_TCS,
+ 	__TCA_MQPRIO_MAX,
+ };
+ 
+@@ -1245,6 +1246,7 @@ enum {
  	TCA_TAPRIO_ATTR_SCHED_CYCLE_TIME_EXTENSION, /* s64 */
  	TCA_TAPRIO_ATTR_FLAGS, /* u32 */
  	TCA_TAPRIO_ATTR_TXTIME_DELAY, /* u32 */
@@ -27,7 +34,7 @@ index f292b46..98d3c93 100644
  };
  
 diff --git a/tc/q_taprio.c b/tc/q_taprio.c
-index e43db9d..a248148 100644
+index e43db9d0..a248148a 100644
 --- a/tc/q_taprio.c
 +++ b/tc/q_taprio.c
 @@ -158,6 +158,7 @@ static int taprio_parse_opt(struct qdisc_util *qu, int argc,
@@ -98,5 +105,5 @@ index e43db9d..a248148 100644
  		clockid = rta_getattr_s32(tb[TCA_TAPRIO_ATTR_SCHED_CLOCKID]);
  
 -- 
-2.17.1
+2.34.1
 

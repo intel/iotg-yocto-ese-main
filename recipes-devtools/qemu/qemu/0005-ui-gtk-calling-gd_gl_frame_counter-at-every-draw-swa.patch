@@ -1,7 +1,7 @@
-From c5545b7fb7969e2c92fca2484750dcf89643ae97 Mon Sep 17 00:00:00 2001
+From 7bf6f6a089154172e615674e41b858e1f74628f5 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Sun, 11 Sep 2022 10:48:41 -0700
-Subject: [PATCH 8/8] ui/gtk: calling gd_gl_frame_counter at every draw/swap
+Subject: [PATCH 05/34] ui/gtk: calling gd_gl_frame_counter at every draw/swap
 
 For FPS calculation, gd_gl_frame_counter is called at every
 draw(gtk-gl-area) or swap(gtk-egl) activity.
@@ -45,5 +45,5 @@ index 682638a197..3e57013d2d 100644
  
  void gd_gl_area_update(DisplayChangeListener *dcl,
 -- 
-2.20.1
+2.30.2
 

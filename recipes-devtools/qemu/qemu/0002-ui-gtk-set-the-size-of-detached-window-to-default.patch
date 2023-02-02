@@ -1,7 +1,7 @@
-From db4b3b417ed804f4fbe4fbc94999bfe2b7f3cb03 Mon Sep 17 00:00:00 2001
+From 6758859c4f84325f4364f412f74d031fcb8712cf Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Tue, 19 Jul 2022 16:36:43 -0700
-Subject: [PATCH 4/8] ui/gtk: set the size of detached window to default
+Subject: [PATCH 02/34] ui/gtk: set the size of detached window to default
 
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 6828945e0e..849c7375cd 100644
+index 1467b8c7d7..eaa7026301 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -1361,6 +1361,11 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
@@ -25,5 +25,5 @@ index 6828945e0e..849c7375cd 100644
  
          if (qemu_console_is_graphic(vc->gfx.dcl.con)) {
 -- 
-2.20.1
+2.30.2
 

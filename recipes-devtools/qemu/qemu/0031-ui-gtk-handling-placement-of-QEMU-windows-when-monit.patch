@@ -1,0 +1,62 @@
+From e7157a25174fb5a15529e389d722de1903c9f182 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 14 Dec 2022 12:10:28 -0800
+Subject: [PATCH 31/34] ui/gtk: handling placement of QEMU windows when
+ monitors are swapped
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 71897cfe56..de6cde439e 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1658,7 +1658,7 @@ static gboolean gd_vc_is_misplaced(GdkDisplay *dpy, GdkMonitor *monitor,
+ {
+     GdkWindow *window = gtk_widget_get_window(vc->gfx.drawing_area);
+     GdkMonitor *mon = gdk_display_get_monitor_at_window(dpy, window);
+-    const char *monitor_name = gdk_monitor_get_model(monitor);
++    const char *monitor_name = monitor ? gdk_monitor_get_model(monitor) : NULL;
+ 
+     if (!vc->monitor) {
+         if (!g_strcmp0(monitor_name, vc->label)) {
+@@ -1722,6 +1722,25 @@ static void gd_monitor_remove(GdkDisplay *dpy, GdkMonitor *monitor,
+     }
+ }
+ 
++static void gd_monitors_reset_timer(void *opaque)
++{
++    GtkDisplayState *s = opaque;
++    GdkDisplay *dpy = gdk_display_get_default();
++
++    gd_monitor_check_vcs(dpy, NULL, s);
++}
++
++static void gd_monitors_changed(GdkScreen *scr, void *opaque)
++{
++    GtkDisplayState *s = opaque;
++    QEMUTimer *mon_reset_timer;
++
++    mon_reset_timer = timer_new_ms(QEMU_CLOCK_REALTIME,
++                                    gd_monitors_reset_timer, s);
++    timer_mod(mon_reset_timer,
++              qemu_clock_get_ms(QEMU_CLOCK_REALTIME) + 1000);
++}
++
+ static VirtualConsole *gd_next_gfx_vc(GtkDisplayState *s)
+ {
+     VirtualConsole *vc;
+@@ -2449,6 +2468,8 @@ static void gd_connect_signals(GtkDisplayState *s)
+                          G_CALLBACK(gd_monitor_add), s);
+         g_signal_connect(gtk_widget_get_display(s->window), "monitor-removed",
+                          G_CALLBACK(gd_monitor_remove), s);
++        g_signal_connect(gdk_screen_get_default(), "monitors-changed",
++                         G_CALLBACK(gd_monitors_changed), s);
+     }
+ }
+ 
+-- 
+2.30.2
+

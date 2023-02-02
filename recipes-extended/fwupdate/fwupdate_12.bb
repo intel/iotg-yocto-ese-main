@@ -7,7 +7,7 @@ DEPENDS = " \
     gnu-efi \
 "
 
-SRC_URI = "git://github.com/rhboot/fwupdate.git \
+SRC_URI = "git://github.com/rhboot/fwupdate.git;branch=master;protocol=https \
            file://0001-efi-Makefile-remove-standard-system-header-file-dire.patch \
            file://132.patch \
            file://0001-efi-Makefile-use-gnu-efi-provided-linker-script.patch \

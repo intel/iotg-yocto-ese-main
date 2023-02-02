@@ -1,0 +1,29 @@
+From 0ac86823730736b02ca84ea41d4902fac0b37fab Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Sat, 10 Dec 2022 18:01:07 -0800
+Subject: [PATCH 1/2] virtio-gpu: (NO_UPSTREAM) temporarily comment out
+ disable_scanout
+
+For SPICE use-case with Windows VM
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ hw/display/virtio-gpu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/display/virtio-gpu.c b/hw/display/virtio-gpu.c
+index 429d6d60e8..fb9c33b430 100644
+--- a/hw/display/virtio-gpu.c
++++ b/hw/display/virtio-gpu.c
+@@ -402,7 +402,7 @@ static void virtio_gpu_resource_destroy(VirtIOGPU *g,
+     if (res->scanout_bitmask) {
+         for (i = 0; i < g->parent_obj.conf.max_outputs; i++) {
+             if (res->scanout_bitmask & (1 << i)) {
+-                virtio_gpu_disable_scanout(g, i);
++                //virtio_gpu_disable_scanout(g, i);
+             }
+         }
+     }
+-- 
+2.30.2
+

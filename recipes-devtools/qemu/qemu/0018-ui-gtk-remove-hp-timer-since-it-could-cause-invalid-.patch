@@ -1,0 +1,80 @@
+From 00253a0e64c107831f68e315c951e690d867de37 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 7 Dec 2022 11:42:53 -0800
+Subject: [PATCH 18/34] ui/gtk: remove hp timer since it could cause invalid
+ memory access
+
+Kernel triggers HPD event again if the connection is unstable after
+trigerring immediate removal event. So scheduling a timer that may cause
+access violation on monitor data structure because it could be invalid
+by
+the time when the timer routine is executed.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 43 +++++--------------------------------------
+ 1 file changed, 5 insertions(+), 38 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 48e59b0a9e..797e0dad29 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1643,50 +1643,17 @@ static void gd_monitor_check_vcs(GdkDisplay *dpy, GdkMonitor *monitor,
+     }
+ }
+ 
+-static void gd_monitor_hotplug_timer(void *opaque)
+-{
+-    gd_monitor_data *data = opaque;
+-    const char *monitor_name;
+-
+-    monitor_name = GDK_IS_MONITOR(data->monitor) ?
+-                   gdk_monitor_get_model(data->monitor) : NULL;
+-    if (monitor_name) {
+-        gd_monitor_check_vcs(data->dpy, data->monitor, data->s);
+-    }
+-    if (monitor_name || data->num_retries == MAX_NUM_RETRIES) {
+-        timer_del(data->hp_timer);
+-        g_free(data);
+-    } else {
+-        data->num_retries++;
+-        timer_mod(data->hp_timer,
+-                  qemu_clock_get_ms(QEMU_CLOCK_REALTIME) + WAIT_MS);
+-    }
+-}
+-
+ static void gd_monitor_add(GdkDisplay *dpy, GdkMonitor *monitor,
+                            void *opaque)
+ {
+     GtkDisplayState *s = opaque;
+-    gd_monitor_data *data;
+ 
+-    /*
+-     * It is possible that the Host Compositor or GTK would not have
+-     * had a chance to fully process the hotplug event and as a result
+-     * gdk_monitor_get_model() could return NULL. Therefore, check for
+-     * this case and try again later.
+-     */
+-    if (GDK_IS_MONITOR(monitor) && gdk_monitor_get_model(monitor)) {
+-        gd_monitor_check_vcs(dpy, monitor, s);
+-    } else {
+-        data = g_new0(gd_monitor_data, 1);
+-        data->s = s;
+-        data->dpy = dpy;
+-        data->monitor = monitor;
+-        data->hp_timer = timer_new_ms(QEMU_CLOCK_REALTIME,
+-                                      gd_monitor_hotplug_timer, data);
+-        timer_mod(data->hp_timer,
+-                  qemu_clock_get_ms(QEMU_CLOCK_REALTIME) + WAIT_MS);
++    if (!gdk_monitor_get_model(monitor)) {
++        error_report("New monitor is invalid - possible detection failure");
++        return;
+     }
++
++    gd_monitor_check_vcs(dpy, monitor, s);
+ }
+ 
+ static void gd_monitor_remove(GdkDisplay *dpy, GdkMonitor *monitor,
+-- 
+2.30.2
+

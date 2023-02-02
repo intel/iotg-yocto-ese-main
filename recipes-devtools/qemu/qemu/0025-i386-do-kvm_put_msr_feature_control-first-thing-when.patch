@@ -1,0 +1,58 @@
+From 92d6de03347c284ddcf074152469685da4e1ad79 Mon Sep 17 00:00:00 2001
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+Date: Thu, 18 Aug 2022 17:01:13 +0200
+Subject: [PATCH 25/34] i386: do kvm_put_msr_feature_control() first thing when
+ vCPU is reset
+
+kvm_put_sregs2() fails to reset 'locked' CR4/CR0 bits upon vCPU reset when
+it is in VMX root operation. Do kvm_put_msr_feature_control() before
+kvm_put_sregs2() to (possibly) kick vCPU out of VMX root operation. It also
+seems logical to do kvm_put_msr_feature_control() before
+kvm_put_nested_state() and not after it, especially when 'real' nested
+state is set.
+
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Message-Id: <20220818150113.479917-3-vkuznets@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ target/i386/kvm/kvm.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/target/i386/kvm/kvm.c b/target/i386/kvm/kvm.c
+index f148a6d52f..e90b074d67 100644
+--- a/target/i386/kvm/kvm.c
++++ b/target/i386/kvm/kvm.c
+@@ -4512,6 +4512,18 @@ int kvm_arch_put_registers(CPUState *cpu, int level)
+ 
+     assert(cpu_is_stopped(cpu) || qemu_cpu_is_self(cpu));
+ 
++    /*
++     * Put MSR_IA32_FEATURE_CONTROL first, this ensures the VM gets out of VMX
++     * root operation upon vCPU reset. kvm_put_msr_feature_control() should also
++     * preceed kvm_put_nested_state() when 'real' nested state is set.
++     */
++    if (level >= KVM_PUT_RESET_STATE) {
++        ret = kvm_put_msr_feature_control(x86_cpu);
++        if (ret < 0) {
++            return ret;
++        }
++    }
++
+     /* must be before kvm_put_nested_state so that EFER.SVME is set */
+     ret = has_sregs2 ? kvm_put_sregs2(x86_cpu) : kvm_put_sregs(x86_cpu);
+     if (ret < 0) {
+@@ -4523,11 +4535,6 @@ int kvm_arch_put_registers(CPUState *cpu, int level)
+         if (ret < 0) {
+             return ret;
+         }
+-
+-        ret = kvm_put_msr_feature_control(x86_cpu);
+-        if (ret < 0) {
+-            return ret;
+-        }
+     }
+ 
+     if (level == KVM_PUT_FULL_STATE) {
+-- 
+2.30.2
+
