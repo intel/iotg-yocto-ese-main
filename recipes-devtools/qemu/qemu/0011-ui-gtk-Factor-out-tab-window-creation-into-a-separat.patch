@@ -35,7 +35,7 @@ index 988956845a..4a2fa2a6af 100644
 +	eglDestroySurface(qemu_egl_display, vc->gfx.esurface);
 +	vc->gfx.esurface = NULL;
 +    }
-+    if (vc->gfx.esurface) {
++    if (vc->gfx.ectx) {
 +	eglDestroyContext(qemu_egl_display, vc->gfx.ectx);
 +	vc->gfx.ectx = NULL;
 +    }

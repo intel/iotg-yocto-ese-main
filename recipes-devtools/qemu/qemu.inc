@@ -57,6 +57,9 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0031-ui-gtk-handling-placement-of-QEMU-windows-when-monit.patch \
            file://0032-hw-virtio-Adds-support-for-VIRTIO_GPU_FORMAT_R8G8B8A.patch \
            file://0033-ui-gtk-WA-for-Yocto-IceWM.patch \
+           file://0001-ui-gtk-fix-windows-state-event-call.patch \
+           file://0002-ui-gtk-set-the-default-size-of-new-window-to-vc-gfx..patch \
+           file://0001-ui-gtk-vc-page-number-correction.patch \
            "
 BAR = "           file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"

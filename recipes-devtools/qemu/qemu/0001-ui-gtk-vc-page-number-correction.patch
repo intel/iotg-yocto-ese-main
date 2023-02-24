@@ -1,0 +1,50 @@
+From 5d6078f75a743c4d4a21f186581765448c7dc8de Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 18 Jan 2023 18:15:05 -0800
+Subject: [PATCH] ui/gtk: vc page number correction
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index ca1e2f7bde..fd0a5b0e2c 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -173,6 +173,10 @@ static VirtualConsole *gd_vc_find_by_page(GtkDisplayState *s, gint page)
+     VirtualConsole *vc;
+     gint i, p;
+ 
++    if (page < 0) {
++        return NULL;
++    }
++
+     for (i = 0; i < s->nb_vcs; i++) {
+         vc = &s->vc[i];
+         p = gtk_notebook_page_num(GTK_NOTEBOOK(s->notebook), vc->tab_item);
+@@ -369,7 +373,7 @@ static void gtk_release_modifiers(GtkDisplayState *s)
+ {
+     VirtualConsole *vc = gd_vc_find_current(s);
+ 
+-    if (vc->type != GD_VC_GFX ||
++    if (!vc || vc->type != GD_VC_GFX ||
+         !qemu_console_is_graphic(vc->gfx.dcl.con)) {
+         return;
+     }
+@@ -1436,8 +1440,10 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
+     gint page;
+ 
+     vc = gd_vc_find_current(s);
+-    vc->gfx.visible = false;
+-    gd_set_ui_size(vc, 0, 0);
++    if (vc) {
++        vc->gfx.visible = false;
++        gd_set_ui_size(vc, 0, 0);
++    }
+ 
+     vc = gd_vc_find_by_menu(s);
+     gtk_release_modifiers(s);
+-- 
+2.20.1
+
