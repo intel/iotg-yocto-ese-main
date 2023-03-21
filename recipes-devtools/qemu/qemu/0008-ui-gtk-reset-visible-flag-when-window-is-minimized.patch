@@ -1,7 +1,7 @@
-From 11c4fbe71e950866792761d2e1487448deb7836d Mon Sep 17 00:00:00 2001
+From 9184a9747a8be9c8f9bda89bfd326be610fa1da4 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Mon, 24 Oct 2022 14:16:42 -0700
-Subject: [PATCH 08/34] ui/gtk: reset visible flag when window is minimized
+Subject: [PATCH 08/37] ui/gtk: reset visible flag when window is minimized
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -71,5 +71,5 @@ index 7d77714d51..502f8817b5 100644
                       G_CALLBACK(gd_menu_pause), s);
      g_signal_connect(s->reset_item, "activate",
 -- 
-2.30.2
+2.20.1
 

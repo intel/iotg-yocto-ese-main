@@ -1,7 +1,7 @@
-From 178830f2425e9fa61f93243a5a57e4d934375af0 Mon Sep 17 00:00:00 2001
+From 8009401edf680df2b34026bd92202f4da7bdd6c4 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Sat, 10 Dec 2022 18:02:34 -0800
-Subject: [PATCH 29/34] ui/console: call dpy_gl_count_frame only if it exists
+Subject: [PATCH 28/37] ui/console: call dpy_gl_count_frame only if it exists
 
 Call dpy_gl_count_frame only if the func ptr exists.
 
@@ -24,5 +24,5 @@ index c01a377c8b..fdf9597143 100644
          }
      }
 -- 
-2.30.2
+2.20.1
 

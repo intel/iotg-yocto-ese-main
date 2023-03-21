@@ -1,0 +1,28 @@
+From f709f209e05e704e37d5d61861bfedbf23bbaf84 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 17 Jan 2023 22:18:02 -0800
+Subject: [PATCH 34/37] ui/gtk: set the default size of new window to
+ vc->gfx.ds
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 653dce9ce9..beaad3166a 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1562,6 +1562,9 @@ static void gd_tab_window_create(VirtualConsole *vc)
+ 
+     gtk_widget_set_sensitive(vc->menu_item, false);
+     vc->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
++    gtk_window_set_default_size(GTK_WINDOW(vc->window),
++                                surface_width(vc->gfx.ds),
++                                surface_height(vc->gfx.ds));
+ #if defined(CONFIG_OPENGL)
+     if (vc->gfx.esurface) {
+ 	eglDestroySurface(qemu_egl_display, vc->gfx.esurface);
+-- 
+2.20.1
+

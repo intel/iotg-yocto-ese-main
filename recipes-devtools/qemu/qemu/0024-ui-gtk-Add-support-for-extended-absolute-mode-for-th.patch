@@ -1,7 +1,7 @@
-From 4dd3ceb84edaa440233fed352f0fb96d48ddceac Mon Sep 17 00:00:00 2001
+From ebd563a629784d60a46ac20787012e92e4d631e7 Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Fri, 4 Nov 2022 21:47:17 -0700
-Subject: [PATCH 24/34] ui/gtk: Add support for extended absolute mode for the
+Subject: [PATCH 24/37] ui/gtk: Add support for extended absolute mode for the
  pointer device
 
 Currently, the range of the absolute pointer device (usb-tablet) is
@@ -78,7 +78,7 @@ index 2376af9780..e2304e44cb 100644
  #if defined(CONFIG_VNC)
      "-display vnc=<display>[,<optargs>]\n"
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 161d8375a9..71897cfe56 100644
+index ae410970f4..7cf18822d8 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -968,13 +968,42 @@ static gboolean gd_draw_event(GtkWidget *widget, cairo_t *cr, void *opaque)
@@ -194,5 +194,5 @@ index 161d8375a9..71897cfe56 100644
  
      vc->gfx.visible = true;
 -- 
-2.30.2
+2.20.1
 

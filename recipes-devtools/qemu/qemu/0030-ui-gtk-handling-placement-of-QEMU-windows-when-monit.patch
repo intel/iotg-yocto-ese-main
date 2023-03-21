@@ -1,7 +1,7 @@
-From e7157a25174fb5a15529e389d722de1903c9f182 Mon Sep 17 00:00:00 2001
+From d0054c5df9260b63803ff18d15990731b23a8b3a Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Wed, 14 Dec 2022 12:10:28 -0800
-Subject: [PATCH 31/34] ui/gtk: handling placement of QEMU windows when
+Subject: [PATCH 30/37] ui/gtk: handling placement of QEMU windows when
  monitors are swapped
 
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
@@ -10,7 +10,7 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 22 insertions(+), 1 deletion(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 71897cfe56..de6cde439e 100644
+index 7cf18822d8..aa5545e254 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -1658,7 +1658,7 @@ static gboolean gd_vc_is_misplaced(GdkDisplay *dpy, GdkMonitor *monitor,
@@ -58,5 +58,5 @@ index 71897cfe56..de6cde439e 100644
  }
  
 -- 
-2.30.2
+2.20.1
 

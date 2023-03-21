@@ -1,7 +1,7 @@
-From 2cbe7fb22f6511bdb45ce3ec7ebf601827aed1b5 Mon Sep 17 00:00:00 2001
+From 4b1bf7594d7a0fe9aab5a669835d1987388dece1 Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Wed, 9 Nov 2022 13:39:47 -0800
-Subject: [PATCH 22/34] virtio-gpu: Provide position info (x, y) to the Guest
+Subject: [PATCH 22/37] virtio-gpu: Provide position info (x, y) to the Guest
 
 While filling out the display info such as width, height to
 be provided to the Guest, make sure that the position information
@@ -28,5 +28,5 @@ index a29f191aa8..3b6b480131 100644
      }
  }
 -- 
-2.30.2
+2.20.1
 

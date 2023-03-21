@@ -1,7 +1,7 @@
-From dedfc3f460433719718721e09af8b7ae17fb86a4 Mon Sep 17 00:00:00 2001
+From 41189aed67ef46b901a5dae6d9692211d01aa786 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Wed, 7 Dec 2022 17:10:04 -0800
-Subject: [PATCH 20/34] ui/gtk: configure the area of the texture correctly
+Subject: [PATCH 20/37] ui/gtk: configure the area of the texture correctly
 
 x and y offsets and width and height of the scanout texture is not
 correctly configured.
@@ -41,5 +41,5 @@ index 07b5c9d5e5..649934efc4 100644
      if (dmabuf->allow_fences) {
          vc->gfx.guest_fb.dmabuf = dmabuf;
 -- 
-2.30.2
+2.20.1
 

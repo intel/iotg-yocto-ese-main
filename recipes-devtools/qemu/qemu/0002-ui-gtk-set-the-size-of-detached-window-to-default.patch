@@ -1,7 +1,7 @@
-From 6758859c4f84325f4364f412f74d031fcb8712cf Mon Sep 17 00:00:00 2001
+From da88604d09719495067f58b6954f9921454829c8 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Tue, 19 Jul 2022 16:36:43 -0700
-Subject: [PATCH 02/34] ui/gtk: set the size of detached window to default
+Subject: [PATCH 02/37] ui/gtk: set the size of detached window to default
 
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
@@ -25,5 +25,5 @@ index 1467b8c7d7..eaa7026301 100644
  
          if (qemu_console_is_graphic(vc->gfx.dcl.con)) {
 -- 
-2.30.2
+2.20.1
 

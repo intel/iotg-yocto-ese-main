@@ -1,7 +1,7 @@
-From a498b5d53bcce205035ce1b87dbe6e0da6ccc7ab Mon Sep 17 00:00:00 2001
+From 51f8c7fae4998d965bc6cde6c7b4f22ba703aa70 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Sun, 11 Sep 2022 10:43:29 -0700
-Subject: [PATCH 04/34] ui/gtk: adds status bar for expressing ups and fps
+Subject: [PATCH 04/37] ui/gtk: adds status bar for expressing ups and fps
 
 With a display option, "show-fps=on", qemu adds a status bar and print
 following performance numbers on the bar,
@@ -206,5 +206,5 @@ index eaa7026301..2e680df533 100644
  
      gtk_widget_show_all(s->window);
 -- 
-2.30.2
+2.20.1
 

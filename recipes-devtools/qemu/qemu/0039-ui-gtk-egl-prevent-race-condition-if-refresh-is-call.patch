@@ -1,0 +1,45 @@
+From c50044dd7a78ed9b4d626e768e48d3437af5addb Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 2 Feb 2023 19:05:23 -0800
+Subject: [PATCH 39/42] ui/gtk-egl: prevent race condition if refresh is called
+ right after dmabuf is submitted
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index 1e689bf197..b505a7a319 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -153,6 +153,10 @@ void gd_egl_refresh(DisplayChangeListener *dcl)
+         return;
+     }
+ 
++    if (vc->gfx.guest_fb.dmabuf && vc->gfx.guest_fb.dmabuf->draw_submitted) {
++        return;
++    }
++
+     if (!vc->gfx.esurface) {
+         gd_egl_init(vc);
+         if (!vc->gfx.esurface) {
+@@ -246,7 +250,6 @@ void gd_egl_scanout_texture(DisplayChangeListener *dcl,
+     eglMakeCurrent(qemu_egl_display, vc->gfx.esurface,
+                    vc->gfx.esurface, vc->gfx.ectx);
+ 
+-    gtk_egl_set_scanout_mode(vc, true);
+     egl_fb_setup_for_tex(&vc->gfx.guest_fb, backing_width, backing_height,
+                          backing_id, false);
+ }
+@@ -364,6 +367,7 @@ void gd_egl_flush(DisplayChangeListener *dcl,
+     if (vc->gfx.guest_fb.dmabuf) {
+         graphic_hw_gl_block(vc->gfx.dcl.con, true);
+         vc->gfx.guest_fb.dmabuf->draw_submitted = true;
++        gtk_egl_set_scanout_mode(vc, true);
+         gtk_widget_queue_draw_area(area, x, y, w, h);
+         return;
+     }
+-- 
+2.20.1
+

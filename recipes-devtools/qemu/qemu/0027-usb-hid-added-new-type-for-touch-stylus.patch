@@ -1,7 +1,7 @@
-From 614c38757fbfd183809f079341d362a011f44181 Mon Sep 17 00:00:00 2001
+From b9c08e670d40e18c152c66fbfb493d86879aca5a Mon Sep 17 00:00:00 2001
 From: "Raja Subramanian, Lakshmi Bai" <lakshmi.bai.raja.subramanian@intel.com>
 Date: Thu, 1 Dec 2022 22:26:19 +0530
-Subject: [PATCH 27/34] usb/hid: added new type for touch, stylus
+Subject: [PATCH 27/37] usb/hid: added new type for touch, stylus
 
 Stylus extension is provided using additional property for usb-tablet.
 
@@ -122,5 +122,5 @@ index bdd6d1ffaf..821ddebf5a 100644
  };
  
 -- 
-2.30.2
+2.20.1
 

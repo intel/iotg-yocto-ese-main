@@ -1,7 +1,7 @@
-From 51864b0d4a5ed34e8cc1b56b6ec80555e2610aaa Mon Sep 17 00:00:00 2001
+From b0da353480eb3ac920b4c0317cd9e26e1e04035d Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Thu, 15 Sep 2022 20:46:32 -0700
-Subject: [PATCH 11/34] ui/gtk: Factor out tab window creation into a separate
+Subject: [PATCH 11/37] ui/gtk: Factor out tab window creation into a separate
  function
 
 Pull the code that creates a new window associated with a notebook
@@ -17,7 +17,7 @@ Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
  1 file changed, 36 insertions(+), 36 deletions(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 988956845a..4a2fa2a6af 100644
+index 988956845a..d2d75ff07d 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -1435,6 +1435,41 @@ static gboolean gd_win_grab(void *opaque)
@@ -107,5 +107,5 @@ index 988956845a..4a2fa2a6af 100644
  
      window = gtk_widget_get_window(vc->gfx.drawing_area);
 -- 
-2.30.2
+2.20.1
 

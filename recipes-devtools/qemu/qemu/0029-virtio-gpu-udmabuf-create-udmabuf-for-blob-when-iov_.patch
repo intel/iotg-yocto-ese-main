@@ -1,7 +1,7 @@
-From 022195992ede0dc8dacb840d66915bac7240ae73 Mon Sep 17 00:00:00 2001
+From d751e94be8fec4d6da227246d898e968d1bbb8f8 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Wed, 14 Dec 2022 11:53:17 -0800
-Subject: [PATCH 30/34] virtio-gpu-udmabuf: create udmabuf for blob when
+Subject: [PATCH 29/37] virtio-gpu-udmabuf: create udmabuf for blob when
  iov_cnt == 1 if the size is bigger than the page
 
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
@@ -24,5 +24,5 @@ index 8bdf4bac6e..16fdd6207b 100644
      } else {
          virtio_gpu_create_udmabuf(res);
 -- 
-2.30.2
+2.20.1
 

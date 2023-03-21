@@ -1,7 +1,7 @@
-From db03b1f1fd27c98b9fdcccba734d5128c7d82c73 Mon Sep 17 00:00:00 2001
+From 3e5662c7240b55e424d9c1d0ac0a9417d5bf9032 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Wed, 14 Dec 2022 12:31:27 -0800
-Subject: [PATCH 32/34] hw/virtio : Adds support for
+Subject: [PATCH 31/37] hw/virtio : Adds support for
  VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM
 
 VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM -> DRM_FORMAT_ABGR8888
@@ -26,5 +26,5 @@ index 3ab7e2e958..8ee398bdd1 100644
  
  pixman_format_code_t qemu_drm_format_to_pixman(uint32_t drm_format)
 -- 
-2.30.2
+2.20.1
 

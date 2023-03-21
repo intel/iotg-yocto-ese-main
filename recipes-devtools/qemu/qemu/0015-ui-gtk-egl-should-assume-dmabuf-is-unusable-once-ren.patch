@@ -1,7 +1,7 @@
-From 69305cc603c197dafadc441cd125d63500c565df Mon Sep 17 00:00:00 2001
+From 9bf097403b40a9c4ccecc49c5689b064452b6c09 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 1 Dec 2022 14:19:22 -0800
-Subject: [PATCH 15/34] ui/gtk-egl: should assume dmabuf is unusable once
+Subject: [PATCH 15/37] ui/gtk-egl: should assume dmabuf is unusable once
  rendered
 
 Shouldn't try to recreate texture out of the submitted dmabuf in refresh
@@ -25,5 +25,5 @@ index a204d235b3..01a2ae7297 100644
  #endif
      }
 -- 
-2.30.2
+2.20.1
 

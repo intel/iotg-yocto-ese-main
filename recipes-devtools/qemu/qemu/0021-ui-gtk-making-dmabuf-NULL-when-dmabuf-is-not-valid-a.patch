@@ -1,7 +1,7 @@
-From 9d351d79363f0cde79066853f6b2069983b27365 Mon Sep 17 00:00:00 2001
+From 3d73b97b7c3c36922e8e2e3532a8e781f461704b Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 8 Dec 2022 12:40:16 -0800
-Subject: [PATCH 21/34] ui/gtk: making dmabuf NULL when dmabuf is not valid
+Subject: [PATCH 21/37] ui/gtk: making dmabuf NULL when dmabuf is not valid
  anymore
 
 It is needed to set vc->gfx.guest_fb.dmabuf to NULL to prevent any
@@ -13,7 +13,7 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index b13fb126c5..6f62232137 100644
+index a55244adbc..9e62c4a321 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -657,8 +657,12 @@ static bool gd_has_dmabuf(DisplayChangeListener *dcl)
@@ -30,5 +30,5 @@ index b13fb126c5..6f62232137 100644
  }
  
 -- 
-2.30.2
+2.20.1
 

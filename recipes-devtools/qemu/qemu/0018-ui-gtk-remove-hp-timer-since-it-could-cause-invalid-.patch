@@ -1,7 +1,7 @@
-From 00253a0e64c107831f68e315c951e690d867de37 Mon Sep 17 00:00:00 2001
+From 0264b520bf94cf7c5866485589ba2caa0cb1102d Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Wed, 7 Dec 2022 11:42:53 -0800
-Subject: [PATCH 18/34] ui/gtk: remove hp timer since it could cause invalid
+Subject: [PATCH 18/37] ui/gtk: remove hp timer since it could cause invalid
  memory access
 
 Kernel triggers HPD event again if the connection is unstable after
@@ -16,7 +16,7 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 5 insertions(+), 38 deletions(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 48e59b0a9e..797e0dad29 100644
+index 0cf23925db..7207039513 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -1643,50 +1643,17 @@ static void gd_monitor_check_vcs(GdkDisplay *dpy, GdkMonitor *monitor,
@@ -76,5 +76,5 @@ index 48e59b0a9e..797e0dad29 100644
  
  static void gd_monitor_remove(GdkDisplay *dpy, GdkMonitor *monitor,
 -- 
-2.30.2
+2.20.1
 

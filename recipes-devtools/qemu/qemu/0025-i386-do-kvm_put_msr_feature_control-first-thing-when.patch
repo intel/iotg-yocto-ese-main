@@ -1,7 +1,7 @@
-From 92d6de03347c284ddcf074152469685da4e1ad79 Mon Sep 17 00:00:00 2001
+From b5dfcf4a0b80828f8ac8b0ae10a076dc4863f71f Mon Sep 17 00:00:00 2001
 From: Vitaly Kuznetsov <vkuznets@redhat.com>
 Date: Thu, 18 Aug 2022 17:01:13 +0200
-Subject: [PATCH 25/34] i386: do kvm_put_msr_feature_control() first thing when
+Subject: [PATCH 25/37] i386: do kvm_put_msr_feature_control() first thing when
  vCPU is reset
 
 kvm_put_sregs2() fails to reset 'locked' CR4/CR0 bits upon vCPU reset when
@@ -54,5 +54,5 @@ index f148a6d52f..e90b074d67 100644
  
      if (level == KVM_PUT_FULL_STATE) {
 -- 
-2.30.2
+2.20.1
 

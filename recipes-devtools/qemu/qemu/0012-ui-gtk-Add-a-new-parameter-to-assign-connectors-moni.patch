@@ -1,7 +1,7 @@
-From bc340b1110facb6b9d18bfa53686198ae1f56753 Mon Sep 17 00:00:00 2001
+From cfba92b3f43931124d3c04a9bd525e40219a49f4 Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Fri, 16 Sep 2022 13:01:53 -0700
-Subject: [PATCH 12/34] ui/gtk: Add a new parameter to assign
+Subject: [PATCH 12/37] ui/gtk: Add a new parameter to assign
  connectors/monitors to GFX VCs (v2)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -98,7 +98,7 @@ index 31c04f7eea..2376af9780 100644
          Display video output via curses. For graphics device models
          which support a text mode, QEMU can display this output using a
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 4a2fa2a6af..fed1cae64f 100644
+index d2d75ff07d..dcba8307e4 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -37,6 +37,7 @@
@@ -444,5 +444,5 @@ index 4a2fa2a6af..fed1cae64f 100644
  
      vc->gfx.visible = true;
 -- 
-2.30.2
+2.20.1
 

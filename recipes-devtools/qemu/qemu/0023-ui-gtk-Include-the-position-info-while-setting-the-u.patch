@@ -1,7 +1,7 @@
-From b88c55814f8678a64b7221597c3d0533dc14bee2 Mon Sep 17 00:00:00 2001
+From 68ddfcbf4ecf487a4d28f900036f8967168dff4c Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Wed, 9 Nov 2022 13:44:39 -0800
-Subject: [PATCH 23/34] ui/gtk: Include the position info while setting the ui
+Subject: [PATCH 23/37] ui/gtk: Include the position info while setting the ui
  info
 
 In situtations where the Guest uses multiple displays/outputs, this
@@ -18,7 +18,7 @@ Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
  1 file changed, 20 insertions(+)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 6f62232137..161d8375a9 100644
+index 9e62c4a321..ae410970f4 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -795,12 +795,31 @@ static gboolean gd_window_close(GtkWidget *widget, GdkEvent *event,
@@ -62,5 +62,5 @@ index 6f62232137..161d8375a9 100644
  }
  
 -- 
-2.30.2
+2.20.1
 

@@ -1,7 +1,7 @@
-From 6a75083b200053218ed7215920e28d08dc75e523 Mon Sep 17 00:00:00 2001
+From 4103a73c9e0c1053b783537f5f7c65400c92c1c7 Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Thu, 15 Sep 2022 17:32:45 -0700
-Subject: [PATCH 10/34] ui/gtk: Disable the scanout when a detached tab is
+Subject: [PATCH 10/37] ui/gtk: Disable the scanout when a detached tab is
  closed
 
 When a detached tab window is closed, the underlying (EGL) context
@@ -64,5 +64,5 @@ index 59f3ecb6e9..988956845a 100644
      gd_widget_reparent(vc->window, s->notebook, vc->tab_item);
      gtk_notebook_set_tab_label_text(GTK_NOTEBOOK(s->notebook),
 -- 
-2.30.2
+2.20.1
 

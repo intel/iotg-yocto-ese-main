@@ -1,7 +1,7 @@
-From ac4d8b4d8beaddfa8dc38a6d7a30f78ed86e317b Mon Sep 17 00:00:00 2001
+From 030c4590fe6701e4dd4295a57cadeac0639de0d7 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 1 Dec 2022 14:11:22 -0800
-Subject: [PATCH 13/34] ui/egl-helpers: display EGL error if eglCreateImageKHR
+Subject: [PATCH 13/37] ui/egl-helpers: display EGL error if eglCreateImageKHR
  fails
 
 Let QEMU display error code if fails to create EGL image out of the
@@ -26,5 +26,5 @@ index 3a88245b67..d546252c5f 100644
      }
  
 -- 
-2.30.2
+2.20.1
 

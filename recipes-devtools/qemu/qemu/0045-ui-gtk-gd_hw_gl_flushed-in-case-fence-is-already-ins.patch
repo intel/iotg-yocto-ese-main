@@ -1,0 +1,41 @@
+From 883a3fd38a1811db7985890f9384fae95143cd67 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 2 Mar 2023 14:55:04 -0800
+Subject: [PATCH 45/45] ui/gtk: gd_hw_gl_flushed in case fence is already
+ inserted
+
+Just decrementing gl_block ref count is not enough if the fence
+was already inserted. In such case, another incrementation of the
+ref count can happen in fence call back, which leads to assert error.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 1a9f4fe145..2991292968 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1490,11 +1490,13 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+     if (event->window_state.new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
+         vc->gfx.visible = false;
+         gd_set_ui_size(vc, 0, 0);
+-        if (vc->gfx.guest_fb.dmabuf &&
+-            (vc->gfx.guest_fb.dmabuf->fence_fd >= 0 ||
+-            vc->gfx.guest_fb.dmabuf->draw_submitted)) {
+-            vc->gfx.guest_fb.dmabuf->draw_submitted = false;
+-            graphic_hw_gl_block(vc->gfx.dcl.con, false);
++        if (vc->gfx.guest_fb.dmabuf) {
++            if (vc->gfx.guest_fb.dmabuf->fence_fd > 0) {
++                gd_hw_gl_flushed(vc);
++            } else if (vc->gfx.guest_fb.dmabuf->draw_submitted) {
++                vc->gfx.guest_fb.dmabuf->draw_submitted = false;
++                graphic_hw_gl_block(vc->gfx.dcl.con, false);
++            }
+         }
+     } else {
+         GdkWindow *window;
+-- 
+2.20.1
+

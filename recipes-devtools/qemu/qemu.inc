@@ -52,14 +52,25 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0024-ui-gtk-Add-support-for-extended-absolute-mode-for-th.patch \
            file://0025-i386-do-kvm_put_msr_feature_control-first-thing-when.patch \
            file://0026-i386-reset-KVM-nested-state-upon-CPU-reset.patch \
-           file://0029-ui-console-call-dpy_gl_count_frame-only-if-it-exists.patch \
-           file://0030-virtio-gpu-udmabuf-create-udmabuf-for-blob-when-iov_.patch \
-           file://0031-ui-gtk-handling-placement-of-QEMU-windows-when-monit.patch \
-           file://0032-hw-virtio-Adds-support-for-VIRTIO_GPU_FORMAT_R8G8B8A.patch \
-           file://0033-ui-gtk-WA-for-Yocto-IceWM.patch \
-           file://0001-ui-gtk-fix-windows-state-event-call.patch \
-           file://0002-ui-gtk-set-the-default-size-of-new-window-to-vc-gfx..patch \
-           file://0001-ui-gtk-vc-page-number-correction.patch \
+           file://0027-usb-hid-added-new-type-for-touch-stylus.patch \
+           file://0028-ui-console-call-dpy_gl_count_frame-only-if-it-exists.patch \
+           file://0029-virtio-gpu-udmabuf-create-udmabuf-for-blob-when-iov_.patch \
+           file://0030-ui-gtk-handling-placement-of-QEMU-windows-when-monit.patch \
+           file://0031-hw-virtio-Adds-support-for-VIRTIO_GPU_FORMAT_R8G8B8A.patch \
+           file://0032-ui-gtk-WA-for-Yocto-IceWM.patch \
+           file://0033-ui-gtk-fix-windows-state-event-call.patch \
+           file://0034-ui-gtk-set-the-default-size-of-new-window-to-vc-gfx..patch \
+           file://0035-ui-gtk-vc-page-number-correction.patch \
+           file://0036-ui-gtk-disable-state-change-temporarily.patch \
+           file://0037-virtio-gpu-VIRTIO_GPU_RESP_ERR_OUT_OF_MEMORY-if-udma.patch \
+           file://0038-ui-console-display-inactive-display-output-when-repl.patch \
+           file://0039-ui-gtk-egl-prevent-race-condition-if-refresh-is-call.patch \
+           file://0040-virtio-gpu-replace-the-surface-with-null-surface-onl.patch \
+           file://0041-ui-gtk-egl-Make-sure-the-right-EGL-context-is-curren.patch \
+           file://0042-ui-gtk-use-handler-disconnect-then-reconnect.patch \
+           file://0043-ui-gtk-additional-unblocking-condition-in-window-ico.patch \
+           file://0044-ui-gtk-recover-window-in-all-events-other-than-minim.patch \
+           file://0045-ui-gtk-gd_hw_gl_flushed-in-case-fence-is-already-ins.patch \
            "
 BAR = "           file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"

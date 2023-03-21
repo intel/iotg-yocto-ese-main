@@ -1,7 +1,7 @@
-From e5f2711bff0caf623c66ef37c7ba685619fd1cc0 Mon Sep 17 00:00:00 2001
+From cc076bb5b05a6dbaa78a91a03fd5220c56c598c2 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Fri, 21 Oct 2022 12:59:17 -0700
-Subject: [PATCH 06/34] ui/gtk: skip drawing guest scanout when associated VC
+Subject: [PATCH 06/37] ui/gtk: skip drawing guest scanout when associated VC
  is invisible
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -145,5 +145,5 @@ index 2e680df533..f7bd506f04 100644
  
  static void early_gtk_display_init(DisplayOptions *opts)
 -- 
-2.30.2
+2.20.1
 

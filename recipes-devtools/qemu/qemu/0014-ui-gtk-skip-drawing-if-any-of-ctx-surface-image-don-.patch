@@ -1,7 +1,7 @@
-From ac95b259d4b26fd8e418c72b9fca4daf27abb36d Mon Sep 17 00:00:00 2001
+From 133d07d38a668b5464038c5bed4d2ac6645a2411 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 1 Dec 2022 14:15:10 -0800
-Subject: [PATCH 14/34] ui/gtk: skip drawing if any of ctx/surface/image don't
+Subject: [PATCH 14/37] ui/gtk: skip drawing if any of ctx/surface/image don't
  exist
 
 Render context/target could be removed by asynchronous monitor remove
@@ -29,5 +29,5 @@ index 31a3c1e656..a204d235b3 100644
                         vc->gfx.esurface, vc->gfx.ectx);
  
 -- 
-2.30.2
+2.20.1
 

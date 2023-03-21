@@ -1,7 +1,7 @@
-From 06c19bc30cbda0c6873d0db5abbfc5bf08a6754b Mon Sep 17 00:00:00 2001
+From 4294995ecc520665e08caa5170a075f1c1f42ae4 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Thu, 1 Dec 2022 14:37:48 -0800
-Subject: [PATCH 17/34] ui/gtk: unblock gl if draw submitted already or fence
+Subject: [PATCH 17/37] ui/gtk: unblock gl if draw submitted already or fence
  is not yet signaled
 
 Removing monitor while a guest frame is still being processed could block
@@ -18,7 +18,7 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 21 insertions(+), 10 deletions(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 202ac2240a..48e59b0a9e 100644
+index ea9e1e7956..0cf23925db 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -667,10 +667,12 @@ void gd_hw_gl_flushed(void *vcon)
@@ -74,5 +74,5 @@ index 202ac2240a..48e59b0a9e 100644
          }
      }
 -- 
-2.30.2
+2.20.1
 

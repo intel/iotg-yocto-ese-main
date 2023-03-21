@@ -1,7 +1,7 @@
-From 15fb60a11253da913086a9e608d4c3aabb0948a2 Mon Sep 17 00:00:00 2001
+From a8b4b3f271bdbb8a7453013978c21ab9736b603d Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Thu, 20 Oct 2022 17:47:35 -0700
-Subject: [PATCH 09/34] ui/gtk: Handle relative mode events correctly with
+Subject: [PATCH 09/37] ui/gtk: Handle relative mode events correctly with
  Wayland compositors
 
 gdk_device_warp() is a no-op when running in a Host environment that is
@@ -116,5 +116,5 @@ index 502f8817b5..59f3ecb6e9 100644
          GdkDisplay *dpy = gtk_widget_get_display(widget);
          GdkWindow *win = gtk_widget_get_window(widget);
 -- 
-2.30.2
+2.20.1
 
