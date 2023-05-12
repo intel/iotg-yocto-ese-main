@@ -1,0 +1,25 @@
+From 90d561e333552b7899d8b7a4a70dee8e23c0414a Mon Sep 17 00:00:00 2001
+From: KARN JYE LAU <karn.jye.lau@intel.com>
+Date: Wed, 8 Mar 2023 11:04:43 +0800
+Subject: [PATCH] Fix xdp_desc in xdp-tools.
+
+Signed-off-by: KARN JYE LAU <karn.jye.lau@intel.com>
+---
+ headers/linux/if_xdp.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/headers/linux/if_xdp.h b/headers/linux/if_xdp.h
+index a78a809..7c5168c 100644
+--- a/headers/linux/if_xdp.h
++++ b/headers/linux/if_xdp.h
+@@ -104,6 +104,7 @@ struct xdp_desc {
+ 	__u64 addr;
+ 	__u32 len;
+ 	__u32 options;
++	__u64 txtime;
+ };
+ 
+ /* UMEM descriptor is __u64 */
+-- 
+2.17.1
+
