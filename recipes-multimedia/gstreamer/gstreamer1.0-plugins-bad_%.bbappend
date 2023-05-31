@@ -9,9 +9,7 @@ SRC_URI:append = "\
         file://0001-Add-jpeg-error-report-to-GST-MSDK-onevpl.patch \
         "
 
-PACKAGECONFIG += "\
-        ${@bb.utils.contains('DISTRO_FEATURES', 'msdk', 'msdk', '', d)} \
-        "
+PACKAGECONFIG:append = " ${@bb.utils.contains('DISTRO_FEATURES', 'msdk', 'msdk', '', d)}"
 
 PACKAGECONFIG[msdk] = "-Dmsdk=enabled -Dmfx_api=MSDK,-Dmsdk=disabled,libgudev intel-mediasdk"
 
