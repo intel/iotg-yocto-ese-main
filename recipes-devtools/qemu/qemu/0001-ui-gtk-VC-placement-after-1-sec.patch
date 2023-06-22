@@ -1,0 +1,48 @@
+From 260f964bc011b6956ca57396e757435140a2ee91 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 16 May 2023 10:24:31 -0700
+Subject: [PATCH] ui/gtk: VC placement after 1 sec
+
+Delayed placement of QEMU windows is needed in HPD scenario
+because some linux compositor randomly places those QEMU windows
+right after display hot plug-in.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index e3ab42802d..fccb96eb21 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1742,7 +1742,7 @@ static void gd_monitor_check_vcs(GdkDisplay *dpy, GtkDisplayState *s)
+     }
+ }
+ 
+-static void gd_monitors_changed(GdkScreen *scr, void *opaque)
++static void gd_monitors_reset_timer(void *opaque)
+ {
+     GtkDisplayState *s = opaque;
+     GdkDisplay *dpy = gdk_display_get_default();
+@@ -1750,6 +1750,17 @@ static void gd_monitors_changed(GdkScreen *scr, void *opaque)
+     gd_monitor_check_vcs(dpy, s);
+ }
+ 
++static void gd_monitors_changed(GdkScreen *scr, void *opaque)
++{
++    GtkDisplayState *s = opaque;
++    QEMUTimer *mon_reset_timer;
++
++    mon_reset_timer = timer_new_ms(QEMU_CLOCK_REALTIME,
++                                   gd_monitors_reset_timer, s);
++    timer_mod(mon_reset_timer,
++              qemu_clock_get_ms(QEMU_CLOCK_REALTIME) + 1000);
++}
++
+ static VirtualConsole *gd_next_gfx_vc(GtkDisplayState *s)
+ {
+     VirtualConsole *vc;
+-- 
+2.34.1
+

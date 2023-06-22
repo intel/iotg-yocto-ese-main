@@ -71,6 +71,9 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0043-ui-gtk-additional-unblocking-condition-in-window-ico.patch \
            file://0044-ui-gtk-recover-window-in-all-events-other-than-minim.patch \
            file://0045-ui-gtk-gd_hw_gl_flushed-in-case-fence-is-already-ins.patch \
+           file://0001-ui-gtk-Added-an-input-mode.patch \
+           file://0001-gtk-HPD-feature-optimization.patch \
+           file://0001-ui-gtk-VC-placement-after-1-sec.patch \
            "
 BAR = "           file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
