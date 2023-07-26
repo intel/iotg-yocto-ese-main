@@ -1,3 +1,3 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI:append = " file://0001-Return-MFX_ERR_MORE_SURAFCE-for-VP9-non-display-fram.patch \
+SRC_URI:append = " file://0001-Revert-Enable-CM-copy-by-default-on-TGL-RKL-ADL-Linu.patch \
                  "

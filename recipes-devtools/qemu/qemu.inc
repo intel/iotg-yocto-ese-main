@@ -74,6 +74,7 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0001-ui-gtk-Added-an-input-mode.patch \
            file://0001-gtk-HPD-feature-optimization.patch \
            file://0001-ui-gtk-VC-placement-after-1-sec.patch \
+           file://0001-qemu-remove-invisible-boundary-of-guest-mouse-cursor.patch \
            "
 BAR = "           file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"

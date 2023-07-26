@@ -8,7 +8,7 @@ SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 PV = "15.5+git${SRCPV}"
-SRCREV = "f23883ccf78f1f605a272f9e5700f47e5494a71d"
+SRCREV = "a2da05fcb8972628bec08e4adfc13abbafc319ad"
 
 inherit deploy
 

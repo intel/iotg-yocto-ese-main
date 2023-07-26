@@ -76,7 +76,7 @@ do_deploy() {
 	install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${DEPLOYDIR}
 	cat > ${DEPLOYDIR}/${PN}.sbat.csv << __END
 sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
-grub,3,Free Software Foundation,grub,${PV},https//www.gnu.org/software/grub/
+grub,1,Free Software Foundation,grub,${PV},https//www.gnu.org/software/grub/
 grub.ese,1,ESE,${PN},${PV}-${PR},https://github.com/intel/iotg-yocto-ese-main
 __END
 }
