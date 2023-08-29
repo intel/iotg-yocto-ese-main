@@ -1,0 +1,181 @@
+From f7be6ee509838896961def47767b1c2b1333cfab Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Mon, 22 May 2023 11:13:31 -0700
+Subject: [PATCH 31/31] virtio-gpu: io mediator for blob=true
+
+v2:
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ hw/display/virtio-gpu.c | 71 +++++++++++++++++++++++++++++------------
+ ui/gtk-egl.c            |  1 +
+ ui/gtk.c                | 10 ++++++
+ 3 files changed, 62 insertions(+), 20 deletions(-)
+
+diff --git a/hw/display/virtio-gpu.c b/hw/display/virtio-gpu.c
+index 21aeaba99b..df8e7f0412 100644
+--- a/hw/display/virtio-gpu.c
++++ b/hw/display/virtio-gpu.c
+@@ -1193,12 +1193,18 @@ static int virtio_gpu_save(QEMUFile *f, void *opaque, size_t size,
+         qemu_put_be32(f, res->height);
+         qemu_put_be32(f, res->format);
+         qemu_put_be32(f, res->iov_cnt);
++        qemu_put_be64(f, (unsigned long)res->blob);
++        qemu_put_be64(f, res->blob_size);
++        qemu_put_be32(f, res->dmabuf_fd);
+         for (i = 0; i < res->iov_cnt; i++) {
+             qemu_put_be64(f, res->addrs[i]);
++            qemu_put_be64(f, (unsigned long)res->iov[i].iov_base);
+             qemu_put_be32(f, res->iov[i].iov_len);
+         }
+-        qemu_put_buffer(f, (void *)pixman_image_get_data(res->image),
+-                        pixman_image_get_stride(res->image) * res->height);
++        if (!res->blob && res->image) {
++            qemu_put_buffer(f, (void *)pixman_image_get_data(res->image),
++                            pixman_image_get_stride(res->image) * res->height);
++        }
+     }
+     qemu_put_be32(f, 0); /* end of list */
+ 
+@@ -1229,22 +1235,27 @@ static int virtio_gpu_load(QEMUFile *f, void *opaque, size_t size,
+         res->height = qemu_get_be32(f);
+         res->format = qemu_get_be32(f);
+         res->iov_cnt = qemu_get_be32(f);
++        res->blob = (void *)qemu_get_be64(f);
++        res->blob_size = qemu_get_be64(f);
++        res->dmabuf_fd = qemu_get_be32(f);
+ 
+         /* allocate */
+         pformat = virtio_gpu_get_pixman_format(res->format);
+-        if (!pformat) {
+-            g_free(res);
+-            return -EINVAL;
+-        }
+-        res->image = pixman_image_create_bits(pformat,
+-                                              res->width, res->height,
+-                                              NULL, 0);
+-        if (!res->image) {
++        if ((!res->blob) && !pformat) {
+             g_free(res);
+             return -EINVAL;
+         }
+ 
+-        res->hostmem = calc_image_hostmem(pformat, res->width, res->height);
++        if (!res->blob) {
++            res->image = pixman_image_create_bits(pformat,
++                                                  res->width, res->height,
++                                                  NULL, 0);
++            if (!res->image) {
++                g_free(res);
++                return -EINVAL;
++            }
++            res->hostmem = calc_image_hostmem(pformat, res->width, res->height);
++        }
+ 
+         res->addrs = g_new(uint64_t, res->iov_cnt);
+         res->iov = g_new(struct iovec, res->iov_cnt);
+@@ -1252,10 +1263,14 @@ static int virtio_gpu_load(QEMUFile *f, void *opaque, size_t size,
+         /* read data */
+         for (i = 0; i < res->iov_cnt; i++) {
+             res->addrs[i] = qemu_get_be64(f);
++            res->iov[i].iov_base = (void *)qemu_get_be64(f);
+             res->iov[i].iov_len = qemu_get_be32(f);
+         }
+-        qemu_get_buffer(f, (void *)pixman_image_get_data(res->image),
+-                        pixman_image_get_stride(res->image) * res->height);
++
++        if (!res->blob) {
++            qemu_get_buffer(f, (void *)pixman_image_get_data(res->image),
++                            pixman_image_get_stride(res->image) * res->height);
++        }
+ 
+         /* restore mapping */
+         for (i = 0; i < res->iov_cnt; i++) {
+@@ -1277,14 +1292,23 @@ static int virtio_gpu_load(QEMUFile *f, void *opaque, size_t size,
+                 /* ...and the mappings for previous loop iterations */
+                 res->iov_cnt = i;
+                 virtio_gpu_cleanup_mapping(g, res);
+-                pixman_image_unref(res->image);
++                if (res->image) {
++                    pixman_image_unref(res->image);
++                }
+                 g_free(res);
+                 return -EINVAL;
+             }
+         }
+ 
++        if (res->blob && (res->dmabuf_fd > 0)) {
++            res->dmabuf_fd = 0;
++            virtio_gpu_init_udmabuf(res);
++        }
++
+         QTAILQ_INSERT_HEAD(&g->reslist, res, next);
+-        g->hostmem += res->hostmem;
++        if (!res->blob) {
++            g->hostmem += res->hostmem;
++        }
+ 
+         resource_id = qemu_get_be32(f);
+     }
+@@ -1300,13 +1324,20 @@ static int virtio_gpu_load(QEMUFile *f, void *opaque, size_t size,
+         if (!res) {
+             return -EINVAL;
+         }
+-        scanout->ds = qemu_create_displaysurface_pixman(res->image);
+-        if (!scanout->ds) {
+-            return -EINVAL;
++        if (res->blob) {
++            assert(g->dmabuf.primary[i] != NULL);
++            g->dmabuf.primary[i]->buf.fd = res->dmabuf_fd;
++           dpy_gl_scanout_dmabuf(scanout->con, &g->dmabuf.primary[i]->buf);
++            scanout->ds = NULL;
++        } else if (!res->blob && res->image) {
++            scanout->ds = qemu_create_displaysurface_pixman(res->image);
++            if (!scanout->ds) {
++                return -EINVAL;
++            }
++            dpy_gfx_replace_surface(scanout->con, scanout->ds);
++            dpy_gfx_update_full(scanout->con);
+         }
+ 
+-        dpy_gfx_replace_surface(scanout->con, scanout->ds);
+-        dpy_gfx_update_full(scanout->con);
+         if (scanout->cursor.resource_id) {
+             update_cursor(g, &scanout->cursor);
+         }
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index c1117d966c..f07150d120 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -287,6 +287,7 @@ void gd_egl_scanout_dmabuf(DisplayChangeListener *dcl,
+     if (dmabuf->allow_fences) {
+         vc->gfx.guest_fb.dmabuf = dmabuf;
+     }
++    vc->gfx.glupdates = 0;
+ #endif
+ }
+ 
+diff --git a/ui/gtk.c b/ui/gtk.c
+index dba105a3ae..c4a3e3aedf 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -747,6 +747,16 @@ static const DisplayGLCtxOps egl_ctx_ops = {
+ static void gd_change_runstate(void *opaque, bool running, RunState state)
+ {
+     GtkDisplayState *s = opaque;
++    VirtualConsole *vc;
++    int i;
++
++    if (state == RUN_STATE_SAVE_VM) {
++        for (i = 0; i < s->nb_vcs; i++) {
++	    vc = &s->vc[i];
++	    /* cancel any on-going rendering sequence */
++	    gd_hw_gl_flushed(vc);
++        }
++    }
+ 
+     gd_update_caption(s);
+ }
+-- 
+2.34.1
+

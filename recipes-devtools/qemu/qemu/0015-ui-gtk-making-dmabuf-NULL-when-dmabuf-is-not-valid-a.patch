@@ -1,0 +1,34 @@
+From 6c5cdc499bc515c3c9f9665907461c51ceeba2c2 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 8 Dec 2022 12:40:16 -0800
+Subject: [PATCH 15/28] ui/gtk: making dmabuf NULL when dmabuf is not valid
+ anymore
+
+It is needed to set vc->gfx.guest_fb.dmabuf to NULL to prevent any
+further access to the structure once it's released.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index e85d232a88..835a7dcf0c 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -581,8 +581,12 @@ static bool gd_has_dmabuf(DisplayChangeListener *dcl)
+ static void gd_gl_release_dmabuf(DisplayChangeListener *dcl,
+                                  QemuDmaBuf *dmabuf)
+ {
++    VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
+ #ifdef CONFIG_GBM
+     egl_dmabuf_release_texture(dmabuf);
++    if (vc->gfx.guest_fb.dmabuf == dmabuf) {
++        vc->gfx.guest_fb.dmabuf = NULL;
++    }
+ #endif
+ }
+ 
+-- 
+2.34.1
+
