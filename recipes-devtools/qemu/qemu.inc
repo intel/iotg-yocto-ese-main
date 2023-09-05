@@ -62,6 +62,7 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0029-ui-gtk-Added-an-input-mode.patch \
            file://0030-qemu-remove-invisible-boundary-of-guest-mouse-cursor.patch \
            file://0031-virtio-gpu-io-mediator-for-blob-true.patch \
+           file://0001-ui-gtk-fullscreen-control-on-all-QEMU-windows.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
