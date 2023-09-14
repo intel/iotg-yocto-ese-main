@@ -1,0 +1,29 @@
+From da88604d09719495067f58b6954f9921454829c8 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 19 Jul 2022 16:36:43 -0700
+Subject: [PATCH 02/37] ui/gtk: set the size of detached window to default
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 1467b8c7d7..eaa7026301 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1361,6 +1361,11 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
+ 
+         g_signal_connect(vc->window, "delete-event",
+                          G_CALLBACK(gd_tab_window_close), vc);
++
++        gtk_window_set_default_size(GTK_WINDOW(vc->window),
++                                    surface_width(vc->gfx.ds),
++                                    surface_height(vc->gfx.ds));
++
+         gtk_widget_show_all(vc->window);
+ 
+         if (qemu_console_is_graphic(vc->gfx.dcl.con)) {
+-- 
+2.20.1
+

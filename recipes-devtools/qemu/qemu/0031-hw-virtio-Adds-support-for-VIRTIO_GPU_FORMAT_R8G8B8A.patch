@@ -1,0 +1,30 @@
+From 3e5662c7240b55e424d9c1d0ac0a9417d5bf9032 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 14 Dec 2022 12:31:27 -0800
+Subject: [PATCH 31/37] hw/virtio : Adds support for
+ VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM
+
+VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM -> DRM_FORMAT_ABGR8888
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/qemu-pixman.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/ui/qemu-pixman.c b/ui/qemu-pixman.c
+index 3ab7e2e958..8ee398bdd1 100644
+--- a/ui/qemu-pixman.c
++++ b/ui/qemu-pixman.c
+@@ -95,7 +95,8 @@ static const struct {
+ } drm_format_pixman_map[] = {
+     { DRM_FORMAT_RGB888,   PIXMAN_LE_r8g8b8   },
+     { DRM_FORMAT_ARGB8888, PIXMAN_LE_a8r8g8b8 },
+-    { DRM_FORMAT_XRGB8888, PIXMAN_LE_x8r8g8b8 }
++    { DRM_FORMAT_XRGB8888, PIXMAN_LE_x8r8g8b8 },
++    { DRM_FORMAT_ABGR8888, PIXMAN_BE_r8g8b8a8 }
+ };
+ 
+ pixman_format_code_t qemu_drm_format_to_pixman(uint32_t drm_format)
+-- 
+2.20.1
+

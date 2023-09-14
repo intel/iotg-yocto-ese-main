@@ -1,0 +1,44 @@
+From 154354a09da741b86b5d1727ed00ea0f030f48ce Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Mon, 6 Feb 2023 12:17:55 -0800
+Subject: [PATCH 42/42] ui/gtk: use handler disconnect then reconnect
+
+Instead of blocking and unblocking existing handler, it is better
+to disconnect it then reconnect to avoid warning message of the
+duplicated blocking of handler in certain cases.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 4678654bb6..6adf1c9097 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1515,8 +1515,9 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+     GtkDisplayState *s = vc->s;
+ 
+     vc->gfx.visible = false;
+-    g_signal_handlers_block_by_func(vc->window, G_CALLBACK(gd_window_state_event),
+-                                    vc);
++    g_signal_handlers_disconnect_by_func(vc->window,
++                                         G_CALLBACK(gd_window_state_event),
++                                         vc);
+     gd_set_ui_size(vc, 0, 0);
+ 
+     if (vc->gfx.guest_fb.dmabuf &&
+@@ -1661,8 +1662,8 @@ static void gd_window_show_on_monitor(GdkDisplay *dpy, VirtualConsole *vc,
+     gd_set_ui_size(vc, gdk_window_get_width(window),
+                    gdk_window_get_height(window));
+     gd_update_cursor(vc);
+-    g_signal_handlers_unblock_by_func(vc->window, G_CALLBACK(gd_window_state_event),
+-                                      vc);
++    g_signal_connect(vc->window, "window-state-event",
++                     G_CALLBACK(gd_window_state_event), vc);
+ }
+ 
+ static int gd_monitor_lookup(GdkDisplay *dpy, char *label)
+-- 
+2.20.1
+

@@ -1,0 +1,28 @@
+From 9465b8713c26e3ce50a80feaa43ed39842be15c0 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 7 Dec 2022 11:46:23 -0800
+Subject: [PATCH 19/37] ui/gtk: make sure window is in shown state
+
+It is possible the window is in hidden state so it should be forced to
+be shown again when show-on-monitor call is executed for the window.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 7207039513..a55244adbc 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1564,6 +1564,7 @@ static void gd_window_show_on_monitor(GdkDisplay *dpy, VirtualConsole *vc,
+     if (!vc->window) {
+         gd_tab_window_create(vc);
+     }
++    gdk_window_show(gtk_widget_get_window(vc->window));
+     if (s->opts->has_full_screen && s->opts->full_screen) {
+         s->full_screen = TRUE;
+         gtk_widget_set_size_request(vc->gfx.drawing_area, -1, -1);
+-- 
+2.20.1
+

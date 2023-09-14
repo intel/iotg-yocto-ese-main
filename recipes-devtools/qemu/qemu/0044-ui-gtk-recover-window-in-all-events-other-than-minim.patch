@@ -1,0 +1,30 @@
+From a3bd4f23b0a80bb454bb54aec4986db4e82a22e1 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 28 Feb 2023 20:59:59 -0800
+Subject: [PATCH 44/44] ui/gtk: recover window in all events other than
+ minimizing
+
+Event, GDK_WINDOW_STATE_FOCUSED doesn't cover all the GTK windows restoring
+situations especially when alt+ctrl+'d' is used to reappear all GTK windows.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index f0f5115550..1a9f4fe145 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1496,7 +1496,7 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+             vc->gfx.guest_fb.dmabuf->draw_submitted = false;
+             graphic_hw_gl_block(vc->gfx.dcl.con, false);
+         }
+-    } else if (event->window_state.new_window_state & GDK_WINDOW_STATE_FOCUSED) {
++    } else {
+         GdkWindow *window;
+         window = gtk_widget_get_window(vc->gfx.drawing_area);
+ 
+-- 
+2.20.1
+

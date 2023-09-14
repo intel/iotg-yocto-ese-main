@@ -1,0 +1,45 @@
+From 41189aed67ef46b901a5dae6d9692211d01aa786 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 7 Dec 2022 17:10:04 -0800
+Subject: [PATCH 20/37] ui/gtk: configure the area of the texture correctly
+
+x and y offsets and width and height of the scanout texture is not
+correctly configured.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c     | 3 ++-
+ ui/gtk-gl-area.c | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index acfca66faf..1e689bf197 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -271,7 +271,8 @@ void gd_egl_scanout_dmabuf(DisplayChangeListener *dcl,
+ 
+     gd_egl_scanout_texture(dcl, dmabuf->texture,
+                            false, dmabuf->width, dmabuf->height,
+-                           0, 0, dmabuf->width, dmabuf->height);
++                           dmabuf->x, dmabuf->y, dmabuf->scanout_width,
++                           dmabuf->scanout_height);
+ 
+     if (dmabuf->allow_fences) {
+         vc->gfx.guest_fb.dmabuf = dmabuf;
+diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
+index 07b5c9d5e5..649934efc4 100644
+--- a/ui/gtk-gl-area.c
++++ b/ui/gtk-gl-area.c
+@@ -314,7 +314,8 @@ void gd_gl_area_scanout_dmabuf(DisplayChangeListener *dcl,
+ 
+     gd_gl_area_scanout_texture(dcl, dmabuf->texture,
+                                false, dmabuf->width, dmabuf->height,
+-                               0, 0, dmabuf->width, dmabuf->height);
++                               dmabuf->x, dmabuf->y, dmabuf->scanout_width,
++                               dmabuf->scanout_height);
+ 
+     if (dmabuf->allow_fences) {
+         vc->gfx.guest_fb.dmabuf = dmabuf;
+-- 
+2.20.1
+

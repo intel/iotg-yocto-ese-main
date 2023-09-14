@@ -1,0 +1,78 @@
+From 4294995ecc520665e08caa5170a075f1c1f42ae4 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 1 Dec 2022 14:37:48 -0800
+Subject: [PATCH 17/37] ui/gtk: unblock gl if draw submitted already or fence
+ is not yet signaled
+
+Removing monitor while a guest frame is still being processed could block
+guest scanout render pipe line. To avoid this sitation, now the code
+checks whether there is on-going frame that wasn't render event yet for
+it, it cancels it and unblock the pipeline.
+
+ALso, it is needed to manually flush pipeline in case the frame is already
+in draw queue but the fence is not yet signaled.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index ea9e1e7956..0cf23925db 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -667,10 +667,12 @@ void gd_hw_gl_flushed(void *vcon)
+     VirtualConsole *vc = vcon;
+     QemuDmaBuf *dmabuf = vc->gfx.guest_fb.dmabuf;
+ 
+-    qemu_set_fd_handler(dmabuf->fence_fd, NULL, NULL, NULL);
+-    close(dmabuf->fence_fd);
+-    dmabuf->fence_fd = -1;
+-    graphic_hw_gl_block(vc->gfx.dcl.con, false);
++    if (dmabuf && dmabuf->fence_fd > 0) {
++        qemu_set_fd_handler(dmabuf->fence_fd, NULL, NULL, NULL);
++        close(dmabuf->fence_fd);
++        dmabuf->fence_fd = -1;
++        graphic_hw_gl_block(vc->gfx.dcl.con, false);
++    }
+ }
+ 
+ /** DisplayState Callbacks (opengl version) **/
+@@ -1430,6 +1432,20 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+ 
+     vc->gfx.visible = false;
+     gd_set_ui_size(vc, 0, 0);
++
++    if (vc->gfx.guest_fb.dmabuf &&
++        vc->gfx.guest_fb.dmabuf->draw_submitted) {
++        vc->gfx.guest_fb.dmabuf->draw_submitted = false;
++        graphic_hw_gl_block(vc->gfx.dcl.con, false);
++    }
++
++    gd_hw_gl_flushed(vc);
++
++    if (vc->window == s->window) {
++        gdk_window_hide(gtk_widget_get_window(vc->window));
++        return TRUE;
++    }
++
+     dpy_gl_scanout_disable(vc->gfx.dcl.con);
+     gtk_widget_set_sensitive(vc->menu_item, true);
+     gd_widget_reparent(vc->window, s->notebook, vc->tab_item);
+@@ -1684,12 +1700,7 @@ static void gd_monitor_remove(GdkDisplay *dpy, GdkMonitor *monitor,
+         vc = &s->vc[i];
+         if (vc->monitor == monitor) {
+             vc->monitor = NULL;
+-            if (vc->window == s->window) {
+-                gdk_window_hide(gtk_widget_get_window(vc->window));
+-            } else {
+-                gd_tab_window_close(NULL, NULL, vc);
+-            }
+-            gd_set_ui_size(vc, 0, 0);
++            gd_tab_window_close(NULL, NULL, vc);
+             break;
+         }
+     }
+-- 
+2.20.1
+

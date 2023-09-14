@@ -1,0 +1,28 @@
+From 8991fa819f42ea3f475720d1f05ace6557255ac7 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 14 Dec 2022 20:58:56 -0800
+Subject: [PATCH 32/37] ui/gtk: WA for Yocto IceWM
+
+hide ui instead of completely removing window
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index aa5545e254..8b28f0204b 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1489,7 +1489,7 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+ 
+     gd_hw_gl_flushed(vc);
+ 
+-    if (vc->window == s->window) {
++    if (vc->window) {// == s->window) {
+         gdk_window_hide(gtk_widget_get_window(vc->window));
+         return TRUE;
+     }
+-- 
+2.20.1
+

@@ -1,0 +1,72 @@
+From b9e34ae687947bee010d8356864bc1d7bdbc6a73 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Fri, 13 Jan 2023 11:16:24 -0800
+Subject: [PATCH 33/37] ui/gtk: fix windows state event call
+
+fixing windows state change to make it work on window minimize/reactivate
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 8b28f0204b..653dce9ce9 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1524,8 +1524,19 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+     }
+ 
+     if (event->window_state.new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
+-	vc->gfx.visible = false;
+-    } else {
++        vc->gfx.visible = false;
++        gd_set_ui_size(vc, 0, 0);
++        if (vc->gfx.guest_fb.dmabuf &&
++            vc->gfx.guest_fb.dmabuf->draw_submitted) {
++            vc->gfx.guest_fb.dmabuf->draw_submitted = false;
++            graphic_hw_gl_block(vc->gfx.dcl.con, false);
++        }
++    } else if (event->window_state.new_window_state & GDK_WINDOW_STATE_FOCUSED) {
++        GdkWindow *window;
++        window = gtk_widget_get_window(vc->gfx.drawing_area);
++        gd_set_ui_size(vc, gdk_window_get_width(window),
++                       gdk_window_get_height(window));
++
+         vc->gfx.visible = true;
+     }
+ 
+@@ -1565,6 +1576,8 @@ static void gd_tab_window_create(VirtualConsole *vc)
+ 
+     g_signal_connect(vc->window, "delete-event",
+ 		     G_CALLBACK(gd_tab_window_close), vc);
++    g_signal_connect(vc->window, "window-state-event",
++                     G_CALLBACK(gd_window_state_event), vc);
+     gtk_widget_show_all(vc->window);
+ 
+     if (qemu_console_is_graphic(vc->gfx.dcl.con)) {
+@@ -2434,9 +2447,6 @@ static void gd_connect_signals(GtkDisplayState *s)
+ 
+     g_signal_connect(s->window, "delete-event",
+                      G_CALLBACK(gd_window_close), s);
+-    g_signal_connect(s->window, "window-state-event",
+-                     G_CALLBACK(gd_window_state_event),
+-                     gd_vc_find_current(s));
+     g_signal_connect(s->pause_item, "activate",
+                      G_CALLBACK(gd_menu_pause), s);
+     g_signal_connect(s->reset_item, "activate",
+@@ -2825,6 +2835,11 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+     gtk_widget_show_all(s->window);
+ 
+     vc = gd_vc_find_current(s);
++
++    g_signal_connect(s->window, "window-state-event",
++                     G_CALLBACK(gd_window_state_event),
++                     vc);
++
+     gtk_widget_set_sensitive(s->view_menu, vc != NULL);
+ #ifdef CONFIG_VTE
+     gtk_widget_set_sensitive(s->copy_item,
+-- 
+2.20.1
+

@@ -1,0 +1,85 @@
+From 7ce11e7117b8ea53f9ee4c85741d7138f34cca34 Mon Sep 17 00:00:00 2001
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+Date: Thu, 18 Aug 2022 17:01:12 +0200
+Subject: [PATCH 26/37] i386: reset KVM nested state upon CPU reset
+
+Make sure env->nested_state is cleaned up when a vCPU is reset, it may
+be stale after an incoming migration, kvm_arch_put_registers() may
+end up failing or putting vCPU in a weird state.
+
+Reviewed-by: Maxim Levitsky <mlevitsk@redhat.com>
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Message-Id: <20220818150113.479917-2-vkuznets@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ target/i386/kvm/kvm.c | 37 +++++++++++++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 10 deletions(-)
+
+diff --git a/target/i386/kvm/kvm.c b/target/i386/kvm/kvm.c
+index e90b074d67..a1fd1f5379 100644
+--- a/target/i386/kvm/kvm.c
++++ b/target/i386/kvm/kvm.c
+@@ -1695,6 +1695,30 @@ static void kvm_init_xsave(CPUX86State *env)
+            env->xsave_buf_len);
+ }
+ 
++static void kvm_init_nested_state(CPUX86State *env)
++{
++    struct kvm_vmx_nested_state_hdr *vmx_hdr;
++    uint32_t size;
++
++    if (!env->nested_state) {
++        return;
++    }
++
++    size = env->nested_state->size;
++
++    memset(env->nested_state, 0, size);
++    env->nested_state->size = size;
++
++    if (cpu_has_vmx(env)) {
++        env->nested_state->format = KVM_STATE_NESTED_FORMAT_VMX;
++        vmx_hdr = &env->nested_state->hdr.vmx;
++        vmx_hdr->vmxon_pa = -1ull;
++        vmx_hdr->vmcs12_pa = -1ull;
++    } else if (cpu_has_svm(env)) {
++        env->nested_state->format = KVM_STATE_NESTED_FORMAT_SVM;
++    }
++}
++
+ int kvm_arch_init_vcpu(CPUState *cs)
+ {
+     struct {
+@@ -2122,19 +2146,10 @@ int kvm_arch_init_vcpu(CPUState *cs)
+         assert(max_nested_state_len >= offsetof(struct kvm_nested_state, data));
+ 
+         if (cpu_has_vmx(env) || cpu_has_svm(env)) {
+-            struct kvm_vmx_nested_state_hdr *vmx_hdr;
+-
+             env->nested_state = g_malloc0(max_nested_state_len);
+             env->nested_state->size = max_nested_state_len;
+ 
+-            if (cpu_has_vmx(env)) {
+-                env->nested_state->format = KVM_STATE_NESTED_FORMAT_VMX;
+-                vmx_hdr = &env->nested_state->hdr.vmx;
+-                vmx_hdr->vmxon_pa = -1ull;
+-                vmx_hdr->vmcs12_pa = -1ull;
+-            } else {
+-                env->nested_state->format = KVM_STATE_NESTED_FORMAT_SVM;
+-            }
++            kvm_init_nested_state(env);
+         }
+     }
+ 
+@@ -2199,6 +2214,8 @@ void kvm_arch_reset_vcpu(X86CPU *cpu)
+     /* enabled by default */
+     env->poll_control_msr = 1;
+ 
++    kvm_init_nested_state(env);
++
+     sev_es_set_reset_vector(CPU(cpu));
+ }
+ 
+-- 
+2.20.1
+
