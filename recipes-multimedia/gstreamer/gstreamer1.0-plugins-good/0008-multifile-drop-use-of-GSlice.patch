@@ -1,0 +1,119 @@
+From c467e17c73398492175a7f614ff6ed9f767c65a7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:31:29 +0000
+Subject: [PATCH 08/16] multifile: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/multifile/gstsplitmuxpartreader.c |  6 +++---
+ gst/multifile/gstsplitmuxsink.c       | 14 +++++++-------
+ gst/multifile/gstsplitmuxsrc.c        |  2 +-
+ 3 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/gst/multifile/gstsplitmuxpartreader.c b/gst/multifile/gstsplitmuxpartreader.c
+index 54b4eeec..b7d79fb6 100644
+--- a/gst/multifile/gstsplitmuxpartreader.c
++++ b/gst/multifile/gstsplitmuxpartreader.c
+@@ -203,7 +203,7 @@ static void
+ splitmux_part_free_queue_item (GstDataQueueItem * item)
+ {
+   gst_mini_object_unref (item->object);
+-  g_slice_free (GstDataQueueItem, item);
++  g_free (item);
+ }
+ 
+ static GstFlowReturn
+@@ -251,7 +251,7 @@ splitmux_part_pad_chain (GstPad * pad, GstObject * parent, GstBuffer * buf)
+   /* We are active, and one queue is empty, place this buffer in
+    * the dataqueue */
+   GST_LOG_OBJECT (reader, "Enqueueing buffer %" GST_PTR_FORMAT, buf);
+-  item = g_slice_new (GstDataQueueItem);
++  item = g_new (GstDataQueueItem, 1);
+   item->destroy = (GDestroyNotify) splitmux_part_free_queue_item;
+   item->object = GST_MINI_OBJECT (buf);
+   item->size = gst_buffer_get_size (buf);
+@@ -341,7 +341,7 @@ enqueue_event (GstSplitMuxPartReader * reader, GstSplitMuxPartPad * part_pad,
+   GstDataQueueItem *item;
+ 
+   GST_LOG_OBJECT (reader, "Enqueueing event %" GST_PTR_FORMAT, event);
+-  item = g_slice_new (GstDataQueueItem);
++  item = g_new (GstDataQueueItem, 1);
+   item->destroy = (GDestroyNotify) splitmux_part_free_queue_item;
+   item->object = GST_MINI_OBJECT (event);
+   item->size = 0;
+diff --git a/gst/multifile/gstsplitmuxsink.c b/gst/multifile/gstsplitmuxsink.c
+index 012ca3e4..fd5a09e1 100644
+--- a/gst/multifile/gstsplitmuxsink.c
++++ b/gst/multifile/gstsplitmuxsink.c
+@@ -252,32 +252,32 @@ static GstClockTime calculate_next_max_timecode (GstSplitMuxSink * splitmux,
+ static MqStreamBuf *
+ mq_stream_buf_new (void)
+ {
+-  return g_slice_new0 (MqStreamBuf);
++  return g_new0 (MqStreamBuf, 1);
+ }
+ 
+ static void
+ mq_stream_buf_free (MqStreamBuf * data)
+ {
+-  g_slice_free (MqStreamBuf, data);
++  g_free (data);
+ }
+ 
+ static SplitMuxOutputCommand *
+ out_cmd_buf_new (void)
+ {
+-  return g_slice_new0 (SplitMuxOutputCommand);
++  return g_new0 (SplitMuxOutputCommand, 1);
+ }
+ 
+ static void
+ out_cmd_buf_free (SplitMuxOutputCommand * data)
+ {
+-  g_slice_free (SplitMuxOutputCommand, data);
++  g_free (data);
+ }
+ 
+ static void
+ input_gop_free (InputGop * gop)
+ {
+   g_clear_pointer (&gop->start_tc, gst_video_time_code_free);
+-  g_slice_free (InputGop, gop);
++  g_free (gop);
+ }
+ 
+ static void
+@@ -2878,7 +2878,7 @@ handle_mq_input (GstPad * pad, GstPadProbeInfo * info, MqStreamCtx * ctx)
+             splitmux->fragment_start_time_pts = rtime;
+ 
+           if (g_queue_is_empty (&splitmux->pending_input_gops)) {
+-            InputGop *gop = g_slice_new0 (InputGop);
++            InputGop *gop = g_new0 (InputGop, 1);
+ 
+             gop->from_gap = TRUE;
+             gop->start_time = rtime;
+@@ -3032,7 +3032,7 @@ handle_mq_input (GstPad * pad, GstPadProbeInfo * info, MqStreamCtx * ctx)
+ 
+     if (!gop || (!gop->from_gap
+             && !GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT))) {
+-      gop = g_slice_new0 (InputGop);
++      gop = g_new0 (InputGop, 1);
+ 
+       gop->start_time = running_time;
+       gop->start_time_pts = running_time_pts;
+diff --git a/gst/multifile/gstsplitmuxsrc.c b/gst/multifile/gstsplitmuxsrc.c
+index c626f79f..92d6ddb7 100644
+--- a/gst/multifile/gstsplitmuxsrc.c
++++ b/gst/multifile/gstsplitmuxsrc.c
+@@ -810,7 +810,7 @@ gst_splitmux_pad_loop (GstPad * pad)
+       }
+     }
+   }
+-  g_slice_free (GstDataQueueItem, item);
++  g_free (item);
+ 
+   gst_object_unref (reader);
+   gst_object_unref (part_pad);
+-- 
+2.40.1
+

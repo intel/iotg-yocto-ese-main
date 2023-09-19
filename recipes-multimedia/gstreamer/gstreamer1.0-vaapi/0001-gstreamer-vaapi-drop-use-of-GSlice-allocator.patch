@@ -1,0 +1,596 @@
+From d70cfafd1bd7b09c2bfcfaf0ecf3025bb6fa49d1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Tue, 24 Jan 2023 19:16:47 +0000
+Subject: [PATCH 1/8] gstreamer-vaapi: drop use of GSlice allocator
+
+Some code incorrectly relied on GstVideoDecoder/Encoder base
+class implementation details.
+
+Follow-up to !3695.
+
+Fixes #1742.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3783>
+---
+ gst-libs/gst/vaapi/gstvaapicodedbuffer.c    |  4 ++--
+ gst-libs/gst/vaapi/gstvaapicontext.c        |  4 ++--
+ gst-libs/gst/vaapi/gstvaapidecoder.c        |  4 ++--
+ gst-libs/gst/vaapi/gstvaapidecoder_av1.c    |  7 ++++---
+ gst-libs/gst/vaapi/gstvaapiencoder_h264.c   |  4 ++--
+ gst-libs/gst/vaapi/gstvaapiencoder_h265.c   |  4 ++--
+ gst-libs/gst/vaapi/gstvaapifilter.c         |  4 ++--
+ gst-libs/gst/vaapi/gstvaapiimage.c          |  6 +++---
+ gst-libs/gst/vaapi/gstvaapiminiobject.c     |  4 ++--
+ gst-libs/gst/vaapi/gstvaapisubpicture.c     |  4 ++--
+ gst-libs/gst/vaapi/gstvaapisurface.c        |  4 ++--
+ gst-libs/gst/vaapi/gstvaapitexture.c        |  4 ++--
+ gst-libs/gst/vaapi/gstvaapiutils_core.c     |  4 ++--
+ gst-libs/gst/vaapi/gstvaapiwindow_wayland.c |  4 ++--
+ gst/vaapi/gstvaapidecode.c                  |  2 +-
+ gst/vaapi/gstvaapiencode.c                  |  4 ++--
+ gst/vaapi/gstvaapivideomemory.c             |  4 ++--
+ gst/vaapi/gstvaapivideometa.c               |  4 ++--
+ gst/vaapi/gstvaapivideometa_texture.c       |  4 ++--
+ tests/internal/codec.c                      |  4 ++--
+ tests/internal/simple-decoder.c             |  8 ++++----
+ tests/internal/simple-encoder.c             | 10 +++++-----
+ tests/internal/y4mreader.c                  |  6 +++---
+ 23 files changed, 54 insertions(+), 53 deletions(-)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapicodedbuffer.c b/gst-libs/gst/vaapi/gstvaapicodedbuffer.c
+index 5d5f3a2e..fd8610c6 100644
+--- a/gst-libs/gst/vaapi/gstvaapicodedbuffer.c
++++ b/gst-libs/gst/vaapi/gstvaapicodedbuffer.c
+@@ -69,7 +69,7 @@ coded_buffer_free (GstVaapiCodedBuffer * buf)
+ 
+   gst_vaapi_display_replace (&GST_VAAPI_CODED_BUFFER_DISPLAY (buf), NULL);
+ 
+-  g_slice_free1 (sizeof (GstVaapiCodedBuffer), buf);
++  g_free (buf);
+ }
+ 
+ static gboolean
+@@ -126,7 +126,7 @@ gst_vaapi_coded_buffer_new (GstVaapiContext * context, guint buf_size)
+   display = GST_VAAPI_CONTEXT_DISPLAY (context);
+   g_return_val_if_fail (display != NULL, NULL);
+ 
+-  buf = g_slice_new (GstVaapiCodedBuffer);
++  buf = g_new (GstVaapiCodedBuffer, 1);
+   if (!buf)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapicontext.c b/gst-libs/gst/vaapi/gstvaapicontext.c
+index 97b81dcb..d37b6bc2 100644
+--- a/gst-libs/gst/vaapi/gstvaapicontext.c
++++ b/gst-libs/gst/vaapi/gstvaapicontext.c
+@@ -500,7 +500,7 @@ gst_vaapi_context_new (GstVaapiDisplay * display,
+       || cip->entrypoint == GST_VAAPI_ENTRYPOINT_INVALID)
+     return NULL;
+ 
+-  context = g_slice_new (GstVaapiContext);
++  context = g_new (GstVaapiContext, 1);
+   if (!context)
+     return NULL;
+ 
+@@ -783,6 +783,6 @@ gst_vaapi_context_unref (GstVaapiContext * context)
+     context_destroy (context);
+     context_destroy_surfaces (context);
+     gst_vaapi_display_replace (&context->display, NULL);
+-    g_slice_free (GstVaapiContext, context);
++    g_free (context);
+   }
+ }
+diff --git a/gst-libs/gst/vaapi/gstvaapidecoder.c b/gst-libs/gst/vaapi/gstvaapidecoder.c
+index ed702310..d9ec37cb 100644
+--- a/gst-libs/gst/vaapi/gstvaapidecoder.c
++++ b/gst-libs/gst/vaapi/gstvaapidecoder.c
+@@ -326,7 +326,7 @@ decode_step (GstVaapiDecoder * decoder)
+ 
+   do {
+     if (!ps->current_frame) {
+-      ps->current_frame = g_slice_new0 (GstVideoCodecFrame);
++      ps->current_frame = g_new0 (GstVideoCodecFrame, 1);
+       if (!ps->current_frame)
+         return GST_VAAPI_DECODER_STATUS_ERROR_ALLOCATION_FAILED;
+       ps->current_frame->ref_count = 1;
+@@ -569,7 +569,7 @@ gst_vaapi_decoder_init (GstVaapiDecoder * decoder)
+ 
+   parser_state_init (&decoder->parser_state);
+ 
+-  codec_state = g_slice_new0 (GstVideoCodecState);
++  codec_state = g_new0 (GstVideoCodecState, 1);
+   codec_state->ref_count = 1;
+   gst_video_info_init (&codec_state->info);
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapidecoder_av1.c b/gst-libs/gst/vaapi/gstvaapidecoder_av1.c
+index e8a0e310..68ae3ef3 100644
+--- a/gst-libs/gst/vaapi/gstvaapidecoder_av1.c
++++ b/gst-libs/gst/vaapi/gstvaapidecoder_av1.c
+@@ -297,8 +297,9 @@ av1_decode_seqeunce (GstVaapiDecoderAV1 * decoder, GstVaapiDecoderUnit * unit)
+ 
+   /* update the sequence */
+   if (priv->seq_header)
+-    g_slice_free (GstAV1SequenceHeaderOBU, priv->seq_header);
+-  priv->seq_header = g_slice_dup (GstAV1SequenceHeaderOBU, &pi->seq_header);
++    g_free (priv->seq_header);
++  priv->seq_header =
++      g_memdup2 (&pi->seq_header, sizeof (GstAV1SequenceHeaderOBU));
+ 
+   return GST_VAAPI_DECODER_STATUS_SUCCESS;
+ }
+@@ -988,7 +989,7 @@ av1_decoder_reset (GstVaapiDecoderAV1 * decoder)
+     gst_vaapi_picture_replace (&priv->current_picture, NULL);
+ 
+   if (priv->seq_header) {
+-    g_slice_free (GstAV1SequenceHeaderOBU, priv->seq_header);
++    g_free (priv->seq_header);
+     priv->seq_header = NULL;
+   }
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapiencoder_h264.c b/gst-libs/gst/vaapi/gstvaapiencoder_h264.c
+index ad56cca2..dc005e56 100644
+--- a/gst-libs/gst/vaapi/gstvaapiencoder_h264.c
++++ b/gst-libs/gst/vaapi/gstvaapiencoder_h264.c
+@@ -1888,14 +1888,14 @@ reference_pic_free (GstVaapiEncoderH264 * encoder, GstVaapiEncoderH264Ref * ref)
+     return;
+   if (ref->pic)
+     gst_vaapi_encoder_release_surface (GST_VAAPI_ENCODER (encoder), ref->pic);
+-  g_slice_free (GstVaapiEncoderH264Ref, ref);
++  g_free (ref);
+ }
+ 
+ static inline GstVaapiEncoderH264Ref *
+ reference_pic_create (GstVaapiEncoderH264 * encoder,
+     GstVaapiEncPicture * picture, GstVaapiSurfaceProxy * surface)
+ {
+-  GstVaapiEncoderH264Ref *const ref = g_slice_new0 (GstVaapiEncoderH264Ref);
++  GstVaapiEncoderH264Ref *const ref = g_new0 (GstVaapiEncoderH264Ref, 1);
+ 
+   ref->pic = surface;
+   ref->frame_num = picture->frame_num;
+diff --git a/gst-libs/gst/vaapi/gstvaapiencoder_h265.c b/gst-libs/gst/vaapi/gstvaapiencoder_h265.c
+index caec85f0..6751c2f7 100644
+--- a/gst-libs/gst/vaapi/gstvaapiencoder_h265.c
++++ b/gst-libs/gst/vaapi/gstvaapiencoder_h265.c
+@@ -1767,14 +1767,14 @@ reference_pic_free (GstVaapiEncoderH265 * encoder, GstVaapiEncoderH265Ref * ref)
+     return;
+   if (ref->pic)
+     gst_vaapi_encoder_release_surface (GST_VAAPI_ENCODER (encoder), ref->pic);
+-  g_slice_free (GstVaapiEncoderH265Ref, ref);
++  g_free (ref);
+ }
+ 
+ static inline GstVaapiEncoderH265Ref *
+ reference_pic_create (GstVaapiEncoderH265 * encoder,
+     GstVaapiEncPicture * picture, GstVaapiSurfaceProxy * surface)
+ {
+-  GstVaapiEncoderH265Ref *const ref = g_slice_new0 (GstVaapiEncoderH265Ref);
++  GstVaapiEncoderH265Ref *const ref = g_new0 (GstVaapiEncoderH265Ref, 1);
+ 
+   ref->pic = surface;
+   ref->poc = picture->poc;
+diff --git a/gst-libs/gst/vaapi/gstvaapifilter.c b/gst-libs/gst/vaapi/gstvaapifilter.c
+index 447c6dec..1458dd83 100644
+--- a/gst-libs/gst/vaapi/gstvaapifilter.c
++++ b/gst-libs/gst/vaapi/gstvaapifilter.c
+@@ -538,7 +538,7 @@ static void
+ op_data_free (GstVaapiFilterOpData * op_data)
+ {
+   g_free (op_data->va_caps);
+-  g_slice_free (GstVaapiFilterOpData, op_data);
++  g_free (op_data);
+ }
+ 
+ static inline gpointer
+@@ -546,7 +546,7 @@ op_data_new (GstVaapiFilterOp op, GParamSpec * pspec)
+ {
+   GstVaapiFilterOpData *op_data;
+ 
+-  op_data = g_slice_new0 (GstVaapiFilterOpData);
++  op_data = g_new0 (GstVaapiFilterOpData, 1);
+   if (!op_data)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapiimage.c b/gst-libs/gst/vaapi/gstvaapiimage.c
+index 18389adf..53af8565 100644
+--- a/gst-libs/gst/vaapi/gstvaapiimage.c
++++ b/gst-libs/gst/vaapi/gstvaapiimage.c
+@@ -141,7 +141,7 @@ gst_vaapi_image_free (GstVaapiImage * image)
+ 
+   gst_vaapi_display_replace (&GST_VAAPI_IMAGE_DISPLAY (image), NULL);
+ 
+-  g_slice_free1 (sizeof (GstVaapiImage), image);
++  g_free (image);
+ }
+ 
+ static gboolean
+@@ -284,7 +284,7 @@ gst_vaapi_image_new (GstVaapiDisplay * display,
+   GST_DEBUG ("format %s, size %ux%u", gst_vaapi_video_format_to_string (format),
+       width, height);
+ 
+-  image = g_slice_new (GstVaapiImage);
++  image = g_new (GstVaapiImage, 1);
+   if (!image)
+     return NULL;
+ 
+@@ -328,7 +328,7 @@ gst_vaapi_image_new_with_image (GstVaapiDisplay * display, VAImage * va_image)
+       GST_FOURCC_ARGS (va_image->format.fourcc),
+       va_image->width, va_image->height);
+ 
+-  image = g_slice_new (GstVaapiImage);
++  image = g_new (GstVaapiImage, 1);
+   if (!image)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapiminiobject.c b/gst-libs/gst/vaapi/gstvaapiminiobject.c
+index 30586b04..68f0628c 100644
+--- a/gst-libs/gst/vaapi/gstvaapiminiobject.c
++++ b/gst-libs/gst/vaapi/gstvaapiminiobject.c
+@@ -34,7 +34,7 @@ gst_vaapi_mini_object_free (GstVaapiMiniObject * object)
+     klass->finalize (object);
+ 
+   if (G_LIKELY (g_atomic_int_dec_and_test (&object->ref_count)))
+-    g_slice_free1 (klass->size, object);
++    g_free (object);
+ }
+ 
+ /**
+@@ -65,7 +65,7 @@ gst_vaapi_mini_object_new (const GstVaapiMiniObjectClass * object_class)
+ 
+   g_return_val_if_fail (object_class->size >= sizeof (*object), NULL);
+ 
+-  object = g_slice_alloc (object_class->size);
++  object = g_malloc (object_class->size);
+   if (!object)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapisubpicture.c b/gst-libs/gst/vaapi/gstvaapisubpicture.c
+index c2ba257b..4ba67706 100644
+--- a/gst-libs/gst/vaapi/gstvaapisubpicture.c
++++ b/gst-libs/gst/vaapi/gstvaapisubpicture.c
+@@ -84,7 +84,7 @@ gst_vaapi_subpicture_free (GstVaapiSubpicture * subpicture)
+ {
+   gst_vaapi_subpicture_free_image (subpicture);
+   gst_vaapi_display_replace (&subpicture->display, NULL);
+-  g_slice_free1 (sizeof (GstVaapiSubpicture), subpicture);
++  g_free (subpicture);
+ }
+ 
+ GST_DEFINE_MINI_OBJECT_TYPE (GstVaapiSubpicture, gst_vaapi_subpicture);
+@@ -142,7 +142,7 @@ gst_vaapi_subpicture_new (GstVaapiImage * image, guint flags)
+   if (flags & ~va_flags)
+     return NULL;
+ 
+-  subpicture = g_slice_new (GstVaapiSubpicture);
++  subpicture = g_new (GstVaapiSubpicture, 1);
+   if (!subpicture)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapisurface.c b/gst-libs/gst/vaapi/gstvaapisurface.c
+index 0fdafd99..dd3cd439 100644
+--- a/gst-libs/gst/vaapi/gstvaapisurface.c
++++ b/gst-libs/gst/vaapi/gstvaapisurface.c
+@@ -90,7 +90,7 @@ gst_vaapi_surface_free (GstVaapiSurface * surface)
+   gst_vaapi_buffer_proxy_replace (&surface->extbuf_proxy, NULL);
+   gst_vaapi_display_replace (&GST_VAAPI_SURFACE_DISPLAY (surface), NULL);
+ 
+-  g_slice_free1 (sizeof (GstVaapiSurface), surface);
++  g_free (surface);
+ }
+ 
+ static gboolean
+@@ -330,7 +330,7 @@ GST_DEFINE_MINI_OBJECT_TYPE (GstVaapiSurface, gst_vaapi_surface);
+ static GstVaapiSurface *
+ gst_vaapi_surface_create (GstVaapiDisplay * display)
+ {
+-  GstVaapiSurface *surface = g_slice_new (GstVaapiSurface);
++  GstVaapiSurface *surface = g_new (GstVaapiSurface, 1);
+   if (!surface)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapitexture.c b/gst-libs/gst/vaapi/gstvaapitexture.c
+index 9bfc87bb..27f66416 100644
+--- a/gst-libs/gst/vaapi/gstvaapitexture.c
++++ b/gst-libs/gst/vaapi/gstvaapitexture.c
+@@ -83,7 +83,7 @@ static void
+ gst_vaapi_texture_free (GstVaapiTexture * texture)
+ {
+   gst_vaapi_display_replace (&GST_VAAPI_TEXTURE_DISPLAY (texture), NULL);
+-  g_slice_free1 (sizeof (GstVaapiTexture), texture);
++  g_free (texture);
+ }
+ 
+ GST_DEFINE_MINI_OBJECT_TYPE (GstVaapiTexture, gst_vaapi_texture);
+@@ -100,7 +100,7 @@ gst_vaapi_texture_new_internal (GstVaapiDisplay * display, GstVaapiID id,
+   g_return_val_if_fail (width > 0, NULL);
+   g_return_val_if_fail (height > 0, NULL);
+ 
+-  texture = g_slice_alloc (sizeof (GstVaapiTexture));
++  texture = g_new (GstVaapiTexture, 1);
+   if (!texture)
+     return NULL;
+ 
+diff --git a/gst-libs/gst/vaapi/gstvaapiutils_core.c b/gst-libs/gst/vaapi/gstvaapiutils_core.c
+index 7c98208d..d67ea079 100644
+--- a/gst-libs/gst/vaapi/gstvaapiutils_core.c
++++ b/gst-libs/gst/vaapi/gstvaapiutils_core.c
+@@ -143,7 +143,7 @@ gst_vaapi_config_surface_attributes_get (GstVaapiDisplay * display,
+   if (!surface_attribs)
+     return NULL;
+ 
+-  attribs = g_slice_new0 (GstVaapiConfigSurfaceAttributes);
++  attribs = g_new0 (GstVaapiConfigSurfaceAttributes, 1);
+   if (!attribs)
+     goto error;
+ 
+@@ -223,5 +223,5 @@ gst_vaapi_config_surface_attributes_free (GstVaapiConfigSurfaceAttributes *
+ 
+   if (attribs->formats)
+     g_array_unref (attribs->formats);
+-  g_slice_free (GstVaapiConfigSurfaceAttributes, attribs);
++  g_free (attribs);
+ }
+diff --git a/gst-libs/gst/vaapi/gstvaapiwindow_wayland.c b/gst-libs/gst/vaapi/gstvaapiwindow_wayland.c
+index 394a089b..4f2c68c7 100644
+--- a/gst-libs/gst/vaapi/gstvaapiwindow_wayland.c
++++ b/gst-libs/gst/vaapi/gstvaapiwindow_wayland.c
+@@ -71,7 +71,7 @@ frame_state_new (GstVaapiWindow * window)
+ {
+   FrameState *frame;
+ 
+-  frame = g_slice_new (FrameState);
++  frame = g_new (FrameState, 1);
+   if (!frame)
+     return NULL;
+ 
+@@ -160,7 +160,7 @@ frame_state_free (FrameState * frame)
+ 
+   g_clear_pointer (&frame->callback, wl_callback_destroy);
+   wl_buffer_destroy (frame->buffer);
+-  g_slice_free (FrameState, frame);
++  g_free (frame);
+ }
+ 
+ static void
+diff --git a/gst/vaapi/gstvaapidecode.c b/gst/vaapi/gstvaapidecode.c
+index 9f6eaba6..c7725803 100644
+--- a/gst/vaapi/gstvaapidecode.c
++++ b/gst/vaapi/gstvaapidecode.c
+@@ -145,7 +145,7 @@ copy_video_codec_state (const GstVideoCodecState * in_state)
+ 
+   g_return_val_if_fail (in_state != NULL, NULL);
+ 
+-  state = g_slice_new0 (GstVideoCodecState);
++  state = g_new0 (GstVideoCodecState, 1);
+   state->ref_count = 1;
+   state->info = in_state->info;
+   state->caps = gst_caps_copy (in_state->caps);
+diff --git a/gst/vaapi/gstvaapiencode.c b/gst/vaapi/gstvaapiencode.c
+index e86d55b9..ccbb3d43 100644
+--- a/gst/vaapi/gstvaapiencode.c
++++ b/gst/vaapi/gstvaapiencode.c
+@@ -122,7 +122,7 @@ prop_value_free (PropValue * prop_value)
+     g_param_spec_unref (prop_value->pspec);
+     prop_value->pspec = NULL;
+   }
+-  g_slice_free (PropValue, prop_value);
++  g_free (prop_value);
+ }
+ 
+ static PropValue *
+@@ -133,7 +133,7 @@ prop_value_new_entry (guint id, GParamSpec * pspec, const GValue * value)
+   if (!pspec)
+     return NULL;
+ 
+-  prop_value = g_slice_new0 (PropValue);
++  prop_value = g_new0 (PropValue, 1);
+   if (!prop_value)
+     return NULL;
+ 
+diff --git a/gst/vaapi/gstvaapivideomemory.c b/gst/vaapi/gstvaapivideomemory.c
+index 8c1f5887..ad5890fb 100644
+--- a/gst/vaapi/gstvaapivideomemory.c
++++ b/gst/vaapi/gstvaapivideomemory.c
+@@ -361,7 +361,7 @@ gst_vaapi_video_memory_new (GstAllocator * base_allocator,
+ 
+   g_return_val_if_fail (GST_VAAPI_IS_VIDEO_ALLOCATOR (allocator), NULL);
+ 
+-  mem = g_slice_new (GstVaapiVideoMemory);
++  mem = g_new (GstVaapiVideoMemory, 1);
+   if (!mem)
+     return NULL;
+ 
+@@ -620,7 +620,7 @@ gst_vaapi_video_allocator_free (GstAllocator * allocator, GstMemory * base_mem)
+   gst_vaapi_surface_proxy_replace (&mem->proxy, NULL);
+   gst_vaapi_video_meta_replace (&mem->meta, NULL);
+   g_mutex_clear (&mem->lock);
+-  g_slice_free (GstVaapiVideoMemory, mem);
++  g_free (mem);
+ }
+ 
+ static void
+diff --git a/gst/vaapi/gstvaapivideometa.c b/gst/vaapi/gstvaapivideometa.c
+index 53a48dd9..bb47fe72 100644
+--- a/gst/vaapi/gstvaapivideometa.c
++++ b/gst/vaapi/gstvaapivideometa.c
+@@ -169,13 +169,13 @@ gst_vaapi_video_meta_init (GstVaapiVideoMeta * meta)
+ static inline GstVaapiVideoMeta *
+ _gst_vaapi_video_meta_create (void)
+ {
+-  return g_slice_new (GstVaapiVideoMeta);
++  return g_new (GstVaapiVideoMeta, 1);
+ }
+ 
+ static inline void
+ _gst_vaapi_video_meta_destroy (GstVaapiVideoMeta * meta)
+ {
+-  g_slice_free1 (sizeof (*meta), meta);
++  g_free (meta);
+ }
+ 
+ static inline GstVaapiVideoMeta *
+diff --git a/gst/vaapi/gstvaapivideometa_texture.c b/gst/vaapi/gstvaapivideometa_texture.c
+index 79863cb9..6365b780 100644
+--- a/gst/vaapi/gstvaapivideometa_texture.c
++++ b/gst/vaapi/gstvaapivideometa_texture.c
+@@ -126,7 +126,7 @@ meta_texture_free (GstVaapiVideoMetaTexture * meta)
+     return;
+ 
+   gst_mini_object_replace ((GstMiniObject **) & meta->texture, NULL);
+-  g_slice_free (GstVaapiVideoMetaTexture, meta);
++  g_free (meta);
+ }
+ 
+ static GstVaapiVideoMetaTexture *
+@@ -134,7 +134,7 @@ meta_texture_new (void)
+ {
+   GstVaapiVideoMetaTexture *meta;
+ 
+-  meta = g_slice_new (GstVaapiVideoMetaTexture);
++  meta = g_new (GstVaapiVideoMetaTexture, 1);
+   if (!meta)
+     return NULL;
+ 
+diff --git a/tests/internal/codec.c b/tests/internal/codec.c
+index d14981ac..d7487f80 100644
+--- a/tests/internal/codec.c
++++ b/tests/internal/codec.c
+@@ -135,7 +135,7 @@ codec_identifier_free (CodecIdentifier * cip)
+     cip->file = NULL;
+   }
+   gst_caps_replace (&cip->caps, NULL);
+-  g_slice_free (CodecIdentifier, cip);
++  g_free (cip);
+ }
+ 
+ static CodecIdentifier *
+@@ -144,7 +144,7 @@ codec_identifier_new (const gchar * filename)
+   CodecIdentifier *cip;
+   GstTypeFind *tfp;
+ 
+-  cip = g_slice_new0 (CodecIdentifier);
++  cip = g_new0 (CodecIdentifier, 1);
+   if (!cip)
+     return NULL;
+ 
+diff --git a/tests/internal/simple-decoder.c b/tests/internal/simple-decoder.c
+index 75752767..ada9d785 100644
+--- a/tests/internal/simple-decoder.c
++++ b/tests/internal/simple-decoder.c
+@@ -110,7 +110,7 @@ typedef struct
+ static inline RenderFrame *
+ render_frame_new (void)
+ {
+-  return g_slice_new (RenderFrame);
++  return g_new (RenderFrame, 1);
+ }
+ 
+ static void
+@@ -119,7 +119,7 @@ render_frame_free (RenderFrame * rfp)
+   if (G_UNLIKELY (!rfp))
+     return;
+   gst_vaapi_surface_proxy_replace (&rfp->proxy, NULL);
+-  g_slice_free (RenderFrame, rfp);
++  g_free (rfp);
+ }
+ 
+ static inline void
+@@ -536,7 +536,7 @@ app_free (App * app)
+   g_cond_clear (&app->render_ready);
+   g_cond_clear (&app->event_cond);
+   g_mutex_clear (&app->mutex);
+-  g_slice_free (App, app);
++  g_free (app);
+ }
+ 
+ static App *
+@@ -544,7 +544,7 @@ app_new (void)
+ {
+   App *app;
+ 
+-  app = g_slice_new0 (App);
++  app = g_new0 (App, 1);
+   if (!app)
+     return NULL;
+ 
+diff --git a/tests/internal/simple-encoder.c b/tests/internal/simple-encoder.c
+index 90b778e3..6953eef1 100644
+--- a/tests/internal/simple-encoder.c
++++ b/tests/internal/simple-encoder.c
+@@ -155,7 +155,7 @@ new_codec_state (gint width, gint height, gint fps_n, gint fps_d)
+ {
+   GstVideoCodecState *state;
+ 
+-  state = g_slice_new0 (GstVideoCodecState);
++  state = g_new0 (GstVideoCodecState, 1);
+   state->ref_count = 1;
+   gst_video_info_set_format (&state->info, GST_VIDEO_FORMAT_ENCODED, width,
+       height);
+@@ -175,7 +175,7 @@ set_format (GstVaapiEncoder * encoder, gint width, gint height, gint fps_n,
+ 
+   in_state = new_codec_state (width, height, fps_n, fps_d);
+   status = gst_vaapi_encoder_set_codec_state (encoder, in_state);
+-  g_slice_free (GstVideoCodecState, in_state);
++  g_free (in_state);
+ 
+   return (status == GST_VAAPI_ENCODER_STATUS_SUCCESS);
+ }
+@@ -308,13 +308,13 @@ app_free (App * app)
+   if (app->output_file)
+     fclose (app->output_file);
+ 
+-  g_slice_free (App, app);
++  g_free (app);
+ }
+ 
+ static App *
+ app_new (const gchar * input_fn, const gchar * output_fn)
+ {
+-  App *app = g_slice_new0 (App);
++  App *app = g_new0 (App, 1);
+   if (!app)
+     return NULL;
+ 
+@@ -362,7 +362,7 @@ upload_frame (GstVaapiEncoder * encoder, GstVaapiSurfaceProxy * proxy)
+   GstVideoCodecFrame *frame;
+   GstVaapiEncoderStatus ret;
+ 
+-  frame = g_slice_new0 (GstVideoCodecFrame);
++  frame = g_new0 (GstVideoCodecFrame, 1);
+   gst_video_codec_frame_set_user_data (frame,
+       gst_vaapi_surface_proxy_ref (proxy),
+       (GDestroyNotify) gst_vaapi_surface_proxy_unref);
+diff --git a/tests/internal/y4mreader.c b/tests/internal/y4mreader.c
+index 76847bb2..400ad52c 100644
+--- a/tests/internal/y4mreader.c
++++ b/tests/internal/y4mreader.c
+@@ -144,7 +144,7 @@ y4m_reader_open (const gchar * filename)
+ {
+   Y4MReader *imagefile;
+ 
+-  imagefile = g_slice_new0 (Y4MReader);
++  imagefile = g_new0 (Y4MReader, 1);
+ 
+   if (filename) {
+     imagefile->fp = fopen (filename, "r");
+@@ -165,7 +165,7 @@ bail:
+   if (imagefile->fp && imagefile->fp != stdin)
+     fclose (imagefile->fp);
+ 
+-  g_slice_free (Y4MReader, imagefile);
++  g_free (imagefile);
+   return NULL;
+ }
+ 
+@@ -177,7 +177,7 @@ y4m_reader_close (Y4MReader * file)
+   if (file->fp && file->fp != stdin)
+     fclose (file->fp);
+ 
+-  g_slice_free (Y4MReader, file);
++  g_free (file);
+ }
+ 
+ static gboolean
+-- 
+2.40.1
+

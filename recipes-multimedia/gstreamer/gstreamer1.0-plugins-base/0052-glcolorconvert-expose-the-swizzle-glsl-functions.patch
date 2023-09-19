@@ -1,0 +1,59 @@
+From 4d9e8fa9b240167f3232a162271a7db6959c3209 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Fri, 4 Aug 2023 13:59:42 +0800
+Subject: [PATCH 52/77] glcolorconvert: expose the swizzle glsl functions
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5109>
+
+Backport from upstream:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/7fcef3818e77d3eea1155f104253bf38c1dbd1a3
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ gst-libs/gst/gl/gstglcolorconvert.c | 15 +++++++++++++++
+ gst-libs/gst/gl/gstglcolorconvert.h |  3 +++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/gst-libs/gst/gl/gstglcolorconvert.c b/gst-libs/gst/gl/gstglcolorconvert.c
+index 12970b76..4dc46266 100644
+--- a/gst-libs/gst/gl/gstglcolorconvert.c
++++ b/gst-libs/gst/gl/gstglcolorconvert.c
+@@ -3258,6 +3258,21 @@ _do_convert_draw (GstGLContext * context, GstGLColorConvert * convert)
+   return ret;
+ }
+ 
++/**
++ * gst_gl_color_convert_swizzle_shader_string:
++ * @context: a #GstGLContext
++ *
++ * Returns: (transfer full): a shader string that can be used to swizzle vec
++ * components in a GLSL shader.
++ *
++ * Since: 1.24
++ */
++gchar *
++gst_gl_color_convert_swizzle_shader_string (GstGLContext * context)
++{
++  return g_strdup (glsl_func_swizzle);
++}
++
+ /**
+  * gst_gl_color_convert_yuv_to_rgb_shader_string:
+  * @context: a #GstGLContext
+diff --git a/gst-libs/gst/gl/gstglcolorconvert.h b/gst-libs/gst/gl/gstglcolorconvert.h
+index ca2eb8a6..47df0f20 100644
+--- a/gst-libs/gst/gl/gstglcolorconvert.h
++++ b/gst-libs/gst/gl/gstglcolorconvert.h
+@@ -151,6 +151,9 @@ gboolean    gst_gl_color_convert_decide_allocation (GstGLColorConvert   * conver
+ GST_GL_API
+ GstBuffer * gst_gl_color_convert_perform    (GstGLColorConvert * convert, GstBuffer * inbuf);
+ 
++GST_GL_API
++gchar *     gst_gl_color_convert_swizzle_shader_string (GstGLContext * context);
++
+ GST_GL_API
+ gchar *     gst_gl_color_convert_yuv_to_rgb_shader_string (GstGLContext * context);
+ 
+-- 
+2.40.1
+

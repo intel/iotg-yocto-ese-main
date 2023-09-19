@@ -1,0 +1,65 @@
+From f91dbcc128d998d3fef76b0d9d40a5aab29c7325 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Mon, 22 Aug 2022 17:44:35 +0800
+Subject: [PATCH 034/205] msdk: Add a bufferpool in GstMsdkContext structure
+
+This alloc_pool is the negotiated pool and will be used in
+mfxFrameAllocator:Alloc to create surfaces.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3439>
+---
+ sys/msdk/gstmsdkcontext.c | 13 +++++++++++++
+ sys/msdk/gstmsdkcontext.h |  6 ++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkcontext.c b/sys/msdk/gstmsdkcontext.c
+index 60cc61d33..df7bc6f26 100644
+--- a/sys/msdk/gstmsdkcontext.c
++++ b/sys/msdk/gstmsdkcontext.c
+@@ -48,6 +48,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_debug_msdkcontext);
+ struct _GstMsdkContextPrivate
+ {
+   MsdkSession session;
++  GstBufferPool *alloc_pool;
+   GList *cached_alloc_responses;
+   gboolean hardware;
+   gboolean has_frame_allocator;
+@@ -917,6 +918,18 @@ gst_msdk_context_put_surface_available (GstMsdkContext * context,
+   g_mutex_unlock (&priv->mutex);
+ }
+ 
++void
++gst_msdk_context_set_alloc_pool (GstMsdkContext * context, GstBufferPool * pool)
++{
++  context->priv->alloc_pool = gst_object_ref (pool);
++}
++
++GstBufferPool *
++gst_msdk_context_get_alloc_pool (GstMsdkContext * context)
++{
++  return context->priv->alloc_pool;
++}
++
+ GstMsdkContextJobType
+ gst_msdk_context_get_job_type (GstMsdkContext * context)
+ {
+diff --git a/sys/msdk/gstmsdkcontext.h b/sys/msdk/gstmsdkcontext.h
+index 88746bd10..cee5541ee 100644
+--- a/sys/msdk/gstmsdkcontext.h
++++ b/sys/msdk/gstmsdkcontext.h
+@@ -144,6 +144,12 @@ gst_msdk_context_put_surface_locked (GstMsdkContext * context, mfxFrameAllocResp
+ void
+ gst_msdk_context_put_surface_available (GstMsdkContext * context, mfxFrameAllocResponse * resp, mfxFrameSurface1 * surface);
+ 
++void
++gst_msdk_context_set_alloc_pool (GstMsdkContext * context, GstBufferPool * pool);
++
++GstBufferPool *
++gst_msdk_context_get_alloc_pool (GstMsdkContext * context);
++
+ GstMsdkContextJobType
+ gst_msdk_context_get_job_type (GstMsdkContext * context);
+ 
+-- 
+2.40.1
+

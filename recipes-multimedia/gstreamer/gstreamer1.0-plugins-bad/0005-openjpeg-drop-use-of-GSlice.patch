@@ -1,0 +1,58 @@
+From 375e6695f6e35a7b109acd2ccc043951d5ea0e84 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 18:06:07 +0000
+Subject: [PATCH 005/205] openjpeg: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ ext/openjpeg/gstopenjpegdec.c | 4 ++--
+ ext/openjpeg/gstopenjpegenc.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/ext/openjpeg/gstopenjpegdec.c b/ext/openjpeg/gstopenjpegdec.c
+index 696213469..1ae180820 100644
+--- a/ext/openjpeg/gstopenjpegdec.c
++++ b/ext/openjpeg/gstopenjpegdec.c
+@@ -1237,7 +1237,7 @@ static GstOpenJPEGCodecMessage *
+ gst_openjpeg_decode_message_new (GstOpenJPEGDec * self,
+     GstVideoCodecFrame * frame, int num_stripe)
+ {
+-  GstOpenJPEGCodecMessage *message = g_slice_new0 (GstOpenJPEGCodecMessage);
++  GstOpenJPEGCodecMessage *message = g_new0 (GstOpenJPEGCodecMessage, 1);
+   GST_DEBUG_OBJECT (self, "message: %p", message);
+   message->frame = gst_video_codec_frame_ref (frame);
+   message->stripe = num_stripe;
+@@ -1257,7 +1257,7 @@ gst_openjpeg_decode_message_free (GstOpenJPEGDec * self,
+   gst_buffer_unref (message->input_buffer);
+   gst_video_codec_frame_unref (message->frame);
+   GST_DEBUG_OBJECT (self, "message: %p", message);
+-  g_slice_free (GstOpenJPEGCodecMessage, message);
++  g_free (message);
+   return NULL;
+ }
+ 
+diff --git a/ext/openjpeg/gstopenjpegenc.c b/ext/openjpeg/gstopenjpegenc.c
+index f6d8e203b..20e27a92f 100644
+--- a/ext/openjpeg/gstopenjpegenc.c
++++ b/ext/openjpeg/gstopenjpegenc.c
+@@ -1101,7 +1101,7 @@ static GstOpenJPEGCodecMessage *
+ gst_openjpeg_encode_message_new (GstOpenJPEGEnc * self,
+     GstVideoCodecFrame * frame, int num_stripe)
+ {
+-  GstOpenJPEGCodecMessage *message = g_slice_new0 (GstOpenJPEGCodecMessage);
++  GstOpenJPEGCodecMessage *message = g_new0 (GstOpenJPEGCodecMessage, 1);
+ 
+   message->frame = gst_video_codec_frame_ref (frame);
+   message->stripe = num_stripe;
+@@ -1117,7 +1117,7 @@ gst_openjpeg_encode_message_free (GstOpenJPEGCodecMessage * message)
+     gst_video_codec_frame_unref (message->frame);
+     if (message->output_buffer)
+       gst_buffer_unref (message->output_buffer);
+-    g_slice_free (GstOpenJPEGCodecMessage, message);
++    g_free (message);
+   }
+   return NULL;
+ }
+-- 
+2.40.1
+

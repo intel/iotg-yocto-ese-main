@@ -1,0 +1,26 @@
+From 0f199e81db4cbe9ac74d4c576e260e29e0330795 Mon Sep 17 00:00:00 2001
+From: "Cheah, Vincent Beng Keat" <vincent.beng.keat.cheah@intel.com>
+Date: Thu, 17 Aug 2023 19:37:22 +0800
+Subject: [PATCH] va: compositor: Disable tiling for i965 for DMA RGB formats
+
+---
+ sys/va/gstvacompositor.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvacompositor.c b/sys/va/gstvacompositor.c
+index 346d9eab8..656b8682d 100644
+--- a/sys/va/gstvacompositor.c
++++ b/sys/va/gstvacompositor.c
+@@ -734,7 +734,8 @@ gst_va_compositor_decide_allocation (GstAggregator * agg, GstQuery * query)
+   }
+ 
+   if (!allocator) {
+-    if (gst_caps_is_dmabuf (caps) && GST_VIDEO_INFO_IS_RGB (&info))
++    if (GST_VA_DISPLAY_IS_IMPLEMENTATION (self->display, INTEL_I965) &&
++        gst_caps_is_dmabuf (caps) && GST_VIDEO_INFO_IS_RGB (&info))
+       usage_hint = VA_SURFACE_ATTRIB_USAGE_HINT_GENERIC;
+     if (!(allocator = gst_va_compositor_allocator_from_caps (self, caps)))
+       return FALSE;
+-- 
+2.34.1
+

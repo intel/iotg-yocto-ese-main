@@ -1,0 +1,203 @@
+From a475ab939978503ad9fffe47c4c6380de206ab71 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 01:30:20 +0000
+Subject: [PATCH 31/43] baseparse: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/parse/grammar.y.in       |  8 ++++----
+ libs/gst/base/gstbaseparse.c |  6 +++---
+ libs/gst/base/gstindex.c     | 16 ++++++++--------
+ libs/gst/base/gstmemindex.c  |  8 ++++----
+ 4 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/gst/parse/grammar.y.in b/gst/parse/grammar.y.in
+index 470884ce..0b3bbc28 100644
+--- a/gst/parse/grammar.y.in
++++ b/gst/parse/grammar.y.in
+@@ -102,7 +102,7 @@ __gst_parse_element_new (void)
+ {
+   element_t *ret;
+   __elements++;
+-  ret = g_slice_new0 (element_t);
++  ret = g_new0 (element_t, 1);
+   /* g_print ("@%p: ALLOCATED ELEMENT (%3u):\n", ret, __elements); */
+   return ret;
+ }
+@@ -110,7 +110,7 @@ void
+ __gst_parse_element_free (element_t *data)
+ {
+   /* g_print ("@%p: FREEING ELEMENT   (%3u):\n", data, __elements - 1); */
+-  g_slice_free (element_t, data);
++  g_free (data);
+   g_return_if_fail (__elements > 0);
+   __elements--;
+ }
+@@ -549,7 +549,7 @@ typedef struct
+ 
+ static void
+ proxied_property_free (proxied_property_t *pp) {
+-  g_slice_free (proxied_property_t, pp);
++  g_free (pp);
+ }
+ 
+ static GstElement * gst_parse_element_make (graph_t *graph, element_t *data) {
+@@ -589,7 +589,7 @@ static GstElement * gst_parse_element_make (graph_t *graph, element_t *data) {
+     gchar *value = gst_parse_split_assignment (tmp->data);
+ 
+     if (is_proxy && strstr (name, "::") != NULL) {
+-      proxied_property_t *pp = g_slice_new (proxied_property_t);
++      proxied_property_t *pp = g_new (proxied_property_t, 1);
+       pp->name = name;
+       pp->value = value;
+       proxied = g_slist_prepend (proxied, pp);
+diff --git a/libs/gst/base/gstbaseparse.c b/libs/gst/base/gstbaseparse.c
+index 4e7c46e4..69738be0 100644
+--- a/libs/gst/base/gstbaseparse.c
++++ b/libs/gst/base/gstbaseparse.c
+@@ -694,7 +694,7 @@ gst_base_parse_frame_copy (GstBaseParseFrame * frame)
+ {
+   GstBaseParseFrame *copy;
+ 
+-  copy = g_slice_dup (GstBaseParseFrame, frame);
++  copy = g_memdup2 (frame, sizeof (GstBaseParseFrame));
+   copy->buffer = gst_buffer_ref (frame->buffer);
+   copy->_private_flags &= ~GST_BASE_PARSE_FRAME_PRIVATE_FLAG_NOALLOC;
+ 
+@@ -720,7 +720,7 @@ gst_base_parse_frame_free (GstBaseParseFrame * frame)
+   }
+ 
+   if (!(frame->_private_flags & GST_BASE_PARSE_FRAME_PRIVATE_FLAG_NOALLOC)) {
+-    g_slice_free (GstBaseParseFrame, frame);
++    g_free (frame);
+   } else {
+     memset (frame, 0, sizeof (*frame));
+   }
+@@ -769,7 +769,7 @@ gst_base_parse_frame_new (GstBuffer * buffer, GstBaseParseFrameFlags flags,
+ {
+   GstBaseParseFrame *frame;
+ 
+-  frame = g_slice_new0 (GstBaseParseFrame);
++  frame = g_new0 (GstBaseParseFrame, 1);
+   frame->buffer = gst_buffer_ref (buffer);
+ 
+   GST_TRACE ("created frame %p", frame);
+diff --git a/libs/gst/base/gstindex.c b/libs/gst/base/gstindex.c
+index 964508e0..a4bae64c 100644
+--- a/libs/gst/base/gstindex.c
++++ b/libs/gst/base/gstindex.c
+@@ -272,7 +272,7 @@ gst_index_get_property (GObject * object, guint prop_id,
+ static GstIndexGroup *
+ gst_index_group_new (guint groupnum)
+ {
+-  GstIndexGroup *indexgroup = g_slice_new (GstIndexGroup);
++  GstIndexGroup *indexgroup = g_new (GstIndexGroup, 1);
+ 
+   indexgroup->groupnum = groupnum;
+   indexgroup->entries = NULL;
+@@ -287,7 +287,7 @@ gst_index_group_new (guint groupnum)
+ static void
+ gst_index_group_free (GstIndexGroup * group)
+ {
+-  g_slice_free (GstIndexGroup, group);
++  g_free (group);
+ }
+ 
+ /* do not resurrect this, add a derived dummy index class instead */
+@@ -528,7 +528,7 @@ gst_index_set_resolver_full (GstIndex * index, GstIndexResolver resolver,
+ GstIndexEntry *
+ gst_index_entry_copy (GstIndexEntry * entry)
+ {
+-  GstIndexEntry *new_entry = g_slice_new (GstIndexEntry);
++  GstIndexEntry *new_entry = g_new (GstIndexEntry, 1);
+ 
+   memcpy (new_entry, entry, sizeof (GstIndexEntry));
+   return new_entry;
+@@ -562,7 +562,7 @@ gst_index_entry_free (GstIndexEntry * entry)
+       break;
+   }
+ 
+-  g_slice_free (GstIndexEntry, entry);
++  g_free (entry);
+ }
+ 
+ #if 0
+@@ -592,7 +592,7 @@ gst_index_add_format (GstIndex * index, gint id, GstFormat format)
+   if (!GST_INDEX_IS_WRITABLE (index) || id == -1)
+     return NULL;
+ 
+-  entry = g_slice_new (GstIndexEntry);
++  entry = g_new (GstIndexEntry, 1);
+   entry->type = GST_INDEX_ENTRY_FORMAT;
+   entry->id = id;
+   entry->data.format.format = format;
+@@ -627,7 +627,7 @@ gst_index_add_id (GstIndex * index, gint id, gchar * description)
+   if (!GST_INDEX_IS_WRITABLE (index) || id == -1)
+     return NULL;
+ 
+-  entry = g_slice_new (GstIndexEntry);
++  entry = g_new (GstIndexEntry, 1);
+   entry->type = GST_INDEX_ENTRY_ID;
+   entry->id = id;
+   entry->data.id.description = description;
+@@ -742,7 +742,7 @@ gst_index_get_writer_id (GstIndex * index, GstObject * writer, gint * id)
+     if (!entry) {
+       /* index is probably not writable, make an entry anyway
+        * to keep it in our cache */
+-      entry = g_slice_new (GstIndexEntry);
++      entry = g_new (GstIndexEntry, 1);
+       entry->type = GST_INDEX_ENTRY_ID;
+       entry->id = *id;
+       entry->data.id.description = writer_string;
+@@ -794,7 +794,7 @@ gst_index_add_associationv (GstIndex * index, gint id,
+   if (!GST_INDEX_IS_WRITABLE (index) || id == -1)
+     return NULL;
+ 
+-  entry = g_slice_new (GstIndexEntry);
++  entry = g_new (GstIndexEntry, 1);
+ 
+   entry->type = GST_INDEX_ENTRY_ASSOCIATION;
+   entry->id = id;
+diff --git a/libs/gst/base/gstmemindex.c b/libs/gst/base/gstmemindex.c
+index b6674475..66b6c667 100644
+--- a/libs/gst/base/gstmemindex.c
++++ b/libs/gst/base/gstmemindex.c
+@@ -140,7 +140,7 @@ gst_mem_index_free_format (gpointer key, gpointer value, gpointer user_data)
+     g_tree_destroy (index->tree);
+   }
+ 
+-  g_slice_free (GstMemIndexFormatIndex, index);
++  g_free (index);
+ }
+ 
+ static void
+@@ -155,7 +155,7 @@ gst_mem_index_free_id (gpointer key, gpointer value, gpointer user_data)
+     id_index->format_index = NULL;
+   }
+ 
+-  g_slice_free (GstMemIndexId, id_index);
++  g_free (id_index);
+ }
+ 
+ static void
+@@ -189,7 +189,7 @@ gst_mem_index_add_id (GstIndex * index, GstIndexEntry * entry)
+   id_index = g_hash_table_lookup (memindex->id_index, &entry->id);
+ 
+   if (!id_index) {
+-    id_index = g_slice_new0 (GstMemIndexId);
++    id_index = g_new0 (GstMemIndexId, 1);
+ 
+     id_index->id = entry->id;
+     id_index->format_index = g_hash_table_new (g_int_hash, g_int_equal);
+@@ -224,7 +224,7 @@ gst_mem_index_index_format (GstMemIndexId * id_index, GstIndexEntry * entry,
+   index = g_hash_table_lookup (id_index->format_index, format);
+ 
+   if (!index) {
+-    index = g_slice_new0 (GstMemIndexFormatIndex);
++    index = g_new0 (GstMemIndexFormatIndex, 1);
+ 
+     index->format = *format;
+     index->offset = assoc;
+-- 
+2.40.1
+

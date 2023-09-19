@@ -1,0 +1,67 @@
+From 35bf1c0022e618d59925cb90a3ed341c44e1972e Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 2 May 2023 09:54:39 -0700
+Subject: [PATCH 22/28] ui/gtk-gl-area: Don't forget to calculate the scaling
+ factors in draw
+
+Just like it is done in gtk-egl.c, we need to ensure that the scaling
+factors are correctly calculated in draw callback. Otherwise, they
+would just be set to 1.0. And, use gtk_widget_get_allocated_width/height
+variants to determine width and height in the Wayland case similar to
+how it is done in draw.
+
+Cc: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-gl-area.c | 5 +++++
+ ui/gtk.c         | 9 +++++++--
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
+index 9e87fb2698..0e33bac3f9 100644
+--- a/ui/gtk-gl-area.c
++++ b/ui/gtk-gl-area.c
+@@ -81,6 +81,9 @@ void gd_gl_area_draw(VirtualConsole *vc)
+             egl_dmabuf_create_sync(dmabuf);
+         }
+ #endif
++        vc->gfx.scale_x = (double)ww / vc->gfx.w;
++        vc->gfx.scale_y = (double)wh / vc->gfx.h;
++
+         glFlush();
+ #ifdef CONFIG_GBM
+         if (dmabuf) {
+@@ -100,6 +103,8 @@ void gd_gl_area_draw(VirtualConsole *vc)
+ 
+         surface_gl_setup_viewport(vc->gfx.gls, vc->gfx.ds, ww, wh);
+         surface_gl_render_texture(vc->gfx.gls, vc->gfx.ds);
++        vc->gfx.scale_x = (double)ww / vc->gfx.w;
++        vc->gfx.scale_y = (double)wh / vc->gfx.h;
+     }
+ }
+ 
+diff --git a/ui/gtk.c b/ui/gtk.c
+index ba6df608a4..59295fb7f9 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -960,9 +960,14 @@ static gboolean gd_motion_event(GtkWidget *widget, GdkEventMotion *motion,
+     fbh = surface_height(vc->gfx.ds) * vc->gfx.scale_y;
+ 
+     window = gtk_widget_get_window(vc->gfx.drawing_area);
+-    ww = gdk_window_get_width(window);
+-    wh = gdk_window_get_height(window);
+     ws = gdk_window_get_scale_factor(window);
++    if (GDK_IS_WAYLAND_DISPLAY(dpy)) {
++        ww = gtk_widget_get_allocated_width(vc->gfx.drawing_area);
++        wh = gtk_widget_get_allocated_height(vc->gfx.drawing_area);
++    } else {
++        ww = gdk_window_get_width(window);
++        wh = gdk_window_get_height(window);
++    }
+ 
+     mx = my = 0;
+     if (ww > fbw) {
+-- 
+2.34.1
+

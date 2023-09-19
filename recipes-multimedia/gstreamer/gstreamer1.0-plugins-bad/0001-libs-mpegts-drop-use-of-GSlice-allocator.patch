@@ -1,0 +1,1547 @@
+From 4b0d4a4e497aa2d8a1f0d1117668cad7c5ba6db5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:56:42 +0000
+Subject: [PATCH 001/205] libs: mpegts: drop use of GSlice allocator
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst-libs/gst/mpegts/gst-atsc-section.c    |  88 +++++++++---------
+ gst-libs/gst/mpegts/gst-dvb-descriptor.c  | 107 +++++++++++-----------
+ gst-libs/gst/mpegts/gst-dvb-section.c     |  74 +++++++--------
+ gst-libs/gst/mpegts/gst-scte-section.c    |  24 ++---
+ gst-libs/gst/mpegts/gstmpegtsdescriptor.c |  20 ++--
+ gst-libs/gst/mpegts/gstmpegtssection.c    |  30 +++---
+ 6 files changed, 171 insertions(+), 172 deletions(-)
+
+diff --git a/gst-libs/gst/mpegts/gst-atsc-section.c b/gst-libs/gst/mpegts/gst-atsc-section.c
+index 64f6a8334..4cdd024a4 100644
+--- a/gst-libs/gst/mpegts/gst-atsc-section.c
++++ b/gst-libs/gst/mpegts/gst-atsc-section.c
+@@ -87,7 +87,7 @@ _gst_mpegts_atsc_vct_source_copy (GstMpegtsAtscVCTSource * source)
+ {
+   GstMpegtsAtscVCTSource *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscVCTSource, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsAtscVCTSource));
+   copy->descriptors = g_ptr_array_ref (source->descriptors);
+ 
+   return copy;
+@@ -99,7 +99,7 @@ _gst_mpegts_atsc_vct_source_free (GstMpegtsAtscVCTSource * source)
+   g_free (source->short_name);
+   if (source->descriptors)
+     g_ptr_array_unref (source->descriptors);
+-  g_slice_free (GstMpegtsAtscVCTSource, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscVCTSource, gst_mpegts_atsc_vct_source,
+@@ -111,7 +111,7 @@ _gst_mpegts_atsc_vct_copy (GstMpegtsAtscVCT * vct)
+ {
+   GstMpegtsAtscVCT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscVCT, vct);
++  copy = g_memdup2 (vct, sizeof (GstMpegtsAtscVCT));
+   copy->sources = g_ptr_array_ref (vct->sources);
+   copy->descriptors = g_ptr_array_ref (vct->descriptors);
+ 
+@@ -125,7 +125,7 @@ _gst_mpegts_atsc_vct_free (GstMpegtsAtscVCT * vct)
+     g_ptr_array_unref (vct->sources);
+   if (vct->descriptors)
+     g_ptr_array_unref (vct->descriptors);
+-  g_slice_free (GstMpegtsAtscVCT, vct);
++  g_free (vct);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscVCT, gst_mpegts_atsc_vct,
+@@ -142,7 +142,7 @@ _parse_atsc_vct (GstMpegtsSection * section)
+   guint i;
+   GError *err = NULL;
+ 
+-  vct = g_slice_new0 (GstMpegtsAtscVCT);
++  vct = g_new0 (GstMpegtsAtscVCT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -173,7 +173,7 @@ _parse_atsc_vct (GstMpegtsSection * section)
+     if (end - data < 32 + 2 + 4)
+       goto error;
+ 
+-    source = g_slice_new0 (GstMpegtsAtscVCTSource);
++    source = g_new0 (GstMpegtsAtscVCTSource, 1);
+     g_ptr_array_add (vct->sources, source);
+ 
+     source->short_name =
+@@ -304,7 +304,7 @@ _gst_mpegts_atsc_mgt_table_copy (GstMpegtsAtscMGTTable * mgt_table)
+ {
+   GstMpegtsAtscMGTTable *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscMGTTable, mgt_table);
++  copy = g_memdup2 (mgt_table, sizeof (GstMpegtsAtscMGTTable));
+   copy->descriptors = g_ptr_array_ref (mgt_table->descriptors);
+ 
+   return copy;
+@@ -314,7 +314,7 @@ static void
+ _gst_mpegts_atsc_mgt_table_free (GstMpegtsAtscMGTTable * mgt_table)
+ {
+   g_ptr_array_unref (mgt_table->descriptors);
+-  g_slice_free (GstMpegtsAtscMGTTable, mgt_table);
++  g_free (mgt_table);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscMGTTable, gst_mpegts_atsc_mgt_table,
+@@ -326,7 +326,7 @@ _gst_mpegts_atsc_mgt_copy (GstMpegtsAtscMGT * mgt)
+ {
+   GstMpegtsAtscMGT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscMGT, mgt);
++  copy = g_memdup2 (mgt, sizeof (GstMpegtsAtscMGT));
+   copy->tables = g_ptr_array_ref (mgt->tables);
+   copy->descriptors = g_ptr_array_ref (mgt->descriptors);
+ 
+@@ -338,7 +338,7 @@ _gst_mpegts_atsc_mgt_free (GstMpegtsAtscMGT * mgt)
+ {
+   g_ptr_array_unref (mgt->tables);
+   g_ptr_array_unref (mgt->descriptors);
+-  g_slice_free (GstMpegtsAtscMGT, mgt);
++  g_free (mgt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscMGT, gst_mpegts_atsc_mgt,
+@@ -353,7 +353,7 @@ _parse_atsc_mgt (GstMpegtsSection * section)
+   guint8 *data, *end;
+   guint16 descriptors_loop_length;
+ 
+-  mgt = g_slice_new0 (GstMpegtsAtscMGT);
++  mgt = g_new0 (GstMpegtsAtscMGT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -375,7 +375,7 @@ _parse_atsc_mgt (GstMpegtsSection * section)
+       goto error;
+     }
+ 
+-    mgt_table = g_slice_new0 (GstMpegtsAtscMGTTable);
++    mgt_table = g_new0 (GstMpegtsAtscMGTTable, 1);
+     g_ptr_array_add (mgt->tables, mgt_table);
+ 
+     mgt_table->table_type = GST_READ_UINT16_BE (data);
+@@ -577,7 +577,7 @@ gst_mpegts_atsc_mgt_new (void)
+ {
+   GstMpegtsAtscMGT *mgt;
+ 
+-  mgt = g_slice_new0 (GstMpegtsAtscMGT);
++  mgt = g_new0 (GstMpegtsAtscMGT, 1);
+ 
+   mgt->tables = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       _gst_mpegts_atsc_mgt_table_free);
+@@ -595,7 +595,7 @@ _gst_mpegts_atsc_string_segment_copy (GstMpegtsAtscStringSegment * seg)
+ {
+   GstMpegtsAtscStringSegment *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscStringSegment, seg);
++  copy = g_memdup2 (seg, sizeof (GstMpegtsAtscStringSegment));
+ 
+   return copy;
+ }
+@@ -604,7 +604,7 @@ static void
+ _gst_mpegts_atsc_string_segment_free (GstMpegtsAtscStringSegment * seg)
+ {
+   g_free (seg->cached_string);
+-  g_slice_free (GstMpegtsAtscStringSegment, seg);
++  g_free (seg);
+ }
+ 
+ static void
+@@ -726,7 +726,7 @@ _gst_mpegts_atsc_mult_string_copy (GstMpegtsAtscMultString * mstring)
+ {
+   GstMpegtsAtscMultString *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscMultString, mstring);
++  copy = g_memdup2 (mstring, sizeof (GstMpegtsAtscMultString));
+   copy->segments = g_ptr_array_ref (mstring->segments);
+ 
+   return copy;
+@@ -736,7 +736,7 @@ static void
+ _gst_mpegts_atsc_mult_string_free (GstMpegtsAtscMultString * mstring)
+ {
+   g_ptr_array_unref (mstring->segments);
+-  g_slice_free (GstMpegtsAtscMultString, mstring);
++  g_free (mstring);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscMultString, gst_mpegts_atsc_mult_string,
+@@ -765,7 +765,7 @@ _parse_atsc_mult_string (guint8 * data, guint datasize)
+       guint8 num_segments;
+       gint j;
+ 
+-      mstring = g_slice_new0 (GstMpegtsAtscMultString);
++      mstring = g_new0 (GstMpegtsAtscMultString, 1);
+       g_ptr_array_add (res, mstring);
+       mstring->segments =
+           g_ptr_array_new_full (num_strings,
+@@ -790,7 +790,7 @@ _parse_atsc_mult_string (guint8 * data, guint datasize)
+       for (j = 0; j < num_segments; j++) {
+         GstMpegtsAtscStringSegment *seg;
+ 
+-        seg = g_slice_new0 (GstMpegtsAtscStringSegment);
++        seg = g_new0 (GstMpegtsAtscStringSegment, 1);
+         g_ptr_array_add (mstring->segments, seg);
+ 
+         /* each entry needs at least 3 bytes */
+@@ -909,7 +909,7 @@ _gst_mpegts_atsc_eit_event_copy (GstMpegtsAtscEITEvent * event)
+ {
+   GstMpegtsAtscEITEvent *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscEITEvent, event);
++  copy = g_memdup2 (event, sizeof (GstMpegtsAtscEITEvent));
+   copy->titles = g_ptr_array_ref (event->titles);
+   copy->descriptors = g_ptr_array_ref (event->descriptors);
+ 
+@@ -923,7 +923,7 @@ _gst_mpegts_atsc_eit_event_free (GstMpegtsAtscEITEvent * event)
+     g_ptr_array_unref (event->titles);
+   if (event->descriptors)
+     g_ptr_array_unref (event->descriptors);
+-  g_slice_free (GstMpegtsAtscEITEvent, event);
++  g_free (event);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscEITEvent, gst_mpegts_atsc_eit_event,
+@@ -935,7 +935,7 @@ _gst_mpegts_atsc_eit_copy (GstMpegtsAtscEIT * eit)
+ {
+   GstMpegtsAtscEIT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscEIT, eit);
++  copy = g_memdup2 (eit, sizeof (GstMpegtsAtscEIT));
+   copy->events = g_ptr_array_ref (eit->events);
+ 
+   return copy;
+@@ -946,7 +946,7 @@ _gst_mpegts_atsc_eit_free (GstMpegtsAtscEIT * eit)
+ {
+   if (eit->events)
+     g_ptr_array_unref (eit->events);
+-  g_slice_free (GstMpegtsAtscEIT, eit);
++  g_free (eit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscEIT, gst_mpegts_atsc_eit,
+@@ -961,7 +961,7 @@ _parse_atsc_eit (GstMpegtsSection * section)
+   guint8 *data, *end;
+   guint8 num_events;
+ 
+-  eit = g_slice_new0 (GstMpegtsAtscEIT);
++  eit = g_new0 (GstMpegtsAtscEIT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -991,7 +991,7 @@ _parse_atsc_eit (GstMpegtsSection * section)
+       goto error;
+     }
+ 
+-    event = g_slice_new0 (GstMpegtsAtscEITEvent);
++    event = g_new0 (GstMpegtsAtscEITEvent, 1);
+     g_ptr_array_add (eit->events, event);
+ 
+     event->event_id = GST_READ_UINT16_BE (data) & 0x3FFF;
+@@ -1072,7 +1072,7 @@ _gst_mpegts_atsc_ett_copy (GstMpegtsAtscETT * ett)
+ {
+   GstMpegtsAtscETT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscETT, ett);
++  copy = g_memdup2 (ett, sizeof (GstMpegtsAtscETT));
+   copy->messages = g_ptr_array_ref (ett->messages);
+ 
+   return copy;
+@@ -1083,7 +1083,7 @@ _gst_mpegts_atsc_ett_free (GstMpegtsAtscETT * ett)
+ {
+   if (ett->messages)
+     g_ptr_array_unref (ett->messages);
+-  g_slice_free (GstMpegtsAtscETT, ett);
++  g_free (ett);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscETT, gst_mpegts_atsc_ett,
+@@ -1096,7 +1096,7 @@ _parse_ett (GstMpegtsSection * section)
+   GstMpegtsAtscETT *ett = NULL;
+   guint8 *data, *end;
+ 
+-  ett = g_slice_new0 (GstMpegtsAtscETT);
++  ett = g_new0 (GstMpegtsAtscETT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -1159,7 +1159,7 @@ _gst_mpegts_atsc_stt_copy (GstMpegtsAtscSTT * stt)
+ {
+   GstMpegtsAtscSTT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscSTT, stt);
++  copy = g_memdup2 (stt, sizeof (GstMpegtsAtscSTT));
+   copy->descriptors = g_ptr_array_ref (stt->descriptors);
+ 
+   return copy;
+@@ -1173,7 +1173,7 @@ _gst_mpegts_atsc_stt_free (GstMpegtsAtscSTT * stt)
+   if (stt->utc_datetime)
+     gst_date_time_unref (stt->utc_datetime);
+ 
+-  g_slice_free (GstMpegtsAtscSTT, stt);
++  g_free (stt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscSTT, gst_mpegts_atsc_stt,
+@@ -1187,7 +1187,7 @@ _parse_atsc_stt (GstMpegtsSection * section)
+   guint8 *data, *end;
+   guint16 daylight_saving;
+ 
+-  stt = g_slice_new0 (GstMpegtsAtscSTT);
++  stt = g_new0 (GstMpegtsAtscSTT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -1334,7 +1334,7 @@ gst_mpegts_atsc_stt_new (void)
+ {
+   GstMpegtsAtscSTT *stt;
+ 
+-  stt = g_slice_new0 (GstMpegtsAtscSTT);
++  stt = g_new0 (GstMpegtsAtscSTT, 1);
+   stt->descriptors = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       gst_mpegts_descriptor_free);
+ 
+@@ -1369,7 +1369,7 @@ _gst_mpegts_atsc_rrt_dimension_value_copy (GstMpegtsAtscRRTDimensionValue *
+ {
+   GstMpegtsAtscRRTDimensionValue *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscRRTDimensionValue, value);
++  copy = g_memdup2 (value, sizeof (GstMpegtsAtscRRTDimensionValue));
+   copy->abbrev_ratings = g_ptr_array_ref (value->abbrev_ratings);
+   copy->ratings = g_ptr_array_ref (value->ratings);
+ 
+@@ -1385,7 +1385,7 @@ _gst_mpegts_atsc_rrt_dimension_value_free (GstMpegtsAtscRRTDimensionValue *
+   if (value->ratings)
+     g_ptr_array_unref (value->ratings);
+ 
+-  g_slice_free (GstMpegtsAtscRRTDimensionValue, value);
++  g_free (value);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscRRTDimensionValue,
+@@ -1398,7 +1398,7 @@ _gst_mpegts_atsc_rrt_dimension_copy (GstMpegtsAtscRRTDimension * dim)
+ {
+   GstMpegtsAtscRRTDimension *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscRRTDimension, dim);
++  copy = g_memdup2 (dim, sizeof (GstMpegtsAtscRRTDimension));
+   copy->names = g_ptr_array_ref (dim->names);
+   copy->values = g_ptr_array_ref (dim->values);
+ 
+@@ -1413,7 +1413,7 @@ _gst_mpegts_atsc_rrt_dimension_free (GstMpegtsAtscRRTDimension * dim)
+   if (dim->values)
+     g_ptr_array_unref (dim->values);
+ 
+-  g_slice_free (GstMpegtsAtscRRTDimension, dim);
++  g_free (dim);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscRRTDimension, gst_mpegts_atsc_rrt_dimension,
+@@ -1425,7 +1425,7 @@ _gst_mpegts_atsc_rrt_copy (GstMpegtsAtscRRT * rrt)
+ {
+   GstMpegtsAtscRRT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsAtscRRT, rrt);
++  copy = g_memdup2 (rrt, sizeof (GstMpegtsAtscRRT));
+   copy->names = g_ptr_array_ref (rrt->names);
+   copy->dimensions = g_ptr_array_ref (rrt->dimensions);
+   copy->descriptors = g_ptr_array_ref (rrt->descriptors);
+@@ -1443,7 +1443,7 @@ _gst_mpegts_atsc_rrt_free (GstMpegtsAtscRRT * rrt)
+   if (rrt->descriptors)
+     g_ptr_array_unref (rrt->descriptors);
+ 
+-  g_slice_free (GstMpegtsAtscRRT, rrt);
++  g_free (rrt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsAtscRRT, gst_mpegts_atsc_rrt,
+@@ -1459,7 +1459,7 @@ _parse_rrt (GstMpegtsSection * section)
+   guint16 descriptors_loop_length;
+   guint8 text_length;
+ 
+-  rrt = g_slice_new0 (GstMpegtsAtscRRT);
++  rrt = g_new0 (GstMpegtsAtscRRT, 1);
+ 
+   data = section->data;
+ 
+@@ -1485,7 +1485,7 @@ _parse_rrt (GstMpegtsSection * section)
+     guint8 tmp;
+     guint j = 0;
+ 
+-    dim = g_slice_new0 (GstMpegtsAtscRRTDimension);
++    dim = g_new0 (GstMpegtsAtscRRTDimension, 1);
+     g_ptr_array_add (rrt->dimensions, dim);
+ 
+     text_length = GST_READ_UINT8 (data);
+@@ -1505,7 +1505,7 @@ _parse_rrt (GstMpegtsSection * section)
+     for (j = 0; j < dim->values_defined; j++) {
+       GstMpegtsAtscRRTDimensionValue *val;
+ 
+-      val = g_slice_new0 (GstMpegtsAtscRRTDimensionValue);
++      val = g_new0 (GstMpegtsAtscRRTDimensionValue, 1);
+       g_ptr_array_add (dim->values, val);
+ 
+       text_length = GST_READ_UINT8 (data);
+@@ -1710,7 +1710,7 @@ gst_mpegts_atsc_rrt_dimension_value_new (void)
+ {
+   GstMpegtsAtscRRTDimensionValue *val;
+ 
+-  val = g_slice_new0 (GstMpegtsAtscRRTDimensionValue);
++  val = g_new0 (GstMpegtsAtscRRTDimensionValue, 1);
+   val->abbrev_ratings = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       _gst_mpegts_atsc_mult_string_free);
+   val->ratings = g_ptr_array_new_with_free_func ((GDestroyNotify)
+@@ -1730,7 +1730,7 @@ gst_mpegts_atsc_rrt_dimension_new (void)
+ {
+   GstMpegtsAtscRRTDimension *dim;
+ 
+-  dim = g_slice_new0 (GstMpegtsAtscRRTDimension);
++  dim = g_new0 (GstMpegtsAtscRRTDimension, 1);
+   dim->names = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       _gst_mpegts_atsc_mult_string_free);
+   dim->values = g_ptr_array_new_with_free_func ((GDestroyNotify)
+@@ -1750,7 +1750,7 @@ gst_mpegts_atsc_rrt_new (void)
+ {
+   GstMpegtsAtscRRT *rrt;
+ 
+-  rrt = g_slice_new0 (GstMpegtsAtscRRT);
++  rrt = g_new0 (GstMpegtsAtscRRT, 1);
+   rrt->names = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       _gst_mpegts_atsc_mult_string_free);
+   rrt->dimensions = g_ptr_array_new_with_free_func ((GDestroyNotify)
+diff --git a/gst-libs/gst/mpegts/gst-dvb-descriptor.c b/gst-libs/gst/mpegts/gst-dvb-descriptor.c
+index e9ca2b191..f6da78395 100644
+--- a/gst-libs/gst/mpegts/gst-dvb-descriptor.c
++++ b/gst-libs/gst/mpegts/gst-dvb-descriptor.c
+@@ -60,13 +60,13 @@
+ #define DEFINE_STATIC_COPY_FUNCTION(type, name) \
+ static type * _##name##_copy (type * source) \
+ { \
+-  return g_slice_dup (type, source); \
++  return g_memdup2 (source, sizeof (type)); \
+ }
+ 
+ #define DEFINE_STATIC_FREE_FUNCTION(type, name) \
+ static void _##name##_free (type * source) \
+ { \
+-  g_slice_free (type, source); \
++  g_free (source); \
+ }
+ 
+ /* GST_MTS_DESC_DVB_NETWORK_NAME (0x40) */
+@@ -169,8 +169,7 @@ gst_mpegts_descriptor_parse_dvb_service_list (const GstMpegtsDescriptor *
+       _gst_mpegts_dvb_service_list_item_free);
+ 
+   for (i = 0; i < descriptor->length - 2; i += 3) {
+-    GstMpegtsDVBServiceListItem *item =
+-        g_slice_new0 (GstMpegtsDVBServiceListItem);
++    GstMpegtsDVBServiceListItem *item = g_new0 (GstMpegtsDVBServiceListItem, 1);
+ 
+     g_ptr_array_add (*list, item);
+     item->service_id = GST_READ_UINT16_BE (data);
+@@ -331,7 +330,7 @@ DEFINE_STATIC_COPY_FUNCTION (GstMpegtsCableDeliverySystemDescriptor,
+ void gst_mpegts_dvb_cable_delivery_system_descriptor_free
+     (GstMpegtsCableDeliverySystemDescriptor * source)
+ {
+-  g_slice_free (GstMpegtsCableDeliverySystemDescriptor, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsCableDeliverySystemDescriptor,
+@@ -582,16 +581,16 @@ _gst_mpegts_dvb_linkage_descriptor_copy (GstMpegtsDVBLinkageDescriptor * source)
+ {
+   GstMpegtsDVBLinkageDescriptor *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsDVBLinkageDescriptor, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsDVBLinkageDescriptor));
+ 
+   switch (source->linkage_type) {
+     case GST_MPEGTS_DVB_LINKAGE_MOBILE_HAND_OVER:
+-      copy->linkage_data = g_slice_dup (GstMpegtsDVBLinkageMobileHandOver,
+-          source->linkage_data);
++      copy->linkage_data = g_memdup2 (source->linkage_data,
++          sizeof (GstMpegtsDVBLinkageMobileHandOver));
+       break;
+     case GST_MPEGTS_DVB_LINKAGE_EVENT:
+-      copy->linkage_data = g_slice_dup (GstMpegtsDVBLinkageEvent,
+-          source->linkage_data);
++      copy->linkage_data = g_memdup2 (source->linkage_data,
++          sizeof (GstMpegtsDVBLinkageEvent));
+       break;
+     case GST_MPEGTS_DVB_LINKAGE_EXTENDED_EVENT:
+       copy->linkage_data = g_ptr_array_ref (source->linkage_data);
+@@ -612,10 +611,10 @@ gst_mpegts_dvb_linkage_descriptor_free (GstMpegtsDVBLinkageDescriptor * source)
+   if (source->linkage_data)
+     switch (source->linkage_type) {
+       case GST_MPEGTS_DVB_LINKAGE_MOBILE_HAND_OVER:
+-        g_slice_free (GstMpegtsDVBLinkageMobileHandOver, source->linkage_data);
++        g_free (source->linkage_data);
+         break;
+       case GST_MPEGTS_DVB_LINKAGE_EVENT:
+-        g_slice_free (GstMpegtsDVBLinkageEvent, source->linkage_data);
++        g_free (source->linkage_data);
+         break;
+       case GST_MPEGTS_DVB_LINKAGE_EXTENDED_EVENT:
+         g_ptr_array_unref (source->linkage_data);
+@@ -625,7 +624,7 @@ gst_mpegts_dvb_linkage_descriptor_free (GstMpegtsDVBLinkageDescriptor * source)
+     }
+ 
+   g_free (source->private_data_bytes);
+-  g_slice_free (GstMpegtsDVBLinkageDescriptor, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDVBLinkageDescriptor,
+@@ -689,7 +688,7 @@ gst_mpegts_descriptor_parse_dvb_linkage (const GstMpegtsDescriptor * descriptor,
+   data = (guint8 *) descriptor->data + 2;
+   end = data + descriptor->length;
+ 
+-  res = g_slice_new0 (GstMpegtsDVBLinkageDescriptor);
++  res = g_new0 (GstMpegtsDVBLinkageDescriptor, 1);
+ 
+   res->transport_stream_id = GST_READ_UINT16_BE (data);
+   data += 2;
+@@ -710,7 +709,7 @@ gst_mpegts_descriptor_parse_dvb_linkage (const GstMpegtsDescriptor * descriptor,
+       if (end - data < 1)
+         goto fail;
+ 
+-      hand_over = g_slice_new0 (GstMpegtsDVBLinkageMobileHandOver);
++      hand_over = g_new0 (GstMpegtsDVBLinkageMobileHandOver, 1);
+       res->linkage_data = (gpointer) hand_over;
+ 
+       hand_over->origin_type = (*data) & 0x01;
+@@ -745,7 +744,7 @@ gst_mpegts_descriptor_parse_dvb_linkage (const GstMpegtsDescriptor * descriptor,
+       if (end - data < 3)
+         goto fail;
+ 
+-      event = g_slice_new0 (GstMpegtsDVBLinkageEvent);
++      event = g_new0 (GstMpegtsDVBLinkageEvent, 1);
+       res->linkage_data = (gpointer) event;
+ 
+       event->target_event_id = GST_READ_UINT16_BE (data);
+@@ -768,7 +767,7 @@ gst_mpegts_descriptor_parse_dvb_linkage (const GstMpegtsDescriptor * descriptor,
+         if (end - data < 3)
+           goto fail;
+ 
+-        ext_event = g_slice_new0 (GstMpegtsDVBLinkageExtendedEvent);
++        ext_event = g_new0 (GstMpegtsDVBLinkageExtendedEvent, 1);
+         g_ptr_array_add (res->linkage_data, ext_event);
+ 
+         ext_event->target_event_id = GST_READ_UINT16_BE (data);
+@@ -1092,7 +1091,7 @@ _gst_mpegts_extended_event_descriptor_copy (GstMpegtsExtendedEventDescriptor *
+ {
+   GstMpegtsExtendedEventDescriptor *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsExtendedEventDescriptor, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsExtendedEventDescriptor));
+   copy->items = g_ptr_array_ref (source->items);
+   copy->text = g_strdup (source->text);
+ 
+@@ -1106,7 +1105,7 @@ gst_mpegts_extended_event_descriptor_free (GstMpegtsExtendedEventDescriptor *
+   g_free (source->text);
+   g_free (source->language_code);
+   g_ptr_array_unref (source->items);
+-  g_slice_free (GstMpegtsExtendedEventDescriptor, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsExtendedEventDescriptor,
+@@ -1118,7 +1117,7 @@ static GstMpegtsExtendedEventItem *
+ _gst_mpegts_extended_event_item_copy (GstMpegtsExtendedEventItem * source)
+ {
+   GstMpegtsExtendedEventItem *copy =
+-      g_slice_dup (GstMpegtsExtendedEventItem, source);
++      g_memdup2 (source, sizeof (GstMpegtsExtendedEventItem));
+   copy->item_description = g_strdup (source->item_description);
+   copy->item = g_strdup (source->item);
+   return copy;
+@@ -1129,7 +1128,7 @@ _gst_mpegts_extended_event_item_free (GstMpegtsExtendedEventItem * item)
+ {
+   g_free (item->item);
+   g_free (item->item_description);
+-  g_slice_free (GstMpegtsExtendedEventItem, item);
++  g_free (item);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsExtendedEventItem,
+@@ -1159,7 +1158,7 @@ gst_mpegts_descriptor_parse_dvb_extended_event (const GstMpegtsDescriptor
+   /* Need at least 6 bytes (1 for desc number, 3 for language code, 2 for the loop length) */
+   __common_desc_checks (descriptor, GST_MTS_DESC_DVB_EXTENDED_EVENT, 6, FALSE);
+ 
+-  res = g_slice_new0 (GstMpegtsExtendedEventDescriptor);
++  res = g_new0 (GstMpegtsExtendedEventDescriptor, 1);
+ 
+   data = (guint8 *) descriptor->data + 2;
+ 
+@@ -1185,7 +1184,7 @@ gst_mpegts_descriptor_parse_dvb_extended_event (const GstMpegtsDescriptor
+ 
+   pdata = data + len_item;
+   while (data < pdata) {
+-    item = g_slice_new0 (GstMpegtsExtendedEventItem);
++    item = g_new0 (GstMpegtsExtendedEventItem, 1);
+     item->item_description =
+         get_encoding_and_convert ((const gchar *) data + 1, *data);
+ 
+@@ -1215,7 +1214,7 @@ _gst_mpegts_dvb_component_descriptor_copy (GstMpegtsComponentDescriptor *
+ {
+   GstMpegtsComponentDescriptor *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsComponentDescriptor, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsComponentDescriptor));
+   copy->language_code = g_strdup (source->language_code);
+   copy->text = g_strdup (source->text);
+ 
+@@ -1227,7 +1226,7 @@ gst_mpegts_dvb_component_descriptor_free (GstMpegtsComponentDescriptor * source)
+ {
+   g_free (source->language_code);
+   g_free (source->text);
+-  g_slice_free (GstMpegtsComponentDescriptor, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsComponentDescriptor,
+@@ -1258,7 +1257,7 @@ gst_mpegts_descriptor_parse_dvb_component (const GstMpegtsDescriptor
+ 
+   data = (guint8 *) descriptor->data + 2;
+ 
+-  desc = g_slice_new0 (GstMpegtsComponentDescriptor);
++  desc = g_new0 (GstMpegtsComponentDescriptor, 1);
+ 
+   desc->stream_content = *data & 0x0f;
+   data += 1;
+@@ -1382,7 +1381,7 @@ gst_mpegts_descriptor_parse_dvb_content (const GstMpegtsDescriptor
+   *content = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       _gst_mpegts_content_free);
+   for (i = 0; i < len;) {
+-    GstMpegtsContent *cont = g_slice_new0 (GstMpegtsContent);
++    GstMpegtsContent *cont = g_new0 (GstMpegtsContent, 1);
+     tmp = *data;
+     cont->content_nibble_1 = (tmp & 0xf0) >> 4;
+     cont->content_nibble_2 = tmp & 0x0f;
+@@ -1403,7 +1402,7 @@ _gst_mpegts_dvb_parental_rating_item_copy (GstMpegtsDVBParentalRatingItem *
+     source)
+ {
+   GstMpegtsDVBParentalRatingItem *copy =
+-      g_slice_dup (GstMpegtsDVBParentalRatingItem, source);
++      g_memdup2 (source, sizeof (GstMpegtsDVBParentalRatingItem));
+   copy->country_code = g_strdup (source->country_code);
+   return copy;
+ }
+@@ -1413,7 +1412,7 @@ _gst_mpegts_dvb_parental_rating_item_free (GstMpegtsDVBParentalRatingItem *
+     item)
+ {
+   g_free (item->country_code);
+-  g_slice_free (GstMpegtsDVBParentalRatingItem, item);
++  g_free (item);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDVBParentalRatingItem,
+@@ -1449,7 +1448,7 @@ gst_mpegts_descriptor_parse_dvb_parental_rating (const GstMpegtsDescriptor
+ 
+   for (i = 0; i < descriptor->length - 3; i += 4) {
+     GstMpegtsDVBParentalRatingItem *item =
+-        g_slice_new0 (GstMpegtsDVBParentalRatingItem);
++        g_new0 (GstMpegtsDVBParentalRatingItem, 1);
+     g_ptr_array_add (*rating, item);
+ 
+     item->country_code = convert_lang_code (data);
+@@ -1686,7 +1685,7 @@ static GstMpegtsDvbMultilingualNetworkNameItem
+     (GstMpegtsDvbMultilingualNetworkNameItem * source)
+ {
+   GstMpegtsDvbMultilingualNetworkNameItem *copy =
+-      g_slice_dup (GstMpegtsDvbMultilingualNetworkNameItem, source);
++      g_memdup2 (source, sizeof (GstMpegtsDvbMultilingualNetworkNameItem));
+   copy->language_code = g_strdup (source->language_code);
+   copy->network_name = g_strdup (source->network_name);
+   return copy;
+@@ -1698,7 +1697,7 @@ static void
+ {
+   g_free (item->network_name);
+   g_free (item->language_code);
+-  g_slice_free (GstMpegtsDvbMultilingualNetworkNameItem, item);
++  g_free (item);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDvbMultilingualNetworkNameItem,
+@@ -1735,7 +1734,7 @@ gst_mpegts_descriptor_parse_dvb_multilingual_network_name (const
+       _gst_mpegts_dvb_multilingual_network_name_item_free);
+ 
+   for (i = 0; i < descriptor->length - 3;) {
+-    item = g_slice_new0 (GstMpegtsDvbMultilingualNetworkNameItem);
++    item = g_new0 (GstMpegtsDvbMultilingualNetworkNameItem, 1);
+     g_ptr_array_add (*network_name_items, item);
+     item->language_code = convert_lang_code (data);
+     data += 3;
+@@ -1758,7 +1757,7 @@ static GstMpegtsDvbMultilingualBouquetNameItem
+     (GstMpegtsDvbMultilingualBouquetNameItem * source)
+ {
+   GstMpegtsDvbMultilingualBouquetNameItem *copy =
+-      g_slice_dup (GstMpegtsDvbMultilingualBouquetNameItem, source);
++      g_memdup2 (source, sizeof (GstMpegtsDvbMultilingualBouquetNameItem));
+   copy->bouquet_name = g_strdup (source->bouquet_name);
+   copy->language_code = g_strdup (source->language_code);
+   return copy;
+@@ -1770,7 +1769,7 @@ static void
+ {
+   g_free (item->language_code);
+   g_free (item->bouquet_name);
+-  g_slice_free (GstMpegtsDvbMultilingualBouquetNameItem, item);
++  g_free (item);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDvbMultilingualBouquetNameItem,
+@@ -1807,7 +1806,7 @@ gst_mpegts_descriptor_parse_dvb_multilingual_bouquet_name (const
+       _gst_mpegts_dvb_multilingual_bouquet_name_item_free);
+ 
+   for (i = 0; i < descriptor->length - 3;) {
+-    item = g_slice_new0 (GstMpegtsDvbMultilingualBouquetNameItem);
++    item = g_new0 (GstMpegtsDvbMultilingualBouquetNameItem, 1);
+     g_ptr_array_add (*bouquet_name_items, item);
+     item->language_code = convert_lang_code (data);
+     data += 3;
+@@ -1830,7 +1829,7 @@ static GstMpegtsDvbMultilingualServiceNameItem
+     (GstMpegtsDvbMultilingualServiceNameItem * source)
+ {
+   GstMpegtsDvbMultilingualServiceNameItem *copy =
+-      g_slice_dup (GstMpegtsDvbMultilingualServiceNameItem, source);
++      g_memdup2 (source, sizeof (GstMpegtsDvbMultilingualServiceNameItem));
+   copy->language_code = g_strdup (source->language_code);
+   copy->service_name = g_strdup (source->service_name);
+   copy->provider_name = g_strdup (source->provider_name);
+@@ -1844,7 +1843,7 @@ static void
+   g_free (item->provider_name);
+   g_free (item->service_name);
+   g_free (item->language_code);
+-  g_slice_free (GstMpegtsDvbMultilingualServiceNameItem, item);
++  g_free (item);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDvbMultilingualServiceNameItem,
+@@ -1881,7 +1880,7 @@ gst_mpegts_descriptor_parse_dvb_multilingual_service_name (const
+       _gst_mpegts_dvb_multilingual_service_name_item_free);
+ 
+   for (i = 0; i < descriptor->length - 3;) {
+-    item = g_slice_new0 (GstMpegtsDvbMultilingualServiceNameItem);
++    item = g_new0 (GstMpegtsDvbMultilingualServiceNameItem, 1);
+     g_ptr_array_add (*service_name_items, item);
+     item->language_code = convert_lang_code (data);
+     data += 3;
+@@ -1910,7 +1909,7 @@ static GstMpegtsDvbMultilingualComponentItem
+     (GstMpegtsDvbMultilingualComponentItem * source)
+ {
+   GstMpegtsDvbMultilingualComponentItem *copy =
+-      g_slice_dup (GstMpegtsDvbMultilingualComponentItem, source);
++      g_memdup2 (source, sizeof (GstMpegtsDvbMultilingualComponentItem));
+   copy->description = g_strdup (source->description);
+   copy->language_code = g_strdup (source->language_code);
+   return copy;
+@@ -1922,7 +1921,7 @@ static void
+ {
+   g_free (item->language_code);
+   g_free (item->description);
+-  g_slice_free (GstMpegtsDvbMultilingualComponentItem, item);
++  g_free (item);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDvbMultilingualComponentItem,
+@@ -1965,7 +1964,7 @@ gst_mpegts_descriptor_parse_dvb_multilingual_component (const
+       _gst_mpegts_dvb_multilingual_component_item_free);
+ 
+   for (i = 0; i < descriptor->length - 3;) {
+-    item = g_slice_new0 (GstMpegtsDvbMultilingualComponentItem);
++    item = g_new0 (GstMpegtsDvbMultilingualComponentItem, 1);
+     g_ptr_array_add (*component_description_items, item);
+     item->language_code = convert_lang_code (data);
+     data += 3;
+@@ -2089,7 +2088,7 @@ _gst_mpegts_dvb_data_broadcast_descriptor_copy (GstMpegtsDataBroadcastDescriptor
+ {
+   GstMpegtsDataBroadcastDescriptor *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsDataBroadcastDescriptor, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsDataBroadcastDescriptor));
+ 
+   copy->selector_bytes = g_memdup2 (source->selector_bytes, source->length);
+   copy->language_code = g_strdup (source->language_code);
+@@ -2105,7 +2104,7 @@ gst_mpegts_dvb_data_broadcast_descriptor_free (GstMpegtsDataBroadcastDescriptor
+   g_free (source->selector_bytes);
+   g_free (source->language_code);
+   g_free (source->text);
+-  g_slice_free (GstMpegtsDataBroadcastDescriptor, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDataBroadcastDescriptor,
+@@ -2134,7 +2133,7 @@ gst_mpegts_descriptor_parse_dvb_data_broadcast (const GstMpegtsDescriptor
+ 
+   data = (guint8 *) descriptor->data + 2;
+ 
+-  res = g_slice_new0 (GstMpegtsDataBroadcastDescriptor);
++  res = g_new0 (GstMpegtsDataBroadcastDescriptor, 1);
+ 
+   res->data_broadcast_id = GST_READ_UINT16_BE (data);
+   data += 2;
+@@ -2232,7 +2231,7 @@ static GstMpegtsT2DeliverySystemDescriptor
+ {
+   GstMpegtsT2DeliverySystemDescriptor *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsT2DeliverySystemDescriptor, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsT2DeliverySystemDescriptor));
+   copy->cells = g_ptr_array_ref (source->cells);
+ 
+   return copy;
+@@ -2242,7 +2241,7 @@ void gst_mpegts_t2_delivery_system_descriptor_free
+     (GstMpegtsT2DeliverySystemDescriptor * source)
+ {
+   g_ptr_array_unref (source->cells);
+-  g_slice_free (GstMpegtsT2DeliverySystemDescriptor, source);
++  g_free (source);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsT2DeliverySystemDescriptor,
+@@ -2266,7 +2265,7 @@ _gst_mpegts_t2_delivery_system_cell_copy (GstMpegtsT2DeliverySystemCell
+     * source)
+ {
+   GstMpegtsT2DeliverySystemCell *copy =
+-      g_slice_dup (GstMpegtsT2DeliverySystemCell, source);
++      g_memdup2 (source, sizeof (GstMpegtsT2DeliverySystemCell));
+   copy->centre_frequencies = g_array_ref (source->centre_frequencies);
+   copy->sub_cells = g_ptr_array_ref (source->sub_cells);
+   return copy;
+@@ -2277,7 +2276,7 @@ _gst_mpegts_t2_delivery_system_cell_free (GstMpegtsT2DeliverySystemCell * cell)
+ {
+   g_ptr_array_unref (cell->sub_cells);
+   g_array_unref (cell->centre_frequencies);
+-  g_slice_free (GstMpegtsT2DeliverySystemCell, cell);
++  g_free (cell);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsT2DeliverySystemCell,
+@@ -2310,7 +2309,7 @@ gst_mpegts_descriptor_parse_dvb_t2_delivery_system (const GstMpegtsDescriptor
+ 
+   data = (guint8 *) descriptor->data + 3;
+ 
+-  res = g_slice_new0 (GstMpegtsT2DeliverySystemDescriptor);
++  res = g_new0 (GstMpegtsT2DeliverySystemDescriptor, 1);
+ 
+   res->plp_id = *data;
+   data += 1;
+@@ -2407,7 +2406,7 @@ gst_mpegts_descriptor_parse_dvb_t2_delivery_system (const GstMpegtsDescriptor
+       GstMpegtsT2DeliverySystemCell *cell;
+       guint8 j, k;
+ 
+-      cell = g_slice_new0 (GstMpegtsT2DeliverySystemCell);
++      cell = g_new0 (GstMpegtsT2DeliverySystemCell, 1);
+       g_ptr_array_add (res->cells, cell);
+ 
+       cell->cell_id = GST_READ_UINT16_BE (data);
+@@ -2443,7 +2442,7 @@ gst_mpegts_descriptor_parse_dvb_t2_delivery_system (const GstMpegtsDescriptor
+ 
+       for (k = 0; k < sub_cell_len;) {
+         GstMpegtsT2DeliverySystemCellExtension *cell_ext;
+-        cell_ext = g_slice_new0 (GstMpegtsT2DeliverySystemCellExtension);
++        cell_ext = g_new0 (GstMpegtsT2DeliverySystemCellExtension, 1);
+ 
+         g_ptr_array_add (cell->sub_cells, cell_ext);
+         cell_ext->cell_id_extension = *data;
+@@ -2493,7 +2492,7 @@ gst_mpegts_descriptor_parse_audio_preselection_list (const GstMpegtsDescriptor
+   data += 1;
+ 
+   for (i = 0; i < num_preselections; i++) {
+-    item = g_slice_new0 (GstMpegtsAudioPreselectionDescriptor);
++    item = g_new0 (GstMpegtsAudioPreselectionDescriptor, 1);
+     g_ptr_array_add (*list, item);
+ 
+     item->preselection_id = (*data & 0xF8) >> 3;
+@@ -2546,7 +2545,7 @@ void gst_mpegts_descriptor_parse_audio_preselection_free
+   if (source->language_code_present == 1) {
+     g_free (source->language_code);
+   }
+-  g_slice_free (GstMpegtsAudioPreselectionDescriptor, source);
++  g_free (source);
+ }
+ 
+ void gst_mpegts_descriptor_parse_audio_preselection_dump
+diff --git a/gst-libs/gst/mpegts/gst-dvb-section.c b/gst-libs/gst/mpegts/gst-dvb-section.c
+index 9beca81fd..386b4a833 100644
+--- a/gst-libs/gst/mpegts/gst-dvb-section.c
++++ b/gst-libs/gst/mpegts/gst-dvb-section.c
+@@ -157,7 +157,7 @@ _gst_mpegts_eit_event_copy (GstMpegtsEITEvent * eit)
+ {
+   GstMpegtsEITEvent *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsEITEvent, eit);
++  copy = g_memdup2 (eit, sizeof (GstMpegtsEITEvent));
+   copy->start_time = gst_date_time_ref (eit->start_time);
+   copy->descriptors = g_ptr_array_ref (eit->descriptors);
+ 
+@@ -171,7 +171,7 @@ _gst_mpegts_eit_event_free (GstMpegtsEITEvent * eit)
+     gst_date_time_unref (eit->start_time);
+   if (eit->descriptors)
+     g_ptr_array_unref (eit->descriptors);
+-  g_slice_free (GstMpegtsEITEvent, eit);
++  g_free (eit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsEITEvent, gst_mpegts_eit_event,
+@@ -183,7 +183,7 @@ _gst_mpegts_eit_copy (GstMpegtsEIT * eit)
+ {
+   GstMpegtsEIT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsEIT, eit);
++  copy = g_memdup2 (eit, sizeof (GstMpegtsEIT));
+   copy->events = g_ptr_array_ref (eit->events);
+ 
+   return copy;
+@@ -193,7 +193,7 @@ static void
+ _gst_mpegts_eit_free (GstMpegtsEIT * eit)
+ {
+   g_ptr_array_unref (eit->events);
+-  g_slice_free (GstMpegtsEIT, eit);
++  g_free (eit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsEIT, gst_mpegts_eit,
+@@ -207,7 +207,7 @@ _parse_eit (GstMpegtsSection * section)
+   guint8 *data, *end, *duration_ptr;
+   guint16 descriptors_loop_length;
+ 
+-  eit = g_slice_new0 (GstMpegtsEIT);
++  eit = g_new0 (GstMpegtsEIT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -241,7 +241,7 @@ _parse_eit (GstMpegtsSection * section)
+       goto error;
+     }
+ 
+-    event = g_slice_new0 (GstMpegtsEITEvent);
++    event = g_new0 (GstMpegtsEITEvent, 1);
+     g_ptr_array_add (eit->events, event);
+ 
+     event->event_id = GST_READ_UINT16_BE (data);
+@@ -313,7 +313,7 @@ _gst_mpegts_bat_stream_copy (GstMpegtsBATStream * bat)
+ {
+   GstMpegtsBATStream *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsBATStream, bat);
++  copy = g_memdup2 (bat, sizeof (GstMpegtsBATStream));
+   copy->descriptors = g_ptr_array_ref (bat->descriptors);
+ 
+   return copy;
+@@ -324,7 +324,7 @@ _gst_mpegts_bat_stream_free (GstMpegtsBATStream * bat)
+ {
+   if (bat->descriptors)
+     g_ptr_array_unref (bat->descriptors);
+-  g_slice_free (GstMpegtsBATStream, bat);
++  g_free (bat);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsBATStream, gst_mpegts_bat_stream,
+@@ -336,7 +336,7 @@ _gst_mpegts_bat_copy (GstMpegtsBAT * bat)
+ {
+   GstMpegtsBAT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsBAT, bat);
++  copy = g_memdup2 (bat, sizeof (GstMpegtsBAT));
+   copy->descriptors = g_ptr_array_ref (bat->descriptors);
+   copy->streams = g_ptr_array_ref (bat->streams);
+ 
+@@ -350,7 +350,7 @@ _gst_mpegts_bat_free (GstMpegtsBAT * bat)
+     g_ptr_array_unref (bat->descriptors);
+   if (bat->streams)
+     g_ptr_array_unref (bat->streams);
+-  g_slice_free (GstMpegtsBAT, bat);
++  g_free (bat);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsBAT, gst_mpegts_bat,
+@@ -366,7 +366,7 @@ _parse_bat (GstMpegtsSection * section)
+ 
+   GST_DEBUG ("BAT");
+ 
+-  bat = g_slice_new0 (GstMpegtsBAT);
++  bat = g_new0 (GstMpegtsBAT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -404,7 +404,7 @@ _parse_bat (GstMpegtsSection * section)
+ 
+   /* read up to the CRC */
+   while (transport_stream_loop_length - 4 > 0) {
+-    GstMpegtsBATStream *stream = g_slice_new0 (GstMpegtsBATStream);
++    GstMpegtsBATStream *stream = g_new0 (GstMpegtsBATStream, 1);
+ 
+     g_ptr_array_add (bat->streams, stream);
+ 
+@@ -491,7 +491,7 @@ _gst_mpegts_nit_stream_copy (GstMpegtsNITStream * nit)
+ {
+   GstMpegtsNITStream *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsNITStream, nit);
++  copy = g_memdup2 (nit, sizeof (GstMpegtsNITStream));
+   copy->descriptors = g_ptr_array_ref (nit->descriptors);
+ 
+   return copy;
+@@ -502,7 +502,7 @@ _gst_mpegts_nit_stream_free (GstMpegtsNITStream * nit)
+ {
+   if (nit->descriptors)
+     g_ptr_array_unref (nit->descriptors);
+-  g_slice_free (GstMpegtsNITStream, nit);
++  g_free (nit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsNITStream, gst_mpegts_nit_stream,
+@@ -512,7 +512,7 @@ G_DEFINE_BOXED_TYPE (GstMpegtsNITStream, gst_mpegts_nit_stream,
+ static GstMpegtsNIT *
+ _gst_mpegts_nit_copy (GstMpegtsNIT * nit)
+ {
+-  GstMpegtsNIT *copy = g_slice_dup (GstMpegtsNIT, nit);
++  GstMpegtsNIT *copy = g_memdup2 (nit, sizeof (GstMpegtsNIT));
+ 
+   copy->descriptors = g_ptr_array_ref (nit->descriptors);
+   copy->streams = g_ptr_array_ref (nit->streams);
+@@ -526,7 +526,7 @@ _gst_mpegts_nit_free (GstMpegtsNIT * nit)
+   if (nit->descriptors)
+     g_ptr_array_unref (nit->descriptors);
+   g_ptr_array_unref (nit->streams);
+-  g_slice_free (GstMpegtsNIT, nit);
++  g_free (nit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsNIT, gst_mpegts_nit,
+@@ -543,7 +543,7 @@ _parse_nit (GstMpegtsSection * section)
+ 
+   GST_DEBUG ("NIT");
+ 
+-  nit = g_slice_new0 (GstMpegtsNIT);
++  nit = g_new0 (GstMpegtsNIT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -584,7 +584,7 @@ _parse_nit (GstMpegtsSection * section)
+ 
+   /* read up to the CRC */
+   while (transport_stream_loop_length - 4 > 0) {
+-    GstMpegtsNITStream *stream = g_slice_new0 (GstMpegtsNITStream);
++    GstMpegtsNITStream *stream = g_new0 (GstMpegtsNITStream, 1);
+ 
+     g_ptr_array_add (nit->streams, stream);
+ 
+@@ -675,7 +675,7 @@ gst_mpegts_nit_new (void)
+ {
+   GstMpegtsNIT *nit;
+ 
+-  nit = g_slice_new0 (GstMpegtsNIT);
++  nit = g_new0 (GstMpegtsNIT, 1);
+ 
+   nit->descriptors = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       gst_mpegts_descriptor_free);
+@@ -697,7 +697,7 @@ gst_mpegts_nit_stream_new (void)
+ {
+   GstMpegtsNITStream *stream;
+ 
+-  stream = g_slice_new0 (GstMpegtsNITStream);
++  stream = g_new0 (GstMpegtsNITStream, 1);
+ 
+   stream->descriptors = g_ptr_array_new_with_free_func (
+       (GDestroyNotify) gst_mpegts_descriptor_free);
+@@ -834,7 +834,7 @@ gst_mpegts_section_from_nit (GstMpegtsNIT * nit)
+ static GstMpegtsSDTService *
+ _gst_mpegts_sdt_service_copy (GstMpegtsSDTService * sdt)
+ {
+-  GstMpegtsSDTService *copy = g_slice_dup (GstMpegtsSDTService, sdt);
++  GstMpegtsSDTService *copy = g_memdup2 (sdt, sizeof (GstMpegtsSDTService));
+ 
+   copy->descriptors = g_ptr_array_ref (sdt->descriptors);
+ 
+@@ -846,7 +846,7 @@ _gst_mpegts_sdt_service_free (GstMpegtsSDTService * sdt)
+ {
+   if (sdt->descriptors)
+     g_ptr_array_unref (sdt->descriptors);
+-  g_slice_free (GstMpegtsSDTService, sdt);
++  g_free (sdt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSDTService, gst_mpegts_sdt_service,
+@@ -856,7 +856,7 @@ G_DEFINE_BOXED_TYPE (GstMpegtsSDTService, gst_mpegts_sdt_service,
+ static GstMpegtsSDT *
+ _gst_mpegts_sdt_copy (GstMpegtsSDT * sdt)
+ {
+-  GstMpegtsSDT *copy = g_slice_dup (GstMpegtsSDT, sdt);
++  GstMpegtsSDT *copy = g_memdup2 (sdt, sizeof (GstMpegtsSDT));
+ 
+   copy->services = g_ptr_array_ref (sdt->services);
+ 
+@@ -867,7 +867,7 @@ static void
+ _gst_mpegts_sdt_free (GstMpegtsSDT * sdt)
+ {
+   g_ptr_array_unref (sdt->services);
+-  g_slice_free (GstMpegtsSDT, sdt);
++  g_free (sdt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSDT, gst_mpegts_sdt,
+@@ -886,7 +886,7 @@ _parse_sdt (GstMpegtsSection * section)
+ 
+   GST_DEBUG ("SDT");
+ 
+-  sdt = g_slice_new0 (GstMpegtsSDT);
++  sdt = g_new0 (GstMpegtsSDT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -911,7 +911,7 @@ _parse_sdt (GstMpegtsSection * section)
+ 
+   /* read up to the CRC */
+   while (sdt_info_length - 4 > 0) {
+-    GstMpegtsSDTService *service = g_slice_new0 (GstMpegtsSDTService);
++    GstMpegtsSDTService *service = g_new0 (GstMpegtsSDTService, 1);
+     g_ptr_array_add (sdt->services, service);
+ 
+     entry_begin = data;
+@@ -1002,7 +1002,7 @@ gst_mpegts_sdt_new (void)
+ {
+   GstMpegtsSDT *sdt;
+ 
+-  sdt = g_slice_new0 (GstMpegtsSDT);
++  sdt = g_new0 (GstMpegtsSDT, 1);
+ 
+   sdt->services = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       _gst_mpegts_sdt_service_free);
+@@ -1022,7 +1022,7 @@ gst_mpegts_sdt_service_new (void)
+ {
+   GstMpegtsSDTService *service;
+ 
+-  service = g_slice_new0 (GstMpegtsSDTService);
++  service = g_new0 (GstMpegtsSDTService, 1);
+ 
+   service->descriptors = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       gst_mpegts_descriptor_free);
+@@ -1186,7 +1186,7 @@ gst_mpegts_section_get_tdt (GstMpegtsSection * section)
+ static GstMpegtsTOT *
+ _gst_mpegts_tot_copy (GstMpegtsTOT * tot)
+ {
+-  GstMpegtsTOT *copy = g_slice_dup (GstMpegtsTOT, tot);
++  GstMpegtsTOT *copy = g_memdup2 (tot, sizeof (GstMpegtsTOT));
+ 
+   if (tot->utc_time)
+     copy->utc_time = gst_date_time_ref (tot->utc_time);
+@@ -1202,7 +1202,7 @@ _gst_mpegts_tot_free (GstMpegtsTOT * tot)
+     gst_date_time_unref (tot->utc_time);
+   if (tot->descriptors)
+     g_ptr_array_unref (tot->descriptors);
+-  g_slice_free (GstMpegtsTOT, tot);
++  g_free (tot);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsTOT, gst_mpegts_tot,
+@@ -1217,7 +1217,7 @@ _parse_tot (GstMpegtsSection * section)
+ 
+   GST_DEBUG ("TOT");
+ 
+-  tot = g_slice_new0 (GstMpegtsTOT);
++  tot = g_new0 (GstMpegtsTOT, 1);
+ 
+   tot->utc_time = _parse_utc_time (section->data + 3);
+ 
+@@ -1260,7 +1260,7 @@ gst_mpegts_section_get_tot (GstMpegtsSection * section)
+ static GstMpegtsSITService *
+ _gst_mpegts_sit_service_copy (GstMpegtsSITService * sit)
+ {
+-  GstMpegtsSITService *copy = g_slice_dup (GstMpegtsSITService, sit);
++  GstMpegtsSITService *copy = g_memdup2 (sit, sizeof (GstMpegtsSITService));
+ 
+   copy->service_id = sit->service_id;
+   copy->running_status = sit->running_status;
+@@ -1274,7 +1274,7 @@ _gst_mpegts_sit_service_free (GstMpegtsSITService * sit)
+ {
+   if (sit->descriptors)
+     g_ptr_array_unref (sit->descriptors);
+-  g_slice_free (GstMpegtsSITService, sit);
++  g_free (sit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSITService, gst_mpegts_sit_service,
+@@ -1284,7 +1284,7 @@ G_DEFINE_BOXED_TYPE (GstMpegtsSITService, gst_mpegts_sit_service,
+ static GstMpegtsSIT *
+ _gst_mpegts_sit_copy (GstMpegtsSIT * sit)
+ {
+-  GstMpegtsSIT *copy = g_slice_dup (GstMpegtsSIT, sit);
++  GstMpegtsSIT *copy = g_memdup2 (sit, sizeof (GstMpegtsSIT));
+ 
+   copy->services = g_ptr_array_ref (sit->services);
+   copy->descriptors = g_ptr_array_ref (sit->descriptors);
+@@ -1297,7 +1297,7 @@ _gst_mpegts_sit_free (GstMpegtsSIT * sit)
+ {
+   g_ptr_array_unref (sit->services);
+   g_ptr_array_unref (sit->descriptors);
+-  g_slice_free (GstMpegtsSIT, sit);
++  g_free (sit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSIT, gst_mpegts_sit,
+@@ -1315,7 +1315,7 @@ _parse_sit (GstMpegtsSection * section)
+ 
+   GST_DEBUG ("SIT");
+ 
+-  sit = g_slice_new0 (GstMpegtsSIT);
++  sit = g_new0 (GstMpegtsSIT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -1337,7 +1337,7 @@ _parse_sit (GstMpegtsSection * section)
+ 
+   /* read up to the CRC */
+   while (sit_info_length - 4 > 0) {
+-    GstMpegtsSITService *service = g_slice_new0 (GstMpegtsSITService);
++    GstMpegtsSITService *service = g_new0 (GstMpegtsSITService, 1);
+     g_ptr_array_add (sit->services, service);
+ 
+     entry_begin = data;
+diff --git a/gst-libs/gst/mpegts/gst-scte-section.c b/gst-libs/gst/mpegts/gst-scte-section.c
+index 2b9488b04..23b9f9ae4 100644
+--- a/gst-libs/gst/mpegts/gst-scte-section.c
++++ b/gst-libs/gst/mpegts/gst-scte-section.c
+@@ -46,7 +46,7 @@ static GstMpegtsSCTESpliceEvent *
+ _gst_mpegts_scte_splice_event_copy (GstMpegtsSCTESpliceEvent * event)
+ {
+   GstMpegtsSCTESpliceEvent *copy =
+-      g_slice_dup (GstMpegtsSCTESpliceEvent, event);
++      g_memdup2 (event, sizeof (GstMpegtsSCTESpliceEvent));
+ 
+   copy->components = g_ptr_array_ref (event->components);
+ 
+@@ -57,7 +57,7 @@ static void
+ _gst_mpegts_scte_splice_event_free (GstMpegtsSCTESpliceEvent * event)
+ {
+   g_ptr_array_unref (event->components);
+-  g_slice_free (GstMpegtsSCTESpliceEvent, event);
++  g_free (event);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSCTESpliceEvent, gst_mpegts_scte_splice_event,
+@@ -68,14 +68,14 @@ static GstMpegtsSCTESpliceComponent *
+ _gst_mpegts_scte_splice_component_copy (GstMpegtsSCTESpliceComponent *
+     component)
+ {
+-  return g_slice_dup (GstMpegtsSCTESpliceComponent, component);
++  return g_memdup2 (component, sizeof (GstMpegtsSCTESpliceComponent));
+ }
+ 
+ static void
+ _gst_mpegts_scte_splice_component_free (GstMpegtsSCTESpliceComponent *
+     component)
+ {
+-  g_slice_free (GstMpegtsSCTESpliceComponent, component);
++  g_free (component);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSCTESpliceComponent,
+@@ -88,7 +88,7 @@ _parse_splice_component (GstMpegtsSCTESpliceEvent * event, guint8 ** orig_data,
+     guint8 * end)
+ {
+   GstMpegtsSCTESpliceComponent *component =
+-      g_slice_new0 (GstMpegtsSCTESpliceComponent);
++      g_new0 (GstMpegtsSCTESpliceComponent, 1);
+   guint8 *data = *orig_data;
+ 
+   if (data + 1 + 6 > end)
+@@ -132,7 +132,7 @@ error:
+ static GstMpegtsSCTESpliceEvent *
+ _parse_splice_event (guint8 ** orig_data, guint8 * end, gboolean insert_event)
+ {
+-  GstMpegtsSCTESpliceEvent *event = g_slice_new0 (GstMpegtsSCTESpliceEvent);
++  GstMpegtsSCTESpliceEvent *event = g_new0 (GstMpegtsSCTESpliceEvent, 1);
+   guint8 *data = *orig_data;
+ 
+   /* Note : +6 is because of the final descriptor_loop_length and CRC */
+@@ -241,7 +241,7 @@ error:
+ static GstMpegtsSCTESIT *
+ _gst_mpegts_scte_sit_copy (GstMpegtsSCTESIT * sit)
+ {
+-  GstMpegtsSCTESIT *copy = g_slice_dup (GstMpegtsSCTESIT, sit);
++  GstMpegtsSCTESIT *copy = g_memdup2 (sit, sizeof (GstMpegtsSCTESIT));
+ 
+   copy->splices = g_ptr_array_ref (sit->splices);
+   copy->descriptors = g_ptr_array_ref (sit->descriptors);
+@@ -254,7 +254,7 @@ _gst_mpegts_scte_sit_free (GstMpegtsSCTESIT * sit)
+ {
+   g_ptr_array_unref (sit->splices);
+   g_ptr_array_unref (sit->descriptors);
+-  g_slice_free (GstMpegtsSCTESIT, sit);
++  g_free (sit);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsSCTESIT, gst_mpegts_scte_sit,
+@@ -278,7 +278,7 @@ _parse_sit (GstMpegtsSection * section)
+     return NULL;
+   }
+ 
+-  sit = g_slice_new0 (GstMpegtsSCTESIT);
++  sit = g_new0 (GstMpegtsSCTESIT, 1);
+ 
+   sit->fully_parsed = FALSE;
+ 
+@@ -456,7 +456,7 @@ gst_mpegts_scte_sit_new (void)
+ {
+   GstMpegtsSCTESIT *sit;
+ 
+-  sit = g_slice_new0 (GstMpegtsSCTESIT);
++  sit = g_new0 (GstMpegtsSCTESIT, 1);
+ 
+   /* Set all default values (which aren't already 0/NULL) */
+   sit->tier = 0xfff;
+@@ -606,7 +606,7 @@ gst_mpegts_scte_splice_out_new (guint32 event_id, GstClockTime splice_time,
+ GstMpegtsSCTESpliceEvent *
+ gst_mpegts_scte_splice_event_new (void)
+ {
+-  GstMpegtsSCTESpliceEvent *event = g_slice_new0 (GstMpegtsSCTESpliceEvent);
++  GstMpegtsSCTESpliceEvent *event = g_new0 (GstMpegtsSCTESpliceEvent, 1);
+ 
+   /* Non-0 Default values */
+   event->program_splice_flag = TRUE;
+@@ -630,7 +630,7 @@ GstMpegtsSCTESpliceComponent *
+ gst_mpegts_scte_splice_component_new (guint8 tag)
+ {
+   GstMpegtsSCTESpliceComponent *component =
+-      g_slice_new0 (GstMpegtsSCTESpliceComponent);
++      g_new0 (GstMpegtsSCTESpliceComponent, 1);
+ 
+   component->tag = tag;
+ 
+diff --git a/gst-libs/gst/mpegts/gstmpegtsdescriptor.c b/gst-libs/gst/mpegts/gstmpegtsdescriptor.c
+index 9d2232a7b..0d324a7d8 100644
+--- a/gst-libs/gst/mpegts/gstmpegtsdescriptor.c
++++ b/gst-libs/gst/mpegts/gstmpegtsdescriptor.c
+@@ -33,13 +33,13 @@
+ #define DEFINE_STATIC_COPY_FUNCTION(type, name) \
+ static type * _##name##_copy (type * source) \
+ { \
+-  return g_slice_dup (type, source); \
++  return g_memdup2 (source, sizeof (type)); \
+ }
+ 
+ #define DEFINE_STATIC_FREE_FUNCTION(type, name) \
+ static void _##name##_free (type * source) \
+ { \
+-  g_slice_free (type, source); \
++  g_free (source); \
+ }
+ 
+ /**
+@@ -656,7 +656,7 @@ _new_descriptor (guint8 tag, guint8 length)
+   GstMpegtsDescriptor *descriptor;
+   guint8 *data;
+ 
+-  descriptor = g_slice_new (GstMpegtsDescriptor);
++  descriptor = g_new (GstMpegtsDescriptor, 1);
+ 
+   descriptor->tag = tag;
+   descriptor->tag_extension = 0;
+@@ -678,7 +678,7 @@ _new_descriptor_with_extension (guint8 tag, guint8 tag_extension, guint8 length)
+   GstMpegtsDescriptor *descriptor;
+   guint8 *data;
+ 
+-  descriptor = g_slice_new (GstMpegtsDescriptor);
++  descriptor = g_new (GstMpegtsDescriptor, 1);
+ 
+   descriptor->tag = tag;
+   descriptor->tag_extension = tag_extension;
+@@ -700,7 +700,7 @@ _copy_descriptor (GstMpegtsDescriptor * desc)
+ {
+   GstMpegtsDescriptor *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsDescriptor, desc);
++  copy = g_memdup2 (desc, sizeof (GstMpegtsDescriptor));
+   copy->data = g_memdup2 (desc->data, desc->length + 2);
+ 
+   return copy;
+@@ -716,7 +716,7 @@ void
+ gst_mpegts_descriptor_free (GstMpegtsDescriptor * desc)
+ {
+   g_free ((gpointer) desc->data);
+-  g_slice_free (GstMpegtsDescriptor, desc);
++  g_free (desc);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsDescriptor, gst_mpegts_descriptor,
+@@ -783,7 +783,7 @@ gst_mpegts_parse_descriptors (guint8 * buffer, gsize buf_len)
+   data = buffer;
+ 
+   for (i = 0; i < nb_desc; i++) {
+-    GstMpegtsDescriptor *desc = g_slice_new0 (GstMpegtsDescriptor);
++    GstMpegtsDescriptor *desc = g_new0 (GstMpegtsDescriptor, 1);
+ 
+     desc->data = data;
+     desc->tag = *data++;
+@@ -988,7 +988,7 @@ _gst_mpegts_iso_639_language_descriptor_copy (GstMpegtsISO639LanguageDescriptor
+   GstMpegtsISO639LanguageDescriptor *copy;
+   guint i;
+ 
+-  copy = g_slice_dup (GstMpegtsISO639LanguageDescriptor, source);
++  copy = g_memdup2 (source, sizeof (GstMpegtsISO639LanguageDescriptor));
+ 
+   for (i = 0; i < source->nb_language; i++) {
+     copy->language[i] = g_strdup (source->language[i]);
+@@ -1006,7 +1006,7 @@ gst_mpegts_iso_639_language_descriptor_free (GstMpegtsISO639LanguageDescriptor
+   for (i = 0; i < desc->nb_language; i++) {
+     g_free (desc->language[i]);
+   }
+-  g_slice_free (GstMpegtsISO639LanguageDescriptor, desc);
++  g_free (desc);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsISO639LanguageDescriptor,
+@@ -1040,7 +1040,7 @@ gst_mpegts_descriptor_parse_iso_639_language (const GstMpegtsDescriptor *
+ 
+   data = (guint8 *) descriptor->data + 2;
+ 
+-  res = g_slice_new0 (GstMpegtsISO639LanguageDescriptor);
++  res = g_new0 (GstMpegtsISO639LanguageDescriptor, 1);
+ 
+   /* Each language is 3 + 1 bytes */
+   res->nb_language = descriptor->length / 4;
+diff --git a/gst-libs/gst/mpegts/gstmpegtssection.c b/gst-libs/gst/mpegts/gstmpegtssection.c
+index 3ab178eff..c5219e5d6 100644
+--- a/gst-libs/gst/mpegts/gstmpegtssection.c
++++ b/gst-libs/gst/mpegts/gstmpegtssection.c
+@@ -211,7 +211,7 @@ _gst_mpegts_section_free (GstMpegtsSection * section)
+ 
+   g_free (section->data);
+ 
+-  g_slice_free (GstMpegtsSection, section);
++  g_free (section);
+ }
+ 
+ static GstMpegtsSection *
+@@ -219,7 +219,7 @@ _gst_mpegts_section_copy (GstMpegtsSection * section)
+ {
+   GstMpegtsSection *copy;
+ 
+-  copy = g_slice_new0 (GstMpegtsSection);
++  copy = g_new0 (GstMpegtsSection, 1);
+   gst_mini_object_init (GST_MINI_OBJECT_CAST (copy), 0, MPEG_TYPE_TS_SECTION,
+       (GstMiniObjectCopyFunction) _gst_mpegts_section_copy, NULL,
+       (GstMiniObjectFreeFunction) _gst_mpegts_section_free);
+@@ -437,13 +437,13 @@ gst_mpegts_section_send_event (GstMpegtsSection * section, GstElement * element)
+ static GstMpegtsPatProgram *
+ _mpegts_pat_program_copy (GstMpegtsPatProgram * orig)
+ {
+-  return g_slice_dup (GstMpegtsPatProgram, orig);
++  return g_memdup2 (orig, sizeof (GstMpegtsPatProgram));
+ }
+ 
+ static void
+ _mpegts_pat_program_free (GstMpegtsPatProgram * orig)
+ {
+-  g_slice_free (GstMpegtsPatProgram, orig);
++  g_free (orig);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsPatProgram, gst_mpegts_pat_program,
+@@ -474,7 +474,7 @@ _parse_pat (GstMpegtsSection * section)
+   GST_LOG ("nb_programs %u", nb_programs);
+ 
+   for (i = 0; i < nb_programs; i++) {
+-    program = g_slice_new0 (GstMpegtsPatProgram);
++    program = g_new0 (GstMpegtsPatProgram, 1);
+     program->program_number = GST_READ_UINT16_BE (data);
+     data += 2;
+ 
+@@ -558,7 +558,7 @@ gst_mpegts_pat_program_new (void)
+ {
+   GstMpegtsPatProgram *program;
+ 
+-  program = g_slice_new0 (GstMpegtsPatProgram);
++  program = g_new0 (GstMpegtsPatProgram, 1);
+ 
+   return program;
+ }
+@@ -639,7 +639,7 @@ _gst_mpegts_pmt_stream_copy (GstMpegtsPMTStream * pmt)
+ {
+   GstMpegtsPMTStream *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsPMTStream, pmt);
++  copy = g_memdup2 (pmt, sizeof (GstMpegtsPMTStream));
+   copy->descriptors = g_ptr_array_ref (pmt->descriptors);
+ 
+   return copy;
+@@ -650,7 +650,7 @@ _gst_mpegts_pmt_stream_free (GstMpegtsPMTStream * pmt)
+ {
+   if (pmt->descriptors)
+     g_ptr_array_unref (pmt->descriptors);
+-  g_slice_free (GstMpegtsPMTStream, pmt);
++  g_free (pmt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsPMTStream, gst_mpegts_pmt_stream,
+@@ -662,7 +662,7 @@ _gst_mpegts_pmt_copy (GstMpegtsPMT * pmt)
+ {
+   GstMpegtsPMT *copy;
+ 
+-  copy = g_slice_dup (GstMpegtsPMT, pmt);
++  copy = g_memdup2 (pmt, sizeof (GstMpegtsPMT));
+   if (pmt->descriptors)
+     copy->descriptors = g_ptr_array_ref (pmt->descriptors);
+   copy->streams = g_ptr_array_ref (pmt->streams);
+@@ -677,7 +677,7 @@ _gst_mpegts_pmt_free (GstMpegtsPMT * pmt)
+     g_ptr_array_unref (pmt->descriptors);
+   if (pmt->streams)
+     g_ptr_array_unref (pmt->streams);
+-  g_slice_free (GstMpegtsPMT, pmt);
++  g_free (pmt);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstMpegtsPMT, gst_mpegts_pmt,
+@@ -693,7 +693,7 @@ _parse_pmt (GstMpegtsSection * section)
+   guint program_info_length;
+   guint stream_info_length;
+ 
+-  pmt = g_slice_new0 (GstMpegtsPMT);
++  pmt = g_new0 (GstMpegtsPMT, 1);
+ 
+   data = section->data;
+   end = data + section->section_length;
+@@ -730,7 +730,7 @@ _parse_pmt (GstMpegtsSection * section)
+   /* parse entries, cycle until there's space for another entry (at least 5
+    * bytes) plus the CRC */
+   while (data <= end - 4 - 5) {
+-    GstMpegtsPMTStream *stream = g_slice_new0 (GstMpegtsPMTStream);
++    GstMpegtsPMTStream *stream = g_new0 (GstMpegtsPMTStream, 1);
+ 
+     g_ptr_array_add (pmt->streams, stream);
+ 
+@@ -811,7 +811,7 @@ gst_mpegts_pmt_new (void)
+ {
+   GstMpegtsPMT *pmt;
+ 
+-  pmt = g_slice_new0 (GstMpegtsPMT);
++  pmt = g_new0 (GstMpegtsPMT, 1);
+ 
+   pmt->descriptors = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       gst_mpegts_descriptor_free);
+@@ -833,7 +833,7 @@ gst_mpegts_pmt_stream_new (void)
+ {
+   GstMpegtsPMTStream *stream;
+ 
+-  stream = g_slice_new0 (GstMpegtsPMTStream);
++  stream = g_new0 (GstMpegtsPMTStream, 1);
+ 
+   stream->descriptors = g_ptr_array_new_with_free_func ((GDestroyNotify)
+       gst_mpegts_descriptor_free);
+@@ -1120,7 +1120,7 @@ _gst_mpegts_section_init (guint16 pid, guint8 table_id)
+ {
+   GstMpegtsSection *section;
+ 
+-  section = g_slice_new0 (GstMpegtsSection);
++  section = g_new0 (GstMpegtsSection, 1);
+   gst_mini_object_init (GST_MINI_OBJECT_CAST (section), 0, MPEG_TYPE_TS_SECTION,
+       (GstMiniObjectCopyFunction) _gst_mpegts_section_copy, NULL,
+       (GstMiniObjectFreeFunction) _gst_mpegts_section_free);
+-- 
+2.40.1
+

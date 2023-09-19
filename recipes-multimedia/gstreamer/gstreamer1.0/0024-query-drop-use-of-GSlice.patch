@@ -1,0 +1,44 @@
+From d8376e73b2628e4aa5e012c868fc00652e4fed14 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 00:55:27 +0000
+Subject: [PATCH 24/43] query: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/gstquery.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gst/gstquery.c b/gst/gstquery.c
+index 106c4500..61a79301 100644
+--- a/gst/gstquery.c
++++ b/gst/gstquery.c
+@@ -200,7 +200,7 @@ _gst_query_free (GstQuery * query)
+   memset (query, 0xff, sizeof (GstQueryImpl));
+ #endif
+ 
+-  g_slice_free1 (sizeof (GstQueryImpl), query);
++  g_free (query);
+ }
+ 
+ static GstQuery *
+@@ -674,7 +674,7 @@ gst_query_new_custom (GstQueryType type, GstStructure * structure)
+ {
+   GstQueryImpl *query;
+ 
+-  query = g_slice_new0 (GstQueryImpl);
++  query = g_new0 (GstQueryImpl, 1);
+ 
+   GST_DEBUG ("creating new query %p %s", query, gst_query_type_get_name (type));
+ 
+@@ -697,7 +697,7 @@ gst_query_new_custom (GstQueryType type, GstStructure * structure)
+   /* ERRORS */
+ had_parent:
+   {
+-    g_slice_free1 (sizeof (GstQueryImpl), query);
++    g_free (query);
+     g_warning ("structure is already owned by another object");
+     return NULL;
+   }
+-- 
+2.40.1
+

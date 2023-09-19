@@ -1,0 +1,47 @@
+From f592564b9e8e2fe5852d81968f51437c7d4c60ea Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Tue, 30 May 2023 09:46:43 -0700
+Subject: [PATCH 30/31] qemu: remove invisible boundary of guest mouse cursor
+
+make the VM mouse still move even after the cursor hits the boundary
+of the host display
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 457c69b7df..dba105a3ae 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1054,8 +1054,26 @@ static gboolean gd_motion_event(GtkWidget *widget, GdkEventMotion *motion,
+                              0, surface_height(vc->gfx.ds));
+         qemu_input_event_sync();
+     } else if (s->last_set && s->ptr_owner == vc) {
++        GdkMonitor *monitor = gdk_display_get_monitor_at_window(dpy, window);
+         int dx = x - s->last_x;
+         int dy = y - s->last_y;
++        GdkRectangle curr_geometry;
++
++        monitor = gdk_display_get_monitor_at_point(dpy, motion->x_root, motion->y_root);
++
++        gdk_monitor_get_geometry(monitor, &curr_geometry);
++
++        if (motion->x_root <= curr_geometry.x) {
++            dx = -5;
++        } else if (motion->x_root >= curr_geometry.x + curr_geometry.width - 1) {
++            dx = 5;
++        }
++
++        if (motion->y_root <= curr_geometry.y) {
++            dy = -5;
++        } else if (motion->y_root >= curr_geometry.y + curr_geometry.height - 1) {
++            dy = 5;
++        }
+ 
+         /*
+          * To converge/sync the Guest's and Host's cursor locations more
+-- 
+2.34.1
+

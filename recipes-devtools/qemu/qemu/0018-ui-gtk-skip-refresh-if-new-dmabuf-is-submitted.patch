@@ -1,0 +1,82 @@
+From 7268aa840a03560b0cb1e72f70e9880669f98204 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Mon, 1 May 2023 18:56:47 -0700
+Subject: [PATCH 18/28] ui/gtk: skip refresh if new dmabuf is submitted
+
+Skip refresh if a new dmabuf (guest scanout frame) is submitted
+and ready to be drawn because the scanout will be refreshed with
+new frame anyway. Also, scanout mode has better to be set to true
+right before rendering event is scheduled to block any potential
+render activities before actual draw event occurs.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c     | 6 +++++-
+ ui/gtk-gl-area.c | 6 +++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index c519fce1ff..9dd08e540a 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -152,6 +152,10 @@ void gd_egl_refresh(DisplayChangeListener *dcl)
+         return;
+     }
+ 
++    if (vc->gfx.guest_fb.dmabuf && vc->gfx.guest_fb.dmabuf->draw_submitted) {
++        return;
++    }
++
+     if (!vc->gfx.esurface) {
+         gd_egl_init(vc);
+         if (!vc->gfx.esurface) {
+@@ -248,7 +252,6 @@ void gd_egl_scanout_texture(DisplayChangeListener *dcl,
+     eglMakeCurrent(qemu_egl_display, vc->gfx.esurface,
+                    vc->gfx.esurface, vc->gfx.ectx);
+ 
+-    gtk_egl_set_scanout_mode(vc, true);
+     egl_fb_setup_for_tex(&vc->gfx.guest_fb, backing_width, backing_height,
+                          backing_id, false);
+ }
+@@ -365,6 +368,7 @@ void gd_egl_flush(DisplayChangeListener *dcl,
+     if (vc->gfx.guest_fb.dmabuf && !vc->gfx.guest_fb.dmabuf->draw_submitted) {
+         graphic_hw_gl_block(vc->gfx.dcl.con, true);
+         vc->gfx.guest_fb.dmabuf->draw_submitted = true;
++        gtk_egl_set_scanout_mode(vc, true);
+         gtk_widget_queue_draw_area(area, x, y, w, h);
+         return;
+     }
+diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
+index 9a365bdb77..9e87fb2698 100644
+--- a/ui/gtk-gl-area.c
++++ b/ui/gtk-gl-area.c
+@@ -127,6 +127,10 @@ void gd_gl_area_refresh(DisplayChangeListener *dcl)
+         return;
+     }
+ 
++    if (vc->gfx.guest_fb.dmabuf && vc->gfx.guest_fb.dmabuf->draw_submitted) {
++        return;
++    }
++
+     if (!vc->gfx.gls) {
+         if (!gtk_widget_get_realized(vc->gfx.drawing_area)) {
+             return;
+@@ -265,7 +269,6 @@ void gd_gl_area_scanout_texture(DisplayChangeListener *dcl,
+         return;
+     }
+ 
+-    gtk_gl_area_set_scanout_mode(vc, true);
+     egl_fb_setup_for_tex(&vc->gfx.guest_fb, backing_width, backing_height,
+                          backing_id, false);
+ }
+@@ -291,6 +294,7 @@ void gd_gl_area_scanout_flush(DisplayChangeListener *dcl,
+     if (vc->gfx.guest_fb.dmabuf && !vc->gfx.guest_fb.dmabuf->draw_submitted) {
+         graphic_hw_gl_block(vc->gfx.dcl.con, true);
+         vc->gfx.guest_fb.dmabuf->draw_submitted = true;
++        gtk_gl_area_set_scanout_mode(vc, true);
+     }
+     gtk_gl_area_queue_render(GTK_GL_AREA(vc->gfx.drawing_area));
+ }
+-- 
+2.34.1
+

@@ -1,0 +1,92 @@
+From 9ac7c440d9cebcd22fddc155204613a85ef59e04 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 15:56:40 +0000
+Subject: [PATCH 01/77] oggdemux: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ ext/ogg/gstoggdemux.c | 12 ++++++------
+ ext/ogg/gstoggparse.c |  4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/ext/ogg/gstoggdemux.c b/ext/ogg/gstoggdemux.c
+index 5b181b40..4e6b370a 100644
+--- a/ext/ogg/gstoggdemux.c
++++ b/ext/ogg/gstoggdemux.c
+@@ -84,7 +84,7 @@ GST_DEBUG_CATEGORY (gst_ogg_demux_setup_debug);
+ static ogg_packet *
+ _ogg_packet_copy (const ogg_packet * packet)
+ {
+-  ogg_packet *ret = g_slice_new (ogg_packet);
++  ogg_packet *ret = g_new (ogg_packet, 1);
+ 
+   *ret = *packet;
+   ret->packet = g_memdup2 (packet->packet, packet->bytes);
+@@ -96,13 +96,13 @@ static void
+ _ogg_packet_free (ogg_packet * packet)
+ {
+   g_free (packet->packet);
+-  g_slice_free (ogg_packet, packet);
++  g_free (packet);
+ }
+ 
+ static ogg_page *
+ gst_ogg_page_copy (ogg_page * page)
+ {
+-  ogg_page *p = g_slice_new (ogg_page);
++  ogg_page *p = g_new (ogg_page, 1);
+ 
+   /* make a copy of the page */
+   p->header = g_memdup2 (page->header, page->header_len);
+@@ -118,7 +118,7 @@ gst_ogg_page_free (ogg_page * page)
+ {
+   g_free (page->header);
+   g_free (page->body);
+-  g_slice_free (ogg_page, page);
++  g_free (page);
+ }
+ 
+ static gboolean gst_ogg_demux_collect_chain_info (GstOggDemux * ogg,
+@@ -2130,7 +2130,7 @@ choked:
+ static GstOggChain *
+ gst_ogg_chain_new (GstOggDemux * ogg)
+ {
+-  GstOggChain *chain = g_slice_new0 (GstOggChain);
++  GstOggChain *chain = g_new0 (GstOggChain, 1);
+ 
+   GST_DEBUG_OBJECT (ogg, "creating new chain %p", chain);
+   chain->ogg = ogg;
+@@ -2157,7 +2157,7 @@ gst_ogg_chain_free (GstOggChain * chain)
+     gst_object_unref (pad);
+   }
+   g_array_free (chain->streams, TRUE);
+-  g_slice_free (GstOggChain, chain);
++  g_free (chain);
+ }
+ 
+ static void
+diff --git a/ext/ogg/gstoggparse.c b/ext/ogg/gstoggparse.c
+index a828a98d..b2973921 100644
+--- a/ext/ogg/gstoggparse.c
++++ b/ext/ogg/gstoggparse.c
+@@ -95,7 +95,7 @@ free_stream (GstOggStream * stream)
+   g_list_foreach (stream->unknown_pages, (GFunc) gst_mini_object_unref, NULL);
+   g_list_foreach (stream->stored_buffers, (GFunc) gst_mini_object_unref, NULL);
+ 
+-  g_slice_free (GstOggStream, stream);
++  g_free (stream);
+ }
+ 
+ static void
+@@ -118,7 +118,7 @@ gst_ogg_parse_new_stream (GstOggParse * parser, ogg_page * page)
+ 
+   GST_DEBUG_OBJECT (parser, "creating new stream %08x", serialno);
+ 
+-  stream = g_slice_new0 (GstOggStream);
++  stream = g_new0 (GstOggStream, 1);
+ 
+   stream->serialno = serialno;
+   stream->in_headers = 1;
+-- 
+2.40.1
+

@@ -1,0 +1,54 @@
+From 214df701f6a6c55a0a96f790a4a19afdd2005df1 Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Fri, 7 Apr 2023 14:26:55 +0800
+Subject: [PATCH 092/205] msdk: Add functions to get data members from
+ MsdkSession
+
+When getting mfxImplDescription, these data members need to
+be used.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4177>
+---
+ sys/msdk/gstmsdkcontext.c | 12 ++++++++++++
+ sys/msdk/gstmsdkcontext.h |  2 ++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkcontext.c b/sys/msdk/gstmsdkcontext.c
+index 1b3cf6916..c13886406 100644
+--- a/sys/msdk/gstmsdkcontext.c
++++ b/sys/msdk/gstmsdkcontext.c
+@@ -650,6 +650,18 @@ gst_msdk_context_get_session (GstMsdkContext * context)
+   return context->priv->session.session;
+ }
+ 
++const mfxLoader *
++gst_msdk_context_get_loader (GstMsdkContext * context)
++{
++  return &context->priv->session.loader;
++}
++
++mfxU32
++gst_msdk_context_get_impl_idx (GstMsdkContext * context)
++{
++  return context->priv->session.impl_idx;
++}
++
+ gpointer
+ gst_msdk_context_get_handle (GstMsdkContext * context)
+ {
+diff --git a/sys/msdk/gstmsdkcontext.h b/sys/msdk/gstmsdkcontext.h
+index 38e0cf25c..862f3cc30 100644
+--- a/sys/msdk/gstmsdkcontext.h
++++ b/sys/msdk/gstmsdkcontext.h
+@@ -99,6 +99,8 @@ GstMsdkContext * gst_msdk_context_new_with_d3d11_device (GstD3D11Device * device
+     gboolean hardware, GstMsdkContextJobType job_type);
+ #endif
+ mfxSession gst_msdk_context_get_session (GstMsdkContext * context);
++const mfxLoader * gst_msdk_context_get_loader (GstMsdkContext * context);
++mfxU32 gst_msdk_context_get_impl_idx (GstMsdkContext * context);
+ 
+ gpointer gst_msdk_context_get_handle (GstMsdkContext * context);
+ #ifndef _WIN32
+-- 
+2.40.1
+

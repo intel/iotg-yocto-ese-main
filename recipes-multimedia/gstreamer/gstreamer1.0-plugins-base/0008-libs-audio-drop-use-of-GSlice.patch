@@ -1,0 +1,234 @@
+From 3144d724a13de719d67609ab9702cb93b584b74e Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Fri, 28 Jul 2023 18:23:59 +0800
+Subject: [PATCH 08/77] libs: audio: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+
+Backport from upstream:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/506c65aa273ed98da924ca41441838e40ded9a75
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ gst-libs/gst/audio/audio-buffer.c        | 9 ++++-----
+ gst-libs/gst/audio/audio-channel-mixer.c | 4 ++--
+ gst-libs/gst/audio/audio-converter.c     | 8 ++++----
+ gst-libs/gst/audio/audio-info.c          | 6 +++---
+ gst-libs/gst/audio/audio-quantize.c      | 4 ++--
+ gst-libs/gst/audio/audio-resampler.c     | 4 ++--
+ gst-libs/gst/audio/gstaudiometa.c        | 4 ++--
+ gst-libs/gst/audio/gstaudioringbuffer.c  | 4 ++--
+ 8 files changed, 21 insertions(+), 22 deletions(-)
+
+diff --git a/gst-libs/gst/audio/audio-buffer.c b/gst-libs/gst/audio/audio-buffer.c
+index 7d139f0b..367c7009 100644
+--- a/gst-libs/gst/audio/audio-buffer.c
++++ b/gst-libs/gst/audio/audio-buffer.c
+@@ -33,9 +33,9 @@ gst_audio_buffer_unmap_internal (GstAudioBuffer * buffer, guint n_unmap)
+     gst_buffer_unmap (buffer->buffer, &buffer->map_infos[i]);
+   }
+   if (buffer->planes != buffer->priv_planes_arr)
+-    g_slice_free1 (buffer->n_planes * sizeof (gpointer), buffer->planes);
++    g_free (buffer->planes);
+   if (buffer->map_infos != buffer->priv_map_infos_arr)
+-    g_slice_free1 (buffer->n_planes * sizeof (GstMapInfo), buffer->map_infos);
++    g_free (buffer->map_infos);
+ }
+ 
+ /**
+@@ -146,9 +146,8 @@ gst_audio_buffer_map (GstAudioBuffer * buffer, const GstAudioInfo * info,
+     buffer->n_planes = GST_AUDIO_BUFFER_CHANNELS (buffer);
+ 
+     if (G_UNLIKELY (buffer->n_planes > 8)) {
+-      buffer->planes = g_slice_alloc (buffer->n_planes * sizeof (gpointer));
+-      buffer->map_infos =
+-          g_slice_alloc (buffer->n_planes * sizeof (GstMapInfo));
++      buffer->planes = g_new (gpointer, buffer->n_planes);
++      buffer->map_infos = g_new (GstMapInfo, buffer->n_planes);
+     } else {
+       buffer->planes = buffer->priv_planes_arr;
+       buffer->map_infos = buffer->priv_map_infos_arr;
+diff --git a/gst-libs/gst/audio/audio-channel-mixer.c b/gst-libs/gst/audio/audio-channel-mixer.c
+index a33298b2..7186b6a6 100644
+--- a/gst-libs/gst/audio/audio-channel-mixer.c
++++ b/gst-libs/gst/audio/audio-channel-mixer.c
+@@ -95,7 +95,7 @@ gst_audio_channel_mixer_free (GstAudioChannelMixer * mix)
+   g_free (mix->matrix_int);
+   mix->matrix_int = NULL;
+ 
+-  g_slice_free (GstAudioChannelMixer, mix);
++  g_free (mix);
+ }
+ 
+ /*
+@@ -836,7 +836,7 @@ gst_audio_channel_mixer_new_with_matrix (GstAudioChannelMixerFlags flags,
+   g_return_val_if_fail (in_channels > 0 && in_channels <= 64, NULL);
+   g_return_val_if_fail (out_channels > 0 && out_channels <= 64, NULL);
+ 
+-  mix = g_slice_new0 (GstAudioChannelMixer);
++  mix = g_new0 (GstAudioChannelMixer, 1);
+   mix->in_channels = in_channels;
+   mix->out_channels = out_channels;
+ 
+diff --git a/gst-libs/gst/audio/audio-converter.c b/gst-libs/gst/audio/audio-converter.c
+index f1116d39..13d8e551 100644
+--- a/gst-libs/gst/audio/audio-converter.c
++++ b/gst-libs/gst/audio/audio-converter.c
+@@ -197,7 +197,7 @@ audio_chain_new (AudioChain * prev, GstAudioConverter * convert)
+ {
+   AudioChain *chain;
+ 
+-  chain = g_slice_new0 (AudioChain);
++  chain = g_new0 (AudioChain, 1);
+   chain->prev = prev;
+ 
+   if (convert->current_layout == GST_AUDIO_LAYOUT_NON_INTERLEAVED) {
+@@ -229,7 +229,7 @@ audio_chain_free (AudioChain * chain)
+   if (chain->make_func_notify)
+     chain->make_func_notify (chain->make_func_data);
+   g_free (chain->tmp);
+-  g_slice_free (AudioChain, chain);
++  g_free (chain);
+ }
+ 
+ static gpointer *
+@@ -1347,7 +1347,7 @@ gst_audio_converter_new (GstAudioConverterFlags flags, GstAudioInfo * in_info,
+       && !opt_matrix)
+     goto unpositioned;
+ 
+-  convert = g_slice_new0 (GstAudioConverter);
++  convert = g_new0 (GstAudioConverter, 1);
+ 
+   convert->flags = flags;
+   convert->in = *in_info;
+@@ -1481,7 +1481,7 @@ gst_audio_converter_free (GstAudioConverter * convert)
+ 
+   gst_structure_free (convert->config);
+ 
+-  g_slice_free (GstAudioConverter, convert);
++  g_free (convert);
+ }
+ 
+ /**
+diff --git a/gst-libs/gst/audio/audio-info.c b/gst-libs/gst/audio/audio-info.c
+index a37e3cf0..13bbb4b9 100644
+--- a/gst-libs/gst/audio/audio-info.c
++++ b/gst-libs/gst/audio/audio-info.c
+@@ -61,7 +61,7 @@ ensure_debug_category (void)
+ GstAudioInfo *
+ gst_audio_info_copy (const GstAudioInfo * info)
+ {
+-  return g_slice_dup (GstAudioInfo, info);
++  return g_memdup2 (info, sizeof (GstAudioInfo));
+ }
+ 
+ /**
+@@ -74,7 +74,7 @@ gst_audio_info_copy (const GstAudioInfo * info)
+ void
+ gst_audio_info_free (GstAudioInfo * info)
+ {
+-  g_slice_free (GstAudioInfo, info);
++  g_free (info);
+ }
+ 
+ G_DEFINE_BOXED_TYPE (GstAudioInfo, gst_audio_info,
+@@ -93,7 +93,7 @@ gst_audio_info_new (void)
+ {
+   GstAudioInfo *info;
+ 
+-  info = g_slice_new (GstAudioInfo);
++  info = g_new (GstAudioInfo, 1);
+   gst_audio_info_init (info);
+ 
+   return info;
+diff --git a/gst-libs/gst/audio/audio-quantize.c b/gst-libs/gst/audio/audio-quantize.c
+index e4c33ba6..82f8b066 100644
+--- a/gst-libs/gst/audio/audio-quantize.c
++++ b/gst-libs/gst/audio/audio-quantize.c
+@@ -446,7 +446,7 @@ gst_audio_quantize_new (GstAudioDitherMethod dither,
+   g_return_val_if_fail (format == GST_AUDIO_FORMAT_S32, NULL);
+   g_return_val_if_fail (channels > 0, NULL);
+ 
+-  quant = g_slice_new0 (GstAudioQuantize);
++  quant = g_new0 (GstAudioQuantize, 1);
+   quant->dither = dither;
+   quant->ns = ns;
+   quant->flags = flags;
+@@ -490,7 +490,7 @@ gst_audio_quantize_free (GstAudioQuantize * quant)
+   g_free (quant->last_random);
+   g_free (quant->dither_buf);
+ 
+-  g_slice_free (GstAudioQuantize, quant);
++  g_free (quant);
+ }
+ 
+ /**
+diff --git a/gst-libs/gst/audio/audio-resampler.c b/gst-libs/gst/audio/audio-resampler.c
+index a612d85a..fc80a2dd 100644
+--- a/gst-libs/gst/audio/audio-resampler.c
++++ b/gst-libs/gst/audio/audio-resampler.c
+@@ -1366,7 +1366,7 @@ gst_audio_resampler_new (GstAudioResamplerMethod method,
+ 
+   audio_resampler_init ();
+ 
+-  resampler = g_slice_new0 (GstAudioResampler);
++  resampler = g_new0 (GstAudioResampler, 1);
+   resampler->method = method;
+   resampler->flags = flags;
+   resampler->format = format;
+@@ -1634,7 +1634,7 @@ gst_audio_resampler_free (GstAudioResampler * resampler)
+   g_free (resampler->sbuf);
+   if (resampler->options)
+     gst_structure_free (resampler->options);
+-  g_slice_free (GstAudioResampler, resampler);
++  g_free (resampler);
+ }
+ 
+ /**
+diff --git a/gst-libs/gst/audio/gstaudiometa.c b/gst-libs/gst/audio/gstaudiometa.c
+index 5605dc7b..21d1d82d 100644
+--- a/gst-libs/gst/audio/gstaudiometa.c
++++ b/gst-libs/gst/audio/gstaudiometa.c
+@@ -327,7 +327,7 @@ gst_audio_meta_free (GstMeta * meta, GstBuffer * buffer)
+   GstAudioMeta *ameta = (GstAudioMeta *) meta;
+ 
+   if (ameta->offsets && ameta->offsets != ameta->priv_offsets_arr)
+-    g_slice_free1 (ameta->info.channels * sizeof (gsize), ameta->offsets);
++    g_free (ameta->offsets);
+ }
+ 
+ static gboolean
+@@ -413,7 +413,7 @@ gst_buffer_add_audio_meta (GstBuffer * buffer, const GstAudioInfo * info,
+ #endif
+ 
+     if (G_UNLIKELY (info->channels > 8))
+-      meta->offsets = g_slice_alloc (info->channels * sizeof (gsize));
++      meta->offsets = g_new (gsize, info->channels);
+     else
+       meta->offsets = meta->priv_offsets_arr;
+ 
+diff --git a/gst-libs/gst/audio/gstaudioringbuffer.c b/gst-libs/gst/audio/gstaudioringbuffer.c
+index ac71dd06..15de9c1d 100644
+--- a/gst-libs/gst/audio/gstaudioringbuffer.c
++++ b/gst-libs/gst/audio/gstaudioringbuffer.c
+@@ -633,7 +633,7 @@ gst_audio_ring_buffer_acquire (GstAudioRingBuffer * buf,
+ 
+   GST_INFO_OBJECT (buf, "Allocating an array for %d timestamps",
+       spec->segtotal);
+-  buf->timestamps = g_slice_alloc0 (sizeof (GstClockTime) * spec->segtotal);
++  buf->timestamps = g_new0 (GstClockTime, spec->segtotal);
+   /* initialize array with invalid timestamps */
+   for (i = 0; i < spec->segtotal; i++) {
+     buf->timestamps[i] = GST_CLOCK_TIME_NONE;
+@@ -727,7 +727,7 @@ gst_audio_ring_buffer_release (GstAudioRingBuffer * buf)
+   if (G_LIKELY (buf->timestamps)) {
+     GST_INFO_OBJECT (buf, "Freeing timestamp buffer, %d entries",
+         buf->spec.segtotal);
+-    g_slice_free1 (sizeof (GstClockTime) * buf->spec.segtotal, buf->timestamps);
++    g_free (buf->timestamps);
+     buf->timestamps = NULL;
+   }
+ 
+-- 
+2.40.1
+

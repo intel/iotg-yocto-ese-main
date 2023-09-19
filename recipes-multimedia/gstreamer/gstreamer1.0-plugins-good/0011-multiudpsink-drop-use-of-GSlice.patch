@@ -1,0 +1,35 @@
+From 811433238aafb90cb1ec204164c52aaa4b786373 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:36:13 +0000
+Subject: [PATCH 11/16] multiudpsink: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/udp/gstmultiudpsink.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst/udp/gstmultiudpsink.c b/gst/udp/gstmultiudpsink.c
+index eba529fd..527beeac 100644
+--- a/gst/udp/gstmultiudpsink.c
++++ b/gst/udp/gstmultiudpsink.c
+@@ -474,7 +474,7 @@ gst_udp_client_new (GstMultiUDPSink * sink, const gchar * host, gint port)
+   }
+ #endif
+ 
+-  client = g_slice_new0 (GstUDPClient);
++  client = g_new0 (GstUDPClient, 1);
+   client->ref_count = 1;
+   client->add_count = 0;
+   client->host = g_strdup (host);
+@@ -499,7 +499,7 @@ gst_udp_client_unref (GstUDPClient * client)
+   if (--client->ref_count == 0) {
+     g_object_unref (client->addr);
+     g_free (client->host);
+-    g_slice_free (GstUDPClient, client);
++    g_free (client);
+   }
+ }
+ 
+-- 
+2.40.1
+

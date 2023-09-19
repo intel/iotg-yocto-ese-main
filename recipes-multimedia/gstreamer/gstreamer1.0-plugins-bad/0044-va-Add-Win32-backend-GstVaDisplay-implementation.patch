@@ -1,0 +1,648 @@
+From 711764d1c084c0fd98ee73284e7d844f363accd8 Mon Sep 17 00:00:00 2001
+From: Seungha Yang <seungha@centricular.com>
+Date: Sat, 4 Mar 2023 04:12:13 +0900
+Subject: [PATCH 044/205] va: Add Win32 backend GstVaDisplay implementation
+
+... and disable derived image on Windows which does not seem to
+work
+
+Closes: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/1750
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4114>
+---
+ gst-libs/gst/va/gstva.h                |   4 +
+ gst-libs/gst/va/gstvaallocator.c       |  11 +
+ gst-libs/gst/va/gstvadisplay.h         |   2 +-
+ gst-libs/gst/va/gstvadisplay_drm.c     |   4 +-
+ gst-libs/gst/va/gstvadisplay_win32.cpp | 291 +++++++++++++++++++++++++
+ gst-libs/gst/va/gstvadisplay_win32.h   |  35 +++
+ gst-libs/gst/va/gstvautils.c           |  19 +-
+ gst-libs/gst/va/meson.build            |  76 ++++++-
+ 8 files changed, 423 insertions(+), 19 deletions(-)
+ create mode 100644 gst-libs/gst/va/gstvadisplay_win32.cpp
+ create mode 100644 gst-libs/gst/va/gstvadisplay_win32.h
+
+diff --git a/gst-libs/gst/va/gstva.h b/gst-libs/gst/va/gstva.h
+index ff365f1e2..362734740 100644
+--- a/gst-libs/gst/va/gstva.h
++++ b/gst-libs/gst/va/gstva.h
+@@ -49,7 +49,11 @@ enum
+ #include <gst/va/va-prelude.h>
+ #include <gst/va/va-enumtypes.h>
+ #include <gst/va/gstvadisplay.h>
++#ifdef G_OS_WIN32
++#include <gst/va/gstvadisplay_win32.h>
++#else
+ #include <gst/va/gstvadisplay_drm.h>
++#endif
+ #include <gst/va/gstvadisplay_wrapped.h>
+ 
+ #include <gst/va/gstvaallocator.h>
+diff --git a/gst-libs/gst/va/gstvaallocator.c b/gst-libs/gst/va/gstvaallocator.c
+index 83429a764..3600b1771 100644
+--- a/gst-libs/gst/va/gstvaallocator.c
++++ b/gst-libs/gst/va/gstvaallocator.c
+@@ -37,8 +37,10 @@
+ 
+ #include "gstvaallocator.h"
+ 
++#ifndef G_OS_WIN32
+ #include <sys/types.h>
+ #include <unistd.h>
++#endif
+ 
+ #include "gstvasurfacecopy.h"
+ #include "gstvavideoformat.h"
+@@ -496,7 +498,11 @@ gst_va_dmabuf_allocator_new (GstVaDisplay * display)
+ static inline goffset
+ _get_fd_size (gint fd)
+ {
++#ifndef G_OS_WIN32
+   return lseek (fd, 0, SEEK_END);
++#else
++  return 0;
++#endif
+ }
+ 
+ static gboolean
+@@ -1312,6 +1318,10 @@ _va_map_unlocked (GstVaMemory * mem, GstMapFlags flags)
+   } else if (va_allocator->feat_use_derived == GST_VA_FEATURE_DISABLED) {
+     use_derived = FALSE;
+   } else {
++#ifdef G_OS_WIN32
++    /* XXX: Derived image doesn't seem to work for D3D backend */
++    use_derived = FALSE;
++#else
+     switch (gst_va_display_get_implementation (display)) {
+       case GST_VA_IMPLEMENTATION_INTEL_IHD:
+         /* On Gen7+ Intel graphics the memory is mappable but not
+@@ -1337,6 +1347,7 @@ _va_map_unlocked (GstVaMemory * mem, GstMapFlags flags)
+         use_derived = va_allocator->use_derived;
+         break;
+     }
++#endif
+   }
+   if (use_derived)
+     info = &va_allocator->derived_info;
+diff --git a/gst-libs/gst/va/gstvadisplay.h b/gst-libs/gst/va/gstvadisplay.h
+index 88f356954..a41432edc 100644
+--- a/gst-libs/gst/va/gstvadisplay.h
++++ b/gst-libs/gst/va/gstvadisplay.h
+@@ -21,8 +21,8 @@
+ #pragma once
+ 
+ #include <gst/gst.h>
+-#include <gst/va/gstva.h>
+ #include <gst/va/va_fwd.h>
++#include <gst/va/va-prelude.h>
+ 
+ G_BEGIN_DECLS
+ 
+diff --git a/gst-libs/gst/va/gstvadisplay_drm.c b/gst-libs/gst/va/gstvadisplay_drm.c
+index d225625ef..7e804775d 100644
+--- a/gst-libs/gst/va/gstvadisplay_drm.c
++++ b/gst-libs/gst/va/gstvadisplay_drm.c
+@@ -40,7 +40,7 @@
+ #include <sys/stat.h>
+ #include <va/va_drm.h>
+ 
+-#if HAVE_LIBDRM
++#ifdef HAVE_LIBDRM
+ #include <xf86drm.h>
+ #endif
+ 
+@@ -143,7 +143,7 @@ gst_va_display_drm_create_va_display (GstVaDisplay * display)
+         g_strerror (saved_errno));
+     return 0;
+   }
+-#if HAVE_LIBDRM
++#ifdef HAVE_LIBDRM
+   {
+     drmVersion *version;
+ 
+diff --git a/gst-libs/gst/va/gstvadisplay_win32.cpp b/gst-libs/gst/va/gstvadisplay_win32.cpp
+new file mode 100644
+index 000000000..bb7f55128
+--- /dev/null
++++ b/gst-libs/gst/va/gstvadisplay_win32.cpp
+@@ -0,0 +1,291 @@
++/* GStreamer
++ * Copyright (C) 2020 Igalia, S.L.
++ *     Author: Víctor Jáquez <vjaquez@igalia.com>
++ * Copyright (C) 2023 Seungha Yang <seungha@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++/**
++ * SECTION:gstvadisplaywin32
++ * @title: GstVaDisplayWin32
++ * @short_description: VADisplay from a Win32 Direct3D12 backend
++ * @sources:
++ * - gstvadisplay_win32.h
++ *
++ * This is a #GstVaDisplay subclass to instantiate for Win32 Direct3D12 backend.
++ *
++ * Since: 1.24
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#ifndef INITGUID
++#include <initguid.h>
++#endif
++
++#include "gstvadisplay_win32.h"
++#include <wrl.h>
++#include <dxgi.h>
++#include <va/va_win32.h>
++#include <string>
++
++/* *INDENT-OFF* */
++using namespace Microsoft::WRL;
++
++extern "C" {
++GST_DEBUG_CATEGORY_EXTERN (gst_va_display_debug);
++#define GST_CAT_DEFAULT gst_va_display_debug
++}
++/* *INDENT-ON* */
++
++/**
++ * GstVaDisplayWin32:
++ *
++ * Since: 1.24
++ */
++struct _GstVaDisplayWin32
++{
++  GstVaDisplay parent;
++
++  gchar *adapter_luid_str;
++  gint64 adapter_luid;
++  guint device_id;
++  guint vendor_id;
++  gchar *desc;
++};
++
++/**
++ * GstVaDisplayWin32Class:
++ *
++ * Since: 1.24
++ */
++struct _GstVaDisplayWin32Class
++{
++  GstVaDisplayClass parent_class;
++};
++
++enum
++{
++  PROP_0,
++  PROP_PATH,
++  PROP_ADAPTER_LUID,
++  PROP_DEVICE_ID,
++  PROP_VENDOR_ID,
++  PROP_DESC,
++};
++
++static void gst_va_display_win32_finalize (GObject * object);
++static void gst_va_display_win32_get_property (GObject * object, guint prop_id,
++    GValue * value, GParamSpec * pspec);
++static void gst_va_display_win32_set_property (GObject * object, guint prop_id,
++    const GValue * value, GParamSpec * pspec);
++static gpointer gst_va_display_win32_create_va_display (GstVaDisplay * display);
++
++#define gst_va_display_win32_parent_class parent_class
++G_DEFINE_TYPE (GstVaDisplayWin32, gst_va_display_win32, GST_TYPE_VA_DISPLAY);
++
++static void
++gst_va_display_win32_class_init (GstVaDisplayWin32Class * klass)
++{
++  GObjectClass *object_class = G_OBJECT_CLASS (klass);
++  GstVaDisplayClass *display_class = GST_VA_DISPLAY_CLASS (klass);
++  GParamFlags construct_only_flags = (GParamFlags)
++      (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_CONSTRUCT_ONLY);
++
++  object_class->get_property = gst_va_display_win32_get_property;
++  object_class->set_property = gst_va_display_win32_set_property;
++  object_class->finalize = gst_va_display_win32_finalize;
++
++  g_object_class_install_property (object_class, PROP_PATH,
++      g_param_spec_string ("path", "Path",
++          "String representation of DXGI Adapter LUID",
++          nullptr, construct_only_flags));
++  g_object_class_install_property (object_class, PROP_ADAPTER_LUID,
++      g_param_spec_int64 ("adapter-luid", "Adapter LUID",
++          "DXGI Adapter LUID",
++          G_MININT64, G_MAXINT64, 0, construct_only_flags));
++  g_object_class_install_property (object_class, PROP_DEVICE_ID,
++      g_param_spec_uint ("device-id", "Device Id",
++          "DXGI Device ID", 0, G_MAXUINT32, 0, construct_only_flags));
++  g_object_class_install_property (object_class, PROP_VENDOR_ID,
++      g_param_spec_uint ("vendor-id", "Vendor Id",
++          "DXGI Vendor ID", 0, G_MAXUINT32, 0, construct_only_flags));
++  g_object_class_override_property (object_class, PROP_DESC, "description");
++
++  display_class->create_va_display =
++      GST_DEBUG_FUNCPTR (gst_va_display_win32_create_va_display);
++}
++
++static void
++gst_va_display_win32_init (GstVaDisplayWin32 * self)
++{
++}
++
++static void
++gst_va_display_win32_get_property (GObject * object, guint prop_id,
++    GValue * value, GParamSpec * pspec)
++{
++  GstVaDisplayWin32 *self = GST_VA_DISPLAY_WIN32 (object);
++
++  switch (prop_id) {
++    case PROP_PATH:
++      g_value_set_string (value, self->adapter_luid_str);
++      break;
++    case PROP_ADAPTER_LUID:
++      g_value_set_int64 (value, self->adapter_luid);
++      break;
++    case PROP_DEVICE_ID:
++      g_value_set_uint (value, self->device_id);
++      break;
++    case PROP_VENDOR_ID:
++      g_value_set_uint (value, self->vendor_id);
++      break;
++    case PROP_DESC:
++      g_value_set_string (value, self->desc);
++      break;
++    default:
++      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
++      break;
++  }
++}
++
++static void
++gst_va_display_win32_set_property (GObject * object, guint prop_id,
++    const GValue * value, GParamSpec * pspec)
++{
++  GstVaDisplayWin32 *self = GST_VA_DISPLAY_WIN32 (object);
++
++  switch (prop_id) {
++    case PROP_PATH:
++      self->adapter_luid_str = g_value_dup_string (value);
++      break;
++    case PROP_ADAPTER_LUID:
++      self->adapter_luid = g_value_get_int64 (value);
++      break;
++    case PROP_DEVICE_ID:
++      self->device_id = g_value_get_uint (value);
++      break;
++    case PROP_VENDOR_ID:
++      self->vendor_id = g_value_get_uint (value);
++      break;
++    case PROP_DESC:
++      self->desc = g_value_dup_string (value);
++      break;
++    default:
++      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
++      break;
++  }
++}
++
++static void
++gst_va_display_win32_finalize (GObject * object)
++{
++  GstVaDisplayWin32 *self = GST_VA_DISPLAY_WIN32 (object);
++
++  g_free (self->adapter_luid_str);
++  g_free (self->desc);
++
++  G_OBJECT_CLASS (parent_class)->finalize (object);
++}
++
++static gpointer
++gst_va_display_win32_create_va_display (GstVaDisplay * display)
++{
++  GstVaDisplayWin32 *self = GST_VA_DISPLAY_WIN32 (display);
++  LARGE_INTEGER val;
++  LUID luid;
++
++  val.QuadPart = self->adapter_luid;
++  luid.LowPart = val.LowPart;
++  luid.HighPart = val.HighPart;
++
++  return vaGetDisplayWin32 (&luid);
++}
++
++/**
++ * gst_va_display_win32_new:
++ * @adapter_luid: DXGI adapter luid
++ *
++ * Creates a new #GstVaDisplay from Win32 Direct3D backend
++ *
++ * Returns: (transfer full): a newly allocated #GstVaDisplay if the
++ *     specified Win32 backend could be opened and initialized;
++ *     otherwise %NULL is returned.
++ *
++ * Since: 1.24
++ */
++GstVaDisplay *
++gst_va_display_win32_new (const gchar * adapter_luid)
++{
++  GstVaDisplayWin32 *self;
++  HRESULT hr;
++  ComPtr < IDXGIFactory1 > factory;
++  DXGI_ADAPTER_DESC desc;
++  gint64 adapter_luid_i64;
++  gchar *desc_str;
++
++  g_return_val_if_fail (adapter_luid != nullptr, nullptr);
++
++  /* *INDENT-OFF* */
++  try {
++    adapter_luid_i64 = std::stoll (adapter_luid);
++  } catch (...) {
++    return nullptr;
++  }
++  /* *INDENT-ON* */
++
++  hr = CreateDXGIFactory1 (IID_PPV_ARGS (&factory));
++  if (FAILED (hr))
++    return nullptr;
++
++  for (guint i = 0;; i++) {
++    ComPtr < IDXGIAdapter > adapter;
++    LARGE_INTEGER val;
++
++    hr = factory->EnumAdapters (i, &adapter);
++    if (FAILED (hr))
++      return nullptr;
++
++    hr = adapter->GetDesc (&desc);
++    if (FAILED (hr))
++      continue;
++
++    val.LowPart = desc.AdapterLuid.LowPart;
++    val.HighPart = desc.AdapterLuid.HighPart;
++
++    if (val.QuadPart == adapter_luid_i64)
++      break;
++  }
++
++  desc_str = g_utf16_to_utf8 ((gunichar2 *) desc.Description,
++      -1, nullptr, nullptr, nullptr);
++
++  self = (GstVaDisplayWin32 *) g_object_new (gst_va_display_win32_get_type (),
++      "path", adapter_luid, "adapter-luid", adapter_luid_i64, "device-id",
++      desc.DeviceId, "vendor-id", desc.VendorId, nullptr);
++  self->desc = desc_str;
++  if (!gst_va_display_initialize (GST_VA_DISPLAY (self))) {
++    gst_object_unref (self);
++    return nullptr;
++  }
++
++  gst_object_ref_sink (self);
++
++  return GST_VA_DISPLAY (self);
++}
+diff --git a/gst-libs/gst/va/gstvadisplay_win32.h b/gst-libs/gst/va/gstvadisplay_win32.h
+new file mode 100644
+index 000000000..b8caf5026
+--- /dev/null
++++ b/gst-libs/gst/va/gstvadisplay_win32.h
+@@ -0,0 +1,35 @@
++/* GStreamer
++ * Copyright (C) 2023 Seungha Yang <seungha@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#pragma once
++
++#include <gst/va/va_fwd.h>
++#include <gst/va/va-prelude.h>
++#include <gst/va/gstvadisplay.h>
++
++G_BEGIN_DECLS
++
++GST_VA_API
++G_DECLARE_FINAL_TYPE (GstVaDisplayWin32, gst_va_display_win32,
++    GST, VA_DISPLAY_WIN32, GstVaDisplay);
++
++GST_VA_API
++GstVaDisplay * gst_va_display_win32_new	(const gchar * adapter_luid);
++
++G_END_DECLS
+diff --git a/gst-libs/gst/va/gstvautils.c b/gst-libs/gst/va/gstvautils.c
+index eb55620c8..02f520ae2 100644
+--- a/gst-libs/gst/va/gstvautils.c
++++ b/gst-libs/gst/va/gstvautils.c
+@@ -32,8 +32,12 @@
+ 
+ #include "gstvautils.h"
+ 
+-#include <gst/va/gstvadisplay_drm.h>
+-#include <gst/va/gstvadisplay_wrapped.h>
++#ifdef G_OS_WIN32
++#include "gstvadisplay_win32.h"
++#else
++#include "gstvadisplay_drm.h"
++#endif
++#include "gstvadisplay_wrapped.h"
+ 
+ GST_DEBUG_CATEGORY_STATIC (GST_CAT_CONTEXT);
+ 
+@@ -232,8 +236,12 @@ gst_va_ensure_element_data (gpointer element, const gchar * render_device_path,
+   if (gst_va_display_found (element, g_atomic_pointer_get (display_ptr)))
+     goto done;
+ 
++#ifdef G_OS_WIN32
++  display = gst_va_display_win32_new (render_device_path);
++#else
+   /* If no neighbor, or application not interested, use drm. */
+   display = gst_va_display_drm_new_from_path (render_device_path);
++#endif
+ 
+   gst_object_replace ((GstObject **) display_ptr, (GstObject *) display);
+ 
+@@ -374,10 +382,13 @@ gst_context_get_va_display (GstContext * context, const gchar * type_name,
+ 
+   s = gst_context_get_structure (context);
+   if (gst_structure_get (s, "gst-display", GST_TYPE_OBJECT, &display, NULL)) {
+-    gchar *device_path = NULL;
+     gboolean ret;
+-
++    gchar *device_path = NULL;
++#ifdef G_OS_WIN32
++    if (GST_IS_VA_DISPLAY_WIN32 (display)) {
++#else
+     if (GST_IS_VA_DISPLAY_DRM (display)) {
++#endif
+       g_object_get (display, "path", &device_path, NULL);
+       ret = (g_strcmp0 (device_path, render_device_path) == 0);
+       g_free (device_path);
+diff --git a/gst-libs/gst/va/meson.build b/gst-libs/gst/va/meson.build
+index 34a836650..ff3d966b8 100644
+--- a/gst-libs/gst/va/meson.build
++++ b/gst-libs/gst/va/meson.build
+@@ -1,7 +1,6 @@
+ va_sources = files(
+   'gstvaallocator.c',
+   'gstvadisplay.c',
+-  'gstvadisplay_drm.c',
+   'gstvadisplay_wrapped.c',
+   'gstvapool.c',
+   'gstvautils.c',
+@@ -17,7 +16,6 @@ va_headers = files(
+   'gstva.h',
+   'gstvaallocator.h',
+   'gstvadisplay.h',
+-  'gstvadisplay_drm.h',
+   'gstvadisplay_wrapped.h',
+   'gstvapool.h',
+   'gstvautils.h',
+@@ -25,24 +23,77 @@ va_headers = files(
+   'va_fwd.h',
+ )
+ 
++va_linux_sources = files(
++  'gstvadisplay_drm.c',
++)
++
++va_linux_headers = files(
++  'gstvadisplay_drm.h',
++)
++
++va_win32_sources = files(
++  'gstvadisplay_win32.cpp',
++)
++
++va_win32_headers = files(
++  'gstvadisplay_win32.h',
++)
++
+ gstva_dep = dependency('', required : false)
++platform_deps = []
++extra_args = ['-DGST_USE_UNSTABLE_API',
++              '-DBUILDING_GST_VA',
++              '-DG_LOG_DOMAIN="GStreamer-VA"']
+ 
+-if host_system != 'linux'
++if host_system not in ['linux', 'windows']
+   subdir_done()
+ endif
+ 
+ libva_req = ['>= 1.6']
++if host_system == 'windows'
++  libva_req = ['>= 1.18']
++endif
++
+ libva_dep = dependency('libva', version: libva_req, required: false,
+     fallback: ['libva', 'libva_dep'])
+-libva_drm_dep = dependency('libva-drm', version: libva_req, required: false,
+-    fallback: ['libva', 'libva_drm_dep'])
+ 
+-if not (libva_dep.found() and libva_drm_dep.found())
++if not libva_dep.found()
+   subdir_done()
+ endif
+ 
+-libdrm_dep = dependency('libdrm', required: false, fallback: ['libdrm', 'ext_libdrm'])
+-cdata.set10('HAVE_LIBDRM', libdrm_dep.found())
++if host_system == 'linux'
++  libva_drm_dep = dependency('libva-drm', version: libva_req, required: false,
++      fallback: ['libva', 'libva_drm_dep'])
++  if not libva_drm_dep.found()
++    subdir_done()
++  endif
++  platform_deps += [libva_drm_dep]
++
++  libdrm_dep = dependency('libdrm', required: false, fallback: ['libdrm', 'ext_libdrm'])
++  if libdrm_dep.found()
++    platform_deps += [libdrm_dep]
++    extra_args += ['-DHAVE_LIBDRM']
++  endif
++
++  va_sources += va_linux_sources
++  va_headers += va_linux_headers
++else
++  libva_win32_dep = dependency('libva-win32', version: libva_req, required: false,
++      fallback: ['libva', 'libva_win32_dep'])
++  if not libva_win32_dep.found()
++    subdir_done()
++  endif
++
++  dxgi_lib = cc.find_library('dxgi', required : false)
++  if not dxgi_lib.found()
++    subdir_done()
++  endif
++
++  platform_deps += [libva_win32_dep, dxgi_lib]
++
++  va_sources += va_win32_sources
++  va_headers += va_win32_headers
++endif
+ 
+ va_enums = gnome.mkenums_simple('va-enumtypes',
+   sources: ['gstva.h'],
+@@ -58,12 +109,13 @@ va_gen_sources = [va_enumtypes_h]
+ 
+ gstva = library('gstva-' + api_version,
+   va_sources, va_sources_priv, va_enums,
+-  c_args : gst_plugins_bad_args + ['-DGST_USE_UNSTABLE_API', '-DBUILDING_GST_VA', '-DG_LOG_DOMAIN="GStreamer-VA"'],
++  c_args : gst_plugins_bad_args + extra_args,
++  cpp_args : gst_plugins_bad_args + extra_args,
+   include_directories : [configinc, libsinc],
+   version : libversion,
+   soversion : soversion,
+   install : true,
+-  dependencies : [gst_dep, gstbase_dep, gstvideo_dep, gstallocators_dep, libva_dep, libva_drm_dep, libdrm_dep],
++  dependencies : [gst_dep, gstbase_dep, gstvideo_dep, gstallocators_dep, libva_dep] + platform_deps,
+ )
+ 
+ library_def = {'lib': gstva}
+@@ -88,7 +140,7 @@ if build_gir
+     'includes' : ['Gst-1.0', 'GstBase-1.0', 'GstVideo-1.0'],
+     'install' : true,
+     'extra_args' : gir_init_section + ['-DGST_USE_UNSTABLE_API'],
+-    'dependencies' : [gst_dep, gstbase_dep, gstvideo_dep, gstallocators_dep, libva_dep, libva_drm_dep, libdrm_dep]
++    'dependencies' : [gst_dep, gstbase_dep, gstvideo_dep, gstallocators_dep, libva_dep] + platform_deps
+   }
+   library_def = {'lib': library_def['lib'], 'gir': [gir]}
+   if not static_build
+@@ -102,7 +154,7 @@ install_headers(va_headers, subdir : 'gstreamer-1.0/gst/va/')
+ 
+ gstva_dep = declare_dependency(link_with : gstva,
+   include_directories : [libsinc],
+-  dependencies : [gst_dep, gstvideo_dep, gstallocators_dep, libva_dep, libva_drm_dep, libdrm_dep],
++  dependencies : [gst_dep, gstvideo_dep, gstallocators_dep, libva_dep] + platform_deps,
+   sources : va_gen_sources)
+ 
+ meson.override_dependency(pkg_name, gstva_dep)
+-- 
+2.40.1
+

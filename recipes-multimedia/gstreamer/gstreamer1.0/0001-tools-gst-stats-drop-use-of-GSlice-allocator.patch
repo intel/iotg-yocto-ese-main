@@ -1,0 +1,73 @@
+From f8c43764f5bab71674b7c8b6f31916ad293da210 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Wed, 4 Jan 2023 17:57:05 +0000
+Subject: [PATCH 01/43] tools: gst-stats: drop use of GSlice allocator
+
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/291
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ tools/gst-stats.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/tools/gst-stats.c b/tools/gst-stats.c
+index 18d0e6a7..cf1b2cbb 100644
+--- a/tools/gst-stats.c
++++ b/tools/gst-stats.c
+@@ -191,7 +191,7 @@ free_reported_latency (gpointer data)
+ static void
+ free_element_stats (gpointer data)
+ {
+-  g_slice_free (GstElementStats, data);
++  g_free (data);
+ }
+ 
+ static inline GstElementStats *
+@@ -211,7 +211,7 @@ get_pad_stats (guint ix)
+ static void
+ free_pad_stats (gpointer data)
+ {
+-  g_slice_free (GstPadStats, data);
++  g_free (data);
+ }
+ 
+ static inline GstThreadStats *
+@@ -220,7 +220,7 @@ get_thread_stats (gpointer id)
+   GstThreadStats *stats = g_hash_table_lookup (threads, id);
+ 
+   if (G_UNLIKELY (!stats)) {
+-    stats = g_slice_new0 (GstThreadStats);
++    stats = g_new0 (GstThreadStats, 1);
+     stats->tthread = GST_CLOCK_TIME_NONE;
+     g_hash_table_insert (threads, id, stats);
+   }
+@@ -246,7 +246,7 @@ new_pad_stats (GstStructure * s)
+       "pad-direction", GST_TYPE_PAD_DIRECTION, &dir,
+       "thread-id", G_TYPE_UINT64, &thread_id, NULL);
+ 
+-  stats = g_slice_new0 (GstPadStats);
++  stats = g_new0 (GstPadStats, 1);
+   if (is_ghost_pad)
+     num_ghostpads++;
+   num_pads++;
+@@ -279,7 +279,7 @@ new_element_stats (GstStructure * s)
+       "name", G_TYPE_STRING, &name,
+       "type", G_TYPE_STRING, &type, "is-bin", G_TYPE_BOOLEAN, &is_bin, NULL);
+ 
+-  stats = g_slice_new0 (GstElementStats);
++  stats = g_new0 (GstElementStats, 1);
+   if (is_bin)
+     num_bins++;
+   num_elements++;
+@@ -298,7 +298,7 @@ new_element_stats (GstStructure * s)
+ static void
+ free_thread_stats (gpointer data)
+ {
+-  g_slice_free (GstThreadStats, data);
++  g_free (data);
+ }
+ 
+ static GstPluginStats *
+-- 
+2.40.1
+

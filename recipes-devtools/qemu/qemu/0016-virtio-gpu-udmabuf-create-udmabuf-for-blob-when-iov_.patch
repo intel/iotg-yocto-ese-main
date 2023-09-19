@@ -1,0 +1,28 @@
+From 35cc5bc372af6e6f88ed284ece93af94e398be55 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Wed, 14 Dec 2022 11:53:17 -0800
+Subject: [PATCH 16/28] virtio-gpu-udmabuf: create udmabuf for blob when
+ iov_cnt == 1 if the size is bigger than the page
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ hw/display/virtio-gpu-udmabuf.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/hw/display/virtio-gpu-udmabuf.c b/hw/display/virtio-gpu-udmabuf.c
+index 69e2cf0bd6..ef1a740de5 100644
+--- a/hw/display/virtio-gpu-udmabuf.c
++++ b/hw/display/virtio-gpu-udmabuf.c
+@@ -132,7 +132,8 @@ void virtio_gpu_init_udmabuf(struct virtio_gpu_simple_resource *res)
+     void *pdata = NULL;
+ 
+     res->dmabuf_fd = -1;
+-    if (res->iov_cnt == 1) {
++    if (res->iov_cnt == 1 &&
++        res->iov[0].iov_len < 4096) {
+         pdata = res->iov[0].iov_base;
+     } else {
+         virtio_gpu_create_udmabuf(res);
+-- 
+2.34.1
+

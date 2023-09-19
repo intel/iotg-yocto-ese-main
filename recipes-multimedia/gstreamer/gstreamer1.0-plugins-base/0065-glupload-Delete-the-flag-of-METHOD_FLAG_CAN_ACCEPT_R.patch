@@ -1,0 +1,51 @@
+From a1bbb840aac5fab575eec651f44b56a80635dc19 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 1 Jun 2023 18:52:28 +0800
+Subject: [PATCH 65/77] glupload: Delete the flag of METHOD_FLAG_CAN_ACCEPT_RAW
+ for DMABuf
+
+When this flag is enabled, the transform_caps() simply set passthrough
+to generate the raw caps. This is not correct, because the sink and
+src have different format/drm-format fields.
+We already add system memory conversion for DMABuf manner, so no more
+need for this flag.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3524>
+---
+ gst-libs/gst/gl/gstglupload.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gst-libs/gst/gl/gstglupload.c b/gst-libs/gst/gl/gstglupload.c
+index 34facfcc..943e5980 100644
+--- a/gst-libs/gst/gl/gstglupload.c
++++ b/gst-libs/gst/gl/gstglupload.c
+@@ -1507,7 +1507,7 @@ _dma_buf_upload_free (gpointer impl)
+ 
+ static const UploadMethod _dma_buf_upload = {
+   "Dmabuf",
+-  METHOD_FLAG_CAN_ACCEPT_RAW,
++  0,
+   &_dma_buf_upload_caps,
+   &_dma_buf_upload_new,
+   &_dma_buf_upload_transform_caps,
+@@ -1652,7 +1652,7 @@ _direct_dma_buf_upload_transform_caps (gpointer impl, GstGLContext * context,
+ 
+ static const UploadMethod _direct_dma_buf_upload = {
+   "DirectDmabuf",
+-  METHOD_FLAG_CAN_ACCEPT_RAW,
++  0,
+   &_dma_buf_upload_caps,
+   &_direct_dma_buf_upload_new,
+   &_direct_dma_buf_upload_transform_caps,
+@@ -1674,7 +1674,7 @@ _direct_dma_buf_external_upload_new (GstGLUpload * upload)
+ 
+ static const UploadMethod _direct_dma_buf_external_upload = {
+   "DirectDmabufExternal",
+-  METHOD_FLAG_CAN_ACCEPT_RAW,
++  0,
+   &_dma_buf_upload_caps,
+   &_direct_dma_buf_external_upload_new,
+   &_direct_dma_buf_upload_transform_caps,
+-- 
+2.40.1
+

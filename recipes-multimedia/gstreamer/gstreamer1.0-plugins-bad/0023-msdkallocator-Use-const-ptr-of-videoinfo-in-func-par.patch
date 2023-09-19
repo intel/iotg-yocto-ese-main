@@ -1,0 +1,156 @@
+From d00e8819a688af13b0bd8bb57651197bddd1a2a4 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Wed, 21 Dec 2022 16:32:10 +0800
+Subject: [PATCH 023/205] msdkallocator: Use const ptr of videoinfo in func
+ param
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3621>
+---
+ sys/msdk/gstmsdkallocator.c | 12 +++++++-----
+ sys/msdk/gstmsdkallocator.h |  2 +-
+ sys/msdk/gstmsdkenc.c       |  4 ++--
+ sys/msdk/gstmsdkvpp.c       |  6 +++---
+ sys/msdk/msdk.c             |  2 +-
+ sys/msdk/msdk.h             |  2 +-
+ 6 files changed, 15 insertions(+), 13 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkallocator.c b/sys/msdk/gstmsdkallocator.c
+index 2ea71325d..491dfb9aa 100644
+--- a/sys/msdk/gstmsdkallocator.c
++++ b/sys/msdk/gstmsdkallocator.c
+@@ -32,17 +32,18 @@
+ #include "gstmsdkallocator.h"
+ 
+ static gboolean
+-map_data (GstBuffer * buffer, mfxFrameSurface1 * mfx_surface, GstVideoInfo info)
++map_data (GstBuffer * buffer, mfxFrameSurface1 * mfx_surface,
++    const GstVideoInfo * info)
+ {
+   guint stride;
+   GstVideoFrame frame;
+ 
+-  if (!gst_video_frame_map (&frame, &info, buffer, GST_MAP_READWRITE))
++  if (!gst_video_frame_map (&frame, info, buffer, GST_MAP_READWRITE))
+     return FALSE;
+ 
+   stride = GST_VIDEO_FRAME_PLANE_STRIDE (&frame, 0);
+ 
+-  switch (GST_VIDEO_INFO_FORMAT (&info)) {
++  switch (GST_VIDEO_INFO_FORMAT (info)) {
+     case GST_VIDEO_FORMAT_NV12:
+     case GST_VIDEO_FORMAT_P010_10LE:
+     case GST_VIDEO_FORMAT_P012_LE:
+@@ -119,7 +120,8 @@ map_data (GstBuffer * buffer, mfxFrameSurface1 * mfx_surface, GstVideoInfo info)
+ }
+ 
+ GstMsdkSurface *
+-gst_msdk_import_sys_mem_to_msdk_surface (GstBuffer * buf, GstVideoInfo info)
++gst_msdk_import_sys_mem_to_msdk_surface (GstBuffer * buf,
++    const GstVideoInfo * info)
+ {
+   GstMsdkSurface *msdk_surface = NULL;
+   GstMapInfo map_info;
+@@ -141,7 +143,7 @@ gst_msdk_import_sys_mem_to_msdk_surface (GstBuffer * buf, GstVideoInfo info)
+ 
+   gst_buffer_unmap (buf, &map_info);
+ 
+-  gst_msdk_set_mfx_frame_info_from_video_info (&frame_info, &info);
++  gst_msdk_set_mfx_frame_info_from_video_info (&frame_info, info);
+   mfx_surface->Info = frame_info;
+ 
+   msdk_surface = g_slice_new0 (GstMsdkSurface);
+diff --git a/sys/msdk/gstmsdkallocator.h b/sys/msdk/gstmsdkallocator.h
+index 53bbdda59..e3a396840 100644
+--- a/sys/msdk/gstmsdkallocator.h
++++ b/sys/msdk/gstmsdkallocator.h
+@@ -64,7 +64,7 @@ struct _GstMsdkSurface
+ };
+ 
+ GstMsdkSurface *
+-gst_msdk_import_sys_mem_to_msdk_surface (GstBuffer * buf, GstVideoInfo info);
++gst_msdk_import_sys_mem_to_msdk_surface (GstBuffer * buf, const GstVideoInfo * info);
+ 
+ mfxStatus gst_msdk_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req, mfxFrameAllocResponse *resp);
+ mfxStatus gst_msdk_frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp);
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 9ebe398f0..2a2b09604 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -1662,7 +1662,7 @@ gst_msdkenc_get_surface_from_pool_old (GstMsdkEnc * thiz, GstBufferPool * pool,
+       &thiz->aligned_info, 0);
+ #else
+   msdk_surface =
+-      gst_msdk_import_sys_mem_to_msdk_surface (new_buffer, thiz->aligned_info);
++      gst_msdk_import_sys_mem_to_msdk_surface (new_buffer, &thiz->aligned_info);
+ #endif
+ 
+   if (msdk_surface)
+@@ -1745,7 +1745,7 @@ gst_msdkenc_get_surface_from_pool (GstMsdkEnc * thiz,
+   } else {
+     msdk_surface =
+         gst_msdk_import_sys_mem_to_msdk_surface (upload_buf,
+-        thiz->aligned_info);
++        &thiz->aligned_info);
+   }
+ 
+   gst_buffer_replace (&frame->input_buffer, upload_buf);
+diff --git a/sys/msdk/gstmsdkvpp.c b/sys/msdk/gstmsdkvpp.c
+index a27f91519..74d2a0855 100644
+--- a/sys/msdk/gstmsdkvpp.c
++++ b/sys/msdk/gstmsdkvpp.c
+@@ -857,7 +857,7 @@ gst_msdkvpp_get_surface_from_pool (GstMsdkVPP * thiz, GstBufferPool * pool,
+   } else {
+     msdk_surface =
+         gst_msdk_import_sys_mem_to_msdk_surface (upload_buf,
+-        thiz->sinkpad_buffer_pool_info);
++        &thiz->sinkpad_buffer_pool_info);
+   }
+ 
+   if (msdk_surface)
+@@ -938,7 +938,7 @@ gst_msdkvpp_transform (GstBaseTransform * trans, GstBuffer * inbuf,
+         &thiz->srcpad_info, GST_MAP_WRITE);
+     if (!thiz->use_video_memory) {
+       out_surface =
+-          gst_msdk_import_sys_mem_to_msdk_surface (outbuf, thiz->srcpad_info);
++          gst_msdk_import_sys_mem_to_msdk_surface (outbuf, &thiz->srcpad_info);
+     }
+     if (out_surface)
+       out_surface->buf = gst_buffer_ref (outbuf);
+@@ -1032,7 +1032,7 @@ gst_msdkvpp_transform (GstBaseTransform * trans, GstBuffer * inbuf,
+         if (!thiz->use_video_memory) {
+           out_surface =
+               gst_msdk_import_sys_mem_to_msdk_surface (outbuf_new,
+-              thiz->srcpad_buffer_pool_info);
++              &thiz->srcpad_buffer_pool_info);
+         }
+         if (out_surface) {
+           out_surface->buf = gst_buffer_ref (outbuf_new);
+diff --git a/sys/msdk/msdk.c b/sys/msdk/msdk.c
+index 6abc5c63d..bc0476f26 100644
+--- a/sys/msdk/msdk.c
++++ b/sys/msdk/msdk.c
+@@ -467,7 +467,7 @@ gst_msdk_get_mfx_fourcc_from_format (GstVideoFormat format)
+ 
+ void
+ gst_msdk_set_mfx_frame_info_from_video_info (mfxFrameInfo * mfx_info,
+-    GstVideoInfo * info)
++    const GstVideoInfo * info)
+ {
+   g_return_if_fail (info && mfx_info);
+ 
+diff --git a/sys/msdk/msdk.h b/sys/msdk/msdk.h
+index 935633040..e48c1a56b 100644
+--- a/sys/msdk/msdk.h
++++ b/sys/msdk/msdk.h
+@@ -130,7 +130,7 @@ void gst_msdk_set_video_alignment (GstVideoInfo * info, guint alloc_w, guint all
+ gint gst_msdk_get_mfx_chroma_from_format (GstVideoFormat format);
+ gint gst_msdk_get_mfx_fourcc_from_format (GstVideoFormat format);
+ void gst_msdk_set_mfx_frame_info_from_video_info (mfxFrameInfo * mfx_info,
+-    GstVideoInfo * info);
++    const GstVideoInfo * info);
+ 
+ gboolean
+ gst_msdk_is_msdk_buffer (GstBuffer * buf);
+-- 
+2.40.1
+

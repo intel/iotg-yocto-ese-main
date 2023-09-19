@@ -1,0 +1,60 @@
+From 6f223c7116b6920ecfc04496f87be2c6c29be9ca Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 1 Dec 2022 14:25:12 -0800
+Subject: [PATCH 09/28] ui/gtk: skip refresh/rendering if VC is invisible
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c     | 4 ++++
+ ui/gtk-gl-area.c | 4 ++++
+ ui/gtk.c         | 4 ++++
+ 3 files changed, 12 insertions(+)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index a6f2bf282a..9659666de8 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -148,6 +148,10 @@ void gd_egl_refresh(DisplayChangeListener *dcl)
+     gd_update_monitor_refresh_rate(
+             vc, vc->window ? vc->window : vc->gfx.drawing_area);
+ 
++    if (!vc->gfx.visible) {
++        return;
++    }
++
+     if (!vc->gfx.esurface) {
+         gd_egl_init(vc);
+         if (!vc->gfx.esurface) {
+diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
+index 21c34fade8..20e1ce2ad7 100644
+--- a/ui/gtk-gl-area.c
++++ b/ui/gtk-gl-area.c
+@@ -123,6 +123,10 @@ void gd_gl_area_refresh(DisplayChangeListener *dcl)
+ 
+     gd_update_monitor_refresh_rate(vc, vc->window ? vc->window : vc->gfx.drawing_area);
+ 
++    if (!vc->gfx.visible) {
++        return;
++    }
++
+     if (!vc->gfx.gls) {
+         if (!gtk_widget_get_realized(vc->gfx.drawing_area)) {
+             return;
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 336e0160d5..e85d232a88 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -841,6 +841,10 @@ static gboolean gd_draw_event(GtkWidget *widget, cairo_t *cr, void *opaque)
+ 
+ #if defined(CONFIG_OPENGL)
+     if (vc->gfx.gls) {
++        if (!vc->gfx.visible) {
++            return TRUE;
++        }
++
+         if (gtk_use_gl_area) {
+             /* invoke render callback please */
+             return FALSE;
+-- 
+2.34.1
+

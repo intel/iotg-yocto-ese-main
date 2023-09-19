@@ -1,0 +1,258 @@
+From 100d2e2181dc36d9abfae74efda3dbea0d0294a6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:33:50 +0000
+Subject: [PATCH 10/16] rtpmanager: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/rtpmanager/gstrtpmux.c        |  4 ++--
+ gst/rtpmanager/gstrtpptdemux.c    |  4 ++--
+ gst/rtpmanager/gstrtprtxreceive.c |  4 ++--
+ gst/rtpmanager/gstrtprtxsend.c    | 12 ++++++------
+ gst/rtpmanager/rtpjitterbuffer.c  |  7 ++-----
+ gst/rtpmanager/rtpsession.c       |  6 +++---
+ gst/rtpmanager/rtpsource.c        |  4 ++--
+ gst/rtpmanager/rtptimerqueue.c    |  6 +++---
+ 8 files changed, 22 insertions(+), 25 deletions(-)
+
+diff --git a/gst/rtpmanager/gstrtpmux.c b/gst/rtpmanager/gstrtpmux.c
+index 6387c655..5de47ae3 100644
+--- a/gst/rtpmanager/gstrtpmux.c
++++ b/gst/rtpmanager/gstrtpmux.c
+@@ -277,7 +277,7 @@ gst_rtp_mux_init (GstRTPMux * rtp_mux)
+ static void
+ gst_rtp_mux_setup_sinkpad (GstRTPMux * rtp_mux, GstPad * sinkpad)
+ {
+-  GstRTPMuxPadPrivate *padpriv = g_slice_new0 (GstRTPMuxPadPrivate);
++  GstRTPMuxPadPrivate *padpriv = g_new0 (GstRTPMuxPadPrivate, 1);
+ 
+   /* setup some pad functions */
+   gst_pad_set_chain_function (sinkpad, GST_DEBUG_FUNCPTR (gst_rtp_mux_chain));
+@@ -336,7 +336,7 @@ gst_rtp_mux_release_pad (GstElement * element, GstPad * pad)
+   gst_element_remove_pad (element, pad);
+ 
+   if (padpriv) {
+-    g_slice_free (GstRTPMuxPadPrivate, padpriv);
++    g_free (padpriv);
+   }
+ }
+ 
+diff --git a/gst/rtpmanager/gstrtpptdemux.c b/gst/rtpmanager/gstrtpptdemux.c
+index 7a310ca6..0454d971 100644
+--- a/gst/rtpmanager/gstrtpptdemux.c
++++ b/gst/rtpmanager/gstrtpptdemux.c
+@@ -493,7 +493,7 @@ gst_rtp_pt_demux_chain (GstPad * pad, GstObject * parent, GstBuffer * buf)
+     gst_pad_set_event_function (srcpad, gst_rtp_pt_demux_src_event);
+ 
+     GST_DEBUG_OBJECT (rtpdemux, "Adding pt=%d to the list.", pt);
+-    rtpdemuxpad = g_slice_new0 (GstRtpPtDemuxPad);
++    rtpdemuxpad = g_new0 (GstRtpPtDemuxPad, 1);
+     rtpdemuxpad->pt = pt;
+     rtpdemuxpad->newcaps = FALSE;
+     rtpdemuxpad->pad = srcpad;
+@@ -743,7 +743,7 @@ gst_rtp_pt_demux_release (GstRtpPtDemux * ptdemux)
+ 
+     gst_pad_set_active (pad->pad, FALSE);
+     gst_element_remove_pad (GST_ELEMENT_CAST (ptdemux), pad->pad);
+-    g_slice_free (GstRtpPtDemuxPad, pad);
++    g_free (pad);
+   }
+   g_slist_free (tmppads);
+ }
+diff --git a/gst/rtpmanager/gstrtprtxreceive.c b/gst/rtpmanager/gstrtprtxreceive.c
+index 274ceed2..5d74c235 100644
+--- a/gst/rtpmanager/gstrtprtxreceive.c
++++ b/gst/rtpmanager/gstrtprtxreceive.c
+@@ -381,7 +381,7 @@ typedef struct
+ static SsrcAssoc *
+ ssrc_assoc_new (guint32 ssrc, GstClockTime time)
+ {
+-  SsrcAssoc *assoc = g_slice_new (SsrcAssoc);
++  SsrcAssoc *assoc = g_new (SsrcAssoc, 1);
+ 
+   assoc->ssrc = ssrc;
+   assoc->time = time;
+@@ -392,7 +392,7 @@ ssrc_assoc_new (guint32 ssrc, GstClockTime time)
+ static void
+ ssrc_assoc_free (SsrcAssoc * assoc)
+ {
+-  g_slice_free (SsrcAssoc, assoc);
++  g_free (assoc);
+ }
+ 
+ static void
+diff --git a/gst/rtpmanager/gstrtprtxsend.c b/gst/rtpmanager/gstrtprtxsend.c
+index 349bb169..1c36e527 100644
+--- a/gst/rtpmanager/gstrtprtxsend.c
++++ b/gst/rtpmanager/gstrtprtxsend.c
+@@ -169,7 +169,7 @@ static void
+ buffer_queue_item_free (BufferQueueItem * item)
+ {
+   gst_buffer_unref (item->buffer);
+-  g_slice_free (BufferQueueItem, item);
++  g_free (item);
+ }
+ 
+ typedef struct
+@@ -185,7 +185,7 @@ typedef struct
+ static SSRCRtxData *
+ ssrc_rtx_data_new (guint32 rtx_ssrc)
+ {
+-  SSRCRtxData *data = g_slice_new0 (SSRCRtxData);
++  SSRCRtxData *data = g_new0 (SSRCRtxData, 1);
+ 
+   data->rtx_ssrc = rtx_ssrc;
+   data->next_seqnum = data->seqnum_base = g_random_int_range (0, G_MAXUINT16);
+@@ -198,7 +198,7 @@ static void
+ ssrc_rtx_data_free (SSRCRtxData * data)
+ {
+   g_sequence_free (data->queue);
+-  g_slice_free (SSRCRtxData, data);
++  g_free (data);
+ }
+ 
+ typedef enum
+@@ -442,7 +442,7 @@ gst_rtp_rtx_data_queue_item_free (gpointer item)
+   GstDataQueueItem *data = item;
+   if (data->object)
+     gst_mini_object_unref (data->object);
+-  g_slice_free (GstDataQueueItem, data);
++  g_free (data);
+ }
+ 
+ static gboolean
+@@ -451,7 +451,7 @@ gst_rtp_rtx_send_push_out (GstRtpRtxSend * rtx, gpointer object)
+   GstDataQueueItem *data;
+   gboolean success;
+ 
+-  data = g_slice_new0 (GstDataQueueItem);
++  data = g_new0 (GstDataQueueItem, 1);
+   data->object = GST_MINI_OBJECT (object);
+   data->size = 1;
+   data->duration = 1;
+@@ -1042,7 +1042,7 @@ process_buffer (GstRtpRtxSend * rtx, GstBuffer * buffer)
+     }
+ 
+     /* add current rtp buffer to queue history */
+-    item = g_slice_new0 (BufferQueueItem);
++    item = g_new0 (BufferQueueItem, 1);
+     item->seqnum = seqnum;
+     item->timestamp = rtptime;
+     item->buffer = gst_buffer_ref (buffer);
+diff --git a/gst/rtpmanager/rtpjitterbuffer.c b/gst/rtpmanager/rtpjitterbuffer.c
+index 1ab0aaf6..c7097697 100644
+--- a/gst/rtpmanager/rtpjitterbuffer.c
++++ b/gst/rtpmanager/rtpjitterbuffer.c
+@@ -112,9 +112,6 @@ rtp_jitter_buffer_finalize (GObject * object)
+   if (jbuf->pipeline_clock)
+     gst_object_unref (jbuf->pipeline_clock);
+ 
+-  /* We cannot use g_queue_clear() as it would pass the wrong size to
+-   * g_slice_free() which may lead to data corruption in the slice allocator.
+-   */
+   rtp_jitter_buffer_flush (jbuf, NULL, NULL);
+ 
+   g_mutex_clear (&jbuf->clock_lock);
+@@ -1177,7 +1174,7 @@ rtp_jitter_buffer_alloc_item (gpointer data, guint type, GstClockTime dts,
+ {
+   RTPJitterBufferItem *item;
+ 
+-  item = g_slice_new (RTPJitterBufferItem);
++  item = g_new (RTPJitterBufferItem, 1);
+   item->data = data;
+   item->next = NULL;
+   item->prev = NULL;
+@@ -1629,5 +1626,5 @@ rtp_jitter_buffer_free_item (RTPJitterBufferItem * item)
+ 
+   if (item->data && item->free_data)
+     item->free_data (item->data);
+-  g_slice_free (RTPJitterBufferItem, item);
++  g_free (item);
+ }
+diff --git a/gst/rtpmanager/rtpsession.c b/gst/rtpmanager/rtpsession.c
+index a73954e4..a6fb73d2 100644
+--- a/gst/rtpmanager/rtpsession.c
++++ b/gst/rtpmanager/rtpsession.c
+@@ -4484,7 +4484,7 @@ generate_twcc (const gchar * key, RTPSource * source, ReportData * data)
+   GST_DEBUG ("generating TWCC feedback for source %08x", source->ssrc);
+ 
+   while ((buf = rtp_twcc_manager_get_feedback (sess->twcc, source->ssrc))) {
+-    ReportOutput *output = g_slice_new (ReportOutput);
++    ReportOutput *output = g_new (ReportOutput, 1);
+     output->source = g_object_ref (source);
+     output->is_bye = FALSE;
+     output->buffer = buf;
+@@ -4548,7 +4548,7 @@ generate_rtcp (const gchar * key, RTPSource * source, ReportData * data)
+ 
+   gst_rtcp_buffer_unmap (&data->rtcpbuf);
+ 
+-  output = g_slice_new (ReportOutput);
++  output = g_new (ReportOutput, 1);
+   output->source = g_object_ref (source);
+   output->is_bye = is_bye;
+   output->buffer = data->rtcp;
+@@ -4805,7 +4805,7 @@ done:
+       gst_buffer_unref (buffer);
+     }
+     g_object_unref (source);
+-    g_slice_free (ReportOutput, output);
++    g_free (output);
+   }
+ 
+   if (all_empty)
+diff --git a/gst/rtpmanager/rtpsource.c b/gst/rtpmanager/rtpsource.c
+index c221c1f2..04d0ff32 100644
+--- a/gst/rtpmanager/rtpsource.c
++++ b/gst/rtpmanager/rtpsource.c
+@@ -328,7 +328,7 @@ void
+ rtp_conflicting_address_free (RTPConflictingAddress * addr)
+ {
+   g_object_unref (addr->address);
+-  g_slice_free (RTPConflictingAddress, addr);
++  g_free (addr);
+ }
+ 
+ static void
+@@ -1872,7 +1872,7 @@ add_conflicting_address (GList * conflicting_addresses,
+ {
+   RTPConflictingAddress *new_conflict;
+ 
+-  new_conflict = g_slice_new (RTPConflictingAddress);
++  new_conflict = g_new (RTPConflictingAddress, 1);
+ 
+   new_conflict->address = G_SOCKET_ADDRESS (g_object_ref (address));
+   new_conflict->time = time;
+diff --git a/gst/rtpmanager/rtptimerqueue.c b/gst/rtpmanager/rtptimerqueue.c
+index 6cee0266..f4e20bea 100644
+--- a/gst/rtpmanager/rtptimerqueue.c
++++ b/gst/rtpmanager/rtptimerqueue.c
+@@ -39,7 +39,7 @@ G_DEFINE_TYPE (RtpTimerQueue, rtp_timer_queue, G_TYPE_OBJECT);
+ static RtpTimer *
+ rtp_timer_new (void)
+ {
+-  return g_slice_new0 (RtpTimer);
++  return g_new0 (RtpTimer, 1);
+ }
+ 
+ static inline void
+@@ -329,7 +329,7 @@ rtp_timer_free (RtpTimer * timer)
+   g_return_if_fail (timer->list.next == NULL);
+   g_return_if_fail (timer->list.prev == NULL);
+ 
+-  g_slice_free (RtpTimer, timer);
++  g_free (timer);
+ }
+ 
+ /**
+@@ -343,7 +343,7 @@ rtp_timer_free (RtpTimer * timer)
+ RtpTimer *
+ rtp_timer_dup (const RtpTimer * timer)
+ {
+-  RtpTimer *copy = g_slice_new (RtpTimer);
++  RtpTimer *copy = g_new (RtpTimer, 1);
+   memcpy (copy, timer, sizeof (RtpTimer));
+   memset (&copy->list, 0, sizeof (GList));
+   copy->queued = FALSE;
+-- 
+2.40.1
+

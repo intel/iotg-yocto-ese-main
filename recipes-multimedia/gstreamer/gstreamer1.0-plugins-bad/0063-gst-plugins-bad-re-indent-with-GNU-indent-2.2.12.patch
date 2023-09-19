@@ -1,0 +1,2313 @@
+From d1e0726bc9443c219726253e2c4f8532ad3992ec Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Wed, 15 Mar 2023 18:54:13 +0000
+Subject: [PATCH 063/205] gst-plugins-bad: re-indent with GNU indent 2.2.12
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4182>
+---
+ ext/avtp/gstavtpcrfutil.c                     |   4 +-
+ ext/closedcaption/bit_slicer.c                |   4 +-
+ ext/closedcaption/io-sim.c                    |   2 +-
+ ext/closedcaption/raw_decoder.c               |   5 +-
+ ext/closedcaption/sampling_par.c              |  10 +-
+ ext/dash/gstdashdemux.c                       |   2 +-
+ ext/dtls/gstdtlsconnection.c                  |  14 +-
+ ext/hls/gsthlsdemux.c                         |   2 +-
+ ext/kate/gstkatespu.c                         |   4 +-
+ ext/lv2/gstlv2.c                              |   2 +-
+ ext/openal/gstopenalsink.c                    | 101 +++----
+ ext/resindvd/resindvdsrc.c                    |   2 +-
+ ext/vulkan/vkviewconvert.c                    |   3 +-
+ ext/x265/gstx265enc.c                         |  10 +-
+ gst-libs/gst/codecparsers/gsth264parser.c     |   2 +-
+ .../gst/codecparsers/gstmpegvideoparser.c     |   3 +-
+ .../gst/vulkan/wayland/gstvkdisplay_wayland.c |   2 +-
+ gst-libs/gst/wayland/gstwlcontext.c           |   2 +-
+ gst-libs/gst/wayland/gstwldisplay.c           |   2 +-
+ gst-libs/gst/wayland/gstwlwindow.c            |   2 +-
+ gst/dvbsubenc/libimagequant/libimagequant.c   |   2 +-
+ gst/dvbsubenc/libimagequant/mempool.c         |   5 +-
+ gst/dvbsubenc/libimagequant/pam.c             |  13 +-
+ gst/dvdspu/gstspu-pgs.c                       |   2 +-
+ gst/fieldanalysis/gstfieldanalysis.c          |   2 +-
+ gst/id3tag/id3tag.c                           | 197 ++++++-------
+ gst/interlace/gstinterlace.c                  |   6 +-
+ gst/jp2kdecimator/jp2kcodestream.c            |   4 +-
+ gst/mpegtsdemux/mpegtsbase.c                  |   4 +-
+ gst/mxf/mxfaes-bwf.c                          |   6 +-
+ gst/mxf/mxfdemux.c                            |   8 +-
+ gst/mxf/mxfmetadata.c                         |  58 ++--
+ gst/mxf/mxfup.c                               |  53 ++--
+ gst/removesilence/vad_private.c               |   2 +-
+ gst/rtmp2/rtmp/amf.c                          |   6 +-
+ gst/videoparsers/gsth264parse.c               |   4 +-
+ gst/videoparsers/gstmpegvideoparse.c          |  32 +--
+ gst/videoparsers/gstvc1parse.c                |  59 ++--
+ .../gst-android-graphics-imageformat.c        |   3 +-
+ .../gst-android-hardware-camera.c             |  27 +-
+ .../gst-android-hardware-sensor.c             |  66 +++--
+ sys/androidmedia/gstamc.c                     | 262 +++++++++---------
+ sys/androidmedia/gstamcaudiodec.c             |   2 +-
+ sys/androidmedia/gstamcvideodec.c             |   2 +-
+ sys/androidmedia/gstamcvideoenc.c             |   8 +-
+ sys/applemedia/vtenc.c                        |   2 +-
+ sys/d3dvideosink/d3dhelpers.c                 |  24 +-
+ sys/msdk/gstmsdkvpp.c                         |   2 +-
+ sys/v4l2codecs/gstv4l2decoder.c               |   4 +-
+ sys/wasapi/gstwasapiutil.c                    |   2 +-
+ tests/check/elements/avtpcrfsync.c            |  40 ++-
+ tests/check/elements/avwait.c                 |   2 +-
+ tests/check/elements/kate.c                   |   7 +-
+ tests/check/elements/pnm.c                    |  12 +-
+ tests/check/libs/play.c                       |   2 +-
+ tests/check/pipelines/ipcpipeline.c           |  12 +-
+ tests/examples/d3d11/d3d11videosink.c         |   6 +-
+ 57 files changed, 595 insertions(+), 531 deletions(-)
+
+diff --git a/ext/avtp/gstavtpcrfutil.c b/ext/avtp/gstavtpcrfutil.c
+index 1c60e7655..e521b512e 100644
+--- a/ext/avtp/gstavtpcrfutil.c
++++ b/ext/avtp/gstavtpcrfutil.c
+@@ -53,7 +53,7 @@ buffer_size_valid (GstMapInfo * info)
+ }
+ 
+ GstClockTime
+-get_avtp_tstamp (GstAvtpCrfBase * avtpcrfbase, struct avtp_stream_pdu * pdu)
++get_avtp_tstamp (GstAvtpCrfBase * avtpcrfbase, struct avtp_stream_pdu *pdu)
+ {
+   guint64 tstamp = GST_CLOCK_TIME_NONE, tstamp_valid;
+   guint32 type;
+@@ -91,7 +91,7 @@ get_avtp_tstamp (GstAvtpCrfBase * avtpcrfbase, struct avtp_stream_pdu * pdu)
+ }
+ 
+ gboolean
+-h264_tstamp_valid (struct avtp_stream_pdu * pdu)
++h264_tstamp_valid (struct avtp_stream_pdu *pdu)
+ {
+   guint64 subtype, h264_time_valid;
+   guint32 type;
+diff --git a/ext/closedcaption/bit_slicer.c b/ext/closedcaption/bit_slicer.c
+index bfc197718..890ca550a 100644
+--- a/ext/closedcaption/bit_slicer.c
++++ b/ext/closedcaption/bit_slicer.c
+@@ -277,7 +277,6 @@ BIT_SLICER (Y8, 4, DEF_THR_FRAC)        /* any format with 0 bytes between Y or
+     BIT_SLICER (RGBA24_LE, 4, DEF_THR_FRAC)     /* 3 bytes */
+     BIT_SLICER (RGB16_LE, 4, bs->thresh_frac)
+     BIT_SLICER (RGB16_BE, 4, bs->thresh_frac)
+-
+      static const unsigned int LP_AVG = 4;
+ 
+      static vbi_bool
+@@ -506,7 +505,8 @@ vbi_bool
+     uint8_t * buffer,
+     unsigned int buffer_size,
+     vbi3_bit_slicer_point * points,
+-    unsigned int *n_points, unsigned int max_points, const uint8_t * raw) {
++    unsigned int *n_points, unsigned int max_points, const uint8_t * raw)
++{
+   static const vbi_pixfmt pixfmt = VBI_PIXFMT_Y8;
+   static const unsigned int bpp = 1;
+   static const unsigned int oversampling = 4;   /* see above */
+diff --git a/ext/closedcaption/io-sim.c b/ext/closedcaption/io-sim.c
+index 4b3da36a5..6c26ccd54 100644
+--- a/ext/closedcaption/io-sim.c
++++ b/ext/closedcaption/io-sim.c
+@@ -535,7 +535,7 @@ signal_u8 (uint8_t * raw,
+         goto bounds;
+ 
+       if (sp->interlaced) {
+-        row *= 2 + ! !(flags & _VBI_RAW_SWAP_FIELDS);
++        row *= 2 + !!(flags & _VBI_RAW_SWAP_FIELDS);
+       } else if (flags & _VBI_RAW_SWAP_FIELDS) {
+         row += sp->count[0];
+       }
+diff --git a/ext/closedcaption/raw_decoder.c b/ext/closedcaption/raw_decoder.c
+index c6d968312..4b91d3c55 100644
+--- a/ext/closedcaption/raw_decoder.c
++++ b/ext/closedcaption/raw_decoder.c
+@@ -1072,7 +1072,7 @@ vbi3_raw_decoder_debug (vbi3_raw_decoder * rd, vbi_bool enable)
+ #endif
+   r = TRUE;
+ 
+-  rd->debug = ! !enable;
++  rd->debug = !!enable;
+ 
+   n_lines = 0;
+   if (enable) {
+@@ -1135,7 +1135,8 @@ vbi3_raw_decoder_services (vbi3_raw_decoder * rd)
+ /* Attn: strict must be int for compatibility with libzvbi 0.2 (-1 == 0) */
+ vbi_service_set
+     vbi3_raw_decoder_set_sampling_par
+-    (vbi3_raw_decoder * rd, const vbi_sampling_par * sp, int strict) {
++    (vbi3_raw_decoder * rd, const vbi_sampling_par * sp, int strict)
++{
+   unsigned int services;
+ 
+   assert (NULL != rd);
+diff --git a/ext/closedcaption/sampling_par.c b/ext/closedcaption/sampling_par.c
+index 3c5dfee7c..4db35703d 100644
+--- a/ext/closedcaption/sampling_par.c
++++ b/ext/closedcaption/sampling_par.c
+@@ -332,7 +332,8 @@ static vbi_bool
+ vbi_service_set
+     _vbi_sampling_par_check_services_log
+     (const vbi_sampling_par * sp,
+-    vbi_service_set services, unsigned int strict, _vbi_log_hook * log) {
++    vbi_service_set services, unsigned int strict, _vbi_log_hook * log)
++{
+   const _vbi_service_par *par;
+   vbi_service_set rservices;
+ 
+@@ -359,7 +360,8 @@ vbi_service_set
+     (vbi_sampling_par * sp,
+     unsigned int *max_rate,
+     vbi_videostd_set videostd_set_req,
+-    vbi_service_set services, _vbi_log_hook * log) {
++    vbi_service_set services, _vbi_log_hook * log)
++{
+   const _vbi_service_par *par;
+   vbi_service_set rservices;
+   vbi_videostd_set videostd_set;
+@@ -502,8 +504,8 @@ vbi_service_set
+  */
+ vbi_service_set
+     vbi_sampling_par_check_services
+-    (const vbi_sampling_par * sp,
+-    vbi_service_set services, unsigned int strict) {
++    (const vbi_sampling_par * sp, vbi_service_set services, unsigned int strict)
++{
+   return _vbi_sampling_par_check_services_log (sp, services, strict,
+       /* log_hook */ NULL);
+ }
+diff --git a/ext/dash/gstdashdemux.c b/ext/dash/gstdashdemux.c
+index 51abc6caf..86f54b125 100644
+--- a/ext/dash/gstdashdemux.c
++++ b/ext/dash/gstdashdemux.c
+@@ -2398,7 +2398,7 @@ gst_dash_demux_seek (GstAdaptiveDemux * demux, GstEvent * seek)
+     return FALSE;
+   }
+ 
+-  trickmode_no_audio = ! !(flags & GST_SEEK_FLAG_TRICKMODE_NO_AUDIO);
++  trickmode_no_audio = !!(flags & GST_SEEK_FLAG_TRICKMODE_NO_AUDIO);
+ 
+   streams = demux->streams;
+   if (current_period != gst_mpd_client_get_period_index (dashdemux->client)) {
+diff --git a/ext/dtls/gstdtlsconnection.c b/ext/dtls/gstdtlsconnection.c
+index 4fadde130..e94c6e7e9 100644
+--- a/ext/dtls/gstdtlsconnection.c
++++ b/ext/dtls/gstdtlsconnection.c
+@@ -832,13 +832,13 @@ log_state (GstDtlsConnection * self, const gchar * str)
+   GstDtlsConnectionPrivate *priv = self->priv;
+   guint states = 0;
+ 
+-  states |= (! !SSL_is_init_finished (priv->ssl) << 0);
+-  states |= (! !SSL_in_init (priv->ssl) << 4);
+-  states |= (! !SSL_in_before (priv->ssl) << 8);
+-  states |= (! !SSL_in_connect_init (priv->ssl) << 12);
+-  states |= (! !SSL_in_accept_init (priv->ssl) << 16);
+-  states |= (! !SSL_want_write (priv->ssl) << 20);
+-  states |= (! !SSL_want_read (priv->ssl) << 24);
++  states |= (!!SSL_is_init_finished (priv->ssl) << 0);
++  states |= (!!SSL_in_init (priv->ssl) << 4);
++  states |= (!!SSL_in_before (priv->ssl) << 8);
++  states |= (!!SSL_in_connect_init (priv->ssl) << 12);
++  states |= (!!SSL_in_accept_init (priv->ssl) << 16);
++  states |= (!!SSL_want_write (priv->ssl) << 20);
++  states |= (!!SSL_want_read (priv->ssl) << 24);
+ 
+ #if OPENSSL_VERSION_NUMBER < 0x10100001L
+   GST_LOG_OBJECT (self, "%s: role=%s buf=(%d,%p:%d/%d) %x|%x %s",
+diff --git a/ext/hls/gsthlsdemux.c b/ext/hls/gsthlsdemux.c
+index 305406e47..2e4ee9483 100644
+--- a/ext/hls/gsthlsdemux.c
++++ b/ext/hls/gsthlsdemux.c
+@@ -422,7 +422,7 @@ gst_hls_demux_stream_seek (GstAdaptiveDemuxStream * stream, gboolean forward,
+   /* Snap to segment boundary. Improves seek performance on slow machines. */
+   snap_nearest =
+       (flags & GST_SEEK_FLAG_SNAP_NEAREST) == GST_SEEK_FLAG_SNAP_NEAREST;
+-  snap_after = ! !(flags & GST_SEEK_FLAG_SNAP_AFTER);
++  snap_after = !!(flags & GST_SEEK_FLAG_SNAP_AFTER);
+ 
+   GST_M3U8_CLIENT_LOCK (hlsdemux->client);
+   /* FIXME: Here we need proper discont handling */
+diff --git a/ext/kate/gstkatespu.c b/ext/kate/gstkatespu.c
+index b7838c13e..6a782048b 100644
+--- a/ext/kate/gstkatespu.c
++++ b/ext/kate/gstkatespu.c
+@@ -137,7 +137,7 @@ gst_kate_spu_decode_colcon (GstKateEnc * ke, const guint8 * ptr, guint16 sz)
+ }
+ 
+ static inline guint8
+-gst_kate_spu_get_nybble (const guint8 * nybbles, size_t * nybble_offset)
++gst_kate_spu_get_nybble (const guint8 * nybbles, size_t *nybble_offset)
+ {
+   guint8 ret;
+ 
+@@ -155,7 +155,7 @@ gst_kate_spu_get_nybble (const guint8 * nybbles, size_t * nybble_offset)
+ }
+ 
+ static guint16
+-gst_kate_spu_get_rle_code (const guint8 * nybbles, size_t * nybble_offset)
++gst_kate_spu_get_rle_code (const guint8 * nybbles, size_t *nybble_offset)
+ {
+   guint16 code;
+ 
+diff --git a/ext/lv2/gstlv2.c b/ext/lv2/gstlv2.c
+index a4e7ce88e..113358617 100644
+--- a/ext/lv2/gstlv2.c
++++ b/ext/lv2/gstlv2.c
+@@ -374,7 +374,7 @@ plugin_init (GstPlugin * plugin)
+ }
+ 
+ #ifdef __GNUC__
+-__attribute__ ((destructor))
++__attribute__((destructor))
+ #endif
+      static void plugin_cleanup (GstPlugin * plugin)
+ {
+diff --git a/ext/openal/gstopenalsink.c b/ext/openal/gstopenalsink.c
+index 871e6715f..265cb873b 100644
+--- a/ext/openal/gstopenalsink.c
++++ b/ext/openal/gstopenalsink.c
+@@ -358,46 +358,47 @@ gst_openal_helper_probe_caps (ALCcontext * context)
+     GstAudioChannelPosition positions[8];
+   } chans[] = {
+     {
+-      1, {
+-      GST_AUDIO_CHANNEL_POSITION_MONO}
+-    }, {
+-      2, {
+-      GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}
+-    }, {
+-      4, {
+-      GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}
+-    }, {
+-      6, {
+-      GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER,
+-            GST_AUDIO_CHANNEL_POSITION_LFE1,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}
+-    }, {
+-      7, {
+-      GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER,
+-            GST_AUDIO_CHANNEL_POSITION_LFE1,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_CENTER,
+-            GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}
+-    }, {
+-      8, {
+-      GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
+-            GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER,
+-            GST_AUDIO_CHANNEL_POSITION_LFE1,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT,
+-            GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT,
+-            GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}
+-  },};
++          1, {
++              GST_AUDIO_CHANNEL_POSITION_MONO}
++        }, {
++          2, {
++                GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
++              GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}
++        }, {
++          4, {
++                GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
++                GST_AUDIO_CHANNEL_POSITION_REAR_LEFT,
++              GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}
++        }, {
++          6, {
++                GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER,
++                GST_AUDIO_CHANNEL_POSITION_LFE1,
++                GST_AUDIO_CHANNEL_POSITION_REAR_LEFT,
++              GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}
++        }, {
++          7, {
++                GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER,
++                GST_AUDIO_CHANNEL_POSITION_LFE1,
++                GST_AUDIO_CHANNEL_POSITION_REAR_CENTER,
++                GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT,
++              GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}
++        }, {
++          8, {
++                GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT,
++                GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER,
++                GST_AUDIO_CHANNEL_POSITION_LFE1,
++                GST_AUDIO_CHANNEL_POSITION_REAR_LEFT,
++                GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT,
++                GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT,
++              GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}
++        },
++  };
+   GstStructure *structure;
+   guint64 channel_mask;
+   GstCaps *caps;
+@@ -417,15 +418,17 @@ gst_openal_helper_probe_caps (ALCcontext * context)
+       "AL_FORMAT_71CHN32",
+       NULL
+     }, *fmt16[] = {
+-    "AL_FORMAT_MONO16",
+-          "AL_FORMAT_STEREO16",
+-          "AL_FORMAT_QUAD16",
+-          "AL_FORMAT_51CHN16",
+-          "AL_FORMAT_61CHN16", "AL_FORMAT_71CHN16", NULL}, *fmt8[] = {
+-    "AL_FORMAT_MONO8",
+-          "AL_FORMAT_STEREO8",
+-          "AL_FORMAT_QUAD8",
+-          "AL_FORMAT_51CHN8", "AL_FORMAT_61CHN8", "AL_FORMAT_71CHN8", NULL};
++      "AL_FORMAT_MONO16",
++      "AL_FORMAT_STEREO16",
++      "AL_FORMAT_QUAD16",
++      "AL_FORMAT_51CHN16",
++      "AL_FORMAT_61CHN16", "AL_FORMAT_71CHN16", NULL
++    }, *fmt8[] = {
++      "AL_FORMAT_MONO8",
++      "AL_FORMAT_STEREO8",
++      "AL_FORMAT_QUAD8",
++      "AL_FORMAT_51CHN8", "AL_FORMAT_61CHN8", "AL_FORMAT_71CHN8", NULL
++    };
+     int i;
+ 
+     if (alIsExtensionPresent ("AL_EXT_FLOAT32")) {
+diff --git a/ext/resindvd/resindvdsrc.c b/ext/resindvd/resindvdsrc.c
+index 0b1bd2f69..717fc337a 100644
+--- a/ext/resindvd/resindvdsrc.c
++++ b/ext/resindvd/resindvdsrc.c
+@@ -2438,7 +2438,7 @@ rsn_dvdsrc_src_event (GstBaseSrc * basesrc, GstEvent * event)
+       GST_LOG_OBJECT (src, "handling seek event");
+ 
+       gst_event_parse_seek (event, NULL, NULL, &flags, NULL, NULL, NULL, NULL);
+-      src->flushing_seek = ! !(flags & GST_SEEK_FLAG_FLUSH);
++      src->flushing_seek = !!(flags & GST_SEEK_FLAG_FLUSH);
+       GST_DEBUG_OBJECT (src, "%s seek event",
+           src->flushing_seek ? "flushing" : "non-flushing");
+ 
+diff --git a/ext/vulkan/vkviewconvert.c b/ext/vulkan/vkviewconvert.c
+index 2ff998b16..de2a21fe0 100644
+--- a/ext/vulkan/vkviewconvert.c
++++ b/ext/vulkan/vkviewconvert.c
+@@ -1359,7 +1359,8 @@ fixate_size (GstVulkanViewConvert * viewconvert,
+   GstStructure *ins, *outs;
+   const GValue *from_par, *to_par;
+   GValue fpar = { 0, }, tpar = {
+-  0,};
++    0,
++  };
+ 
+   othercaps = gst_caps_make_writable (othercaps);
+   othercaps = gst_caps_truncate (othercaps);
+diff --git a/ext/x265/gstx265enc.c b/ext/x265/gstx265enc.c
+index 509dd6fef..e6aa973ac 100644
+--- a/ext/x265/gstx265enc.c
++++ b/ext/x265/gstx265enc.c
+@@ -422,9 +422,9 @@ gst_x265_enc_sink_getcaps (GstVideoEncoder * enc, GstCaps * filter)
+     if (max_bit_minus_8 >= 2)
+       has_10bit = TRUE;
+ 
+-    has_8bit &= ! !vtable_8bit;
+-    has_10bit &= ! !vtable_10bit;
+-    has_12bit &= ! !vtable_12bit;
++    has_8bit &= !!vtable_8bit;
++    has_10bit &= !!vtable_10bit;
++    has_12bit &= !!vtable_12bit;
+ 
+     /* 4:4:4 profiles can handle 4:2:2 and 4:2:0 */
+     if (max_chroma_index >= 2)
+@@ -534,8 +534,8 @@ gst_x265_enc_class_init (GstX265EncClass * klass)
+       "height", GST_TYPE_INT_RANGE, 16, G_MAXINT, NULL);
+ 
+   gst_x265_enc_add_x265_chroma_format (gst_caps_get_structure
+-      (supported_sinkcaps, 0), TRUE, TRUE, TRUE, ! !vtable_8bit,
+-      ! !vtable_10bit, ! !vtable_12bit);
++      (supported_sinkcaps, 0), TRUE, TRUE, TRUE, !!vtable_8bit,
++      !!vtable_10bit, !!vtable_12bit);
+ 
+   sink_templ = gst_pad_template_new ("sink",
+       GST_PAD_SINK, GST_PAD_ALWAYS, supported_sinkcaps);
+diff --git a/gst-libs/gst/codecparsers/gsth264parser.c b/gst-libs/gst/codecparsers/gsth264parser.c
+index 7f9000a6d..76937cdf0 100644
+--- a/gst-libs/gst/codecparsers/gsth264parser.c
++++ b/gst-libs/gst/codecparsers/gsth264parser.c
+@@ -986,7 +986,7 @@ gst_h264_parser_parse_pic_timing (GstH264NalParser * nalparser,
+       hrd = &vui->vcl_hrd_parameters;
+     }
+ 
+-    tim->CpbDpbDelaysPresentFlag = ! !hrd;
++    tim->CpbDpbDelaysPresentFlag = !!hrd;
+     tim->pic_struct_present_flag = vui->pic_struct_present_flag;
+ 
+     if (tim->CpbDpbDelaysPresentFlag) {
+diff --git a/gst-libs/gst/codecparsers/gstmpegvideoparser.c b/gst-libs/gst/codecparsers/gstmpegvideoparser.c
+index d828ecf3f..959a416a8 100644
+--- a/gst-libs/gst/codecparsers/gstmpegvideoparser.c
++++ b/gst-libs/gst/codecparsers/gstmpegvideoparser.c
+@@ -523,7 +523,8 @@ gst_mpeg_video_packet_parse_sequence_display_extension (const GstMpegVideoPacket
+ gboolean
+     gst_mpeg_video_packet_parse_sequence_scalable_extension
+     (const GstMpegVideoPacket * packet,
+-    GstMpegVideoSequenceScalableExt * seqscaleext) {
++    GstMpegVideoSequenceScalableExt * seqscaleext)
++{
+   GstBitReader br;
+ 
+   g_return_val_if_fail (seqscaleext != NULL, FALSE);
+diff --git a/gst-libs/gst/vulkan/wayland/gstvkdisplay_wayland.c b/gst-libs/gst/vulkan/wayland/gstvkdisplay_wayland.c
+index 7aa74651e..c5287c8a6 100644
+--- a/gst-libs/gst/vulkan/wayland/gstvkdisplay_wayland.c
++++ b/gst-libs/gst/vulkan/wayland/gstvkdisplay_wayland.c
+@@ -156,7 +156,7 @@ gst_vulkan_display_wayland_new (const gchar * name)
+  * Since: 1.18
+  */
+ GstVulkanDisplayWayland *
+-gst_vulkan_display_wayland_new_with_display (struct wl_display * display)
++gst_vulkan_display_wayland_new_with_display (struct wl_display *display)
+ {
+   GstVulkanDisplayWayland *ret;
+ 
+diff --git a/gst-libs/gst/wayland/gstwlcontext.c b/gst-libs/gst/wayland/gstwlcontext.c
+index bc7ccf684..43fd1df6b 100644
+--- a/gst-libs/gst/wayland/gstwlcontext.c
++++ b/gst-libs/gst/wayland/gstwlcontext.c
+@@ -40,7 +40,7 @@ gst_is_wl_display_handle_need_context_message (GstMessage * msg)
+ }
+ 
+ GstContext *
+-gst_wl_display_handle_context_new (struct wl_display * display)
++gst_wl_display_handle_context_new (struct wl_display *display)
+ {
+   GstContext *context =
+       gst_context_new (GST_WL_DISPLAY_HANDLE_CONTEXT_TYPE, TRUE);
+diff --git a/gst-libs/gst/wayland/gstwldisplay.c b/gst-libs/gst/wayland/gstwldisplay.c
+index a9da274a0..7b492c361 100644
+--- a/gst-libs/gst/wayland/gstwldisplay.c
++++ b/gst-libs/gst/wayland/gstwldisplay.c
+@@ -349,7 +349,7 @@ gst_wl_display_new (const gchar * name, GError ** error)
+ }
+ 
+ GstWlDisplay *
+-gst_wl_display_new_existing (struct wl_display * display,
++gst_wl_display_new_existing (struct wl_display *display,
+     gboolean take_ownership, GError ** error)
+ {
+   GstWlDisplay *self;
+diff --git a/gst-libs/gst/wayland/gstwlwindow.c b/gst-libs/gst/wayland/gstwlwindow.c
+index 6004993f5..afdbc1081 100644
+--- a/gst-libs/gst/wayland/gstwlwindow.c
++++ b/gst-libs/gst/wayland/gstwlwindow.c
+@@ -348,7 +348,7 @@ error:
+ 
+ GstWlWindow *
+ gst_wl_window_new_in_surface (GstWlDisplay * display,
+-    struct wl_surface * parent, GMutex * render_lock)
++    struct wl_surface *parent, GMutex * render_lock)
+ {
+   GstWlWindow *self;
+   GstWlWindowPrivate *priv;
+diff --git a/gst/dvbsubenc/libimagequant/libimagequant.c b/gst/dvbsubenc/libimagequant/libimagequant.c
+index 1eaccbf9e..3254c44c6 100644
+--- a/gst/dvbsubenc/libimagequant/libimagequant.c
++++ b/gst/dvbsubenc/libimagequant/libimagequant.c
+@@ -410,7 +410,7 @@ liq_set_last_index_transparent (liq_attr * attr, int is_last)
+   if (!CHECK_STRUCT_TYPE (attr, liq_attr))
+     return;
+ 
+-  attr->last_index_transparent = ! !is_last;
++  attr->last_index_transparent = !!is_last;
+ }
+ 
+ LIQ_EXPORT void
+diff --git a/gst/dvbsubenc/libimagequant/mempool.c b/gst/dvbsubenc/libimagequant/mempool.c
+index c2777d831..2490ed358 100644
+--- a/gst/dvbsubenc/libimagequant/mempool.c
++++ b/gst/dvbsubenc/libimagequant/mempool.c
+@@ -37,8 +37,9 @@ mempool_create (mempool * mptr, const unsigned int size, unsigned int max_size,
+   if (!*mptr)
+     return NULL;
+   **mptr = (struct mempool) {
+-  .malloc = malloc,.free = free,.size = MEMPOOL_RESERVED + max_size,.used =
+-        sizeof (struct mempool),.next = old,};
++    .malloc = malloc,.free = free,.size = MEMPOOL_RESERVED + max_size,.used =
++        sizeof (struct mempool),.next = old,
++  };
+   mptr_used_start = (uintptr_t) (*mptr) + (*mptr)->used;
+   (*mptr)->used += (ALIGN_MASK + 1 - (mptr_used_start & ALIGN_MASK)) & ALIGN_MASK;      // reserve bytes required to make subsequent allocations aligned
+   assert (!(((uintptr_t) (*mptr) + (*mptr)->used) & ALIGN_MASK));
+diff --git a/gst/dvbsubenc/libimagequant/pam.c b/gst/dvbsubenc/libimagequant/pam.c
+index a3815a48b..089aa3adf 100644
+--- a/gst/dvbsubenc/libimagequant/pam.c
++++ b/gst/dvbsubenc/libimagequant/pam.c
+@@ -104,7 +104,8 @@ pam_computeacolorhash (struct acolorhash_table *acht,
+           // the array was allocated with spare items
+           if (i < achl->capacity) {
+             other_items[i] = (struct acolorhist_arr_item) {
+-            .color = px,.perceptual_weight = boost,};
++              .color = px,.perceptual_weight = boost,
++            };
+             achl->used++;
+             ++colors;
+             continue;
+@@ -155,7 +156,8 @@ pam_computeacolorhash (struct acolorhash_table *acht,
+           achl->other_items = new_items;
+           achl->capacity = capacity;
+           new_items[i] = (struct acolorhist_arr_item) {
+-          .color = px,.perceptual_weight = boost,};
++            .color = px,.perceptual_weight = boost,
++          };
+           achl->used++;
+         } else {
+           // these are elses for first checks whether first and second inline-stored colors are used
+@@ -204,8 +206,9 @@ pam_allocacolorhash (unsigned int maxcolors, unsigned int surface,
+   if (!t)
+     return NULL;
+   *t = (struct acolorhash_table) {
+-  .mempool = m,.hash_size = hash_size,.maxcolors = maxcolors,.ignorebits =
+-        ignorebits,};
++    .mempool = m,.hash_size = hash_size,.maxcolors = maxcolors,.ignorebits =
++        ignorebits,
++  };
+   memset (t->buckets, 0, hash_size * sizeof (struct acolorhist_arr_head));
+   return t;
+ }
+@@ -217,7 +220,7 @@ pam_allocacolorhash (unsigned int maxcolors, unsigned int surface,
+ }
+ 
+ LIQ_PRIVATE histogram *
+-pam_acolorhashtoacolorhist (const struct acolorhash_table * acht,
++pam_acolorhashtoacolorhist (const struct acolorhash_table *acht,
+     const double gamma, void *(*malloc) (size_t), void (*free) (void *))
+ {
+   histogram *hist = malloc (sizeof (hist[0]));
+diff --git a/gst/dvdspu/gstspu-pgs.c b/gst/dvdspu/gstspu-pgs.c
+index df0b8e2cb..49db6d13d 100644
+--- a/gst/dvdspu/gstspu-pgs.c
++++ b/gst/dvdspu/gstspu-pgs.c
+@@ -33,7 +33,7 @@ const struct PgsFrameRateEntry
+   guint fps_d;
+ } PgsFrameRates[] = {
+   {
+-  64, 30000, 1001}              /* 29.97 FPS */
++      64, 30000, 1001}          /* 29.97 FPS */
+ };
+ 
+ typedef enum PgsCommandType PgsCommandType;
+diff --git a/gst/fieldanalysis/gstfieldanalysis.c b/gst/fieldanalysis/gstfieldanalysis.c
+index 8e8f71970..b80c79558 100644
+--- a/gst/fieldanalysis/gstfieldanalysis.c
++++ b/gst/fieldanalysis/gstfieldanalysis.c
+@@ -1655,7 +1655,7 @@ gst_field_analysis_process_buffer (GstFieldAnalysis * filter,
+                 && telecine_matches & FIELD_ANALYSIS_BOTTOM_TOP)) {
+           /* held is opposite to matched => need both field from prev */
+           /* if t_b, hold bottom from prev and top from current, else vice-versa */
+-          res1->holding = 1 + ! !(telecine_matches & FIELD_ANALYSIS_TOP_BOTTOM);
++          res1->holding = 1 + !!(telecine_matches & FIELD_ANALYSIS_TOP_BOTTOM);
+           res0->holding = 1 + !(telecine_matches & FIELD_ANALYSIS_TOP_BOTTOM);
+           /* push prev TCM */
+           outbuf =
+diff --git a/gst/id3tag/id3tag.c b/gst/id3tag/id3tag.c
+index 9deaad5b2..8a4046ae4 100644
+--- a/gst/id3tag/id3tag.c
++++ b/gst/id3tag/id3tag.c
+@@ -606,10 +606,10 @@ add_count_or_num_tag (GstId3v2Tag * id3v2tag, const GstTagList * list,
+     const gchar *corr_num;      /* corresponding NUMBER tag (if count) */
+   } corr[] = {
+     {
+-    GST_TAG_TRACK_NUMBER, GST_TAG_TRACK_COUNT, NULL}, {
+-    GST_TAG_TRACK_COUNT, NULL, GST_TAG_TRACK_NUMBER}, {
+-    GST_TAG_ALBUM_VOLUME_NUMBER, GST_TAG_ALBUM_VOLUME_COUNT, NULL}, {
+-    GST_TAG_ALBUM_VOLUME_COUNT, NULL, GST_TAG_ALBUM_VOLUME_NUMBER}
++        GST_TAG_TRACK_NUMBER, GST_TAG_TRACK_COUNT, NULL}, {
++        GST_TAG_TRACK_COUNT, NULL, GST_TAG_TRACK_NUMBER}, {
++        GST_TAG_ALBUM_VOLUME_NUMBER, GST_TAG_ALBUM_VOLUME_COUNT, NULL}, {
++        GST_TAG_ALBUM_VOLUME_COUNT, NULL, GST_TAG_ALBUM_VOLUME_NUMBER}
+   };
+   guint idx;
+ 
+@@ -846,23 +846,24 @@ add_musicbrainz_tag (GstId3v2Tag * id3v2tag, const GstTagList * list,
+     const gchar realworld_id[32];
+   } mb_ids[] = {
+     {
+-    GST_TAG_MUSICBRAINZ_ARTISTID, "MusicBrainz Artist Id",
+-          "musicbrainz_artistid"}, {
+-    GST_TAG_MUSICBRAINZ_ALBUMID, "MusicBrainz Album Id", "musicbrainz_albumid"}, {
+-    GST_TAG_MUSICBRAINZ_ALBUMARTISTID, "MusicBrainz Album Artist Id",
+-          "musicbrainz_albumartistid"}, {
+-    GST_TAG_MUSICBRAINZ_RELEASEGROUPID, "MusicBrainz Release Group Id",
+-          "musicbrainz_releasegroupid"}, {
+-    GST_TAG_MUSICBRAINZ_TRMID, "MusicBrainz TRM Id", "musicbrainz_trmid"}, {
+-    GST_TAG_CDDA_MUSICBRAINZ_DISCID, "MusicBrainz DiscID",
+-          "musicbrainz_discid"}, {
+-      /* the following one is more or less made up, there seems to be little
+-       * evidence that any popular application is actually putting this info
+-       * into TXXX frames; the first one comes from a musicbrainz wiki 'proposed
+-       * tags' page, the second one is analogue to the vorbis/ape/flac tag. */
+-    GST_TAG_CDDA_CDDB_DISCID, "CDDB DiscID", "discid"}, {
+-    GST_TAG_MUSICBRAINZ_RELEASETRACKID, "MusicBrainz Track Id",
+-          "musicbrainz_trackid"}
++          GST_TAG_MUSICBRAINZ_ARTISTID, "MusicBrainz Artist Id",
++        "musicbrainz_artistid"}, {
++          GST_TAG_MUSICBRAINZ_ALBUMID, "MusicBrainz Album Id",
++        "musicbrainz_albumid"}, {
++          GST_TAG_MUSICBRAINZ_ALBUMARTISTID, "MusicBrainz Album Artist Id",
++        "musicbrainz_albumartistid"}, {
++          GST_TAG_MUSICBRAINZ_RELEASEGROUPID, "MusicBrainz Release Group Id",
++        "musicbrainz_releasegroupid"}, {
++        GST_TAG_MUSICBRAINZ_TRMID, "MusicBrainz TRM Id", "musicbrainz_trmid"}, {
++          GST_TAG_CDDA_MUSICBRAINZ_DISCID, "MusicBrainz DiscID",
++        "musicbrainz_discid"}, {
++          /* the following one is more or less made up, there seems to be little
++           * evidence that any popular application is actually putting this info
++           * into TXXX frames; the first one comes from a musicbrainz wiki 'proposed
++           * tags' page, the second one is analogue to the vorbis/ape/flac tag. */
++        GST_TAG_CDDA_CDDB_DISCID, "CDDB DiscID", "discid"}, {
++          GST_TAG_MUSICBRAINZ_RELEASETRACKID, "MusicBrainz Track Id",
++        "musicbrainz_trackid"}
+   };
+   guint i, idx;
+ 
+@@ -1136,75 +1137,75 @@ static const struct
+   const gchar *data;
+ } add_funcs[] = {
+   {
+-    /* Simple text tags */
+-  GST_TAG_ARTIST, add_text_tag, "TPE1"}, {
+-  GST_TAG_ALBUM_ARTIST, add_text_tag, "TPE2"}, {
+-  GST_TAG_TITLE, add_text_tag, "TIT2"}, {
+-  GST_TAG_ALBUM, add_text_tag, "TALB"}, {
+-  GST_TAG_COPYRIGHT, add_text_tag, "TCOP"}, {
+-  GST_TAG_COMPOSER, add_text_tag, "TCOM"}, {
+-  GST_TAG_GENRE, add_text_tag, "TCON"}, {
+-  GST_TAG_ENCODED_BY, add_text_tag, "TENC"}, {
+-  GST_TAG_PUBLISHER, add_text_tag, "TPUB"}, {
+-  GST_TAG_INTERPRETED_BY, add_text_tag, "TPE4"}, {
+-  GST_TAG_MUSICAL_KEY, add_text_tag, "TKEY"}, {
+-
+-    /* Private frames */
+-  GST_TAG_PRIVATE_DATA, add_private_data_tag, "PRIV"}, {
+-  GST_ID3_DEMUX_TAG_ID3V2_FRAME, add_id3v2frame_tag, NULL}, {
+-
+-    /* Track and album numbers */
+-  GST_TAG_TRACK_NUMBER, add_count_or_num_tag, "TRCK"}, {
+-  GST_TAG_TRACK_COUNT, add_count_or_num_tag, "TRCK"}, {
+-  GST_TAG_ALBUM_VOLUME_NUMBER, add_count_or_num_tag, "TPOS"}, {
+-  GST_TAG_ALBUM_VOLUME_COUNT, add_count_or_num_tag, "TPOS"}, {
+-
+-    /* Comment tags */
+-  GST_TAG_COMMENT, add_comment_tag, NULL}, {
+-  GST_TAG_EXTENDED_COMMENT, add_comment_tag, NULL}, {
+-
+-    /* BPM tag */
+-  GST_TAG_BEATS_PER_MINUTE, add_bpm_tag, NULL}, {
+-
+-    /* Images */
+-  GST_TAG_IMAGE, add_image_tag, NULL}, {
+-  GST_TAG_PREVIEW_IMAGE, add_image_tag, NULL}, {
+-
+-    /* Misc user-defined text tags for IDs (and UFID frame) */
+-  GST_TAG_MUSICBRAINZ_ARTISTID, add_musicbrainz_tag, "\000"}, {
+-  GST_TAG_MUSICBRAINZ_ALBUMID, add_musicbrainz_tag, "\001"}, {
+-  GST_TAG_MUSICBRAINZ_ALBUMARTISTID, add_musicbrainz_tag, "\002"}, {
+-  GST_TAG_MUSICBRAINZ_RELEASEGROUPID, add_musicbrainz_tag, "\003"}, {
+-  GST_TAG_MUSICBRAINZ_TRMID, add_musicbrainz_tag, "\004"}, {
+-  GST_TAG_CDDA_MUSICBRAINZ_DISCID, add_musicbrainz_tag, "\005"}, {
+-  GST_TAG_CDDA_CDDB_DISCID, add_musicbrainz_tag, "\006"}, {
+-  GST_TAG_MUSICBRAINZ_RELEASETRACKID, add_musicbrainz_tag, "\007"}, {
+-  GST_TAG_MUSICBRAINZ_TRACKID, add_unique_file_id_tag, NULL}, {
+-
+-    /* Info about encoder */
+-  GST_TAG_ENCODER, add_encoder_tag, NULL}, {
+-  GST_TAG_ENCODER_VERSION, add_encoder_tag, NULL}, {
+-
+-    /* URIs */
+-  GST_TAG_COPYRIGHT_URI, add_uri_tag, "WCOP"}, {
+-  GST_TAG_LICENSE_URI, add_uri_tag, "WCOP"}, {
+-
+-    /* Up to here, all the frame ids and contents have been the same between
+-       versions 2.3 and 2.4. The rest of them differ... */
+-    /* Date (in ID3v2.3, this is a TYER tag. In v2.4, it's a TDRC tag */
+-  GST_TAG_DATE_TIME, add_date_tag, NULL}, {
+-
+-    /* Replaygain data (not really supported in 2.3, we use an experimental
+-       tag there) */
+-  GST_TAG_TRACK_PEAK, add_relative_volume_tag, NULL}, {
+-  GST_TAG_TRACK_GAIN, add_relative_volume_tag, NULL}, {
+-  GST_TAG_ALBUM_PEAK, add_relative_volume_tag, NULL}, {
+-  GST_TAG_ALBUM_GAIN, add_relative_volume_tag, NULL}, {
+-
+-    /* Sortable version of various tags. These are all v2.4 ONLY */
+-  GST_TAG_ARTIST_SORTNAME, add_text_tag_v4, "TSOP"}, {
+-  GST_TAG_ALBUM_SORTNAME, add_text_tag_v4, "TSOA"}, {
+-  GST_TAG_TITLE_SORTNAME, add_text_tag_v4, "TSOT"}
++        /* Simple text tags */
++      GST_TAG_ARTIST, add_text_tag, "TPE1"}, {
++      GST_TAG_ALBUM_ARTIST, add_text_tag, "TPE2"}, {
++      GST_TAG_TITLE, add_text_tag, "TIT2"}, {
++      GST_TAG_ALBUM, add_text_tag, "TALB"}, {
++      GST_TAG_COPYRIGHT, add_text_tag, "TCOP"}, {
++      GST_TAG_COMPOSER, add_text_tag, "TCOM"}, {
++      GST_TAG_GENRE, add_text_tag, "TCON"}, {
++      GST_TAG_ENCODED_BY, add_text_tag, "TENC"}, {
++      GST_TAG_PUBLISHER, add_text_tag, "TPUB"}, {
++      GST_TAG_INTERPRETED_BY, add_text_tag, "TPE4"}, {
++      GST_TAG_MUSICAL_KEY, add_text_tag, "TKEY"}, {
++
++        /* Private frames */
++      GST_TAG_PRIVATE_DATA, add_private_data_tag, "PRIV"}, {
++      GST_ID3_DEMUX_TAG_ID3V2_FRAME, add_id3v2frame_tag, NULL}, {
++
++        /* Track and album numbers */
++      GST_TAG_TRACK_NUMBER, add_count_or_num_tag, "TRCK"}, {
++      GST_TAG_TRACK_COUNT, add_count_or_num_tag, "TRCK"}, {
++      GST_TAG_ALBUM_VOLUME_NUMBER, add_count_or_num_tag, "TPOS"}, {
++      GST_TAG_ALBUM_VOLUME_COUNT, add_count_or_num_tag, "TPOS"}, {
++
++        /* Comment tags */
++      GST_TAG_COMMENT, add_comment_tag, NULL}, {
++      GST_TAG_EXTENDED_COMMENT, add_comment_tag, NULL}, {
++
++        /* BPM tag */
++      GST_TAG_BEATS_PER_MINUTE, add_bpm_tag, NULL}, {
++
++        /* Images */
++      GST_TAG_IMAGE, add_image_tag, NULL}, {
++      GST_TAG_PREVIEW_IMAGE, add_image_tag, NULL}, {
++
++        /* Misc user-defined text tags for IDs (and UFID frame) */
++      GST_TAG_MUSICBRAINZ_ARTISTID, add_musicbrainz_tag, "\000"}, {
++      GST_TAG_MUSICBRAINZ_ALBUMID, add_musicbrainz_tag, "\001"}, {
++      GST_TAG_MUSICBRAINZ_ALBUMARTISTID, add_musicbrainz_tag, "\002"}, {
++      GST_TAG_MUSICBRAINZ_RELEASEGROUPID, add_musicbrainz_tag, "\003"}, {
++      GST_TAG_MUSICBRAINZ_TRMID, add_musicbrainz_tag, "\004"}, {
++      GST_TAG_CDDA_MUSICBRAINZ_DISCID, add_musicbrainz_tag, "\005"}, {
++      GST_TAG_CDDA_CDDB_DISCID, add_musicbrainz_tag, "\006"}, {
++      GST_TAG_MUSICBRAINZ_RELEASETRACKID, add_musicbrainz_tag, "\007"}, {
++      GST_TAG_MUSICBRAINZ_TRACKID, add_unique_file_id_tag, NULL}, {
++
++        /* Info about encoder */
++      GST_TAG_ENCODER, add_encoder_tag, NULL}, {
++      GST_TAG_ENCODER_VERSION, add_encoder_tag, NULL}, {
++
++        /* URIs */
++      GST_TAG_COPYRIGHT_URI, add_uri_tag, "WCOP"}, {
++      GST_TAG_LICENSE_URI, add_uri_tag, "WCOP"}, {
++
++        /* Up to here, all the frame ids and contents have been the same between
++           versions 2.3 and 2.4. The rest of them differ... */
++        /* Date (in ID3v2.3, this is a TYER tag. In v2.4, it's a TDRC tag */
++      GST_TAG_DATE_TIME, add_date_tag, NULL}, {
++
++        /* Replaygain data (not really supported in 2.3, we use an experimental
++           tag there) */
++      GST_TAG_TRACK_PEAK, add_relative_volume_tag, NULL}, {
++      GST_TAG_TRACK_GAIN, add_relative_volume_tag, NULL}, {
++      GST_TAG_ALBUM_PEAK, add_relative_volume_tag, NULL}, {
++      GST_TAG_ALBUM_GAIN, add_relative_volume_tag, NULL}, {
++
++        /* Sortable version of various tags. These are all v2.4 ONLY */
++      GST_TAG_ARTIST_SORTNAME, add_text_tag_v4, "TSOP"}, {
++      GST_TAG_ALBUM_SORTNAME, add_text_tag_v4, "TSOA"}, {
++      GST_TAG_TITLE_SORTNAME, add_text_tag_v4, "TSOT"}
+ };
+ 
+ static void
+@@ -1377,14 +1378,14 @@ static const struct
+   const GstId3v1WriteFunc func;
+ } v1_funcs[] = {
+   {
+-  GST_TAG_TITLE, 3, 30, latin1_convert}, {
+-  GST_TAG_ARTIST, 33, 30, latin1_convert}, {
+-  GST_TAG_ALBUM, 63, 30, latin1_convert}, {
+-  GST_TAG_DATE_TIME, 93, 4, date_v1_convert}, {
+-  GST_TAG_COMMENT, 97, 28, latin1_convert}, {
+-    /* Note: one-byte gap here */
+-  GST_TAG_TRACK_NUMBER, 126, 1, track_number_convert}, {
+-  GST_TAG_GENRE, 127, 1, genre_v1_convert}
++      GST_TAG_TITLE, 3, 30, latin1_convert}, {
++      GST_TAG_ARTIST, 33, 30, latin1_convert}, {
++      GST_TAG_ALBUM, 63, 30, latin1_convert}, {
++      GST_TAG_DATE_TIME, 93, 4, date_v1_convert}, {
++      GST_TAG_COMMENT, 97, 28, latin1_convert}, {
++        /* Note: one-byte gap here */
++      GST_TAG_TRACK_NUMBER, 126, 1, track_number_convert}, {
++      GST_TAG_GENRE, 127, 1, genre_v1_convert}
+ };
+ 
+ GstBuffer *
+diff --git a/gst/interlace/gstinterlace.c b/gst/interlace/gstinterlace.c
+index ca22e7408..22f53abe7 100644
+--- a/gst/interlace/gstinterlace.c
++++ b/gst/interlace/gstinterlace.c
+@@ -794,8 +794,10 @@ gst_interlace_caps_double_framerate (GstCaps * caps, gboolean half,
+     } else if (G_VALUE_TYPE (val) == GST_TYPE_FRACTION_RANGE) {
+       const GValue *min, *max;
+       GValue nrange = { 0, }, nmin = {
+-      0,}, nmax = {
+-      0,};
++        0,
++      }, nmax = {
++        0,
++      };
+       gint n, d;
+ 
+       g_value_init (&nrange, GST_TYPE_FRACTION_RANGE);
+diff --git a/gst/jp2kdecimator/jp2kcodestream.c b/gst/jp2kdecimator/jp2kcodestream.c
+index be1974d14..fa7176ac7 100644
+--- a/gst/jp2kdecimator/jp2kcodestream.c
++++ b/gst/jp2kdecimator/jp2kcodestream.c
+@@ -574,8 +574,8 @@ parse_cod (GstJP2kDecimator * self, GstByteReader * reader,
+   }
+ 
+   Scod = gst_byte_reader_get_uint8_unchecked (reader);
+-  cod->sop = ! !(Scod & 0x02);
+-  cod->eph = ! !(Scod & 0x04);
++  cod->sop = !!(Scod & 0x02);
++  cod->eph = !!(Scod & 0x04);
+ 
+   /* SGcod */
+   cod->progression_order = gst_byte_reader_get_uint8_unchecked (reader);
+diff --git a/gst/mpegtsdemux/mpegtsbase.c b/gst/mpegtsdemux/mpegtsbase.c
+index f866c3176..5a7783f58 100644
+--- a/gst/mpegtsdemux/mpegtsbase.c
++++ b/gst/mpegtsdemux/mpegtsbase.c
+@@ -1837,8 +1837,8 @@ mpegts_base_handle_seek_event (MpegTSBase * base, GstPad * pad,
+       " stop: %" GST_TIME_FORMAT, rate, GST_TIME_ARGS (start),
+       GST_TIME_ARGS (stop));
+ 
+-  flush = ! !(flags & GST_SEEK_FLAG_FLUSH);
+-  instant_rate_change = ! !(flags & GST_SEEK_FLAG_INSTANT_RATE_CHANGE);
++  flush = !!(flags & GST_SEEK_FLAG_FLUSH);
++  instant_rate_change = !!(flags & GST_SEEK_FLAG_INSTANT_RATE_CHANGE);
+ 
+   /* Directly send the instant-rate-change event here before taking the
+    * stream-lock so that it can be applied as soon as possible */
+diff --git a/gst/mxf/mxfaes-bwf.c b/gst/mxf/mxfaes-bwf.c
+index 93d433bf0..5594cfee6 100644
+--- a/gst/mxf/mxfaes-bwf.c
++++ b/gst/mxf/mxfaes-bwf.c
+@@ -846,7 +846,8 @@ mxf_metadata_aes3_audio_essence_descriptor_to_structure (MXFMetadataBase * m)
+     guint i;
+     GValue va = { 0, }
+     , v = {
+-    0,};
++      0,
++    };
+     GstBuffer *buf;
+     GstMapInfo map;
+ 
+@@ -888,7 +889,8 @@ mxf_metadata_aes3_audio_essence_descriptor_to_structure (MXFMetadataBase * m)
+     guint i;
+     GValue va = { 0, }
+     , v = {
+-    0,};
++      0,
++    };
+     GstBuffer *buf;
+     GstMapInfo map;
+ 
+diff --git a/gst/mxf/mxfdemux.c b/gst/mxf/mxfdemux.c
+index d9eb9a584..b094aa878 100644
+--- a/gst/mxf/mxfdemux.c
++++ b/gst/mxf/mxfdemux.c
+@@ -4833,8 +4833,8 @@ gst_mxf_demux_seek_push (GstMXFDemux * demux, GstEvent * event)
+   if (format != GST_FORMAT_TIME)
+     goto wrong_format;
+ 
+-  flush = ! !(flags & GST_SEEK_FLAG_FLUSH);
+-  keyframe = ! !(flags & GST_SEEK_FLAG_KEY_UNIT);
++  flush = !!(flags & GST_SEEK_FLAG_FLUSH);
++  keyframe = !!(flags & GST_SEEK_FLAG_KEY_UNIT);
+ 
+   /* Work on a copy until we are sure the seek succeeded. */
+   memcpy (&seeksegment, &demux->segment, sizeof (GstSegment));
+@@ -5124,8 +5124,8 @@ gst_mxf_demux_seek_pull (GstMXFDemux * demux, GstEvent * event)
+   if (rate <= 0.0)
+     goto wrong_rate;
+ 
+-  flush = ! !(flags & GST_SEEK_FLAG_FLUSH);
+-  keyframe = ! !(flags & GST_SEEK_FLAG_KEY_UNIT);
++  flush = !!(flags & GST_SEEK_FLAG_FLUSH);
++  keyframe = !!(flags & GST_SEEK_FLAG_KEY_UNIT);
+ 
+   if (!demux->index_table_segments_collected) {
+     collect_index_table_segments (demux);
+diff --git a/gst/mxf/mxfmetadata.c b/gst/mxf/mxfmetadata.c
+index ec4100c61..2e215c82a 100644
+--- a/gst/mxf/mxfmetadata.c
++++ b/gst/mxf/mxfmetadata.c
+@@ -734,7 +734,8 @@ mxf_metadata_preface_to_structure (MXFMetadataBase * m)
+   if (self->n_identifications > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -778,7 +779,8 @@ mxf_metadata_preface_to_structure (MXFMetadataBase * m)
+   if (self->n_essence_containers > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -804,7 +806,8 @@ mxf_metadata_preface_to_structure (MXFMetadataBase * m)
+   if (self->n_dm_schemes > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -1418,7 +1421,8 @@ mxf_metadata_content_storage_to_structure (MXFMetadataBase * m)
+   if (self->n_packages > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -1447,7 +1451,8 @@ mxf_metadata_content_storage_to_structure (MXFMetadataBase * m)
+   if (self->n_essence_container_data > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -1910,7 +1915,8 @@ mxf_metadata_generic_package_to_structure (MXFMetadataBase * m)
+   if (self->n_tracks > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -2556,19 +2562,20 @@ static const struct
+   const MXFMetadataTrackType type;
+ } mxf_metadata_track_identifier[] = {
+   {
+-  MXF_UL (TRACK_TIMECODE_12M_INACTIVE),
+-        MXF_METADATA_TRACK_TIMECODE_12M_INACTIVE}, {
+-  MXF_UL (TRACK_TIMECODE_12M_ACTIVE), MXF_METADATA_TRACK_TIMECODE_12M_ACTIVE}, {
+-  MXF_UL (TRACK_TIMECODE_309M), MXF_METADATA_TRACK_TIMECODE_309M}, {
+-  MXF_UL (TRACK_METADATA), MXF_METADATA_TRACK_METADATA}, {
+-  MXF_UL (TRACK_PICTURE_ESSENCE), MXF_METADATA_TRACK_PICTURE_ESSENCE}, {
+-  MXF_UL (TRACK_SOUND_ESSENCE), MXF_METADATA_TRACK_SOUND_ESSENCE}, {
+-  MXF_UL (TRACK_DATA_ESSENCE), MXF_METADATA_TRACK_DATA_ESSENCE}, {
+-  MXF_UL (TRACK_AUXILIARY_DATA), MXF_METADATA_TRACK_AUXILIARY_DATA}, {
+-  MXF_UL (TRACK_PARSED_TEXT), MXF_METADATA_TRACK_PARSED_TEXT},
+-      /* Avid video? */
++        MXF_UL (TRACK_TIMECODE_12M_INACTIVE),
++      MXF_METADATA_TRACK_TIMECODE_12M_INACTIVE}, {
++        MXF_UL (TRACK_TIMECODE_12M_ACTIVE),
++      MXF_METADATA_TRACK_TIMECODE_12M_ACTIVE}, {
++      MXF_UL (TRACK_TIMECODE_309M), MXF_METADATA_TRACK_TIMECODE_309M}, {
++      MXF_UL (TRACK_METADATA), MXF_METADATA_TRACK_METADATA}, {
++      MXF_UL (TRACK_PICTURE_ESSENCE), MXF_METADATA_TRACK_PICTURE_ESSENCE}, {
++      MXF_UL (TRACK_SOUND_ESSENCE), MXF_METADATA_TRACK_SOUND_ESSENCE}, {
++      MXF_UL (TRACK_DATA_ESSENCE), MXF_METADATA_TRACK_DATA_ESSENCE}, {
++      MXF_UL (TRACK_AUXILIARY_DATA), MXF_METADATA_TRACK_AUXILIARY_DATA}, {
++      MXF_UL (TRACK_PARSED_TEXT), MXF_METADATA_TRACK_PARSED_TEXT},
++  /* Avid video? */
+   {
+-  MXF_UL (TRACK_AVID_PICTURE_ESSENCE), MXF_METADATA_TRACK_PICTURE_ESSENCE}
++      MXF_UL (TRACK_AVID_PICTURE_ESSENCE), MXF_METADATA_TRACK_PICTURE_ESSENCE}
+ };
+ 
+ MXFMetadataTrackType
+@@ -2956,7 +2963,8 @@ mxf_metadata_sequence_to_structure (MXFMetadataBase * m)
+   if (self->n_structural_components > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -3570,7 +3578,8 @@ mxf_metadata_dm_source_clip_to_structure (MXFMetadataBase * m)
+   if (self->n_track_ids > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -3800,7 +3809,8 @@ mxf_metadata_dm_segment_to_structure (MXFMetadataBase * m)
+   if (self->n_track_ids > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -4017,7 +4027,8 @@ mxf_metadata_generic_descriptor_to_structure (MXFMetadataBase * m)
+   if (self->n_locators > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+@@ -6091,7 +6102,8 @@ mxf_metadata_multiple_descriptor_to_structure (MXFMetadataBase * m)
+   if (self->n_sub_descriptors > 0) {
+     GValue arr = { 0, }
+     , val = {
+-    0,};
++      0,
++    };
+ 
+     g_value_init (&arr, GST_TYPE_ARRAY);
+ 
+diff --git a/gst/mxf/mxfup.c b/gst/mxf/mxfup.c
+index d8b6664da..ea8a58c33 100644
+--- a/gst/mxf/mxfup.c
++++ b/gst/mxf/mxfup.c
+@@ -52,30 +52,30 @@ static const struct
+   const gchar *caps_string;
+ } _rgba_mapping_table[] = {
+   {
+-    "RGB", 3, {
+-  'R', 8, 'G', 8, 'B', 8}, GST_VIDEO_CAPS_MAKE ("RGB")}, {
+-    "BGR", 3, {
+-  'B', 8, 'G', 8, 'R', 8}, GST_VIDEO_CAPS_MAKE ("BGR")}, {
+-    "v308", 3, {
+-  'Y', 8, 'U', 8, 'V', 8}, GST_VIDEO_CAPS_MAKE ("v308")}, {
+-    "xRGB", 4, {
+-  'F', 8, 'R', 8, 'G', 8, 'B', 8}, GST_VIDEO_CAPS_MAKE ("xRGB")}, {
+-    "RGBx", 4, {
+-  'R', 8, 'G', 8, 'B', 8, 'F', 8}, GST_VIDEO_CAPS_MAKE ("RGBx")}, {
+-    "xBGR", 4, {
+-  'F', 8, 'B', 8, 'G', 8, 'R', 8}, GST_VIDEO_CAPS_MAKE ("xBGR")}, {
+-    "BGRx", 4, {
+-  'B', 8, 'G', 8, 'R', 8, 'F', 8}, GST_VIDEO_CAPS_MAKE ("BGRx")}, {
+-    "RGBA", 4, {
+-  'R', 8, 'G', 8, 'B', 8, 'A', 8}, GST_VIDEO_CAPS_MAKE ("RGBA")}, {
+-    "ARGB", 4, {
+-  'A', 8, 'R', 8, 'G', 8, 'B', 8}, GST_VIDEO_CAPS_MAKE ("RGBA")}, {
+-    "BGRA", 4, {
+-  'B', 8, 'G', 8, 'R', 8, 'A', 8}, GST_VIDEO_CAPS_MAKE ("BGRA")}, {
+-    "ABGR", 4, {
+-  'A', 8, 'B', 8, 'G', 8, 'R', 8}, GST_VIDEO_CAPS_MAKE ("ABGR")}, {
+-    "AYUV", 4, {
+-  'A', 8, 'Y', 8, 'U', 8, 'V', 8}, GST_VIDEO_CAPS_MAKE ("AYUV")}
++        "RGB", 3, {
++          'R', 8, 'G', 8, 'B', 8}, GST_VIDEO_CAPS_MAKE ("RGB")}, {
++        "BGR", 3, {
++          'B', 8, 'G', 8, 'R', 8}, GST_VIDEO_CAPS_MAKE ("BGR")}, {
++        "v308", 3, {
++          'Y', 8, 'U', 8, 'V', 8}, GST_VIDEO_CAPS_MAKE ("v308")}, {
++        "xRGB", 4, {
++          'F', 8, 'R', 8, 'G', 8, 'B', 8}, GST_VIDEO_CAPS_MAKE ("xRGB")}, {
++        "RGBx", 4, {
++          'R', 8, 'G', 8, 'B', 8, 'F', 8}, GST_VIDEO_CAPS_MAKE ("RGBx")}, {
++        "xBGR", 4, {
++          'F', 8, 'B', 8, 'G', 8, 'R', 8}, GST_VIDEO_CAPS_MAKE ("xBGR")}, {
++        "BGRx", 4, {
++          'B', 8, 'G', 8, 'R', 8, 'F', 8}, GST_VIDEO_CAPS_MAKE ("BGRx")}, {
++        "RGBA", 4, {
++          'R', 8, 'G', 8, 'B', 8, 'A', 8}, GST_VIDEO_CAPS_MAKE ("RGBA")}, {
++        "ARGB", 4, {
++          'A', 8, 'R', 8, 'G', 8, 'B', 8}, GST_VIDEO_CAPS_MAKE ("RGBA")}, {
++        "BGRA", 4, {
++          'B', 8, 'G', 8, 'R', 8, 'A', 8}, GST_VIDEO_CAPS_MAKE ("BGRA")}, {
++        "ABGR", 4, {
++          'A', 8, 'B', 8, 'G', 8, 'R', 8}, GST_VIDEO_CAPS_MAKE ("ABGR")}, {
++        "AYUV", 4, {
++          'A', 8, 'Y', 8, 'U', 8, 'V', 8}, GST_VIDEO_CAPS_MAKE ("AYUV")}
+ };
+ 
+ static const struct
+@@ -88,8 +88,9 @@ static const struct
+   const gchar *caps_string;
+ } _cdci_mapping_table[] = {
+   {
+-  "YUY2", 2, 1, 0, TRUE, GST_VIDEO_CAPS_MAKE ("YUY2")}, {
+-"UYVY", 2, 1, 0, FALSE, GST_VIDEO_CAPS_MAKE ("UYVY")},};
++      "YUY2", 2, 1, 0, TRUE, GST_VIDEO_CAPS_MAKE ("YUY2")}, {
++      "UYVY", 2, 1, 0, FALSE, GST_VIDEO_CAPS_MAKE ("UYVY")},
++};
+ 
+ typedef struct
+ {
+diff --git a/gst/removesilence/vad_private.c b/gst/removesilence/vad_private.c
+index 82bdb82a1..fb9a76691 100644
+--- a/gst/removesilence/vad_private.c
++++ b/gst/removesilence/vad_private.c
+@@ -115,7 +115,7 @@ vad_get_threshold_as_db (struct _vad_s *p)
+ }
+ 
+ gint
+-vad_update (struct _vad_s * p, gint16 * data, gint len)
++vad_update (struct _vad_s *p, gint16 * data, gint len)
+ {
+   guint64 tail;
+   gint frame_type;
+diff --git a/gst/rtmp2/rtmp/amf.c b/gst/rtmp2/rtmp/amf.c
+index 9ce936351..eed8ebf04 100644
+--- a/gst/rtmp2/rtmp/amf.c
++++ b/gst/rtmp2/rtmp/amf.c
+@@ -194,7 +194,7 @@ GstAmfNode *
+ gst_amf_node_new_boolean (gboolean value)
+ {
+   GstAmfNode *node = node_new (GST_AMF_TYPE_BOOLEAN);
+-  node->value.v_int = ! !value;
++  node->value.v_int = !!value;
+   return node;
+ }
+ 
+@@ -398,7 +398,7 @@ void
+ gst_amf_node_set_boolean (GstAmfNode * node, gboolean value)
+ {
+   g_return_if_fail (node->type == GST_AMF_TYPE_BOOLEAN);
+-  node->value.v_int = ! !value;
++  node->value.v_int = !!value;
+ }
+ 
+ void
+@@ -675,7 +675,7 @@ parse_boolean (AmfParser * parser)
+   }
+ 
+   value = parse_u8 (parser);
+-  return ! !value;
++  return !!value;
+ }
+ 
+ static inline GBytes *
+diff --git a/gst/videoparsers/gsth264parse.c b/gst/videoparsers/gsth264parse.c
+index 8bb47f9db..0f27f48f0 100644
+--- a/gst/videoparsers/gsth264parse.c
++++ b/gst/videoparsers/gsth264parse.c
+@@ -803,7 +803,7 @@ gst_h264_parse_process_sei (GstH264Parse * h264parse, GstH264NalUnit * nalu)
+               if (sei.payload.frame_packing.spatial_flipping_flag) {
+                 /* One of the views is flopped. */
+                 if (sei.payload.frame_packing.frame0_flipped_flag !=
+-                    ! !(mview_flags &
++                    !!(mview_flags &
+                         GST_VIDEO_MULTIVIEW_FLAGS_RIGHT_VIEW_FIRST))
+                   /* the left view is flopped */
+                   mview_flags |= GST_VIDEO_MULTIVIEW_FLAGS_LEFT_FLOPPED;
+@@ -816,7 +816,7 @@ gst_h264_parse_process_sei (GstH264Parse * h264parse, GstH264NalUnit * nalu)
+               if (sei.payload.frame_packing.spatial_flipping_flag) {
+                 /* One of the views is flipped, */
+                 if (sei.payload.frame_packing.frame0_flipped_flag !=
+-                    ! !(mview_flags &
++                    !!(mview_flags &
+                         GST_VIDEO_MULTIVIEW_FLAGS_RIGHT_VIEW_FIRST))
+                   /* the left view is flipped */
+                   mview_flags |= GST_VIDEO_MULTIVIEW_FLAGS_LEFT_FLIPPED;
+diff --git a/gst/videoparsers/gstmpegvideoparse.c b/gst/videoparsers/gstmpegvideoparse.c
+index f8ef31a1b..6fe694cec 100644
+--- a/gst/videoparsers/gstmpegvideoparse.c
++++ b/gst/videoparsers/gstmpegvideoparse.c
+@@ -390,17 +390,17 @@ picture_start_code_name (guint8 psc)
+     const gchar *name;
+   } psc_names[] = {
+     {
+-    0x00, "Picture Start"}, {
+-    0xb0, "Reserved"}, {
+-    0xb1, "Reserved"}, {
+-    0xb2, "User Data Start"}, {
+-    0xb3, "Sequence Header Start"}, {
+-    0xb4, "Sequence Error"}, {
+-    0xb5, "Extension Start"}, {
+-    0xb6, "Reserved"}, {
+-    0xb7, "Sequence End"}, {
+-    0xb8, "Group Start"}, {
+-    0xb9, "Program End"}
++        0x00, "Picture Start"}, {
++        0xb0, "Reserved"}, {
++        0xb1, "Reserved"}, {
++        0xb2, "User Data Start"}, {
++        0xb3, "Sequence Header Start"}, {
++        0xb4, "Sequence Error"}, {
++        0xb5, "Extension Start"}, {
++        0xb6, "Reserved"}, {
++        0xb7, "Sequence End"}, {
++        0xb8, "Group Start"}, {
++        0xb9, "Program End"}
+   };
+   if (psc < 0xB0 && psc > 0)
+     return "Slice Start";
+@@ -422,11 +422,11 @@ picture_type_name (guint8 pct)
+     const gchar *name;
+   } pct_names[] = {
+     {
+-    0, "Forbidden"}, {
+-    1, "I Frame"}, {
+-    2, "P Frame"}, {
+-    3, "B Frame"}, {
+-    4, "DC Intra Coded (Shall Not Be Used!)"}
++        0, "Forbidden"}, {
++        1, "I Frame"}, {
++        2, "P Frame"}, {
++        3, "B Frame"}, {
++        4, "DC Intra Coded (Shall Not Be Used!)"}
+   };
+ 
+   for (i = 0; i < G_N_ELEMENTS (pct_names); i++)
+diff --git a/gst/videoparsers/gstvc1parse.c b/gst/videoparsers/gstvc1parse.c
+index 74f3b961e..751085410 100644
+--- a/gst/videoparsers/gstvc1parse.c
++++ b/gst/videoparsers/gstvc1parse.c
+@@ -95,9 +95,9 @@ static const struct
+   VC1HeaderFormat en;
+ } header_formats[] = {
+   {
+-  "none", VC1_HEADER_FORMAT_NONE}, {
+-  "asf", VC1_HEADER_FORMAT_ASF}, {
+-  "sequence-layer", VC1_HEADER_FORMAT_SEQUENCE_LAYER}
++      "none", VC1_HEADER_FORMAT_NONE}, {
++      "asf", VC1_HEADER_FORMAT_ASF}, {
++      "sequence-layer", VC1_HEADER_FORMAT_SEQUENCE_LAYER}
+ };
+ 
+ static const struct
+@@ -106,14 +106,15 @@ static const struct
+   VC1StreamFormat en;
+ } stream_formats[] = {
+   {
+-  "bdu", VC1_STREAM_FORMAT_BDU}, {
+-  "bdu-frame", VC1_STREAM_FORMAT_BDU_FRAME}, {
+-  "sequence-layer-bdu", VC1_STREAM_FORMAT_SEQUENCE_LAYER_BDU}, {
+-  "sequence-layer-bdu-frame", VC1_STREAM_FORMAT_SEQUENCE_LAYER_BDU_FRAME}, {
+-  "sequence-layer-raw-frame", VC1_STREAM_FORMAT_SEQUENCE_LAYER_RAW_FRAME}, {
+-  "sequence-layer-frame-layer", VC1_STREAM_FORMAT_SEQUENCE_LAYER_FRAME_LAYER}, {
+-  "asf", VC1_STREAM_FORMAT_ASF}, {
+-  "frame-layer", VC1_STREAM_FORMAT_FRAME_LAYER}
++      "bdu", VC1_STREAM_FORMAT_BDU}, {
++      "bdu-frame", VC1_STREAM_FORMAT_BDU_FRAME}, {
++      "sequence-layer-bdu", VC1_STREAM_FORMAT_SEQUENCE_LAYER_BDU}, {
++      "sequence-layer-bdu-frame", VC1_STREAM_FORMAT_SEQUENCE_LAYER_BDU_FRAME}, {
++      "sequence-layer-raw-frame", VC1_STREAM_FORMAT_SEQUENCE_LAYER_RAW_FRAME}, {
++        "sequence-layer-frame-layer",
++      VC1_STREAM_FORMAT_SEQUENCE_LAYER_FRAME_LAYER}, {
++      "asf", VC1_STREAM_FORMAT_ASF}, {
++      "frame-layer", VC1_STREAM_FORMAT_FRAME_LAYER}
+ };
+ 
+ static const struct
+@@ -122,8 +123,8 @@ static const struct
+   GstVC1ParseFormat en;
+ } parse_formats[] = {
+   {
+-  "WMV3", GST_VC1_PARSE_FORMAT_WMV3}, {
+-  "WVC1", GST_VC1_PARSE_FORMAT_WVC1}
++      "WMV3", GST_VC1_PARSE_FORMAT_WMV3}, {
++      "WVC1", GST_VC1_PARSE_FORMAT_WVC1}
+ };
+ 
+ static const gchar *
+@@ -2032,22 +2033,22 @@ static const struct
+   gint par_n, par_d;
+ } aspect_ratios[] = {
+   {
+-  0, 0}, {
+-  1, 1}, {
+-  12, 11}, {
+-  10, 11}, {
+-  16, 11}, {
+-  40, 33}, {
+-  24, 11}, {
+-  20, 11}, {
+-  32, 11}, {
+-  80, 33}, {
+-  18, 11}, {
+-  15, 11}, {
+-  64, 33}, {
+-  160, 99}, {
+-  0, 0}, {
+-  0, 0}
++      0, 0}, {
++      1, 1}, {
++      12, 11}, {
++      10, 11}, {
++      16, 11}, {
++      40, 33}, {
++      24, 11}, {
++      20, 11}, {
++      32, 11}, {
++      80, 33}, {
++      18, 11}, {
++      15, 11}, {
++      64, 33}, {
++      160, 99}, {
++      0, 0}, {
++      0, 0}
+ };
+ 
+ /* SMPTE 421M Table 8 */
+diff --git a/sys/androidmedia/gst-android-graphics-imageformat.c b/sys/androidmedia/gst-android-graphics-imageformat.c
+index 5b76fcd02..95c958a87 100644
+--- a/sys/androidmedia/gst-android-graphics-imageformat.c
++++ b/sys/androidmedia/gst-android-graphics-imageformat.c
+@@ -43,7 +43,8 @@ static struct
+   jint YUY2;
+   jint YV12;
+ } android_graphics_imageformat = {
+-0};
++  0
++};
+ 
+ gint ImageFormat_JPEG;
+ gint ImageFormat_NV16;
+diff --git a/sys/androidmedia/gst-android-hardware-camera.c b/sys/androidmedia/gst-android-hardware-camera.c
+index a8497c6b7..f8fd74498 100644
+--- a/sys/androidmedia/gst-android-hardware-camera.c
++++ b/sys/androidmedia/gst-android-hardware-camera.c
+@@ -56,7 +56,8 @@ static struct
+   jmethodID stopSmoothZoom;
+   jmethodID unlock;
+ } android_hardware_camera = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+@@ -67,7 +68,8 @@ static struct
+   jint CAMERA_FACING_BACK;
+   jint CAMERA_FACING_FRONT;
+ } android_hardware_camera_camerainfo = {
+-0};
++  0
++};
+ 
+ gint CameraInfo_CAMERA_FACING_BACK;
+ gint CameraInfo_CAMERA_FACING_FRONT;
+@@ -78,7 +80,8 @@ static struct
+   jfieldID width;
+   jfieldID height;
+ } android_hardware_camera_size = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+@@ -186,7 +189,8 @@ static struct
+   jstring FOCUS_MODE_CONTINUOUS_VIDEO;
+   jstring FOCUS_MODE_CONTINUOUS_PICTURE;
+ } android_hardware_camera_parameters = {
+-0};
++  0
++};
+ 
+ const gchar *Parameters_WHITE_BALANCE_AUTO;
+ const gchar *Parameters_WHITE_BALANCE_INCANDESCENT;
+@@ -250,7 +254,8 @@ static struct
+   jclass klass;
+   jmethodID iterator;
+ } java_util_list = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+@@ -258,28 +263,32 @@ static struct
+   jmethodID hasNext;
+   jmethodID next;
+ } java_util_iterator = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+   jclass klass;
+   jmethodID intValue;
+ } java_lang_integer = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+   jclass klass;
+   jmethodID equals;
+ } java_lang_string = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+   jclass klass;
+   jmethodID constructor;
+ } org_freedesktop_gstreamer_androidmedia_gstahccallback = {
+-0};
++  0
++};
+ 
+ static void
+ gst_ah_camera_on_preview_frame (JNIEnv * env, jclass klass, jbyteArray data,
+diff --git a/sys/androidmedia/gst-android-hardware-sensor.c b/sys/androidmedia/gst-android-hardware-sensor.c
+index d5a68b547..735dd68af 100644
+--- a/sys/androidmedia/gst-android-hardware-sensor.c
++++ b/sys/androidmedia/gst-android-hardware-sensor.c
+@@ -62,7 +62,8 @@ static struct
+   jstring SENSOR_SERVICE;
+   jmethodID getSystemService;
+ } android_content_context = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+@@ -70,7 +71,8 @@ static struct
+   jfieldID accuracy;
+   jfieldID values;
+ } android_hardware_sensor_event = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+@@ -79,14 +81,16 @@ static struct
+   jmethodID registerListener;
+   jmethodID unregisterListener;
+ } android_hardware_sensor_manager = {
+-0};
++  0
++};
+ 
+ static struct
+ {
+   jclass klass;
+   jmethodID constructor;
+ } org_freedesktop_gstreamer_androidmedia_gstahscallback = {
+-0};
++  0
++};
+ 
+ GHashTable *sensor_sizes = NULL;
+ static void
+@@ -99,50 +103,52 @@ gst_ah_sensor_sensor_sizes_init (void)
+     gsize size;
+   } types[] = {
+     {
+-    AHS_SENSOR_TYPE_ACCELEROMETER, sizeof (GstAHSAccelerometerValues)}
++        AHS_SENSOR_TYPE_ACCELEROMETER, sizeof (GstAHSAccelerometerValues)}
+     , {
+-    AHS_SENSOR_TYPE_AMBIENT_TEMPERATURE,
+-          sizeof (GstAHSAmbientTemperatureValues)}
++          AHS_SENSOR_TYPE_AMBIENT_TEMPERATURE,
++        sizeof (GstAHSAmbientTemperatureValues)}
+     , {
+-    AHS_SENSOR_TYPE_GAME_ROTATION_VECTOR,
+-          sizeof (GstAHSGameRotationVectorValues)}
++          AHS_SENSOR_TYPE_GAME_ROTATION_VECTOR,
++        sizeof (GstAHSGameRotationVectorValues)}
+     , {
+-    AHS_SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR,
+-          sizeof (GstAHSGeomagneticRotationVectorValues)}
++          AHS_SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR,
++        sizeof (GstAHSGeomagneticRotationVectorValues)}
+     , {
+-    AHS_SENSOR_TYPE_GRAVITY, sizeof (GstAHSGravityValues)}
++        AHS_SENSOR_TYPE_GRAVITY, sizeof (GstAHSGravityValues)}
+     , {
+-    AHS_SENSOR_TYPE_GYROSCOPE, sizeof (GstAHSGyroscopeValues)}
++        AHS_SENSOR_TYPE_GYROSCOPE, sizeof (GstAHSGyroscopeValues)}
+     , {
+-    AHS_SENSOR_TYPE_GYROSCOPE_UNCALIBRATED,
+-          sizeof (GstAHSGyroscopeUncalibratedValues)}
++          AHS_SENSOR_TYPE_GYROSCOPE_UNCALIBRATED,
++        sizeof (GstAHSGyroscopeUncalibratedValues)}
+     , {
+-    AHS_SENSOR_TYPE_HEART_RATE, sizeof (GstAHSHeartRateValues)}
++        AHS_SENSOR_TYPE_HEART_RATE, sizeof (GstAHSHeartRateValues)}
+     , {
+-    AHS_SENSOR_TYPE_LIGHT, sizeof (GstAHSLightValues)}
++        AHS_SENSOR_TYPE_LIGHT, sizeof (GstAHSLightValues)}
+     , {
+-    AHS_SENSOR_TYPE_LINEAR_ACCELERATION,
+-          sizeof (GstAHSLinearAccelerationValues)}
++          AHS_SENSOR_TYPE_LINEAR_ACCELERATION,
++        sizeof (GstAHSLinearAccelerationValues)}
+     , {
+-    AHS_SENSOR_TYPE_MAGNETIC_FIELD, sizeof (GstAHSMagneticFieldValues)}
++        AHS_SENSOR_TYPE_MAGNETIC_FIELD, sizeof (GstAHSMagneticFieldValues)}
+     , {
+-    AHS_SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED,
+-          sizeof (GstAHSMagneticFieldUncalibratedValues)}
++          AHS_SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED,
++        sizeof (GstAHSMagneticFieldUncalibratedValues)}
+     , {
+-    AHS_SENSOR_TYPE_ORIENTATION, sizeof (GstAHSOrientationValues)}
++        AHS_SENSOR_TYPE_ORIENTATION, sizeof (GstAHSOrientationValues)}
+     , {
+-    AHS_SENSOR_TYPE_PRESSURE, sizeof (GstAHSPressureValues)}
++        AHS_SENSOR_TYPE_PRESSURE, sizeof (GstAHSPressureValues)}
+     , {
+-    AHS_SENSOR_TYPE_PROXIMITY, sizeof (GstAHSProximityValues)}
++        AHS_SENSOR_TYPE_PROXIMITY, sizeof (GstAHSProximityValues)}
+     , {
+-    AHS_SENSOR_TYPE_RELATIVE_HUMIDITY, sizeof (GstAHSRelativeHumidityValues)}
++          AHS_SENSOR_TYPE_RELATIVE_HUMIDITY,
++        sizeof (GstAHSRelativeHumidityValues)}
+     , {
+-    AHS_SENSOR_TYPE_ROTATION_VECTOR, sizeof (GstAHSRotationVectorValues)}
++        AHS_SENSOR_TYPE_ROTATION_VECTOR, sizeof (GstAHSRotationVectorValues)}
+     , {
+-    AHS_SENSOR_TYPE_STEP_COUNTER, sizeof (GstAHSStepCounterValues)}
++        AHS_SENSOR_TYPE_STEP_COUNTER, sizeof (GstAHSStepCounterValues)}
+     , {
+-    AHS_SENSOR_TYPE_STEP_DETECTOR, sizeof (GstAHSStepDetectorValues)}
+-  ,};
++        AHS_SENSOR_TYPE_STEP_DETECTOR, sizeof (GstAHSStepDetectorValues)}
++    ,
++  };
+ 
+   g_assert_null (sensor_sizes);
+ 
+diff --git a/sys/androidmedia/gstamc.c b/sys/androidmedia/gstamc.c
+index f72fd836f..14d32b656 100644
+--- a/sys/androidmedia/gstamc.c
++++ b/sys/androidmedia/gstamc.c
+@@ -346,7 +346,7 @@ scan_codecs (GstPlugin * plugin)
+         GstAmcCodecInfo *tmp = l->data;
+ 
+         if (strcmp (tmp->name, gst_codec_info->name) == 0
+-            && ! !tmp->is_encoder == ! !gst_codec_info->is_encoder) {
++            && !!tmp->is_encoder == !!gst_codec_info->is_encoder) {
+           gint m = tmp->n_supported_types, n;
+ 
+           GST_LOG ("Successfully scanned codec '%s', appending to existing",
+@@ -509,20 +509,21 @@ static const struct
+   GstVideoFormat video_format;
+ } color_format_mapping_table[] = {
+   {
+-  COLOR_FormatYUV420Planar, GST_VIDEO_FORMAT_I420}, {
+-  COLOR_FormatYUV420Flexible, GST_VIDEO_FORMAT_I420}, {
+-  COLOR_FormatYUV420SemiPlanar, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_TI_FormatYUV420PackedSemiPlanar, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_INTEL_FormatYUV420PackedSemiPlanar, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_INTEL_FormatYUV420PackedSemiPlanar_Tiled, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_QCOM_FormatYUV420SemiPlanar, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_QCOM_FormatYVU420SemiPlanar32m, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_QCOM_FormatYVU420SemiPlanar32mMultiView, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_OMX_SEC_FormatNV12Tiled, GST_VIDEO_FORMAT_NV12}, {
+-  COLOR_FormatYCbYCr, GST_VIDEO_FORMAT_YUY2}, {
+-  COLOR_FormatYV12, GST_VIDEO_FORMAT_YV12}
++      COLOR_FormatYUV420Planar, GST_VIDEO_FORMAT_I420}, {
++      COLOR_FormatYUV420Flexible, GST_VIDEO_FORMAT_I420}, {
++      COLOR_FormatYUV420SemiPlanar, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_TI_FormatYUV420PackedSemiPlanar, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_INTEL_FormatYUV420PackedSemiPlanar, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_INTEL_FormatYUV420PackedSemiPlanar_Tiled, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_QCOM_FormatYUV420SemiPlanar, GST_VIDEO_FORMAT_NV12}, {
++        COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka,
++      GST_VIDEO_FORMAT_NV12}, {
++      COLOR_QCOM_FormatYVU420SemiPlanar32m, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_QCOM_FormatYVU420SemiPlanar32mMultiView, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_OMX_SEC_FormatNV12Tiled, GST_VIDEO_FORMAT_NV12}, {
++      COLOR_FormatYCbYCr, GST_VIDEO_FORMAT_YUY2}, {
++      COLOR_FormatYV12, GST_VIDEO_FORMAT_YV12}
+ };
+ 
+ static gboolean
+@@ -1091,8 +1092,8 @@ static const struct
+   const gchar *str;
+ } hevc_profile_mapping_table[] = {
+   {
+-  HEVCProfileMain, "main"}, {
+-  HEVCProfileMain10, "main-10"}
++      HEVCProfileMain, "main"}, {
++      HEVCProfileMain10, "main-10"}
+ };
+ 
+ const gchar *
+@@ -1131,32 +1132,32 @@ static const struct
+   const gchar *level_str;
+ } hevc_tier_level_mapping_table[] = {
+   {
+-  HEVCMainTierLevel1, "main", "1"}, {
+-  HEVCMainTierLevel2, "main", "2"}, {
+-  HEVCMainTierLevel21, "main", "2.1"}, {
+-  HEVCMainTierLevel3, "main", "3"}, {
+-  HEVCMainTierLevel31, "main", "3.1"}, {
+-  HEVCMainTierLevel4, "main", "4"}, {
+-  HEVCMainTierLevel41, "main", "4.1"}, {
+-  HEVCMainTierLevel5, "main", "5"}, {
+-  HEVCMainTierLevel51, "main", "5.1"}, {
+-  HEVCMainTierLevel52, "main", "5.2"}, {
+-  HEVCMainTierLevel6, "main", "6"}, {
+-  HEVCMainTierLevel61, "main", "6.1"}, {
+-  HEVCMainTierLevel62, "main", "6.2"}, {
+-  HEVCHighTierLevel1, "high", "1"}, {
+-  HEVCHighTierLevel2, "high", "2"}, {
+-  HEVCHighTierLevel21, "high", "2.1"}, {
+-  HEVCHighTierLevel3, "high", "3"}, {
+-  HEVCHighTierLevel31, "high", "3.1"}, {
+-  HEVCHighTierLevel4, "high", "4"}, {
+-  HEVCHighTierLevel41, "high", "4.1"}, {
+-  HEVCHighTierLevel5, "high", "5"}, {
+-  HEVCHighTierLevel51, "high", "5.1"}, {
+-  HEVCHighTierLevel52, "high", "5.2"}, {
+-  HEVCHighTierLevel6, "high", "6"}, {
+-  HEVCHighTierLevel61, "high", "6.1"}, {
+-  HEVCHighTierLevel62, "high", "6.2"}
++      HEVCMainTierLevel1, "main", "1"}, {
++      HEVCMainTierLevel2, "main", "2"}, {
++      HEVCMainTierLevel21, "main", "2.1"}, {
++      HEVCMainTierLevel3, "main", "3"}, {
++      HEVCMainTierLevel31, "main", "3.1"}, {
++      HEVCMainTierLevel4, "main", "4"}, {
++      HEVCMainTierLevel41, "main", "4.1"}, {
++      HEVCMainTierLevel5, "main", "5"}, {
++      HEVCMainTierLevel51, "main", "5.1"}, {
++      HEVCMainTierLevel52, "main", "5.2"}, {
++      HEVCMainTierLevel6, "main", "6"}, {
++      HEVCMainTierLevel61, "main", "6.1"}, {
++      HEVCMainTierLevel62, "main", "6.2"}, {
++      HEVCHighTierLevel1, "high", "1"}, {
++      HEVCHighTierLevel2, "high", "2"}, {
++      HEVCHighTierLevel21, "high", "2.1"}, {
++      HEVCHighTierLevel3, "high", "3"}, {
++      HEVCHighTierLevel31, "high", "3.1"}, {
++      HEVCHighTierLevel4, "high", "4"}, {
++      HEVCHighTierLevel41, "high", "4.1"}, {
++      HEVCHighTierLevel5, "high", "5"}, {
++      HEVCHighTierLevel51, "high", "5.1"}, {
++      HEVCHighTierLevel52, "high", "5.2"}, {
++      HEVCHighTierLevel6, "high", "6"}, {
++      HEVCHighTierLevel61, "high", "6.1"}, {
++      HEVCHighTierLevel62, "high", "6.2"}
+ };
+ 
+ const gchar *
+@@ -1196,13 +1197,13 @@ static const struct
+   const gchar *alt_str;
+ } avc_profile_mapping_table[] = {
+   {
+-  AVCProfileBaseline, "baseline", "constrained-baseline"}, {
+-  AVCProfileMain, "main", NULL}, {
+-  AVCProfileExtended, "extended", NULL}, {
+-  AVCProfileHigh, "high"}, {
+-  AVCProfileHigh10, "high-10", "high-10-intra"}, {
+-  AVCProfileHigh422, "high-4:2:2", "high-4:2:2-intra"}, {
+-  AVCProfileHigh444, "high-4:4:4", "high-4:4:4-intra"}
++      AVCProfileBaseline, "baseline", "constrained-baseline"}, {
++      AVCProfileMain, "main", NULL}, {
++      AVCProfileExtended, "extended", NULL}, {
++      AVCProfileHigh, "high"}, {
++      AVCProfileHigh10, "high-10", "high-10-intra"}, {
++      AVCProfileHigh422, "high-4:2:2", "high-4:2:2-intra"}, {
++      AVCProfileHigh444, "high-4:4:4", "high-4:4:4-intra"}
+ };
+ 
+ const gchar *
+@@ -1244,22 +1245,22 @@ static const struct
+   const gchar *str;
+ } avc_level_mapping_table[] = {
+   {
+-  AVCLevel1, "1"}, {
+-  AVCLevel1b, "1b"}, {
+-  AVCLevel11, "1.1"}, {
+-  AVCLevel12, "1.2"}, {
+-  AVCLevel13, "1.3"}, {
+-  AVCLevel2, "2"}, {
+-  AVCLevel21, "2.1"}, {
+-  AVCLevel22, "2.2"}, {
+-  AVCLevel3, "3"}, {
+-  AVCLevel31, "3.1"}, {
+-  AVCLevel32, "3.2"}, {
+-  AVCLevel4, "4"}, {
+-  AVCLevel41, "4.1"}, {
+-  AVCLevel42, "4.2"}, {
+-  AVCLevel5, "5"}, {
+-  AVCLevel51, "5.1"}
++      AVCLevel1, "1"}, {
++      AVCLevel1b, "1b"}, {
++      AVCLevel11, "1.1"}, {
++      AVCLevel12, "1.2"}, {
++      AVCLevel13, "1.3"}, {
++      AVCLevel2, "2"}, {
++      AVCLevel21, "2.1"}, {
++      AVCLevel22, "2.2"}, {
++      AVCLevel3, "3"}, {
++      AVCLevel31, "3.1"}, {
++      AVCLevel32, "3.2"}, {
++      AVCLevel4, "4"}, {
++      AVCLevel41, "4.1"}, {
++      AVCLevel42, "4.2"}, {
++      AVCLevel5, "5"}, {
++      AVCLevel51, "5.1"}
+ };
+ 
+ const gchar *
+@@ -1296,15 +1297,15 @@ static const struct
+   gint gst_id;
+ } h263_profile_mapping_table[] = {
+   {
+-  H263ProfileBaseline, 0}, {
+-  H263ProfileH320Coding, 1}, {
+-  H263ProfileBackwardCompatible, 2}, {
+-  H263ProfileISWV2, 3}, {
+-  H263ProfileISWV3, 4}, {
+-  H263ProfileHighCompression, 5}, {
+-  H263ProfileInternet, 6}, {
+-  H263ProfileInterlace, 7}, {
+-  H263ProfileHighLatency, 8}
++      H263ProfileBaseline, 0}, {
++      H263ProfileH320Coding, 1}, {
++      H263ProfileBackwardCompatible, 2}, {
++      H263ProfileISWV2, 3}, {
++      H263ProfileISWV3, 4}, {
++      H263ProfileHighCompression, 5}, {
++      H263ProfileInternet, 6}, {
++      H263ProfileInterlace, 7}, {
++      H263ProfileHighLatency, 8}
+ };
+ 
+ gint
+@@ -1339,13 +1340,13 @@ static const struct
+   gint gst_id;
+ } h263_level_mapping_table[] = {
+   {
+-  H263Level10, 10}, {
+-  H263Level20, 20}, {
+-  H263Level30, 30}, {
+-  H263Level40, 40}, {
+-  H263Level50, 50}, {
+-  H263Level60, 60}, {
+-  H263Level70, 70}
++      H263Level10, 10}, {
++      H263Level20, 20}, {
++      H263Level30, 30}, {
++      H263Level40, 40}, {
++      H263Level50, 50}, {
++      H263Level60, 60}, {
++      H263Level70, 70}
+ };
+ 
+ gint
+@@ -1380,22 +1381,22 @@ static const struct
+   const gchar *str;
+ } mpeg4_profile_mapping_table[] = {
+   {
+-  MPEG4ProfileSimple, "simple"}, {
+-  MPEG4ProfileSimpleScalable, "simple-scalable"}, {
+-  MPEG4ProfileCore, "core"}, {
+-  MPEG4ProfileMain, "main"}, {
+-  MPEG4ProfileNbit, "n-bit"}, {
+-  MPEG4ProfileScalableTexture, "scalable"}, {
+-  MPEG4ProfileSimpleFace, "simple-face"}, {
+-  MPEG4ProfileSimpleFBA, "simple-fba"}, {
+-  MPEG4ProfileBasicAnimated, "basic-animated-texture"}, {
+-  MPEG4ProfileHybrid, "hybrid"}, {
+-  MPEG4ProfileAdvancedRealTime, "advanced-real-time"}, {
+-  MPEG4ProfileCoreScalable, "core-scalable"}, {
+-  MPEG4ProfileAdvancedCoding, "advanced-coding-efficiency"}, {
+-  MPEG4ProfileAdvancedCore, "advanced-core"}, {
+-  MPEG4ProfileAdvancedScalable, "advanced-scalable-texture"}, {
+-  MPEG4ProfileAdvancedSimple, "advanced-simple"}
++      MPEG4ProfileSimple, "simple"}, {
++      MPEG4ProfileSimpleScalable, "simple-scalable"}, {
++      MPEG4ProfileCore, "core"}, {
++      MPEG4ProfileMain, "main"}, {
++      MPEG4ProfileNbit, "n-bit"}, {
++      MPEG4ProfileScalableTexture, "scalable"}, {
++      MPEG4ProfileSimpleFace, "simple-face"}, {
++      MPEG4ProfileSimpleFBA, "simple-fba"}, {
++      MPEG4ProfileBasicAnimated, "basic-animated-texture"}, {
++      MPEG4ProfileHybrid, "hybrid"}, {
++      MPEG4ProfileAdvancedRealTime, "advanced-real-time"}, {
++      MPEG4ProfileCoreScalable, "core-scalable"}, {
++      MPEG4ProfileAdvancedCoding, "advanced-coding-efficiency"}, {
++      MPEG4ProfileAdvancedCore, "advanced-core"}, {
++      MPEG4ProfileAdvancedScalable, "advanced-scalable-texture"}, {
++      MPEG4ProfileAdvancedSimple, "advanced-simple"}
+ };
+ 
+ const gchar *
+@@ -1432,14 +1433,15 @@ static const struct
+   const gchar *str;
+ } mpeg4_level_mapping_table[] = {
+   {
+-  MPEG4Level0, "0"}, {
+-  MPEG4Level0b, "0b"}, {
+-  MPEG4Level1, "1"}, {
+-  MPEG4Level2, "2"}, {
+-  MPEG4Level3, "3"}, {
+-  MPEG4Level4, "4"}, {
+-  MPEG4Level4a, "4a"}, {
+-MPEG4Level5, "5"},};
++      MPEG4Level0, "0"}, {
++      MPEG4Level0b, "0b"}, {
++      MPEG4Level1, "1"}, {
++      MPEG4Level2, "2"}, {
++      MPEG4Level3, "3"}, {
++      MPEG4Level4, "4"}, {
++      MPEG4Level4a, "4a"}, {
++      MPEG4Level5, "5"},
++};
+ 
+ const gchar *
+ gst_amc_mpeg4_level_to_string (gint level)
+@@ -1475,10 +1477,10 @@ static const struct
+   const gchar *str;
+ } aac_profile_mapping_table[] = {
+   {
+-  AACObjectMain, "main"}, {
+-  AACObjectLC, "lc"}, {
+-  AACObjectSSR, "ssr"}, {
+-  AACObjectLTP, "ltp"}
++      AACObjectMain, "main"}, {
++      AACObjectLC, "lc"}, {
++      AACObjectSSR, "ssr"}, {
++      AACObjectLTP, "ltp"}
+ };
+ 
+ const gchar *
+@@ -1515,26 +1517,26 @@ static const struct
+   GstAudioChannelPosition pos;
+ } channel_mapping_table[] = {
+   {
+-  CHANNEL_OUT_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT}, {
+-  CHANNEL_OUT_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}, {
+-  CHANNEL_OUT_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER}, {
+-  CHANNEL_OUT_LOW_FREQUENCY, GST_AUDIO_CHANNEL_POSITION_LFE1}, {
+-  CHANNEL_OUT_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_REAR_LEFT}, {
+-  CHANNEL_OUT_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}, {
+-  CHANNEL_OUT_FRONT_LEFT_OF_CENTER,
+-        GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER}, {
+-  CHANNEL_OUT_FRONT_RIGHT_OF_CENTER,
+-        GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER}, {
+-  CHANNEL_OUT_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_REAR_CENTER}, {
+-  CHANNEL_OUT_SIDE_LEFT, GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT}, {
+-  CHANNEL_OUT_SIDE_RIGHT, GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}, {
+-  CHANNEL_OUT_TOP_CENTER, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
+-  CHANNEL_OUT_TOP_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
+-  CHANNEL_OUT_TOP_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
+-  CHANNEL_OUT_TOP_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
+-  CHANNEL_OUT_TOP_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
+-  CHANNEL_OUT_TOP_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
+-  CHANNEL_OUT_TOP_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_INVALID}
++      CHANNEL_OUT_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT}, {
++      CHANNEL_OUT_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}, {
++      CHANNEL_OUT_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER}, {
++      CHANNEL_OUT_LOW_FREQUENCY, GST_AUDIO_CHANNEL_POSITION_LFE1}, {
++      CHANNEL_OUT_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_REAR_LEFT}, {
++      CHANNEL_OUT_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}, {
++        CHANNEL_OUT_FRONT_LEFT_OF_CENTER,
++      GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER}, {
++        CHANNEL_OUT_FRONT_RIGHT_OF_CENTER,
++      GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER}, {
++      CHANNEL_OUT_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_REAR_CENTER}, {
++      CHANNEL_OUT_SIDE_LEFT, GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT}, {
++      CHANNEL_OUT_SIDE_RIGHT, GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}, {
++      CHANNEL_OUT_TOP_CENTER, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
++      CHANNEL_OUT_TOP_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
++      CHANNEL_OUT_TOP_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
++      CHANNEL_OUT_TOP_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
++      CHANNEL_OUT_TOP_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
++      CHANNEL_OUT_TOP_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_INVALID}, {
++      CHANNEL_OUT_TOP_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_INVALID}
+ };
+ 
+ gboolean
+diff --git a/sys/androidmedia/gstamcaudiodec.c b/sys/androidmedia/gstamcaudiodec.c
+index b33d1d317..398a6e1bd 100644
+--- a/sys/androidmedia/gstamcaudiodec.c
++++ b/sys/androidmedia/gstamcaudiodec.c
+@@ -491,7 +491,7 @@ retry:
+       " flags 0x%08x", idx, buffer_info.offset, buffer_info.size,
+       buffer_info.presentation_time_us, buffer_info.flags);
+ 
+-  is_eos = ! !(buffer_info.flags & BUFFER_FLAG_END_OF_STREAM);
++  is_eos = !!(buffer_info.flags & BUFFER_FLAG_END_OF_STREAM);
+ 
+   buf = gst_amc_codec_get_output_buffer (self->codec, idx, &err);
+   if (err) {
+diff --git a/sys/androidmedia/gstamcvideodec.c b/sys/androidmedia/gstamcvideodec.c
+index 22cda5872..71bfa3236 100644
+--- a/sys/androidmedia/gstamcvideodec.c
++++ b/sys/androidmedia/gstamcvideodec.c
+@@ -1381,7 +1381,7 @@ retry:
+       _find_nearest_frame (self,
+       gst_util_uint64_scale (buffer_info.presentation_time_us, GST_USECOND, 1));
+ 
+-  is_eos = ! !(buffer_info.flags & BUFFER_FLAG_END_OF_STREAM);
++  is_eos = !!(buffer_info.flags & BUFFER_FLAG_END_OF_STREAM);
+ 
+   if (frame
+       && (deadline =
+diff --git a/sys/androidmedia/gstamcvideoenc.c b/sys/androidmedia/gstamcvideoenc.c
+index e777aa46f..e42bd8c03 100644
+--- a/sys/androidmedia/gstamcvideoenc.c
++++ b/sys/androidmedia/gstamcvideoenc.c
+@@ -157,13 +157,15 @@ create_amc_format (GstAmcVideoEnc * encoder, GstVideoCodecState * input_state,
+     const gchar *key;
+     gint id;
+   } amc_profile = {
+-  NULL, -1};
++    NULL, -1
++  };
+   struct
+   {
+     const gchar *key;
+     gint id;
+   } amc_level = {
+-  NULL, -1};
++    NULL, -1
++  };
+   gint color_format;
+   gint stride, slice_height;
+   GstAmcFormat *format = NULL;
+@@ -1152,7 +1154,7 @@ process_buffer:
+       _find_nearest_frame (self,
+       gst_util_uint64_scale (buffer_info.presentation_time_us, GST_USECOND, 1));
+ 
+-  is_eos = ! !(buffer_info.flags & BUFFER_FLAG_END_OF_STREAM);
++  is_eos = !!(buffer_info.flags & BUFFER_FLAG_END_OF_STREAM);
+ 
+   flow_ret =
+       gst_amc_video_enc_handle_output_frame (self, buf, &buffer_info, frame);
+diff --git a/sys/applemedia/vtenc.c b/sys/applemedia/vtenc.c
+index 7e5d579e9..22d58cc5f 100644
+--- a/sys/applemedia/vtenc.c
++++ b/sys/applemedia/vtenc.c
+@@ -109,7 +109,7 @@ const CFStringRef kVTCompressionPropertyKey_Quality = CFSTR ("Quality");
+ #ifdef HAVE_VIDEOTOOLBOX_10_9_6
+ extern OSStatus
+ VTCompressionSessionPrepareToEncodeFrames (VTCompressionSessionRef session)
+-    __attribute__ ((weak_import));
++    __attribute__((weak_import));
+ #endif
+ 
+ /* This property key is currently completely undocumented. The only way you can
+diff --git a/sys/d3dvideosink/d3dhelpers.c b/sys/d3dvideosink/d3dhelpers.c
+index 99e840888..3f75046a8 100644
+--- a/sys/d3dvideosink/d3dhelpers.c
++++ b/sys/d3dvideosink/d3dhelpers.c
+@@ -226,18 +226,18 @@ static const struct
+   D3DFORMAT d3d_format;
+ } gst_d3d_format_map[] = {
+   {
+-  GST_VIDEO_FORMAT_BGRx, D3DFMT_X8R8G8B8}, {
+-  GST_VIDEO_FORMAT_RGBx, D3DFMT_X8B8G8R8}, {
+-  GST_VIDEO_FORMAT_BGRA, D3DFMT_A8R8G8B8}, {
+-  GST_VIDEO_FORMAT_RGBA, D3DFMT_A8B8G8R8}, {
+-  GST_VIDEO_FORMAT_BGR, D3DFMT_R8G8B8}, {
+-  GST_VIDEO_FORMAT_RGB16, D3DFMT_R5G6B5}, {
+-  GST_VIDEO_FORMAT_RGB15, D3DFMT_X1R5G5B5}, {
+-  GST_VIDEO_FORMAT_I420, D3DFMT_YV12}, {
+-  GST_VIDEO_FORMAT_YV12, D3DFMT_YV12}, {
+-  GST_VIDEO_FORMAT_NV12, D3DFMT_NV12}, {
+-  GST_VIDEO_FORMAT_YUY2, D3DFMT_YUY2}, {
+-  GST_VIDEO_FORMAT_UYVY, D3DFMT_UYVY}
++      GST_VIDEO_FORMAT_BGRx, D3DFMT_X8R8G8B8}, {
++      GST_VIDEO_FORMAT_RGBx, D3DFMT_X8B8G8R8}, {
++      GST_VIDEO_FORMAT_BGRA, D3DFMT_A8R8G8B8}, {
++      GST_VIDEO_FORMAT_RGBA, D3DFMT_A8B8G8R8}, {
++      GST_VIDEO_FORMAT_BGR, D3DFMT_R8G8B8}, {
++      GST_VIDEO_FORMAT_RGB16, D3DFMT_R5G6B5}, {
++      GST_VIDEO_FORMAT_RGB15, D3DFMT_X1R5G5B5}, {
++      GST_VIDEO_FORMAT_I420, D3DFMT_YV12}, {
++      GST_VIDEO_FORMAT_YV12, D3DFMT_YV12}, {
++      GST_VIDEO_FORMAT_NV12, D3DFMT_NV12}, {
++      GST_VIDEO_FORMAT_YUY2, D3DFMT_YUY2}, {
++      GST_VIDEO_FORMAT_UYVY, D3DFMT_UYVY}
+ };
+ 
+ static D3DFORMAT
+diff --git a/sys/msdk/gstmsdkvpp.c b/sys/msdk/gstmsdkvpp.c
+index fa837adb3..23f5640f3 100644
+--- a/sys/msdk/gstmsdkvpp.c
++++ b/sys/msdk/gstmsdkvpp.c
+@@ -921,7 +921,7 @@ gst_msdkvpp_transform (GstBaseTransform * trans, GstBuffer * inbuf,
+     free_msdk_surface (in_surface);
+     return GST_FLOW_ERROR;
+   }
+-  locked_by_others = ! !in_surface->surface->Data.Locked;
++  locked_by_others = !!in_surface->surface->Data.Locked;
+ 
+   /* always convert timestamp of input surface as msdk timestamp */
+   if (inbuf->pts == GST_CLOCK_TIME_NONE)
+diff --git a/sys/v4l2codecs/gstv4l2decoder.c b/sys/v4l2codecs/gstv4l2decoder.c
+index 69ae15b15..ba45e7ee3 100644
+--- a/sys/v4l2codecs/gstv4l2decoder.c
++++ b/sys/v4l2codecs/gstv4l2decoder.c
+@@ -756,7 +756,7 @@ gst_v4l2_decoder_dequeue_src (GstV4l2Decoder * self, guint32 * out_frame_num)
+ 
+ gboolean
+ gst_v4l2_decoder_set_controls (GstV4l2Decoder * self, GstV4l2Request * request,
+-    struct v4l2_ext_control * control, guint count)
++    struct v4l2_ext_control *control, guint count)
+ {
+   gint ret;
+   struct v4l2_ext_controls controls = {
+@@ -778,7 +778,7 @@ gst_v4l2_decoder_set_controls (GstV4l2Decoder * self, GstV4l2Request * request,
+ 
+ gboolean
+ gst_v4l2_decoder_get_controls (GstV4l2Decoder * self,
+-    struct v4l2_ext_control * control, guint count)
++    struct v4l2_ext_control *control, guint count)
+ {
+   gint ret;
+   struct v4l2_ext_controls controls = {
+diff --git a/sys/wasapi/gstwasapiutil.c b/sys/wasapi/gstwasapiutil.c
+index a8bd999e7..b963e418a 100644
+--- a/sys/wasapi/gstwasapiutil.c
++++ b/sys/wasapi/gstwasapiutil.c
+@@ -588,7 +588,7 @@ out:
+ 
+ gboolean
+ gst_wasapi_util_get_device (GstMMDeviceEnumerator * self,
+-    gint data_flow, gint role, const wchar_t * device_strid,
++    gint data_flow, gint role, const wchar_t *device_strid,
+     IMMDevice ** ret_device)
+ {
+   gboolean res = FALSE;
+diff --git a/tests/check/elements/avtpcrfsync.c b/tests/check/elements/avtpcrfsync.c
+index ec5ba6a6f..1b1d9e065 100644
+--- a/tests/check/elements/avtpcrfsync.c
++++ b/tests/check/elements/avtpcrfsync.c
+@@ -271,24 +271,30 @@ GST_START_TEST (test_crf_cvf_data)
+   gst_object_unref (avtpcrfbase);
+ 
+   orig = (struct buffer_tstamps) {
+-  .buf_pts = 103000,.buf_dts = 100000,.avtp_ts = 110000,.h264_ts = 108000};
++    .buf_pts = 103000,.buf_dts = 100000,.avtp_ts = 110000,.h264_ts = 108000
++  };
+   expected = (struct buffer_tstamps) {
+-  .buf_pts = 104204,.buf_dts = 100000,.avtp_ts = 110000,.h264_ts = 109204};
++    .buf_pts = 104204,.buf_dts = 100000,.avtp_ts = 110000,.h264_ts = 109204
++  };
+   test_crf_tstamps (h, buf, &orig, &expected);
+ 
+   orig = (struct buffer_tstamps) {
+-  .buf_pts = 107000,.buf_dts = 105000,.avtp_ts = 113000,.h264_ts = 118500};
++    .buf_pts = 107000,.buf_dts = 105000,.avtp_ts = 113000,.h264_ts = 118500
++  };
+   expected = (struct buffer_tstamps) {
+-  .buf_pts = 108400,.buf_dts = 105300,.avtp_ts = 113300,.h264_ts = 119900};
++    .buf_pts = 108400,.buf_dts = 105300,.avtp_ts = 113300,.h264_ts = 119900
++  };
+   test_crf_tstamps (h, buf, &orig, &expected);
+ 
+   /* test for invalid DTS */
+   orig = (struct buffer_tstamps) {
+-  .buf_pts = 107000,.buf_dts = GST_CLOCK_TIME_NONE,.avtp_ts =
+-        113000,.h264_ts = 118500};
++    .buf_pts = 107000,.buf_dts = GST_CLOCK_TIME_NONE,.avtp_ts =
++        113000,.h264_ts = 118500
++  };
+   expected = (struct buffer_tstamps) {
+-  .buf_pts = 108400,.buf_dts = GST_CLOCK_TIME_NONE,.avtp_ts =
+-        113300,.h264_ts = 119900};
++    .buf_pts = 108400,.buf_dts = GST_CLOCK_TIME_NONE,.avtp_ts =
++        113300,.h264_ts = 119900
++  };
+   test_crf_tstamps (h, buf, &orig, &expected);
+ 
+   gst_buffer_unref (buf);
+@@ -313,15 +319,19 @@ GST_START_TEST (test_crf_aaf_data)
+   gst_object_unref (avtpcrfbase);
+ 
+   orig = (struct buffer_tstamps) {
+-  .buf_pts = 108000,.buf_dts = 0,.avtp_ts = 110000,.h264_ts = 0};
++    .buf_pts = 108000,.buf_dts = 0,.avtp_ts = 110000,.h264_ts = 0
++  };
+   expected = (struct buffer_tstamps) {
+-  .buf_pts = 108000,.buf_dts = 0,.avtp_ts = 110000,.h264_ts = 0};
++    .buf_pts = 108000,.buf_dts = 0,.avtp_ts = 110000,.h264_ts = 0
++  };
+   test_crf_tstamps (h, buf, &orig, &expected);
+ 
+   orig = (struct buffer_tstamps) {
+-  .buf_pts = 110000,.buf_dts = 0,.avtp_ts = 113000,.h264_ts = 0};
++    .buf_pts = 110000,.buf_dts = 0,.avtp_ts = 113000,.h264_ts = 0
++  };
+   expected = (struct buffer_tstamps) {
+-  .buf_pts = 110300,.buf_dts = 0,.avtp_ts = 113300,.h264_ts = 0};
++    .buf_pts = 110300,.buf_dts = 0,.avtp_ts = 113300,.h264_ts = 0
++  };
+   test_crf_tstamps (h, buf, &orig, &expected);
+ 
+   gst_buffer_unref (buf);
+@@ -346,9 +356,11 @@ GST_START_TEST (test_crf_period_zero)
+   gst_object_unref (avtpcrfbase);
+ 
+   orig = (struct buffer_tstamps) {
+-  .buf_pts = 100,.buf_dts = 105,.avtp_ts = 112,.h264_ts = 110};
++    .buf_pts = 100,.buf_dts = 105,.avtp_ts = 112,.h264_ts = 110
++  };
+   expected = (struct buffer_tstamps) {
+-  .buf_pts = 100,.buf_dts = 105,.avtp_ts = 112,.h264_ts = 110};
++    .buf_pts = 100,.buf_dts = 105,.avtp_ts = 112,.h264_ts = 110
++  };
+   test_crf_tstamps (h, buf, &orig, &expected);
+ 
+   gst_buffer_unref (buf);
+diff --git a/tests/check/elements/avwait.c b/tests/check/elements/avwait.c
+index 829fd96ed..1de922e9e 100644
+--- a/tests/check/elements/avwait.c
++++ b/tests/check/elements/avwait.c
+@@ -194,7 +194,7 @@ push_vbuffers (gpointer data)
+     fail_unless (gst_pad_chain (pad, buf) == GST_FLOW_OK);
+ 
+     if (timestamp == 2 * GST_SECOND && e->switch_after_2s != DO_NOT_SWITCH) {
+-      g_object_set (e->element, "recording", ! !e->switch_after_2s, NULL);
++      g_object_set (e->element, "recording", !!e->switch_after_2s, NULL);
+     }
+   }
+   gst_pad_send_event (pad, gst_event_new_eos ());
+diff --git a/tests/check/elements/kate.c b/tests/check/elements/kate.c
+index ade1677df..cf56db505 100644
+--- a/tests/check/elements/kate.c
++++ b/tests/check/elements/kate.c
+@@ -594,9 +594,10 @@ GST_START_TEST (test_kate_encode_keepalives)
+     gint packets;
+   } cfg[3] = {
+     {
+-    0.5, n_keepalives}, {
+-    2.0, n_keepalives / 2}, {
+-  5.0, n_keepalives / 5},};
++        0.5, n_keepalives}, {
++        2.0, n_keepalives / 2}, {
++        5.0, n_keepalives / 5},
++  };
+ 
+   for (round = 0; round < 3; ++round) {
+     kateenc = setup_kateenc ();
+diff --git a/tests/check/elements/pnm.c b/tests/check/elements/pnm.c
+index b3be8cba9..bc22c3aa6 100644
+--- a/tests/check/elements/pnm.c
++++ b/tests/check/elements/pnm.c
+@@ -40,12 +40,12 @@ GST_START_TEST (test_pnm_enc_dec)
+     const gchar *out_fmt;
+   } test_formats[] = {
+     {
+-    "RGB", "RGB"}, {
+-    "GRAY8", "GRAY8"}, {
+-    "GRAY16_BE", "GRAY16_BE"}, {
+-    "GRAY16_BE", "GRAY16_LE"}, {
+-    "GRAY16_LE", "GRAY16_BE"}, {
+-    "GRAY16_LE", "GRAY16_LE"}
++        "RGB", "RGB"}, {
++        "GRAY8", "GRAY8"}, {
++        "GRAY16_BE", "GRAY16_BE"}, {
++        "GRAY16_BE", "GRAY16_LE"}, {
++        "GRAY16_LE", "GRAY16_BE"}, {
++        "GRAY16_LE", "GRAY16_LE"}
+   };
+ 
+   pipeline =
+diff --git a/tests/check/libs/play.c b/tests/check/libs/play.c
+index 8101b7842..ced2d023a 100644
+--- a/tests/check/libs/play.c
++++ b/tests/check/libs/play.c
+@@ -293,7 +293,7 @@ test_play_audio_video_eos_cb (GstPlay * player, TestPlayerStateChange change,
+   gint step = GPOINTER_TO_INT (new_state->test_data);
+   gboolean video;
+ 
+-  video = ! !(step & 0x10);
++  video = !!(step & 0x10);
+   step = (step & (~0x10));
+ 
+   switch (step) {
+diff --git a/tests/check/pipelines/ipcpipeline.c b/tests/check/pipelines/ipcpipeline.c
+index ed2c8b9fa..fcc8312d5 100644
+--- a/tests/check/pipelines/ipcpipeline.c
++++ b/tests/check/pipelines/ipcpipeline.c
+@@ -548,9 +548,9 @@ create_source (TestFeatures features, int fdina, int fdouta, int fdinv,
+     int fdoutv, test_data * td)
+ {
+   GstElement *pipeline = NULL;
+-  gboolean live = ! !(features & TEST_FEATURE_LIVE);
+-  gboolean longdur = ! !(features & TEST_FEATURE_LONG_DURATION);
+-  gboolean has_video = ! !(features & TEST_FEATURE_HAS_VIDEO);
++  gboolean live = !!(features & TEST_FEATURE_LIVE);
++  gboolean longdur = !!(features & TEST_FEATURE_LONG_DURATION);
++  gboolean has_video = !!(features & TEST_FEATURE_HAS_VIDEO);
+ 
+   if (features & TEST_FEATURE_TEST_SOURCE) {
+ 
+@@ -874,7 +874,7 @@ test_base (const char *name, TestFeatures features,
+       if (pid) {
+         die_on_child_death ();
+       }
+-      c_src = ! !pid;
++      c_src = !!pid;
+       c_sink = !pid;
+     } else {
+       c_src = TRUE;
+@@ -5020,7 +5020,7 @@ dynamic_pipeline_change_stress_source_blocked_switch_av (GstPad * pad,
+ 
+   g_mutex_lock (&d->mutex);
+   switch_av (td->p, gst_element_get_name (source),
+-      ! !(td->features & TEST_FEATURE_LIVE), TRUE);
++      !!(td->features & TEST_FEATURE_LIVE), TRUE);
+   g_mutex_unlock (&d->mutex);
+ 
+   g_idle_add_full (G_PRIORITY_HIGH, remove_source, source, g_object_unref);
+@@ -5093,7 +5093,7 @@ dynamic_pipeline_change_stress_source_blocked_change_audio_channel (GstPad *
+ 
+   g_mutex_lock (&d->mutex);
+   change_audio_channel (td->p, gst_element_get_name (source),
+-      ipcpipelinesink_name, ! !(td->features & TEST_FEATURE_LIVE));
++      ipcpipelinesink_name, !!(td->features & TEST_FEATURE_LIVE));
+   g_mutex_unlock (&d->mutex);
+ 
+   g_idle_add_full (G_PRIORITY_HIGH, remove_source, source, g_object_unref);
+diff --git a/tests/examples/d3d11/d3d11videosink.c b/tests/examples/d3d11/d3d11videosink.c
+index 651fc161f..917b6c517 100644
+--- a/tests/examples/d3d11/d3d11videosink.c
++++ b/tests/examples/d3d11/d3d11videosink.c
+@@ -190,9 +190,9 @@ print_keyboard_help (void)
+     const gchar *key_help;
+   } key_controls[] = {
+     {
+-    "q or ESC", "Quit"}, {
+-    "SPACE", "Toggle fullscreen mode"}, {
+-    "f", "Toggle force-aspect-ratio"}
++        "q or ESC", "Quit"}, {
++        "SPACE", "Toggle fullscreen mode"}, {
++        "f", "Toggle force-aspect-ratio"}
+   };
+   guint i, chars_to_pad, desc_len, max_desc_len = 0;
+ 
+-- 
+2.40.1
+

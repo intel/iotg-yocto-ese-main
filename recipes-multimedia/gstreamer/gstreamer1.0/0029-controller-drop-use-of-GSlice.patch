@@ -1,0 +1,62 @@
+From b2f6890627610719d80aa6d7299b365fa766713a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 01:27:54 +0000
+Subject: [PATCH 29/43] controller: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ libs/gst/controller/gsttimedvaluecontrolsource.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/libs/gst/controller/gsttimedvaluecontrolsource.c b/libs/gst/controller/gsttimedvaluecontrolsource.c
+index 080df327..7325f42f 100644
+--- a/libs/gst/controller/gsttimedvaluecontrolsource.c
++++ b/libs/gst/controller/gsttimedvaluecontrolsource.c
+@@ -78,7 +78,7 @@ gst_control_point_free (GstControlPoint * cp)
+ {
+   g_return_if_fail (cp);
+ 
+-  g_slice_free (GstControlPoint, cp);
++  g_free (cp);
+ }
+ 
+ /**
+@@ -92,7 +92,7 @@ gst_control_point_free (GstControlPoint * cp)
+ GstControlPoint *
+ gst_control_point_copy (GstControlPoint * cp)
+ {
+-  return g_slice_dup (GstControlPoint, cp);
++  return g_memdup2 (cp, sizeof (GstControlPoint));
+ }
+ 
+ GType
+@@ -171,7 +171,7 @@ _make_new_cp (GstTimedValueControlSource * self, GstClockTime timestamp,
+   GstControlPoint *cp;
+ 
+   /* create a new GstControlPoint */
+-  cp = g_slice_new0 (GstControlPoint);
++  cp = g_new0 (GstControlPoint, 1);
+   cp->timestamp = timestamp;
+   cp->value = value;
+ 
+@@ -343,7 +343,7 @@ gst_timed_value_control_source_unset (GstTimedValueControlSource * self,
+     /* Iter contains the iter right after timestamp, i.e.
+      * we need to get the previous one and check the timestamp
+      */
+-    cp = g_slice_dup (GstControlPoint, g_sequence_get (iter));
++    cp = g_memdup2 (g_sequence_get (iter), sizeof (GstControlPoint));
+     g_sequence_remove (iter);
+     self->nvalues--;
+     self->valid_cache = FALSE;
+@@ -354,7 +354,7 @@ gst_timed_value_control_source_unset (GstTimedValueControlSource * self,
+   if (cp) {
+     g_signal_emit (self,
+         gst_timed_value_control_source_signals[VALUE_REMOVED_SIGNAL], 0, cp);
+-    g_slice_free (GstControlPoint, cp);
++    g_free (cp);
+   }
+ 
+   return res;
+-- 
+2.40.1
+

@@ -1,0 +1,76 @@
+From 508c24b2206dd91cefe9839929d926c7fd5a2b33 Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Thu, 20 Oct 2022 11:21:00 -0400
+Subject: [PATCH 069/205] h264parser: Fix return value parsing short header
+
+The appropriate return value for incomplete NAL header should be
+GST_H264_PARSER_NO_NAL_END. This tells the parser element to
+gather more data. Previously, it would assume the NAL is corrupted
+and would drop the data, potentially causing stream corruption.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3234>
+---
+ gst-libs/gst/codecparsers/gsth264parser.c |  4 ++--
+ tests/check/libs/h264parser.c             | 23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/gst-libs/gst/codecparsers/gsth264parser.c b/gst-libs/gst/codecparsers/gsth264parser.c
+index 76937cdf0..1aa9e719c 100644
+--- a/gst-libs/gst/codecparsers/gsth264parser.c
++++ b/gst-libs/gst/codecparsers/gsth264parser.c
+@@ -1507,9 +1507,9 @@ gst_h264_parser_identify_nalu_unchecked (GstH264NalParser * nalparser,
+   nalu->size = size - nalu->offset;
+ 
+   if (!gst_h264_parse_nalu_header (nalu)) {
+-    GST_WARNING ("error parsing \"NAL unit header\"");
++    GST_DEBUG ("not enough data to parse \"NAL unit header\"");
+     nalu->size = 0;
+-    return GST_H264_PARSER_BROKEN_DATA;
++    return GST_H264_PARSER_NO_NAL;
+   }
+ 
+   nalu->valid = TRUE;
+diff --git a/tests/check/libs/h264parser.c b/tests/check/libs/h264parser.c
+index 17238bafa..0d92e81ee 100644
+--- a/tests/check/libs/h264parser.c
++++ b/tests/check/libs/h264parser.c
+@@ -825,6 +825,28 @@ GST_START_TEST (test_h264_decoder_config_record)
+ 
+ GST_END_TEST;
+ 
++GST_START_TEST (test_h264_parse_partial_nal_header)
++{
++  GstH264ParserResult res;
++  GstH264NalUnit nalu;
++  GstH264NalParser *const parser = gst_h264_nal_parser_new ();
++  const guint8 buf[] = { 0x00, 0x00, 0x00, 0x01, 0x0e };
++  guint buf_size = sizeof (buf);
++
++  /* Test that incomplete prefix NAL do return NO_NAL_END and not BROKEN_NAL.
++   * This also covers for SLICE_EXT. */
++  res = gst_h264_parser_identify_nalu (parser, buf, 0, buf_size, &nalu);
++
++  assert_equals_int (res, GST_H264_PARSER_NO_NAL);
++  assert_equals_int (nalu.type, GST_H264_NAL_PREFIX_UNIT);
++  assert_equals_int (nalu.size, 0);
++
++  gst_h264_nal_parser_free (parser);
++}
++
++GST_END_TEST;
++
++
+ static Suite *
+ h264parser_suite (void)
+ {
+@@ -840,6 +862,7 @@ h264parser_suite (void)
+   tcase_add_test (tc_chain, test_h264_parse_invalid_sei);
+   tcase_add_test (tc_chain, test_h264_create_sei);
+   tcase_add_test (tc_chain, test_h264_decoder_config_record);
++  tcase_add_test (tc_chain, test_h264_parse_partial_nal_header);
+ 
+   return s;
+ }
+-- 
+2.40.1
+

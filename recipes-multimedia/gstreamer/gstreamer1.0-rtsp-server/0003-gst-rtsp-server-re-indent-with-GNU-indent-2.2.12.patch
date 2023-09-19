@@ -1,0 +1,43 @@
+From 0236e125adad54c678a563098689a092290f3bd0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Wed, 15 Mar 2023 18:56:21 +0000
+Subject: [PATCH 3/3] gst-rtsp-server: re-indent with GNU indent 2.2.12
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4182>
+---
+ gst/rtsp-server/rtsp-client.c | 4 ++--
+ gst/rtsp-server/rtsp-sdp.c    | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gst/rtsp-server/rtsp-client.c b/gst/rtsp-server/rtsp-client.c
+index 894b03f..5126bf1 100644
+--- a/gst/rtsp-server/rtsp-client.c
++++ b/gst/rtsp-server/rtsp-client.c
+@@ -3198,9 +3198,9 @@ unsupported_mode:
+   {
+     GST_ERROR ("client %p: unsupported mode (media play: %d, media record: %d, "
+         "mode play: %d, mode record: %d)", client,
+-        ! !(gst_rtsp_media_get_transport_mode (media) &
++        !!(gst_rtsp_media_get_transport_mode (media) &
+             GST_RTSP_TRANSPORT_MODE_PLAY),
+-        ! !(gst_rtsp_media_get_transport_mode (media) &
++        !!(gst_rtsp_media_get_transport_mode (media) &
+             GST_RTSP_TRANSPORT_MODE_RECORD), ct->mode_play, ct->mode_record);
+     send_generic_error_response (client, GST_RTSP_STS_UNSUPPORTED_TRANSPORT,
+         ctx);
+diff --git a/gst/rtsp-server/rtsp-sdp.c b/gst/rtsp-server/rtsp-sdp.c
+index e8374b9..2f66251 100644
+--- a/gst/rtsp-server/rtsp-sdp.c
++++ b/gst/rtsp-server/rtsp-sdp.c
+@@ -161,7 +161,7 @@ mikey_add_crypto_sessions (GstRTSPStream * stream, GstMIKEYMessage * msg)
+         gst_structure_free (stats);
+       }
+ 
+-      roc_found = ! !(roc != -1);
++      roc_found = !!(roc != -1);
+       if (!roc_found) {
+         GST_ERROR ("unable to obtain ROC for stream %p with SSRC %u",
+             stream, ssrc);
+-- 
+2.40.1
+

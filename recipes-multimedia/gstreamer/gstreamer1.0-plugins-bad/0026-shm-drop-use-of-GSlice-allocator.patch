@@ -1,0 +1,131 @@
+From ed687ab6b7f6d8c413b377c4d35f9901ebca1917 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Wed, 25 Jan 2023 01:11:14 +0000
+Subject: [PATCH 026/205] shm: drop use of GSlice allocator
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3784>
+---
+ sys/shm/gstshmsink.c | 12 ++++++------
+ sys/shm/gstshmsrc.c  |  8 ++++----
+ sys/shm/shmalloc.h   |  8 ++++----
+ 3 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/sys/shm/gstshmsink.c b/sys/shm/gstshmsink.c
+index 896651e97..fdbff9da9 100644
+--- a/sys/shm/gstshmsink.c
++++ b/sys/shm/gstshmsink.c
+@@ -175,7 +175,7 @@ gst_shm_sink_allocator_free (GstAllocator * allocator, GstMemory * mem)
+   }
+   gst_object_unref (mem->allocator);
+ 
+-  g_slice_free (GstShmSinkMemory, mymem);
++  g_free (mymem);
+ }
+ 
+ static gpointer
+@@ -206,7 +206,7 @@ gst_shm_sink_allocator_mem_share (GstMemory * mem, gssize offset, gssize size)
+   if (size == -1)
+     size = mem->size - offset;
+ 
+-  mysub = g_slice_new0 (GstShmSinkMemory);
++  mysub = g_new0 (GstShmSinkMemory, 1);
+   /* the shared memory is always readonly */
+   gst_memory_init (GST_MEMORY_CAST (mysub), GST_MINI_OBJECT_FLAGS (parent) |
+       GST_MINI_OBJECT_FLAG_LOCK_READONLY, gst_object_ref (mem->allocator),
+@@ -271,7 +271,7 @@ gst_shm_sink_allocator_alloc_locked (GstShmSinkAllocator * self, gsize size,
+         "Allocated block %p with %" G_GSIZE_FORMAT " bytes at %p", block, size,
+         sp_writer_block_get_buf (block));
+ 
+-    mymem = g_slice_new0 (GstShmSinkMemory);
++    mymem = g_new0 (GstShmSinkMemory, 1);
+     memory = GST_MEMORY_CAST (mymem);
+     mymem->data = sp_writer_block_get_buf (block);
+     mymem->sink = gst_object_ref (self->sink);
+@@ -630,7 +630,7 @@ gst_shm_sink_stop (GstBaseSink * bsink)
+         (sp_buffer_free_callback) gst_buffer_unref, NULL);
+     g_signal_emit (self, signals[SIGNAL_CLIENT_DISCONNECTED], 0,
+         client->pollfd.fd);
+-    g_slice_free (struct GstShmClient, client);
++    g_free (client);
+   }
+ 
+   gst_poll_free (self->poll);
+@@ -877,7 +877,7 @@ pollthread_func (gpointer data)
+         return NULL;
+       }
+ 
+-      gclient = g_slice_new (struct GstShmClient);
++      gclient = g_new (struct GstShmClient, 1);
+       gclient->client = client;
+       gst_poll_fd_init (&gclient->pollfd);
+       gclient->pollfd.fd = sp_writer_get_client_fd (client);
+@@ -943,7 +943,7 @@ pollthread_func (gpointer data)
+ 
+       g_signal_emit (self, signals[SIGNAL_CLIENT_DISCONNECTED], 0,
+           gclient->pollfd.fd);
+-      g_slice_free (struct GstShmClient, gclient);
++      g_free (gclient);
+ 
+       goto again;
+     }
+diff --git a/sys/shm/gstshmsrc.c b/sys/shm/gstshmsrc.c
+index 3e6629080..4c72b45d3 100644
+--- a/sys/shm/gstshmsrc.c
++++ b/sys/shm/gstshmsrc.c
+@@ -233,7 +233,7 @@ gst_shm_src_start_reading (GstShmSrc * self)
+     return FALSE;
+   }
+ 
+-  gstpipe = g_slice_new0 (GstShmPipe);
++  gstpipe = g_new0 (GstShmPipe, 1);
+   gstpipe->use_count = 1;
+   gstpipe->src = gst_object_ref (self);
+ 
+@@ -316,7 +316,7 @@ free_buffer (gpointer data)
+ 
+   gst_shm_pipe_dec (gsb->pipe);
+ 
+-  g_slice_free (struct GstShmBuffer, gsb);
++  g_free (gsb);
+ }
+ 
+ static GstFlowReturn
+@@ -380,7 +380,7 @@ gst_shm_src_create (GstPushSrc * psrc, GstBuffer ** outbuf)
+ 
+   GST_LOG_OBJECT (self, "Got buffer %p of size %d", buf, rv);
+ 
+-  gsb = g_slice_new0 (struct GstShmBuffer);
++  gsb = g_new0 (struct GstShmBuffer, 1);
+   gsb->buf = buf;
+   gsb->pipe = pipe;
+ 
+@@ -476,5 +476,5 @@ gst_shm_pipe_dec (GstShmPipe * pipe)
+   GST_OBJECT_UNLOCK (pipe->src);
+ 
+   gst_object_unref (pipe->src);
+-  g_slice_free (GstShmPipe, pipe);
++  g_free (pipe);
+ }
+diff --git a/sys/shm/shmalloc.h b/sys/shm/shmalloc.h
+index c3d33656a..418bcc10e 100644
+--- a/sys/shm/shmalloc.h
++++ b/sys/shm/shmalloc.h
+@@ -30,11 +30,11 @@
+ #ifdef SHM_PIPE_USE_GLIB
+ #include <glib.h>
+ 
+-#define spalloc_new(type) g_slice_new (type)
+-#define spalloc_alloc(size) g_slice_alloc (size)
++#define spalloc_new(type) g_new (type,1)
++#define spalloc_alloc(size) g_malloc (size)
+ 
+-#define spalloc_free(type, buf) g_slice_free (type, buf)
+-#define spalloc_free1(size, buf) g_slice_free1 (size, buf)
++#define spalloc_free(type, buf) g_free (buf)
++#define spalloc_free1(size, buf) g_free (buf)
+ 
+ #else
+ 
+-- 
+2.40.1
+
