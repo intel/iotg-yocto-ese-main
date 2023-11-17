@@ -1,0 +1,35 @@
+From a04114e989d1b6d0dbf2cd775b569377f8e7f86c Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Mon, 18 Sep 2023 10:36:52 +0000
+Subject: [PATCH] ui/gtk: show menu bar and tabs after HPD if not full-screened
+
+Menu bar and tabs on the main window should be re-enabled after HPD
+if the window is manually fullscreened beforehand unless full-screening
+is enabled via QEMU parameter setting.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index fb0dd85c3e..e905d68a07 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1663,6 +1663,13 @@ static void gd_window_show_on_monitor(GdkDisplay *dpy, VirtualConsole *vc,
+     if (s->opts->has_full_screen && s->opts->full_screen) {
+         gtk_widget_set_size_request(vc->gfx.drawing_area, -1, -1);
+         gtk_window_fullscreen(GTK_WINDOW(vc->window));
++    } else if ((s->window == vc->window) && s->full_screen) {
++        gd_menu_show_tabs(GTK_MENU_ITEM(s->show_tabs_item), s);
++        if (gtk_check_menu_item_get_active(
++                    GTK_CHECK_MENU_ITEM(s->show_menubar_item))) {
++            gtk_widget_show(s->menu_bar);
++        }
++        s->full_screen = false;
+     }
+ 
+     vc->monitor = monitor;
+-- 
+2.34.1
+

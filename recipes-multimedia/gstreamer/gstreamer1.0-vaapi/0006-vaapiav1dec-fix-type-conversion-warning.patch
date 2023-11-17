@@ -1,0 +1,27 @@
+From 3b3cecd15d0ae3d3eef9c997c665e8c19a996b8a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Wed, 7 Jun 2023 15:43:43 +0200
+Subject: [PATCH 6/8] vaapiav1dec: fix type conversion warning
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4781>
+---
+ gst-libs/gst/vaapi/gstvaapidecoder_av1.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/vaapi/gstvaapidecoder_av1.c b/gst-libs/gst/vaapi/gstvaapidecoder_av1.c
+index 2d9f0e95..30aa9f1e 100644
+--- a/gst-libs/gst/vaapi/gstvaapidecoder_av1.c
++++ b/gst-libs/gst/vaapi/gstvaapidecoder_av1.c
+@@ -589,7 +589,7 @@ av1_fill_global_motion_info (VADecPictureParameterBufferAV1 * pic_param,
+   guint i, j;
+ 
+   for (i = 0; i < 7; i++) {
+-    pic_param->wm[i].wmtype =
++    pic_param->wm[i].wmtype = (VAAV1TransformationType)
+         frame_header->global_motion_params.gm_type[GST_AV1_REF_LAST_FRAME + i];
+ 
+     for (j = 0; j < 6; j++)
+-- 
+2.40.1
+

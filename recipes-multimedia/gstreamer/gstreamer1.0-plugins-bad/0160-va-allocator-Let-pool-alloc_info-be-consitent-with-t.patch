@@ -1,0 +1,79 @@
+From f626c33ac55c2537b00e83196eaae771902546c3 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Thu, 13 Jul 2023 16:56:56 +0800
+Subject: [PATCH 160/205] va:allocator: Let pool alloc_info be consitent with
+ the test order in gst_va_allocator_try
+
+In gst_va_allocator_try, the first try is to use derive_image, if it
+succeeds, we should use info from derived image to create bufferpool.
+If derive fails, then try create_image and give created image info
+to the pool.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5046>
+---
+ gst-libs/gst/va/gstvaallocator.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/gst-libs/gst/va/gstvaallocator.c b/gst-libs/gst/va/gstvaallocator.c
+index e678192b5..ef8865e06 100644
+--- a/gst-libs/gst/va/gstvaallocator.c
++++ b/gst-libs/gst/va/gstvaallocator.c
+@@ -1169,7 +1169,6 @@ struct _GstVaAllocator
+   guint32 fourcc;
+   guint32 rt_format;
+ 
+-  GstVideoInfo derived_info;
+   GstVideoInfo info;
+   guint usage_hint;
+ 
+@@ -1329,9 +1328,7 @@ _update_image_info (GstVaAllocator * va_allocator)
+       && va_allocator->surface_format == va_allocator->img_format) {
+     if (va_get_derive_image (va_allocator->display, surface, &image)) {
+       va_allocator->use_derived = TRUE;
+-      va_allocator->derived_info = va_allocator->info;
+-      _update_info (&va_allocator->derived_info, &image);
+-      va_destroy_image (va_allocator->display, image.image_id);
++      goto done;
+     }
+     image.image_id = VA_INVALID_ID;     /* reset it */
+   }
+@@ -1350,6 +1347,7 @@ _update_image_info (GstVaAllocator * va_allocator)
+     return FALSE;
+   }
+ 
++done:
+   _update_info (&va_allocator->info, &image);
+   va_destroy_image (va_allocator->display, image.image_id);
+   va_destroy_surfaces (va_allocator->display, &surface, 1);
+@@ -1412,24 +1410,21 @@ _va_map_unlocked (GstVaMemory * mem, GstMapFlags flags)
+          * problematic */
+         use_derived = va_allocator->use_derived && !((flags & GST_MAP_READ)
+             || ((flags & GST_MAP_WRITE)
+-                && GST_VIDEO_INFO_IS_YUV (&va_allocator->derived_info)));
++                && GST_VIDEO_INFO_IS_YUV (&va_allocator->info)));
+         break;
+       case GST_VA_IMPLEMENTATION_MESA_GALLIUM:
+         /* Reading RGB derived images, with non-standard resolutions,
+          * looks like tiled too. TODO(victor): fill a bug in Mesa. */
+         use_derived = va_allocator->use_derived && !((flags & GST_MAP_READ)
+-            && GST_VIDEO_INFO_IS_RGB (&va_allocator->derived_info));
++            && GST_VIDEO_INFO_IS_RGB (&va_allocator->info));
+         break;
+       default:
+         use_derived = va_allocator->use_derived;
+         break;
+     }
+-#endif
+   }
+-  if (use_derived)
+-    info = &va_allocator->derived_info;
+-  else
+-    info = &va_allocator->info;
++#endif
++  info = &va_allocator->info;
+ 
+   if (!va_ensure_image (display, mem->surface, info, &mem->image, use_derived))
+     return NULL;
+-- 
+2.40.1
+

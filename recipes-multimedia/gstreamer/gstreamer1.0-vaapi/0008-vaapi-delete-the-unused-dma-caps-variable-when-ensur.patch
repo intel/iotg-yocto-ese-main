@@ -1,0 +1,45 @@
+From f06800adc5333cbe280afb85a006ac3ded187a4d Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 20 Jul 2023 11:02:14 +0800
+Subject: [PATCH 8/8] vaapi: delete the unused dma caps variable when ensuring
+ src pad caps
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5078>
+---
+ gst/vaapi/gstvaapidecode.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/gst/vaapi/gstvaapidecode.c b/gst/vaapi/gstvaapidecode.c
+index 83fb5e1a..20276d1b 100644
+--- a/gst/vaapi/gstvaapidecode.c
++++ b/gst/vaapi/gstvaapidecode.c
+@@ -192,7 +192,7 @@ static gboolean
+ gst_vaapidecode_ensure_allowed_srcpad_caps (GstVaapiDecode * decode)
+ {
+   GstVaapiDisplay *const display = GST_VAAPI_PLUGIN_BASE_DISPLAY (decode);
+-  GstCaps *out_caps, *raw_caps, *va_caps, *dma_caps, *gltexup_caps, *base_caps;
++  GstCaps *out_caps, *raw_caps, *va_caps, *gltexup_caps, *base_caps;
+   GArray *formats;
+   gint min_width, min_height, max_width, max_height;
+   guint mem_types;
+@@ -207,7 +207,7 @@ gst_vaapidecode_ensure_allowed_srcpad_caps (GstVaapiDecode * decode)
+   if (!decode->decoder)
+     return FALSE;
+ 
+-  dma_caps = gltexup_caps = NULL;
++  gltexup_caps = NULL;
+ 
+   formats = gst_vaapi_decoder_get_surface_attributes (decode->decoder,
+       &min_width, &min_height, &max_width, &max_height, &mem_types);
+@@ -272,8 +272,6 @@ gst_vaapidecode_ensure_allowed_srcpad_caps (GstVaapiDecode * decode)
+ #endif
+ 
+   out_caps = va_caps;
+-  if (dma_caps)
+-    gst_caps_append (out_caps, dma_caps);
+   if (gltexup_caps)
+     gst_caps_append (out_caps, gltexup_caps);
+   gst_caps_append (out_caps, raw_caps);
+-- 
+2.40.1
+

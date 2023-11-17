@@ -1,0 +1,110 @@
+From b4751b56bbeb8e3396ba6e6842ba507c2787c70e Mon Sep 17 00:00:00 2001
+From: Matthew Waters <matthew@centricular.com>
+Date: Thu, 11 May 2023 17:41:24 +1000
+Subject: [PATCH 26/77] glmixer: don't add rgba templates by default
+
+Subclasses may want to override the pad template with different formats
+or with a different pad subclass.
+
+The original beahviour is still available by calling
+gst_gl_mixer_class_add_rgba_pad_templates() in _class_init() of the
+subclass.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4608>
+---
+ ext/gl/gstglmosaic.c         |  1 +
+ ext/gl/gstglvideomixer.c     |  1 +
+ gst-libs/gst/gl/gstglmixer.c | 27 +++++++++++++++++++++------
+ gst-libs/gst/gl/gstglmixer.h |  3 +++
+ 4 files changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/ext/gl/gstglmosaic.c b/ext/gl/gstglmosaic.c
+index d7c72c90..65b1a902 100644
+--- a/ext/gl/gstglmosaic.c
++++ b/ext/gl/gstglmosaic.c
+@@ -137,6 +137,7 @@ gst_gl_mosaic_class_init (GstGLMosaicClass * klass)
+ 
+   GST_GL_BASE_MIXER_CLASS (klass)->gl_stop = gst_gl_mosaic_gl_stop;
+   GST_GL_MIXER_CLASS (klass)->process_textures = gst_gl_mosaic_process_textures;
++  gst_gl_mixer_class_add_rgba_pad_templates (GST_GL_MIXER_CLASS (klass));
+ }
+ 
+ static void
+diff --git a/ext/gl/gstglvideomixer.c b/ext/gl/gstglvideomixer.c
+index fdc613dd..481335fa 100644
+--- a/ext/gl/gstglvideomixer.c
++++ b/ext/gl/gstglvideomixer.c
+@@ -1092,6 +1092,7 @@ gst_gl_video_mixer_class_init (GstGLVideoMixerClass * klass)
+       "Filter/Effect/Video/Compositor", "OpenGL video_mixer",
+       "Matthew Waters <matthew@centricular.com>");
+ 
++  gst_gl_mixer_class_add_rgba_pad_templates (GST_GL_MIXER_CLASS (klass));
+   gst_element_class_add_static_pad_template_with_gtype (element_class,
+       &sink_factory, GST_TYPE_GL_VIDEO_MIXER_PAD);
+ 
+diff --git a/gst-libs/gst/gl/gstglmixer.c b/gst-libs/gst/gl/gstglmixer.c
+index 688371a9..39b592af 100644
+--- a/gst-libs/gst/gl/gstglmixer.c
++++ b/gst-libs/gst/gl/gstglmixer.c
+@@ -413,11 +413,31 @@ static void gst_gl_mixer_gl_stop (GstGLBaseMixer * mix);
+ 
+ static void gst_gl_mixer_finalize (GObject * object);
+ 
++/**
++ * gst_gl_mixer_class_add_rgba_pad_templates:
++ * @klass: the #GstGLMixerClass
++ *
++ * Adds the default RGBA pad templates to this class.  If you have any special
++ * template requirements like a different pad subclass or different supported
++ * caps, you should not call this function and add the pad templates yourself
++ * manually.
++ *
++ * Since: 1.24
++ */
++void
++gst_gl_mixer_class_add_rgba_pad_templates (GstGLMixerClass * klass)
++{
++  GstElementClass *element_class = GST_ELEMENT_CLASS (klass);
++  gst_element_class_add_static_pad_template_with_gtype (element_class,
++      &src_factory, GST_TYPE_AGGREGATOR_PAD);
++  gst_element_class_add_static_pad_template_with_gtype (element_class,
++      &sink_factory, GST_TYPE_GL_MIXER_PAD);
++}
++
+ static void
+ gst_gl_mixer_class_init (GstGLMixerClass * klass)
+ {
+   GObjectClass *gobject_class = (GObjectClass *) klass;
+-  GstElementClass *element_class = GST_ELEMENT_CLASS (klass);
+   GstVideoAggregatorClass *videoaggregator_class =
+       (GstVideoAggregatorClass *) klass;
+   GstAggregatorClass *agg_class = (GstAggregatorClass *) klass;
+@@ -430,11 +450,6 @@ gst_gl_mixer_class_init (GstGLMixerClass * klass)
+   gobject_class->get_property = gst_gl_mixer_get_property;
+   gobject_class->set_property = gst_gl_mixer_set_property;
+ 
+-  gst_element_class_add_static_pad_template_with_gtype (element_class,
+-      &src_factory, GST_TYPE_AGGREGATOR_PAD);
+-  gst_element_class_add_static_pad_template_with_gtype (element_class,
+-      &sink_factory, GST_TYPE_GL_MIXER_PAD);
+-
+   agg_class->sink_query = gst_gl_mixer_sink_query;
+   agg_class->src_query = gst_gl_mixer_src_query;
+   agg_class->stop = gst_gl_mixer_stop;
+diff --git a/gst-libs/gst/gl/gstglmixer.h b/gst-libs/gst/gl/gstglmixer.h
+index 7262dd66..2c461e01 100644
+--- a/gst-libs/gst/gl/gstglmixer.h
++++ b/gst-libs/gst/gl/gstglmixer.h
+@@ -101,6 +101,9 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(GstGLMixer, gst_object_unref);
+ GST_GL_API
+ GType gst_gl_mixer_get_type(void);
+ 
++GST_GL_API
++void gst_gl_mixer_class_add_rgba_pad_templates (GstGLMixerClass * klass);
++
+ GST_GL_API
+ gboolean gst_gl_mixer_process_textures (GstGLMixer * mix, GstBuffer * outbuf);
+ 
+-- 
+2.40.1
+

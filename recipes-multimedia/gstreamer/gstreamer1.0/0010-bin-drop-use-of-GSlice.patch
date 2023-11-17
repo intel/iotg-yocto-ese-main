@@ -1,0 +1,35 @@
+From a8979b90cf643c8bb32cd5ff2b7c25dbc1fdb442 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sat, 7 Jan 2023 19:41:31 +0000
+Subject: [PATCH 10/43] bin: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/gstbin.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst/gstbin.c b/gst/gstbin.c
+index d9b2b7cb..ed23c263 100644
+--- a/gst/gstbin.c
++++ b/gst/gstbin.c
+@@ -3267,7 +3267,7 @@ bin_bus_handler (GstBus * bus, GstMessage * message, GstBin * bin)
+ static void
+ free_bin_continue_data (BinContinueData * data)
+ {
+-  g_slice_free (BinContinueData, data);
++  g_free (data);
+ }
+ 
+ static void
+@@ -3437,7 +3437,7 @@ bin_handle_async_done (GstBin * bin, GstStateChangeReturn ret,
+         "continue state change, pending %s",
+         gst_element_state_get_name (pending));
+ 
+-    cont = g_slice_new (BinContinueData);
++    cont = g_new (BinContinueData, 1);
+ 
+     /* cookie to detect concurrent state change */
+     cont->cookie = GST_ELEMENT_CAST (bin)->state_cookie;
+-- 
+2.40.1
+

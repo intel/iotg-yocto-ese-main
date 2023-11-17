@@ -1,0 +1,153 @@
+From 492cb527685e35c1a432d4706d18eb815ce40e23 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:27:38 +0000
+Subject: [PATCH 06/16] flv: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/flv/gstflvmux.c   |  4 ++--
+ gst/flv/gstindex.c    | 16 ++++++++--------
+ gst/flv/gstmemindex.c |  8 ++++----
+ 3 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/gst/flv/gstflvmux.c b/gst/flv/gstflvmux.c
+index 59e39df4..0f0714d4 100644
+--- a/gst/flv/gstflvmux.c
++++ b/gst/flv/gstflvmux.c
+@@ -219,7 +219,7 @@ typedef struct
+ static void
+ gst_flv_mux_index_entry_free (GstFlvMuxIndexEntry * entry)
+ {
+-  g_slice_free (GstFlvMuxIndexEntry, entry);
++  g_free (entry);
+ }
+ 
+ static GstBuffer *
+@@ -1638,7 +1638,7 @@ gst_flv_mux_update_index (GstFlvMux * mux, GstBuffer * buffer,
+     return;
+ 
+   if (GST_BUFFER_PTS_IS_VALID (buffer)) {
+-    GstFlvMuxIndexEntry *entry = g_slice_new (GstFlvMuxIndexEntry);
++    GstFlvMuxIndexEntry *entry = g_new (GstFlvMuxIndexEntry, 1);
+     GstClockTime pts =
+         gst_flv_mux_segment_to_running_time (&GST_AGGREGATOR_PAD
+         (pad)->segment, GST_BUFFER_PTS (buffer));
+diff --git a/gst/flv/gstindex.c b/gst/flv/gstindex.c
+index 4b11bb21..9b2bedc2 100644
+--- a/gst/flv/gstindex.c
++++ b/gst/flv/gstindex.c
+@@ -283,7 +283,7 @@ gst_index_get_property (GObject * object, guint prop_id,
+ static GstIndexGroup *
+ gst_index_group_new (guint groupnum)
+ {
+-  GstIndexGroup *indexgroup = g_slice_new (GstIndexGroup);
++  GstIndexGroup *indexgroup = g_new (GstIndexGroup, 1);
+ 
+   indexgroup->groupnum = groupnum;
+   indexgroup->entries = NULL;
+@@ -298,7 +298,7 @@ gst_index_group_new (guint groupnum)
+ static void
+ gst_index_group_free (GstIndexGroup * group)
+ {
+-  g_slice_free (GstIndexGroup, group);
++  g_free (group);
+ }
+ 
+ /* do not resurrect this, add a derived dummy index class instead */
+@@ -542,7 +542,7 @@ gst_index_set_resolver_full (GstIndex * index, GstIndexResolver resolver,
+ GstIndexEntry *
+ gst_index_entry_copy (GstIndexEntry * entry)
+ {
+-  GstIndexEntry *new_entry = g_slice_new (GstIndexEntry);
++  GstIndexEntry *new_entry = g_new (GstIndexEntry, 1);
+ 
+   memcpy (new_entry, entry, sizeof (GstIndexEntry));
+   return new_entry;
+@@ -576,7 +576,7 @@ gst_index_entry_free (GstIndexEntry * entry)
+       break;
+   }
+ 
+-  g_slice_free (GstIndexEntry, entry);
++  g_free (entry);
+ }
+ 
+ #if 0
+@@ -606,7 +606,7 @@ gst_index_add_format (GstIndex * index, gint id, GstFormat format)
+   if (!GST_INDEX_IS_WRITABLE (index) || id == -1)
+     return NULL;
+ 
+-  entry = g_slice_new (GstIndexEntry);
++  entry = g_new (GstIndexEntry, 1);
+   entry->type = GST_INDEX_ENTRY_FORMAT;
+   entry->id = id;
+   entry->data.format.format = format;
+@@ -641,7 +641,7 @@ gst_index_add_id (GstIndex * index, gint id, gchar * description)
+   if (!GST_INDEX_IS_WRITABLE (index) || id == -1)
+     return NULL;
+ 
+-  entry = g_slice_new (GstIndexEntry);
++  entry = g_new (GstIndexEntry, 1);
+   entry->type = GST_INDEX_ENTRY_ID;
+   entry->id = id;
+   entry->data.id.description = description;
+@@ -756,7 +756,7 @@ gst_index_get_writer_id (GstIndex * index, GstObject * writer, gint * id)
+     if (!entry) {
+       /* index is probably not writable, make an entry anyway
+        * to keep it in our cache */
+-      entry = g_slice_new (GstIndexEntry);
++      entry = g_new (GstIndexEntry, 1);
+       entry->type = GST_INDEX_ENTRY_ID;
+       entry->id = *id;
+       entry->data.id.description = writer_string;
+@@ -808,7 +808,7 @@ gst_index_add_associationv (GstIndex * index, gint id,
+   if (!GST_INDEX_IS_WRITABLE (index) || id == -1)
+     return NULL;
+ 
+-  entry = g_slice_new (GstIndexEntry);
++  entry = g_new (GstIndexEntry, 1);
+ 
+   entry->type = GST_INDEX_ENTRY_ASSOCIATION;
+   entry->id = id;
+diff --git a/gst/flv/gstmemindex.c b/gst/flv/gstmemindex.c
+index eef99c2c..216bca5f 100644
+--- a/gst/flv/gstmemindex.c
++++ b/gst/flv/gstmemindex.c
+@@ -142,7 +142,7 @@ gst_mem_index_free_format (gpointer key, gpointer value, gpointer user_data)
+     g_tree_destroy (index->tree);
+   }
+ 
+-  g_slice_free (GstMemIndexFormatIndex, index);
++  g_free (index);
+ }
+ 
+ static void
+@@ -157,7 +157,7 @@ gst_mem_index_free_id (gpointer key, gpointer value, gpointer user_data)
+     id_index->format_index = NULL;
+   }
+ 
+-  g_slice_free (GstMemIndexId, id_index);
++  g_free (id_index);
+ }
+ 
+ static void
+@@ -191,7 +191,7 @@ gst_mem_index_add_id (GstIndex * index, GstIndexEntry * entry)
+   id_index = g_hash_table_lookup (memindex->id_index, &entry->id);
+ 
+   if (!id_index) {
+-    id_index = g_slice_new0 (GstMemIndexId);
++    id_index = g_new0 (GstMemIndexId, 1);
+ 
+     id_index->id = entry->id;
+     id_index->format_index = g_hash_table_new (g_int_hash, g_int_equal);
+@@ -226,7 +226,7 @@ gst_mem_index_index_format (GstMemIndexId * id_index, GstIndexEntry * entry,
+   index = g_hash_table_lookup (id_index->format_index, format);
+ 
+   if (!index) {
+-    index = g_slice_new0 (GstMemIndexFormatIndex);
++    index = g_new0 (GstMemIndexFormatIndex, 1);
+ 
+     index->format = *format;
+     index->offset = assoc;
+-- 
+2.40.1
+

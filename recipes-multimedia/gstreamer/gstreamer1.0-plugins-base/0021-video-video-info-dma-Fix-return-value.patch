@@ -1,0 +1,33 @@
+From bb27bba396203d8a7c6ef4869f6f4a411bc4d7d4 Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Fri, 12 May 2023 15:22:41 +0800
+Subject: [PATCH 21/77] video: video-info-dma: Fix return value
+
+The return value of gst_video_info_dma_drm_new_from_caps is a pointer type,
+and should not return a boolean type. Fix this issue.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4612>
+---
+ gst-libs/gst/video/video-info-dma.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst-libs/gst/video/video-info-dma.c b/gst-libs/gst/video/video-info-dma.c
+index a7bc83f1..ec0e500e 100644
+--- a/gst-libs/gst/video/video-info-dma.c
++++ b/gst-libs/gst/video/video-info-dma.c
+@@ -385,10 +385,10 @@ gst_video_info_dma_drm_new_from_caps (const GstCaps * caps)
+ {
+   GstVideoInfoDmaDrm *ret;
+ 
+-  g_return_val_if_fail (caps != NULL, FALSE);
++  g_return_val_if_fail (caps != NULL, NULL);
+ 
+   if (!gst_video_is_dma_drm_caps (caps))
+-    return FALSE;
++    return NULL;
+ 
+   ret = gst_video_info_dma_drm_new ();
+ 
+-- 
+2.40.1
+

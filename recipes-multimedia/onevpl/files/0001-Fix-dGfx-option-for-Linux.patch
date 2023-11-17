@@ -1,0 +1,118 @@
+From 4dfbfaf49e4b2fd5c0df777cd64ac254ece65e9f Mon Sep 17 00:00:00 2001
+From: "Hoe, Sheng Yang" <sheng.yang.hoe@intel.com>
+Date: Fri, 6 Oct 2023 14:47:04 +0800
+Subject: [PATCH] Fix "dGfx" option for Linux
+
+Signed-off-by: Hoe, Sheng Yang <sheng.yang.hoe@intel.com>
+---
+ .../sample_decode/src/pipeline_decode.cpp       |  6 ++++++
+ .../sample_encode/src/pipeline_encode.cpp       |  5 +++++
+ .../src/sample_multi_transcode.cpp              | 17 +++++++++++++++++
+ .../legacy/sample_vpp/src/sample_vpp_utils.cpp  | 16 ++++++++++++++++
+ 4 files changed, 44 insertions(+)
+
+diff --git a/tools/legacy/sample_decode/src/pipeline_decode.cpp b/tools/legacy/sample_decode/src/pipeline_decode.cpp
+index 8a9d0c3..6851bbe 100644
+--- a/tools/legacy/sample_decode/src/pipeline_decode.cpp
++++ b/tools/legacy/sample_decode/src/pipeline_decode.cpp
+@@ -1136,6 +1136,12 @@ mfxStatus CDecodingPipeline::CreateHWDevice() {
+     defined(LIBVA_ANDROID_SUPPORT) || defined(LIBVA_WAYLAND_SUPPORT)
+     mfxStatus sts = MFX_ERR_NONE;
+ 
++    #ifdef ONEVPL_EXPERIMENTAL
++    if (m_strDevicePath.empty() && m_verSessionInit == API_2X) {
++        m_strDevicePath = "/dev/dri/renderD" + std::to_string(m_pLoader->GetDRMRenderNodeNumUsed());
++    }
++    #endif
++
+     m_hwdev = CreateVAAPIDevice(m_strDevicePath, m_libvaBackend);
+ 
+     if (NULL == m_hwdev) {
+diff --git a/tools/legacy/sample_encode/src/pipeline_encode.cpp b/tools/legacy/sample_encode/src/pipeline_encode.cpp
+index 2daac16..513a116 100644
+--- a/tools/legacy/sample_encode/src/pipeline_encode.cpp
++++ b/tools/legacy/sample_encode/src/pipeline_encode.cpp
+@@ -958,6 +958,11 @@ mfxStatus CEncodingPipeline::CreateHWDevice() {
+     MSDK_CHECK_STATUS(sts, "m_hwdev->Init failed");
+ 
+ #elif LIBVA_SUPPORT
++    #ifdef ONEVPL_EXPERIMENTAL
++    if (m_strDevicePath.empty() && m_verSessionInit == API_2X) {
++        m_strDevicePath = "/dev/dri/renderD" + std::to_string(m_pLoader->GetDRMRenderNodeNumUsed());
++    }
++    #endif
+ 
+     m_hwdev = CreateVAAPIDevice(m_strDevicePath);
+ 
+diff --git a/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp b/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp
+index 2297cda..239a74a 100644
+--- a/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp
++++ b/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp
+@@ -352,6 +352,14 @@ mfxStatus Launcher::Init(int argc, char* argv[]) {
+                     libvaBackend         = params.libvaBackend;
+ 
+                     /* Rendering case */
++    #ifdef ONEVPL_EXPERIMENTAL
++                    if (InputParams.strDevicePath.empty() && InputParams.verSessionInit == API_2X) {
++                        InputParams.strDevicePath =
++                            "/dev/dri/renderD" +
++                            std::to_string(m_pLoader->GetDRMRenderNodeNumUsed());
++                    }
++    #endif
++
+                     hwdev.reset(CreateVAAPIDevice(InputParams.strDevicePath, params.libvaBackend));
+                     if (!hwdev.get()) {
+                         printf("error: failed to initialize VAAPI device\n");
+@@ -405,6 +413,15 @@ mfxStatus Launcher::Init(int argc, char* argv[]) {
+                 }
+                 else /* NO RENDERING*/
+                 {
++    #ifdef ONEVPL_EXPERIMENTAL
++                    if (m_InputParamsArray[i].strDevicePath.empty() &&
++                        m_InputParamsArray[i].verSessionInit == API_2X) {
++                        m_InputParamsArray[i].strDevicePath =
++                            "/dev/dri/renderD" +
++                            std::to_string(m_pLoader->GetDRMRenderNodeNumUsed());
++                    }
++    #endif
++
+                     hwdev.reset(CreateVAAPIDevice(m_InputParamsArray[i].strDevicePath));
+ 
+                     if (!hwdev.get()) {
+diff --git a/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp b/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp
+index ca9b70c..a1a26c0 100644
+--- a/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp
++++ b/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp
+@@ -704,6 +704,14 @@ mfxStatus InitMemoryAllocator(sFrameProcessor* pProcessor,
+         }
+         else if ((pInParams->ImpLib & IMPL_VIA_MASK) == MFX_IMPL_VIA_VAAPI) {
+ #ifdef LIBVA_SUPPORT
++    #ifdef ONEVPL_EXPERIMENTAL
++            if (pInParams->strDevicePath.empty() && pInParams->verSessionInit == API_2X) {
++                pInParams->strDevicePath =
++                    "/dev/dri/renderD" +
++                    std::to_string(pProcessor->pLoader->GetDRMRenderNodeNumUsed());
++            }
++    #endif
++
+             pAllocator->pDevice = CreateVAAPIDevice(pInParams->strDevicePath);
+             MSDK_CHECK_POINTER(pAllocator->pDevice, MFX_ERR_NULL_PTR);
+ 
+@@ -742,6 +750,14 @@ mfxStatus InitMemoryAllocator(sFrameProcessor* pProcessor,
+         pProcessor->mfxSession.QueryIMPL(&impl);
+ 
+         if (MFX_IMPL_HARDWARE == MFX_IMPL_BASETYPE(impl)) {
++    #ifdef ONEVPL_EXPERIMENTAL
++            if (pInParams->strDevicePath.empty() && pInParams->verSessionInit == API_2X) {
++                pInParams->strDevicePath =
++                    "/dev/dri/renderD" +
++                    std::to_string(pProcessor->pLoader->GetDRMRenderNodeNumUsed());
++            }
++    #endif
++
+             pAllocator->pDevice = CreateVAAPIDevice(pInParams->strDevicePath);
+             if (!pAllocator->pDevice)
+                 sts = MFX_ERR_MEMORY_ALLOC;
+-- 
+2.34.1
+

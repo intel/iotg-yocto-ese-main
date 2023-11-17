@@ -1,0 +1,410 @@
+From 6de69d46fbd9bac7e31cf2391e864ac332ea0950 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:22:46 +0000
+Subject: [PATCH 01/16] adaptivedemux2: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ ext/adaptivedemux2/dash/gstdashdemux.c           |  4 ++--
+ .../dash/gstmpdadaptationsetnode.c               |  6 +++---
+ ext/adaptivedemux2/dash/gstmpdclient.c           |  6 +++---
+ .../dash/gstmpdcontentcomponentnode.c            |  2 +-
+ ext/adaptivedemux2/dash/gstmpdparser.c           |  8 ++++----
+ .../dash/gstmpdrepresentationbasenode.c          | 16 ++++++++--------
+ ext/adaptivedemux2/dash/gstmpdsegmentbasenode.c  |  2 +-
+ ext/adaptivedemux2/dash/gstmpdsegmenturlnode.c   |  4 ++--
+ ext/adaptivedemux2/dash/gstmpdurltypenode.c      |  2 +-
+ ext/adaptivedemux2/dash/gstxmlhelper.c           | 14 +++++++-------
+ ext/adaptivedemux2/downloadrequest.c             |  4 ++--
+ ext/adaptivedemux2/gstadaptivedemux.c            |  4 ++--
+ ext/adaptivedemux2/gstadaptivedemuxutils.c       |  8 ++++----
+ ext/adaptivedemux2/mss/gstmssmanifest.c          |  4 ++--
+ 14 files changed, 42 insertions(+), 42 deletions(-)
+
+diff --git a/ext/adaptivedemux2/dash/gstdashdemux.c b/ext/adaptivedemux2/dash/gstdashdemux.c
+index ab7445f5..24e3fe22 100644
+--- a/ext/adaptivedemux2/dash/gstdashdemux.c
++++ b/ext/adaptivedemux2/dash/gstdashdemux.c
+@@ -3661,7 +3661,7 @@ gst_dash_demux_clock_drift_new (GstDashDemux2 * demux)
+ {
+   GstDashDemux2ClockDrift *clock_drift;
+ 
+-  clock_drift = g_slice_new0 (GstDashDemux2ClockDrift);
++  clock_drift = g_new0 (GstDashDemux2ClockDrift, 1);
+   g_mutex_init (&clock_drift->clock_lock);
+   clock_drift->next_update =
+       GST_TIME_AS_USECONDS (gst_adaptive_demux2_get_monotonic_time
+@@ -3678,7 +3678,7 @@ gst_dash_demux_clock_drift_free (GstDashDemux2ClockDrift * clock_drift)
+       g_object_unref (clock_drift->ntp_clock);
+     g_mutex_unlock (&clock_drift->clock_lock);
+     g_mutex_clear (&clock_drift->clock_lock);
+-    g_slice_free (GstDashDemux2ClockDrift, clock_drift);
++    g_free (clock_drift);
+   }
+ }
+ 
+diff --git a/ext/adaptivedemux2/dash/gstmpdadaptationsetnode.c b/ext/adaptivedemux2/dash/gstmpdadaptationsetnode.c
+index c045ab7c..48aaf824 100644
+--- a/ext/adaptivedemux2/dash/gstmpdadaptationsetnode.c
++++ b/ext/adaptivedemux2/dash/gstmpdadaptationsetnode.c
+@@ -79,9 +79,9 @@ gst_mpd_adaptation_set_node_finalize (GObject * object)
+     xmlFree (self->lang);
+   if (self->contentType)
+     xmlFree (self->contentType);
+-  g_slice_free (GstXMLRatio, self->par);
+-  g_slice_free (GstXMLConditionalUintType, self->segmentAlignment);
+-  g_slice_free (GstXMLConditionalUintType, self->subsegmentAlignment);
++  g_free (self->par);
++  g_free (self->segmentAlignment);
++  g_free (self->subsegmentAlignment);
+   g_list_free_full (self->Accessibility,
+       (GDestroyNotify) gst_mpd_descriptor_type_node_free);
+   g_list_free_full (self->Role,
+diff --git a/ext/adaptivedemux2/dash/gstmpdclient.c b/ext/adaptivedemux2/dash/gstmpdclient.c
+index a5c2aeef..276fa50d 100644
+--- a/ext/adaptivedemux2/dash/gstmpdclient.c
++++ b/ext/adaptivedemux2/dash/gstmpdclient.c
+@@ -795,7 +795,7 @@ gst_mpd_client2_add_media_segment (GstActiveStream * stream,
+ 
+   g_return_val_if_fail (stream->segments != NULL, FALSE);
+ 
+-  media_segment = g_slice_new0 (GstMediaSegment);
++  media_segment = g_new0 (GstMediaSegment, 1);
+ 
+   media_segment->SegmentURL = url_node;
+   media_segment->number = number;
+@@ -1420,7 +1420,7 @@ gst_mpd_client2_setup_media_presentation (GstMPDClient2 * client,
+       goto syntax_error;
+     }
+ 
+-    stream_period = g_slice_new0 (GstStreamPeriod);
++    stream_period = g_new0 (GstStreamPeriod, 1);
+     client->periods = g_list_append (client->periods, stream_period);
+     stream_period->period = period_node;
+     stream_period->number = idx++;
+@@ -1624,7 +1624,7 @@ gst_mpd_client2_setup_streaming (GstMPDClient2 * client,
+     return FALSE;
+   }
+ 
+-  stream = g_slice_new0 (GstActiveStream);
++  stream = g_new0 (GstActiveStream, 1);
+   gst_mpdparser_init_active_stream_segments (stream);
+ 
+   stream->baseURL_idx = 0;
+diff --git a/ext/adaptivedemux2/dash/gstmpdcontentcomponentnode.c b/ext/adaptivedemux2/dash/gstmpdcontentcomponentnode.c
+index 779ba274..2a9df03c 100644
+--- a/ext/adaptivedemux2/dash/gstmpdcontentcomponentnode.c
++++ b/ext/adaptivedemux2/dash/gstmpdcontentcomponentnode.c
+@@ -35,7 +35,7 @@ gst_mpd_content_component_node_finalize (GObject * object)
+     xmlFree (self->lang);
+   if (self->contentType)
+     xmlFree (self->contentType);
+-  g_slice_free (GstXMLRatio, self->par);
++  g_free (self->par);
+   g_list_free_full (self->Accessibility,
+       (GDestroyNotify) gst_mpd_descriptor_type_node_free);
+   g_list_free_full (self->Role,
+diff --git a/ext/adaptivedemux2/dash/gstmpdparser.c b/ext/adaptivedemux2/dash/gstmpdparser.c
+index 431b374d..ce983e1c 100644
+--- a/ext/adaptivedemux2/dash/gstmpdparser.c
++++ b/ext/adaptivedemux2/dash/gstmpdparser.c
+@@ -289,7 +289,7 @@ gst_mpdparser_parse_seg_base_type_ext (GstMPDSegmentBaseNode ** pointer,
+   }
+   if (gst_xml_helper_get_prop_range (a_node, "indexRange", &rangeval)) {
+     if (seg_base_type->indexRange) {
+-      g_slice_free (GstXMLRange, seg_base_type->indexRange);
++      g_free (seg_base_type->indexRange);
+     }
+     seg_base_type->indexRange = rangeval;
+   }
+@@ -1362,7 +1362,7 @@ void
+ gst_mpdparser_free_stream_period (GstStreamPeriod * stream_period)
+ {
+   if (stream_period) {
+-    g_slice_free (GstStreamPeriod, stream_period);
++    g_free (stream_period);
+   }
+ }
+ 
+@@ -1370,7 +1370,7 @@ void
+ gst_mpdparser_free_media_segment (GstMediaSegment * media_segment)
+ {
+   if (media_segment) {
+-    g_slice_free (GstMediaSegment, media_segment);
++    g_free (media_segment);
+   }
+ }
+ 
+@@ -1393,7 +1393,7 @@ gst_mpdparser_free_active_stream (GstActiveStream * active_stream)
+     active_stream->queryURL = NULL;
+     if (active_stream->segments)
+       g_ptr_array_unref (active_stream->segments);
+-    g_slice_free (GstActiveStream, active_stream);
++    g_free (active_stream);
+   }
+ }
+ 
+diff --git a/ext/adaptivedemux2/dash/gstmpdrepresentationbasenode.c b/ext/adaptivedemux2/dash/gstmpdrepresentationbasenode.c
+index 1f9cb5e3..bde13bd0 100644
+--- a/ext/adaptivedemux2/dash/gstmpdrepresentationbasenode.c
++++ b/ext/adaptivedemux2/dash/gstmpdrepresentationbasenode.c
+@@ -65,21 +65,21 @@ gst_mpd_representation_base_node_set_property (GObject * object, guint prop_id,
+       self->height = g_value_get_uint (value);
+       break;
+     case PROP_MPD_REPRESENTATION_BASE_SAR:
+-      g_slice_free (GstXMLRatio, self->sar);
++      g_free (self->sar);
+       self->sar = gst_xml_helper_clone_ratio (g_value_get_pointer (value));
+       break;
+     case PROP_MPD_REPRESENTATION_BASE_MIN_FRAME_RATE:
+-      g_slice_free (GstXMLFrameRate, self->minFrameRate);
++      g_free (self->minFrameRate);
+       self->minFrameRate =
+           gst_xml_helper_clone_frame_rate (g_value_get_pointer (value));
+       break;
+     case PROP_MPD_REPRESENTATION_BASE_MAX_FRAME_RATE:
+-      g_slice_free (GstXMLFrameRate, self->maxFrameRate);
++      g_free (self->maxFrameRate);
+       self->maxFrameRate =
+           gst_xml_helper_clone_frame_rate (g_value_get_pointer (value));
+       break;
+     case PROP_MPD_REPRESENTATION_BASE_FRAME_RATE:
+-      g_slice_free (GstXMLFrameRate, self->frameRate);
++      g_free (self->frameRate);
+       self->frameRate =
+           gst_xml_helper_clone_frame_rate (g_value_get_pointer (value));
+       break;
+@@ -192,10 +192,10 @@ gst_mpd_representation_base_node_finalize (GObject * object)
+ 
+   if (self->profiles)
+     xmlFree (self->profiles);
+-  g_slice_free (GstXMLRatio, self->sar);
+-  g_slice_free (GstXMLFrameRate, self->frameRate);
+-  g_slice_free (GstXMLFrameRate, self->minFrameRate);
+-  g_slice_free (GstXMLFrameRate, self->maxFrameRate);
++  g_free (self->sar);
++  g_free (self->frameRate);
++  g_free (self->minFrameRate);
++  g_free (self->maxFrameRate);
+   if (self->audioSamplingRate)
+     xmlFree (self->audioSamplingRate);
+   if (self->mimeType)
+diff --git a/ext/adaptivedemux2/dash/gstmpdsegmentbasenode.c b/ext/adaptivedemux2/dash/gstmpdsegmentbasenode.c
+index ad209729..4045cd2e 100644
+--- a/ext/adaptivedemux2/dash/gstmpdsegmentbasenode.c
++++ b/ext/adaptivedemux2/dash/gstmpdsegmentbasenode.c
+@@ -32,7 +32,7 @@ gst_mpd_segment_base_node_finalize (GObject * object)
+   GstMPDSegmentBaseNode *self = GST_MPD_SEGMENT_BASE_NODE (object);
+ 
+   if (self->indexRange)
+-    g_slice_free (GstXMLRange, self->indexRange);
++    g_free (self->indexRange);
+   gst_mpd_url_type_node_free (self->Initialization);
+   gst_mpd_url_type_node_free (self->RepresentationIndex);
+ 
+diff --git a/ext/adaptivedemux2/dash/gstmpdsegmenturlnode.c b/ext/adaptivedemux2/dash/gstmpdsegmenturlnode.c
+index fec60329..48940e22 100644
+--- a/ext/adaptivedemux2/dash/gstmpdsegmenturlnode.c
++++ b/ext/adaptivedemux2/dash/gstmpdsegmenturlnode.c
+@@ -71,10 +71,10 @@ gst_mpd_segment_url_node_finalize (GObject * object)
+ 
+   if (self->media)
+     xmlFree (self->media);
+-  g_slice_free (GstXMLRange, self->mediaRange);
++  g_free (self->mediaRange);
+   if (self->index)
+     xmlFree (self->index);
+-  g_slice_free (GstXMLRange, self->indexRange);
++  g_free (self->indexRange);
+ 
+   G_OBJECT_CLASS (gst_mpd_segment_url_node_parent_class)->finalize (object);
+ }
+diff --git a/ext/adaptivedemux2/dash/gstmpdurltypenode.c b/ext/adaptivedemux2/dash/gstmpdurltypenode.c
+index fc85d489..70fdb9df 100644
+--- a/ext/adaptivedemux2/dash/gstmpdurltypenode.c
++++ b/ext/adaptivedemux2/dash/gstmpdurltypenode.c
+@@ -32,7 +32,7 @@ gst_mpd_url_type_node_finalize (GObject * object)
+ 
+   if (self->sourceURL)
+     xmlFree (self->sourceURL);
+-  g_slice_free (GstXMLRange, self->range);
++  g_free (self->range);
+   g_free (self->node_name);
+ 
+   G_OBJECT_CLASS (gst_mpd_url_type_node_parent_class)->finalize (object);
+diff --git a/ext/adaptivedemux2/dash/gstxmlhelper.c b/ext/adaptivedemux2/dash/gstxmlhelper.c
+index 084be27b..16abcc8a 100644
+--- a/ext/adaptivedemux2/dash/gstxmlhelper.c
++++ b/ext/adaptivedemux2/dash/gstxmlhelper.c
+@@ -287,7 +287,7 @@ gst_xml_helper_clone_range (GstXMLRange * range)
+   GstXMLRange *clone = NULL;
+ 
+   if (range) {
+-    clone = g_slice_new0 (GstXMLRange);
++    clone = g_new0 (GstXMLRange, 1);
+     clone->first_byte_pos = range->first_byte_pos;
+     clone->last_byte_pos = range->last_byte_pos;
+   }
+@@ -301,7 +301,7 @@ gst_xml_helper_clone_ratio (GstXMLRatio * ratio)
+   GstXMLRatio *clone = NULL;
+ 
+   if (ratio) {
+-    clone = g_slice_new0 (GstXMLRatio);
++    clone = g_new0 (GstXMLRatio, 1);
+     clone->num = ratio->num;
+     clone->den = ratio->den;
+   }
+@@ -315,7 +315,7 @@ gst_xml_helper_clone_frame_rate (GstXMLFrameRate * frameRate)
+   GstXMLFrameRate *clone = NULL;
+ 
+   if (frameRate) {
+-    clone = g_slice_new0 (GstXMLFrameRate);
++    clone = g_new0 (GstXMLFrameRate, 1);
+     clone->num = frameRate->num;
+     clone->den = frameRate->den;
+   }
+@@ -628,7 +628,7 @@ gst_xml_helper_get_prop_range (xmlNode * a_node,
+       goto error;
+     }
+     /* malloc return data structure */
+-    *property_value = g_slice_new0 (GstXMLRange);
++    *property_value = g_new0 (GstXMLRange, 1);
+     exists = TRUE;
+     (*property_value)->first_byte_pos = first_byte_pos;
+     (*property_value)->last_byte_pos = last_byte_pos;
+@@ -685,7 +685,7 @@ gst_xml_helper_get_prop_ratio (xmlNode * a_node,
+       }
+     }
+     /* malloc return data structure */
+-    *property_value = g_slice_new0 (GstXMLRatio);
++    *property_value = g_new0 (GstXMLRatio, 1);
+     exists = TRUE;
+     (*property_value)->num = num;
+     (*property_value)->den = den;
+@@ -738,7 +738,7 @@ gst_xml_helper_get_prop_framerate (xmlNode * a_node,
+       }
+     }
+     /* alloc return data structure */
+-    *property_value = g_slice_new0 (GstXMLFrameRate);
++    *property_value = g_new0 (GstXMLFrameRate, 1);
+     exists = TRUE;
+     (*property_value)->num = num;
+     (*property_value)->den = den;
+@@ -786,7 +786,7 @@ gst_xml_helper_get_prop_cond_uint (xmlNode * a_node,
+     }
+ 
+     /* alloc return data structure */
+-    *property_value = g_slice_new0 (GstXMLConditionalUintType);
++    *property_value = g_new0 (GstXMLConditionalUintType, 1);
+     exists = TRUE;
+     (*property_value)->flag = flag;
+     (*property_value)->value = val;
+diff --git a/ext/adaptivedemux2/downloadrequest.c b/ext/adaptivedemux2/downloadrequest.c
+index a40878c2..49632511 100644
+--- a/ext/adaptivedemux2/downloadrequest.c
++++ b/ext/adaptivedemux2/downloadrequest.c
+@@ -53,7 +53,7 @@ DownloadRequest *
+ download_request_new (void)
+ {
+   DownloadRequest *request =
+-      (DownloadRequest *) g_slice_new0 (DownloadRequestPrivate);
++      (DownloadRequest *) g_new0 (DownloadRequestPrivate, 1);
+   DownloadRequestPrivate *priv = DOWNLOAD_REQUEST_PRIVATE (request);
+ 
+   g_atomic_int_set (&request->ref_count, 1);
+@@ -122,7 +122,7 @@ download_request_free (DownloadRequest * request)
+ 
+   g_rec_mutex_clear (&priv->lock);
+ 
+-  g_slice_free1 (sizeof (DownloadRequestPrivate), priv);
++  g_free (priv);
+ }
+ 
+ void
+diff --git a/ext/adaptivedemux2/gstadaptivedemux.c b/ext/adaptivedemux2/gstadaptivedemux.c
+index afba0ecc..266f8d52 100644
+--- a/ext/adaptivedemux2/gstadaptivedemux.c
++++ b/ext/adaptivedemux2/gstadaptivedemux.c
+@@ -745,7 +745,7 @@ gst_adaptive_demux_output_slot_free (GstAdaptiveDemux * demux,
+   if (slot->pending_track)
+     gst_adaptive_demux_track_unref (slot->pending_track);
+ 
+-  g_slice_free (OutputSlot, slot);
++  g_free (slot);
+ }
+ 
+ static OutputSlot *
+@@ -779,7 +779,7 @@ gst_adaptive_demux_output_slot_new (GstAdaptiveDemux * demux,
+       return NULL;
+   }
+ 
+-  slot = g_slice_new0 (OutputSlot);
++  slot = g_new0 (OutputSlot, 1);
+   slot->type = streamtype;
+   slot->pushed_timed_data = FALSE;
+ 
+diff --git a/ext/adaptivedemux2/gstadaptivedemuxutils.c b/ext/adaptivedemux2/gstadaptivedemuxutils.c
+index f9598194..d75f6318 100644
+--- a/ext/adaptivedemux2/gstadaptivedemuxutils.c
++++ b/ext/adaptivedemux2/gstadaptivedemuxutils.c
+@@ -59,7 +59,7 @@ struct _GstAdaptiveDemuxLoop
+ GstAdaptiveDemuxClock *
+ gst_adaptive_demux_clock_new (void)
+ {
+-  GstAdaptiveDemuxClock *clock = g_slice_new0 (GstAdaptiveDemuxClock);
++  GstAdaptiveDemuxClock *clock = g_new0 (GstAdaptiveDemuxClock, 1);
+   GstClockType clock_type = GST_CLOCK_TYPE_OTHER;
+   GObjectClass *gobject_class;
+ 
+@@ -102,7 +102,7 @@ gst_adaptive_demux_clock_unref (GstAdaptiveDemuxClock * clock)
+   g_return_if_fail (clock != NULL);
+   if (g_atomic_int_dec_and_test (&clock->ref_count)) {
+     gst_object_unref (clock->gst_clock);
+-    g_slice_free (GstAdaptiveDemuxClock, clock);
++    g_free (clock);
+   }
+ }
+ 
+@@ -152,7 +152,7 @@ gst_adaptive_demux_clock_set_utc_time (GstAdaptiveDemuxClock * clock,
+ GstAdaptiveDemuxLoop *
+ gst_adaptive_demux_loop_new (void)
+ {
+-  GstAdaptiveDemuxLoop *loop = g_slice_new0 (GstAdaptiveDemuxLoop);
++  GstAdaptiveDemuxLoop *loop = g_new0 (GstAdaptiveDemuxLoop, 1);
+   g_atomic_int_set (&loop->ref_count, 1);
+ 
+   g_mutex_init (&loop->lock);
+@@ -184,7 +184,7 @@ gst_adaptive_demux_loop_unref (GstAdaptiveDemuxLoop * loop)
+     g_rec_mutex_clear (&loop->context_lock);
+     g_cond_clear (&loop->cond);
+ 
+-    g_slice_free (GstAdaptiveDemuxLoop, loop);
++    g_free (loop);
+   }
+ }
+ 
+diff --git a/ext/adaptivedemux2/mss/gstmssmanifest.c b/ext/adaptivedemux2/mss/gstmssmanifest.c
+index 110aa681..c9c4fa60 100644
+--- a/ext/adaptivedemux2/mss/gstmssmanifest.c
++++ b/ext/adaptivedemux2/mss/gstmssmanifest.c
+@@ -211,7 +211,7 @@ node_has_type (xmlNodePtr node, const gchar * name)
+ static GstMssStreamQuality *
+ gst_mss_stream_quality_new (xmlNodePtr node)
+ {
+-  GstMssStreamQuality *q = g_slice_new (GstMssStreamQuality);
++  GstMssStreamQuality *q = g_new (GstMssStreamQuality, 1);
+ 
+   q->xmlnode = node;
+   q->bitrate_str = (gchar *) xmlGetProp (node, (xmlChar *) MSS_PROP_BITRATE);
+@@ -230,7 +230,7 @@ gst_mss_stream_quality_free (GstMssStreamQuality * quality)
+   g_return_if_fail (quality != NULL);
+ 
+   xmlFree (quality->bitrate_str);
+-  g_slice_free (GstMssStreamQuality, quality);
++  g_free (quality);
+ }
+ 
+ static gint
+-- 
+2.40.1
+

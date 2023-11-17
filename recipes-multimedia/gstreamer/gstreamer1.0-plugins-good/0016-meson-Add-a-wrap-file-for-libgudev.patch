@@ -1,0 +1,33 @@
+From 02d0a4e43fcb3012665bea4cc2f57e1003430b8f Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Mon, 7 Aug 2023 15:21:29 +0800
+Subject: [PATCH 16/16] meson: Add a wrap file for libgudev
+
+And allow fallback to it.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4447>
+
+Backport from upstream:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/e709e2d97c27910b6b3f6bf7c24f84d1cc7c0da2
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ sys/v4l2/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/v4l2/meson.build b/sys/v4l2/meson.build
+index 6ece251b..026d3920 100644
+--- a/sys/v4l2/meson.build
++++ b/sys/v4l2/meson.build
+@@ -52,7 +52,7 @@ cdata.set('GST_V4L2_ENABLE_PROBE', get_option('v4l2-probe'))
+ if have_v4l2
+   message('building v4l2 plugin')
+   cdata.set('HAVE_GST_V4L2', true)
+-  gudev_dep = dependency('gudev-1.0', version : '>=147', required : get_option('v4l2-gudev'))
++  gudev_dep = dependency('gudev-1.0', version : '>=147', required : get_option('v4l2-gudev'), allow_fallback: true)
+   cdata.set('HAVE_GUDEV', gudev_dep.found())
+ 
+   # libv4l2 is only needed for converting some obscure formats
+-- 
+2.40.1
+

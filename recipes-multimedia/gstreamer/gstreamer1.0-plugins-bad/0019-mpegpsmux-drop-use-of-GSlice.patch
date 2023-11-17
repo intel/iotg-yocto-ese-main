@@ -1,0 +1,106 @@
+From 7db0e1a0cbffccdebb621a855ddbbb1a48557645 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 18:46:53 +0000
+Subject: [PATCH 019/205] mpegpsmux: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/mpegpsmux/bits.h        |  2 +-
+ gst/mpegpsmux/psmux.c       |  4 ++--
+ gst/mpegpsmux/psmuxstream.c | 12 ++++++------
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/gst/mpegpsmux/bits.h b/gst/mpegpsmux/bits.h
+index b2ff74602..f6bba496b 100644
+--- a/gst/mpegpsmux/bits.h
++++ b/gst/mpegpsmux/bits.h
+@@ -49,7 +49,7 @@ static inline gint bits_initwrite( bits_buffer_t *p_buffer,
+     p_buffer->p_data = p_data;
+     if( !p_buffer->p_data )
+     {
+-        if( !( p_buffer->p_data = g_slice_alloc0( i_size ) ) )
++        if( !( p_buffer->p_data = g_malloc0( i_size ) ) )
+             return -1;
+     }
+     p_buffer->p_data[0] = 0;
+diff --git a/gst/mpegpsmux/psmux.c b/gst/mpegpsmux/psmux.c
+index a59f485d6..1bbd8a971 100644
+--- a/gst/mpegpsmux/psmux.c
++++ b/gst/mpegpsmux/psmux.c
+@@ -71,7 +71,7 @@ psmux_new (void)
+ {
+   PsMux *mux;
+ 
+-  mux = g_slice_new0 (PsMux);
++  mux = g_new0 (PsMux, 1);
+ 
+   mux->pts = -1;                /* uninitialized values */
+   mux->pack_hdr_pts = -1;
+@@ -147,7 +147,7 @@ psmux_free (PsMux * mux)
+   if (mux->psm != NULL)
+     gst_buffer_unref (mux->psm);
+ 
+-  g_slice_free (PsMux, mux);
++  g_free (mux);
+ }
+ 
+ /**
+diff --git a/gst/mpegpsmux/psmuxstream.c b/gst/mpegpsmux/psmuxstream.c
+index dc5b4fd52..25b201097 100644
+--- a/gst/mpegpsmux/psmuxstream.c
++++ b/gst/mpegpsmux/psmuxstream.c
+@@ -67,7 +67,7 @@ static void psmux_stream_find_pts_dts_within (PsMuxStream * stream, guint bound,
+ PsMuxStream *
+ psmux_stream_new (PsMux * mux, PsMuxStreamType stream_type)
+ {
+-  PsMuxStream *stream = g_slice_new0 (PsMuxStream);
++  PsMuxStream *stream = g_new0 (PsMuxStream, 1);
+   PsMuxStreamIdInfo *info = &(mux->id_info);
+ 
+   stream->stream_type = stream_type;
+@@ -147,7 +147,7 @@ psmux_stream_new (PsMux * mux, PsMuxStreamType stream_type)
+   if (stream->stream_id == 0) {
+     g_critical ("Number of elementary streams of type %04x exceeds maximum",
+         stream->stream_type);
+-    g_slice_free (PsMuxStream, stream);
++    g_free (stream);
+     return NULL;
+   }
+ 
+@@ -211,7 +211,7 @@ psmux_stream_free (PsMuxStream * stream)
+   if (psmux_stream_bytes_in_buffer (stream)) {
+     g_warning ("Freeing stream with data not yet processed");
+   }
+-  g_slice_free (PsMuxStream, stream);
++  g_free (stream);
+ }
+ 
+ /* Advance the current packet stream position by len bytes.
+@@ -237,7 +237,7 @@ psmux_stream_consume (PsMuxStream * stream, guint len)
+ 
+     gst_buffer_unmap (stream->cur_buffer->buf, &stream->cur_buffer->map);
+     gst_buffer_unref (stream->cur_buffer->buf);
+-    g_slice_free (PsMuxStreamBuffer, stream->cur_buffer);
++    g_free (stream->cur_buffer);
+     stream->cur_buffer = NULL;
+   }
+ }
+@@ -494,13 +494,13 @@ psmux_stream_add_data (PsMuxStream * stream, GstBuffer * buffer,
+ 
+   g_return_if_fail (stream != NULL);
+ 
+-  packet = g_slice_new (PsMuxStreamBuffer);
++  packet = g_new (PsMuxStreamBuffer, 1);
+   packet->buf = buffer;
+ 
+   if (!gst_buffer_map (packet->buf, &packet->map, GST_MAP_READ)) {
+     GST_ERROR ("Failed to map buffer for reading");
+     gst_buffer_unref (packet->buf);
+-    g_slice_free (PsMuxStreamBuffer, packet);
++    g_free (packet);
+     return;
+   }
+ 
+-- 
+2.40.1
+

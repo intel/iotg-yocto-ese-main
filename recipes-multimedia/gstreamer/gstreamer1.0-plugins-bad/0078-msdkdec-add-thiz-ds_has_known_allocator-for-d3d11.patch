@@ -1,0 +1,28 @@
+From a5f9186c436fa15260ff0a6462c5ac9bfe912966 Mon Sep 17 00:00:00 2001
+From: Tong Wu <tong1.wu@intel.com>
+Date: Thu, 17 Nov 2022 10:29:55 +0800
+Subject: [PATCH 078/205] msdkdec: add thiz->ds_has_known_allocator for d3d11
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4088>
+---
+ sys/msdk/gstmsdkdec.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkdec.c b/sys/msdk/gstmsdkdec.c
+index a6e72bc10..e49762b6d 100644
+--- a/sys/msdk/gstmsdkdec.c
++++ b/sys/msdk/gstmsdkdec.c
+@@ -1874,6 +1874,10 @@ gst_msdkdec_decide_allocation (GstVideoDecoder * decoder, GstQuery * query)
+             GST_IS_VA_DMABUF_ALLOCATOR (allocator)))
+       thiz->ds_has_known_allocator = FALSE;
+   }
++#else
++  if (!GST_IS_D3D11_BUFFER_POOL (pool)) {
++    thiz->ds_has_known_allocator = FALSE;
++  }
+ #endif
+ 
+   /* If downstream supports video meta and video alignment, or downstream
+-- 
+2.40.1
+

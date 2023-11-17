@@ -1,0 +1,44 @@
+From 23a6b88141635f643a010c964a847c98e5840b8b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 00:49:19 +0000
+Subject: [PATCH 20/43] devicemonitor: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/gstdevicemonitor.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gst/gstdevicemonitor.c b/gst/gstdevicemonitor.c
+index c542cade..9e85fe6e 100644
+--- a/gst/gstdevicemonitor.c
++++ b/gst/gstdevicemonitor.c
+@@ -151,7 +151,7 @@ struct DeviceFilter
+ static struct DeviceFilter *
+ device_filter_copy (struct DeviceFilter *filter)
+ {
+-  struct DeviceFilter *copy = g_slice_new0 (struct DeviceFilter);
++  struct DeviceFilter *copy = g_new0 (struct DeviceFilter, 1);
+ 
+   copy->classesv = g_strdupv (filter->classesv);
+   copy->caps = filter->caps ? gst_caps_ref (filter->caps) : NULL;
+@@ -167,7 +167,7 @@ device_filter_free (struct DeviceFilter *filter)
+   if (filter->caps)
+     gst_caps_unref (filter->caps);
+ 
+-  g_slice_free (struct DeviceFilter, filter);
++  g_free (filter);
+ }
+ 
+ static void
+@@ -665,7 +665,7 @@ gst_device_monitor_add_filter_unlocked (GstDeviceMonitor * monitor,
+   guint id = 0;
+   gboolean matched = FALSE;
+ 
+-  filter = g_slice_new0 (struct DeviceFilter);
++  filter = g_new0 (struct DeviceFilter, 1);
+   filter->id = monitor->priv->last_id++;
+   if (caps)
+     filter->caps = gst_caps_ref (caps);
+-- 
+2.40.1
+

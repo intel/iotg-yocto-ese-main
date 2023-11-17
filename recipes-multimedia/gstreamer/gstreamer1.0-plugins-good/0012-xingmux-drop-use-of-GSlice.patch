@@ -1,0 +1,33 @@
+From bdf08716c2f124e67097c5bc2e2ba57a77cc4ae5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:36:33 +0000
+Subject: [PATCH 12/16] xingmux: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/xingmux/gstxingmux.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst/xingmux/gstxingmux.c b/gst/xingmux/gstxingmux.c
+index 33087ccd..5b24396b 100644
+--- a/gst/xingmux/gstxingmux.c
++++ b/gst/xingmux/gstxingmux.c
+@@ -70,13 +70,13 @@ typedef struct _GstXingSeekEntry
+ static inline GstXingSeekEntry *
+ gst_xing_seek_entry_new (void)
+ {
+-  return g_slice_new (GstXingSeekEntry);
++  return g_new (GstXingSeekEntry, 1);
+ }
+ 
+ static inline void
+ gst_xing_seek_entry_free (GstXingSeekEntry * entry)
+ {
+-  g_slice_free (GstXingSeekEntry, entry);
++  g_free (entry);
+ }
+ 
+ static void gst_xing_mux_finalize (GObject * obj);
+-- 
+2.40.1
+

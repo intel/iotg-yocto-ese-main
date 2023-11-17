@@ -1,0 +1,257 @@
+From 804bb8802a8426e9bbbf748d1b3bd3d771da75bc Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Thu, 9 Mar 2023 08:46:17 +0530
+Subject: [PATCH 39/43] gstvalue: Implement union for GstFractionRange
+
+This fixes simplification of caps with GstFractionRange structures,
+for example, this caps:
+
+  video/x-raw, framerate=(fraction)5/1; video/x-raw, framerate=(fraction)[ 5/1, 30/1 ]
+
+can now be simplified to:
+
+  video/x-raw, framerate=(fraction)[ 5/1, 30/1 ]
+
+instead of:
+
+  video/x-raw, framerate=(fraction){ 5/1, [ 5/1, 30/1 ] }
+
+And this:
+
+  video/x-raw, framerate=(fraction)[ 2/1, 5/1 ]; video/x-raw, framerate=(fraction)[ 5/1, 30/1 ]
+
+can be simplified to:
+
+  video/x-raw, framerate=(fraction)[ 2/1, 30/1 ]
+
+instead of
+
+  video/x-raw, framerate=(fraction){ [ 2/1, 5/1 ], [ 5/1, 30/1 ] }
+
+This fixes overly-complicated GL caps set by avfvideosrc on macOS and
+iOS when capturing from a webcam.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4132>
+---
+ gst/gstvalue.c             | 110 ++++++++++++++++++++++++++++++++++---
+ tests/check/gst/gstvalue.c |  52 +++++++++++++++++-
+ 2 files changed, 152 insertions(+), 10 deletions(-)
+
+diff --git a/gst/gstvalue.c b/gst/gstvalue.c
+index ab654b52..99c2a7d7 100644
+--- a/gst/gstvalue.c
++++ b/gst/gstvalue.c
+@@ -4808,6 +4808,104 @@ out:
+   return ret;
+ }
+ 
++static gboolean
++gst_value_union_fraction_fraction_range (GValue * dest, const GValue * src1,
++    const GValue * src2)
++{
++  GValue *vals;
++  int f_n, f_d, fr_start_n, fr_start_d, fr_end_n, fr_end_d;
++
++  g_return_val_if_fail (GST_VALUE_HOLDS_FRACTION (src1), FALSE);
++  g_return_val_if_fail (GST_VALUE_HOLDS_FRACTION_RANGE (src2), FALSE);
++
++  /* Fraction */
++  f_n = src1->data[0].v_int;
++  f_d = src1->data[1].v_int;
++
++  vals = src2->data[0].v_pointer;
++  /* Fraction range start */
++  fr_start_n = vals[0].data[0].v_int;
++  fr_start_d = vals[0].data[1].v_int;
++  /* Fraction range end */
++  fr_end_n = vals[1].data[0].v_int;
++  fr_end_d = vals[1].data[1].v_int;
++
++  /* Check if it's already in the range. This is the only case in which we can
++   * successfully perform a union. */
++  if (gst_util_fraction_compare (f_n, f_d, fr_start_n, fr_start_d) >= 0 &&
++      gst_util_fraction_compare (f_n, f_d, fr_end_n, fr_end_d) <= 0) {
++    if (dest)
++      gst_value_init_and_copy (dest, src2);
++    return TRUE;
++  }
++
++  return FALSE;
++}
++
++static gboolean
++gst_value_union_fraction_range_fraction_range (GValue * dest,
++    const GValue * src1, const GValue * src2)
++{
++  GValue *vals1, *vals2;
++  int fr1_start_n, fr1_start_d, fr1_end_n, fr1_end_d;
++  int fr2_start_n, fr2_start_d, fr2_end_n, fr2_end_d;
++  int fr_start_n, fr_start_d, fr_end_n, fr_end_d;
++
++  g_return_val_if_fail (GST_VALUE_HOLDS_FRACTION_RANGE (src1), FALSE);
++  g_return_val_if_fail (GST_VALUE_HOLDS_FRACTION_RANGE (src2), FALSE);
++
++  vals1 = src1->data[0].v_pointer;
++  g_return_val_if_fail (vals1 != NULL, FALSE);
++
++  fr1_start_n = vals1[0].data[0].v_int;
++  fr1_start_d = vals1[0].data[1].v_int;
++  fr1_end_n = vals1[1].data[0].v_int;
++  fr1_end_d = vals1[1].data[1].v_int;
++
++  vals2 = src2->data[0].v_pointer;
++  g_return_val_if_fail (vals2 != NULL, FALSE);
++
++  fr2_start_n = vals2[0].data[0].v_int;
++  fr2_start_d = vals2[0].data[1].v_int;
++  fr2_end_n = vals2[1].data[0].v_int;
++  fr2_end_d = vals2[1].data[1].v_int;
++
++  /* Ranges are completely disjoint: end of one range is less than the start of
++   * other range */
++  if (gst_util_fraction_compare (fr2_end_n, fr2_end_d, fr1_start_n,
++          fr1_start_d) < 0
++      || gst_util_fraction_compare (fr1_end_n, fr1_end_d, fr2_start_n,
++          fr2_start_d) < 0)
++    return FALSE;
++
++  /* Ranges overlap, union is trivial */
++  if (!dest)
++    return TRUE;
++
++  if (gst_util_fraction_compare (fr1_start_n, fr1_start_d, fr2_start_n,
++          fr2_start_d) < 0) {
++    fr_start_n = fr1_start_n;
++    fr_start_d = fr1_start_d;
++  } else {
++    fr_start_n = fr2_start_n;
++    fr_start_d = fr2_start_d;
++  }
++
++  if (gst_util_fraction_compare (fr1_end_n, fr1_end_d, fr2_end_n,
++          fr2_end_d) > 0) {
++    fr_end_n = fr1_end_n;
++    fr_end_d = fr1_end_d;
++  } else {
++    fr_end_n = fr2_end_n;
++    fr_end_d = fr2_end_d;
++  }
++
++  g_value_init (dest, GST_TYPE_FRACTION_RANGE);
++  gst_value_set_fraction_range_full (dest, fr_start_n, fr_start_d, fr_end_n,
++      fr_end_d);
++  return TRUE;
++}
++
+ /****************
+  * intersection *
+  ****************/
+@@ -8342,6 +8440,10 @@ _priv_gst_value_initialize (void)
+       gst_value_union_flagset_flagset);
+   gst_value_register_union_func (GST_TYPE_STRUCTURE, GST_TYPE_STRUCTURE,
+       gst_value_union_structure_structure);
++  gst_value_register_union_func (GST_TYPE_FRACTION, GST_TYPE_FRACTION_RANGE,
++      gst_value_union_fraction_fraction_range);
++  gst_value_register_union_func (GST_TYPE_FRACTION_RANGE,
++      GST_TYPE_FRACTION_RANGE, gst_value_union_fraction_range_fraction_range);
+ 
+ #if GST_VERSION_NANO == 1
+   /* If building from git master, check starting array sizes matched actual size
+@@ -8367,14 +8469,6 @@ _priv_gst_value_initialize (void)
+         gst_value_subtract_funcs->len);
+   }
+ #endif
+-
+-#if 0
+-  /* Implement these if needed */
+-  gst_value_register_union_func (GST_TYPE_FRACTION, GST_TYPE_FRACTION_RANGE,
+-      gst_value_union_fraction_fraction_range);
+-  gst_value_register_union_func (GST_TYPE_FRACTION_RANGE,
+-      GST_TYPE_FRACTION_RANGE, gst_value_union_fraction_range_fraction_range);
+-#endif
+ }
+ 
+ static void
+diff --git a/tests/check/gst/gstvalue.c b/tests/check/gst/gstvalue.c
+index 3a4ccfb2..768e184d 100644
+--- a/tests/check/gst/gstvalue.c
++++ b/tests/check/gst/gstvalue.c
+@@ -2656,25 +2656,73 @@ GST_START_TEST (test_fraction_range)
+   fail_unless (gst_value_intersect (&dest, &src, &range) == TRUE);
+   fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION);
+   fail_unless (gst_value_compare (&dest, &src) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
++
++  /* Check that union of fraction + range = range */
++  fail_unless (gst_value_union (&dest, &src, &range) == TRUE);
++  fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION_RANGE);
++  fail_unless (gst_value_compare (&dest, &range) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
++
++  /* Check that union of fraction that is not in the range fails */
++  gst_value_set_fraction (&src, 1, 20);
++  fail_unless (gst_value_union (&dest, &src, &range) == FALSE);
++  g_value_unset (&dest);
+ 
+   /* Check that a intersection selects the overlapping range */
+   gst_value_set_fraction (&start, 1, 3);
+   gst_value_set_fraction (&end, 2, 3);
+   gst_value_set_fraction_range (&range2, &start, &end);
+-  g_value_unset (&dest);
+   fail_unless (gst_value_intersect (&dest, &range, &range2) == TRUE);
+   fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION_RANGE);
++  fail_unless (gst_value_compare (&dest, &range2) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
++
++  /* Fully enclosed union: [1/4, 2/3] ∪ [1/3, 2/3] = [1/4, 2/3] */
++  fail_unless (gst_value_union (&dest, &range, &range2) == TRUE);
++  fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION_RANGE);
++  fail_unless (gst_value_compare (&dest, &range) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
++  /* Same, but swapped args */
++  fail_unless (gst_value_union (&dest, &range2, &range) == TRUE);
++  fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION_RANGE);
++  fail_unless (gst_value_compare (&dest, &range) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
+ 
++  /* Extend union: [1/5, 1/2] ∪ [1/3, 2/3] = [1/5, 2/3] */
++  gst_value_set_fraction (&start, 1, 5);
++  gst_value_set_fraction (&end, 1, 2);
++  gst_value_set_fraction_range (&range2, &start, &end);
++  fail_unless (gst_value_union (&dest, &range, &range2) == TRUE);
++  fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION_RANGE);
++  gst_value_set_fraction (&start, 1, 5);
++  gst_value_set_fraction (&end, 2, 3);
+   gst_value_set_fraction_range (&range2, &start, &end);
+   fail_unless (gst_value_compare (&dest, &range2) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
++  /* Same, but swapped args */
++  gst_value_set_fraction (&start, 1, 5);
++  gst_value_set_fraction (&end, 1, 2);
++  gst_value_set_fraction_range (&range2, &start, &end);
++  fail_unless (gst_value_union (&dest, &range2, &range) == TRUE);
++  fail_unless (G_VALUE_TYPE (&dest) == GST_TYPE_FRACTION_RANGE);
++  gst_value_set_fraction (&start, 1, 5);
++  gst_value_set_fraction (&end, 2, 3);
++  gst_value_set_fraction_range (&range2, &start, &end);
++  fail_unless (gst_value_compare (&dest, &range2) == GST_VALUE_EQUAL);
++  g_value_unset (&dest);
+ 
+   /* Check that non intersection ranges don't intersect */
+   gst_value_set_fraction (&start, 4, 2);
+   gst_value_set_fraction (&end, 5, 2);
+   gst_value_set_fraction_range (&range2, &start, &end);
+-  g_value_unset (&dest);
+   fail_unless (gst_value_intersect (&dest, &range, &range2) == FALSE);
+ 
++  /* [1/4, 2/3] ∪ [4/2, 5/2] should fail */
++  fail_unless (gst_value_union (&dest, &range, &range2) == FALSE);
++  /* Same, but swapped args */
++  fail_unless (gst_value_union (&dest, &range2, &range) == FALSE);
++
+   g_value_unset (&start);
+   g_value_unset (&end);
+   g_value_unset (&range);
+-- 
+2.40.1
+

@@ -1,0 +1,32 @@
+From 4501342d44c3ade1e3caffaff14a9e1ad8bc55bb Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Mon, 6 Mar 2023 11:22:45 +0800
+Subject: [PATCH 042/205] msdkenc: Fix scale ratio for frame duration
+
+For the calculation of frame duration, the numerator
+should be FrameRateExtD, and the denominator should be
+FrameRateExtN.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4119>
+---
+ sys/msdk/gstmsdkenc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 2627881aa..654d62b68 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -696,8 +696,8 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+ 
+   thiz->frame_duration =
+       gst_util_uint64_scale (GST_SECOND,
+-      thiz->param.mfx.FrameInfo.FrameRateExtN,
+-      thiz->param.mfx.FrameInfo.FrameRateExtD);
++      thiz->param.mfx.FrameInfo.FrameRateExtD,
++      thiz->param.mfx.FrameInfo.FrameRateExtN);
+ 
+   switch (encoder_input_fmt) {
+     case GST_VIDEO_FORMAT_P010_10LE:
+-- 
+2.40.1
+

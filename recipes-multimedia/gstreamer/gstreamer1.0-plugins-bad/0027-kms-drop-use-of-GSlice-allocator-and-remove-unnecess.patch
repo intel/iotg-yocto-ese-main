@@ -1,0 +1,60 @@
+From 68fbf87d630cf875e4d24e3be490be7905b464c0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Wed, 25 Jan 2023 01:13:27 +0000
+Subject: [PATCH 027/205] kms: drop use of GSlice allocator and remove
+ unnecessary check
+
+g_new0() will never return NULL but just abort if it can't
+allocate memory (same for g_slice_new).
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3784>
+---
+ sys/kms/gstkmsallocator.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/sys/kms/gstkmsallocator.c b/sys/kms/gstkmsallocator.c
+index 6687f3b0a..67dc1ec87 100644
+--- a/sys/kms/gstkmsallocator.c
++++ b/sys/kms/gstkmsallocator.c
+@@ -234,7 +234,7 @@ gst_kms_allocator_free (GstAllocator * allocator, GstMemory * mem)
+   kmsmem = (GstKMSMemory *) mem;
+ 
+   gst_kms_allocator_memory_reset (alloc, kmsmem);
+-  g_slice_free (GstKMSMemory, kmsmem);
++  g_free (kmsmem);
+ }
+ 
+ static void
+@@ -460,16 +460,14 @@ gst_kms_allocator_bo_alloc (GstAllocator * allocator, GstVideoInfo * vinfo)
+   GstKMSMemory *kmsmem;
+   GstMemory *mem;
+ 
+-  kmsmem = g_slice_new0 (GstKMSMemory);
+-  if (!kmsmem)
+-    return NULL;
++  kmsmem = g_new0 (GstKMSMemory, 1);
+ 
+   alloc = GST_KMS_ALLOCATOR (allocator);
+ 
+   mem = GST_MEMORY_CAST (kmsmem);
+ 
+   if (!gst_kms_allocator_memory_create (alloc, kmsmem, vinfo)) {
+-    g_slice_free (GstKMSMemory, kmsmem);
++    g_free (kmsmem);
+     return NULL;
+   }
+ 
+@@ -498,9 +496,7 @@ gst_kms_allocator_dmabuf_import (GstAllocator * allocator, gint * prime_fds,
+ 
+   g_return_val_if_fail (n_planes <= GST_VIDEO_MAX_PLANES, FALSE);
+ 
+-  kmsmem = g_slice_new0 (GstKMSMemory);
+-  if (!kmsmem)
+-    return FALSE;
++  kmsmem = g_new0 (GstKMSMemory, 1);
+ 
+   mem = GST_MEMORY_CAST (kmsmem);
+   gst_memory_init (mem, GST_MEMORY_FLAG_NO_SHARE, allocator, NULL,
+-- 
+2.40.1
+

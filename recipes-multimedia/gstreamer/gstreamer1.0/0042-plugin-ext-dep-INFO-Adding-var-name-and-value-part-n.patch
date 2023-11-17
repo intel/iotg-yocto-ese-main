@@ -1,0 +1,30 @@
+From e9abd70340e7930f5c0fd80a6eadaaa1ef01fab6 Mon Sep 17 00:00:00 2001
+From: "Maxim P. DEMENTYEV" <mdementyev@fluendo.com>
+Date: Sun, 7 May 2023 01:06:26 +0200
+Subject: [PATCH 42/43] plugin ext dep INFO: Adding var name and value part
+ number
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4570>
+---
+ gst/gstplugin.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/gst/gstplugin.c b/gst/gstplugin.c
+index 7bcb82e9..75f9479b 100644
+--- a/gst/gstplugin.c
++++ b/gst/gstplugin.c
+@@ -1619,8 +1619,9 @@ gst_plugin_ext_dep_extract_env_vars_paths (GstPlugin * plugin,
+         gchar *full_path;
+ 
+         if (!g_path_is_absolute (arr[i])) {
+-          GST_INFO_OBJECT (plugin, "ignoring environment variable content '%s'"
+-              ": either not an absolute path or not a path at all", arr[i]);
++          GST_INFO_OBJECT (plugin, "ignoring environment variable '%s' with "
++              "content #%u '%s': either not an absolute path or not a path at all",
++              components[0], i, arr[i]);
+           continue;
+         }
+ 
+-- 
+2.40.1
+

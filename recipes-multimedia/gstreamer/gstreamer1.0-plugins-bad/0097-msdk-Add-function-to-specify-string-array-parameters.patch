@@ -1,0 +1,102 @@
+From 461fda5debf24ac08953f6f94bfe861acc1f79d9 Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Thu, 23 Feb 2023 16:33:42 +0800
+Subject: [PATCH 097/205] msdk: Add function to specify string array parameters
+
+Sometimes it is necessary to manually specify string parameters
+of multiple options, such as format, interlace-mode, etc.
+Add function to support this requirment.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4177>
+---
+ sys/msdk/gstmsdkcaps.c | 54 ++++++++++++++++++++++++++++++++++++++++++
+ sys/msdk/gstmsdkcaps.h |  4 ++++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkcaps.c b/sys/msdk/gstmsdkcaps.c
+index c86168893..05c9fdba3 100644
+--- a/sys/msdk/gstmsdkcaps.c
++++ b/sys/msdk/gstmsdkcaps.c
+@@ -186,6 +186,22 @@ _list_append_string (GValue * list, const gchar * str)
+   g_value_unset (&gval);
+ }
+ 
++static gboolean
++_strings_to_list (const gchar * strings, GValue * list)
++{
++  gchar **strs = NULL;
++
++  if (!strings || !list)
++    return FALSE;
++
++  strs = g_strsplit (strings, DEFAULT_DELIMITER, 0);
++  for (guint i = 0; strs[i]; i++)
++    _list_append_string (list, strs[i]);
++  g_strfreev (strs);
++
++  return TRUE;
++}
++
+ static const gchar *
+ _get_media_type (guint codec)
+ {
+@@ -1004,3 +1020,41 @@ failed:
+ }
+ 
+ #endif
++
++gboolean
++gst_msdkcaps_set_strings (GstCaps * caps,
++    const gchar * features, const char *field, const gchar * strings)
++{
++  GValue list = G_VALUE_INIT;
++  guint size = gst_caps_get_size (caps);
++
++  g_return_val_if_fail (GST_IS_CAPS (caps), FALSE);
++  g_return_val_if_fail (field != NULL, FALSE);
++  g_return_val_if_fail (strings != NULL, FALSE);
++
++  g_value_init (&list, GST_TYPE_LIST);
++  _strings_to_list (strings, &list);
++
++  if (features) {
++    GstStructure *s = NULL;
++    GstCapsFeatures *f = gst_caps_features_from_string (features);
++
++    for (guint i = 0; i < size; i++) {
++      if (gst_caps_features_is_equal (f, gst_caps_get_features (caps, i))) {
++        s = gst_caps_get_structure (caps, i);
++        break;
++      }
++    }
++
++    if (!s)
++      return FALSE;
++
++    gst_structure_set_value (s, field, &list);
++  } else {
++    gst_caps_set_value (caps, field, &list);
++  }
++
++  g_value_unset (&list);
++
++  return TRUE;
++}
+diff --git a/sys/msdk/gstmsdkcaps.h b/sys/msdk/gstmsdkcaps.h
+index 53ad1db2e..5a88217f8 100644
+--- a/sys/msdk/gstmsdkcaps.h
++++ b/sys/msdk/gstmsdkcaps.h
+@@ -48,6 +48,10 @@ gst_msdkcaps_enc_create_caps (GstMsdkContext * context,
+     gpointer enc_description, guint codec_id,
+     GstCaps ** sink_caps, GstCaps ** src_caps);
+ 
++gboolean
++gst_msdkcaps_set_strings (GstCaps * caps,
++    const gchar * features, const char * field, const gchar * strings);
++
+ G_END_DECLS
+ 
+ #endif /* __GST_MSDKCAPS_H__ */
+-- 
+2.40.1
+

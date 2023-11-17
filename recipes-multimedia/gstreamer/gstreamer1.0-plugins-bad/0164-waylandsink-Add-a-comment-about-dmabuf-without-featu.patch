@@ -1,0 +1,47 @@
+From 58f76d7026e45da3254d650f2b9af17d13fe76fe Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Mon, 28 Nov 2022 09:00:27 -0500
+Subject: [PATCH 164/205] waylandsink: Add a comment about dmabuf without
+ feature
+
+The code does not make it obvious that dmabuf is still supported
+without the feature. This documents that it is supported, but
+only for formats that are also support by SHM interface.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3476>
+---
+ ext/gtk/gstgtkwaylandsink.c  | 3 +++
+ ext/wayland/gstwaylandsink.c | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 53af3376c..d5e481f47 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -973,6 +973,9 @@ gst_gtk_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+     if (!gst_wl_display_check_format_for_dmabuf (priv->display, format))
+       goto unsupported_format;
+   } else if (!gst_wl_display_check_format_for_shm (priv->display, format)) {
++    /* Note: we still support dmabuf in this case, but formats must also be
++     * supported on SHM interface to ensure a fallback is possible as we are
++     * not guarantied we'll get dmabuf in the buffers. */
+     goto unsupported_format;
+   }
+ 
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 44f989507..13800fd63 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -717,6 +717,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+     if (!gst_wl_display_check_format_for_dmabuf (self->display, format))
+       goto unsupported_format;
+   } else if (!gst_wl_display_check_format_for_shm (self->display, format)) {
++    /* Note: we still support dmabuf in this case, but formats must also be
++     * supported on SHM interface to ensure a fallback is possible as we are
++     * not guarantied we'll get dmabuf in the buffers. */
+     goto unsupported_format;
+   }
+ 
+-- 
+2.40.1
+

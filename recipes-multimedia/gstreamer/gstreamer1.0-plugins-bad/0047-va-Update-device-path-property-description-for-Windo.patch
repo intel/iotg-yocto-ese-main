@@ -1,0 +1,88 @@
+From 0de4b13327afeb9e7e69f32d9545f7101b25ab0d Mon Sep 17 00:00:00 2001
+From: Seungha Yang <seungha@centricular.com>
+Date: Wed, 8 Mar 2023 22:54:35 +0900
+Subject: [PATCH 047/205] va: Update "device-path" property description for
+ Windows
+
+DRM does not make sense on Windows
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4114>
+---
+ sys/va/gstvabasedec.c       | 3 ++-
+ sys/va/gstvabaseenc.c       | 2 +-
+ sys/va/gstvabasetransform.c | 2 +-
+ sys/va/gstvacompositor.c    | 2 +-
+ sys/va/gstvapluginutils.h   | 2 ++
+ 5 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/sys/va/gstvabasedec.c b/sys/va/gstvabasedec.c
+index 4f3c7c115..1d3618f1d 100644
+--- a/sys/va/gstvabasedec.c
++++ b/sys/va/gstvabasedec.c
+@@ -748,7 +748,8 @@ gst_va_base_dec_class_init (GstVaBaseDecClass * klass, GstVaCodecs codec,
+ 
+   g_object_class_install_property (object_class, GST_VA_DEC_PROP_DEVICE_PATH,
+       g_param_spec_string ("device-path", "Device Path",
+-          "DRM device path", NULL, G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
++          GST_VA_DEVICE_PATH_PROP_DESC, NULL,
++          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+ }
+ 
+ /* XXX: if chroma has not an available format, the first format is
+diff --git a/sys/va/gstvabaseenc.c b/sys/va/gstvabaseenc.c
+index 06ee8dbbb..8f85495dc 100644
+--- a/sys/va/gstvabaseenc.c
++++ b/sys/va/gstvabaseenc.c
+@@ -918,7 +918,7 @@ gst_va_base_enc_class_init (GstVaBaseEncClass * klass)
+    * It shows the DRM device path used for the VA operation, if any.
+    */
+   properties[PROP_DEVICE_PATH] = g_param_spec_string ("device-path",
+-      "Device Path", "DRM device path", NULL,
++      "Device Path", GST_VA_DEVICE_PATH_PROP_DESC, NULL,
+       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+ 
+   g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
+diff --git a/sys/va/gstvabasetransform.c b/sys/va/gstvabasetransform.c
+index 4379bf5a1..ad7388acb 100644
+--- a/sys/va/gstvabasetransform.c
++++ b/sys/va/gstvabasetransform.c
+@@ -648,7 +648,7 @@ gst_va_base_transform_class_init (GstVaBaseTransformClass * klass)
+    * Since: 1.22
+    */
+   properties[PROP_DEVICE_PATH] = g_param_spec_string ("device-path",
+-      "Device Path", "DRM device path", NULL,
++      "Device Path", GST_VA_DEVICE_PATH_PROP_DESC, NULL,
+       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+ 
+   g_object_class_install_properties (gobject_class, N_PROPERTIES, properties);
+diff --git a/sys/va/gstvacompositor.c b/sys/va/gstvacompositor.c
+index f54267eb0..4cc7ebd1d 100644
+--- a/sys/va/gstvacompositor.c
++++ b/sys/va/gstvacompositor.c
+@@ -1407,7 +1407,7 @@ gst_va_compositor_class_init (gpointer g_class, gpointer class_data)
+    * It shows the DRM device path used for the VA operation, if any.
+    */
+   properties[PROP_DEVICE_PATH] = g_param_spec_string ("device-path",
+-      "Device Path", "DRM device path", NULL,
++      "Device Path", GST_VA_DEVICE_PATH_PROP_DESC, NULL,
+       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+ 
+   /**
+diff --git a/sys/va/gstvapluginutils.h b/sys/va/gstvapluginutils.h
+index 5852d7704..58f6ad314 100644
+--- a/sys/va/gstvapluginutils.h
++++ b/sys/va/gstvapluginutils.h
+@@ -27,8 +27,10 @@ G_BEGIN_DECLS
+ 
+ #ifdef G_OS_WIN32
+ #define GST_IS_VA_DISPLAY_PLATFORM(dpy) GST_IS_VA_DISPLAY_WIN32(dpy)
++#define GST_VA_DEVICE_PATH_PROP_DESC "DXGI Adapter LUID"
+ #else
+ #define GST_IS_VA_DISPLAY_PLATFORM(dpy) GST_IS_VA_DISPLAY_DRM(dpy)
++#define GST_VA_DEVICE_PATH_PROP_DESC "DRM device path"
+ #endif
+ 
+ GstVaDisplay * gst_va_display_platform_new (const gchar * path);
+-- 
+2.40.1
+

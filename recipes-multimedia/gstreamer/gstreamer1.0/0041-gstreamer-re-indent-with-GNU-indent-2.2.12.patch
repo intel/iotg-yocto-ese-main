@@ -1,0 +1,520 @@
+From 2546f5b4ec7620e6dd2059090a9d0e8db76e0721 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Wed, 15 Mar 2023 18:51:03 +0000
+Subject: [PATCH 41/43] gstreamer: re-indent with GNU indent 2.2.12
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4182>
+---
+ docs/gst-hotdoc-plugins-scanner.c             |  2 +-
+ gst/gstandroid.c                              |  2 +-
+ gst/gstclock.c                                |  6 +-
+ gst/gstcontrolbinding.c                       |  2 +-
+ gst/gstplugin.c                               |  4 +-
+ gst/gsttask.c                                 |  2 +-
+ gst/gstutils.c                                |  2 +-
+ gst/printf/asnprintf.c                        |  2 +-
+ gst/printf/vasnprintf.c                       |  4 +-
+ libs/gst/base/gstcollectpads.c                |  2 +-
+ libs/gst/check/libcheck/check_run.c           |  6 +-
+ libs/gst/check/libcheck/libcompat/getline.c   |  2 +-
+ .../gstinterpolationcontrolsource.c           | 17 ++--
+ libs/gst/controller/gstlfocontrolsource.c     | 20 ++---
+ plugins/elements/gstinputselector.c           |  2 +-
+ plugins/elements/gstqueue2.c                  |  2 +-
+ plugins/elements/gsttypefindelement.c         |  2 +-
+ tests/check/elements/tee.c                    |  3 +-
+ tests/check/gst/gstdevice.c                   |  1 -
+ tests/check/gst/gstutils.c                    | 28 +++----
+ tests/check/gst/gstvalue.c                    | 79 ++++++++++---------
+ tools/gst-inspect.c                           |  2 +-
+ 22 files changed, 99 insertions(+), 93 deletions(-)
+
+diff --git a/docs/gst-hotdoc-plugins-scanner.c b/docs/gst-hotdoc-plugins-scanner.c
+index ffcdd3c5..45cf3cc7 100644
+--- a/docs/gst-hotdoc-plugins-scanner.c
++++ b/docs/gst-hotdoc-plugins-scanner.c
+@@ -349,7 +349,7 @@ _add_properties (GString * json, GString * other_types,
+       continue;
+ 
+     g_value_init (&value, spec->value_type);
+-    if (object && ! !(spec->flags & G_PARAM_READABLE) &&
++    if (object && !!(spec->flags & G_PARAM_READABLE) &&
+         !(spec->flags & GST_PARAM_DOC_SHOW_DEFAULT)) {
+       g_object_get_property (G_OBJECT (object), spec->name, &value);
+     } else {
+diff --git a/gst/gstandroid.c b/gst/gstandroid.c
+index 4212a544..dfb3def3 100644
+--- a/gst/gstandroid.c
++++ b/gst/gstandroid.c
+@@ -56,7 +56,7 @@ load_real_signal (gpointer data)
+ }
+ 
+ __sighandler_t bsd_signal (int signum, __sighandler_t handler)
+-    __attribute__ ((weak));
++    __attribute__((weak));
+ __sighandler_t
+ bsd_signal (int signum, __sighandler_t handler)
+ {
+diff --git a/gst/gstclock.c b/gst/gstclock.c
+index ff3e2bac..ab8a4b00 100644
+--- a/gst/gstclock.c
++++ b/gst/gstclock.c
+@@ -1758,11 +1758,11 @@ gst_clock_set_synced (GstClock * clock, gboolean synced)
+           GST_CLOCK_FLAG_NEEDS_STARTUP_SYNC));
+ 
+   GST_OBJECT_LOCK (clock);
+-  if (clock->priv->synced != ! !synced) {
+-    clock->priv->synced = ! !synced;
++  if (clock->priv->synced != !!synced) {
++    clock->priv->synced = !!synced;
+     g_cond_signal (&clock->priv->sync_cond);
+     GST_OBJECT_UNLOCK (clock);
+-    g_signal_emit (clock, gst_clock_signals[SIGNAL_SYNCED], 0, ! !synced);
++    g_signal_emit (clock, gst_clock_signals[SIGNAL_SYNCED], 0, !!synced);
+   } else {
+     GST_OBJECT_UNLOCK (clock);
+   }
+diff --git a/gst/gstcontrolbinding.c b/gst/gstcontrolbinding.c
+index 42c32f10..9715aa2a 100644
+--- a/gst/gstcontrolbinding.c
++++ b/gst/gstcontrolbinding.c
+@@ -491,5 +491,5 @@ gboolean
+ gst_control_binding_is_disabled (GstControlBinding * binding)
+ {
+   g_return_val_if_fail (GST_IS_CONTROL_BINDING (binding), TRUE);
+-  return ! !binding->disabled;
++  return !!binding->disabled;
+ }
+diff --git a/gst/gstplugin.c b/gst/gstplugin.c
+index 3c1e16bd..7bcb82e9 100644
+--- a/gst/gstplugin.c
++++ b/gst/gstplugin.c
+@@ -1702,7 +1702,7 @@ gst_plugin_ext_dep_scan_dir_and_match_names (GstPlugin * plugin,
+   GDir *dir;
+   guint hash = 0;
+ 
+-  recurse_dirs = ! !(flags & GST_PLUGIN_DEPENDENCY_FLAG_RECURSE);
++  recurse_dirs = !!(flags & GST_PLUGIN_DEPENDENCY_FLAG_RECURSE);
+ 
+   dir = g_dir_open (path, 0, &err);
+   if (dir == NULL) {
+@@ -1764,7 +1764,7 @@ gst_plugin_ext_dep_scan_path_with_filenames (GstPlugin * plugin,
+   if (filenames == NULL || *filenames == NULL)
+     filenames = empty_filenames;
+ 
+-  recurse_into_dirs = ! !(flags & GST_PLUGIN_DEPENDENCY_FLAG_RECURSE);
++  recurse_into_dirs = !!(flags & GST_PLUGIN_DEPENDENCY_FLAG_RECURSE);
+ 
+   if ((flags & GST_PLUGIN_DEPENDENCY_FLAG_FILE_NAME_IS_SUFFIX) ||
+       (flags & GST_PLUGIN_DEPENDENCY_FLAG_FILE_NAME_IS_PREFIX))
+diff --git a/gst/gsttask.c b/gst/gsttask.c
+index da818201..c2cb43ca 100644
+--- a/gst/gsttask.c
++++ b/gst/gsttask.c
+@@ -162,7 +162,7 @@ gst_task_win32_load_library (void)
+   }
+ #endif
+ 
+-  return ! !SetThreadDescriptionFunc;
++  return !!SetThreadDescriptionFunc;
+ }
+ 
+ static gboolean
+diff --git a/gst/gstutils.c b/gst/gstutils.c
+index 4af4eebd..9b8ddb10 100644
+--- a/gst/gstutils.c
++++ b/gst/gstutils.c
+@@ -4573,7 +4573,7 @@ gboolean
+ gst_type_is_plugin_api (GType type, GstPluginAPIFlags * flags)
+ {
+   gboolean ret =
+-      ! !GPOINTER_TO_INT (g_type_get_qdata (type, GST_QUARK (PLUGIN_API)));
++      !!GPOINTER_TO_INT (g_type_get_qdata (type, GST_QUARK (PLUGIN_API)));
+ 
+   if (ret && flags) {
+     *flags =
+diff --git a/gst/printf/asnprintf.c b/gst/printf/asnprintf.c
+index d606d38d..dd721fe9 100644
+--- a/gst/printf/asnprintf.c
++++ b/gst/printf/asnprintf.c
+@@ -28,7 +28,7 @@
+ #include <stdarg.h>
+ 
+ char *
+-asnprintf (char *resultbuf, size_t * lengthp, const char *format, ...)
++asnprintf (char *resultbuf, size_t *lengthp, const char *format, ...)
+ {
+   va_list args;
+   char *result;
+diff --git a/gst/printf/vasnprintf.c b/gst/printf/vasnprintf.c
+index a97404c5..b202c626 100644
+--- a/gst/printf/vasnprintf.c
++++ b/gst/printf/vasnprintf.c
+@@ -54,7 +54,7 @@
+ #  ifndef local_wcslen_defined
+ #   define local_wcslen_defined 1
+ static size_t
+-local_wcslen (const wchar_t * s)
++local_wcslen (const wchar_t *s)
+ {
+   const wchar_t *ptr;
+ 
+@@ -261,7 +261,7 @@ printf_postprocess_args (char_directives * directives, arguments * arguments)
+ }
+ 
+ char *
+-vasnprintf (char *resultbuf, size_t * lengthp, const char *format, va_list args)
++vasnprintf (char *resultbuf, size_t *lengthp, const char *format, va_list args)
+ {
+   char_directives d;
+   arguments a;
+diff --git a/libs/gst/base/gstcollectpads.c b/libs/gst/base/gstcollectpads.c
+index b6f92159..abbae449 100644
+--- a/libs/gst/base/gstcollectpads.c
++++ b/libs/gst/base/gstcollectpads.c
+@@ -1224,7 +1224,7 @@ gst_collect_pads_set_waiting (GstCollectPads * pads, GstCollectData * data,
+   /* Do something only on a change and if not locked */
+   if (!GST_COLLECT_PADS_STATE_IS_SET (data, GST_COLLECT_PADS_STATE_LOCKED) &&
+       (GST_COLLECT_PADS_STATE_IS_SET (data, GST_COLLECT_PADS_STATE_WAITING) !=
+-          ! !waiting)) {
++          !!waiting)) {
+     /* Set waiting state for this pad */
+     if (waiting)
+       GST_COLLECT_PADS_STATE_SET (data, GST_COLLECT_PADS_STATE_WAITING);
+diff --git a/libs/gst/check/libcheck/check_run.c b/libs/gst/check/libcheck/check_run.c
+index a97379c9..2b8a87f5 100644
+--- a/libs/gst/check/libcheck/check_run.c
++++ b/libs/gst/check/libcheck/check_run.c
+@@ -386,7 +386,8 @@ tcase_run_tfun_nofork (SRunner * sr, TCase * tc, TF * tfun, int i)
+ {
+   TestResult *tr;
+   struct timespec ts_start = { 0, 0 }, ts_end = {
+-  0, 0};
++    0, 0
++  };
+ 
+   tr = tcase_run_checked_setup (sr, tc);
+   if (tr == NULL) {
+@@ -448,7 +449,8 @@ tcase_run_tfun_fork (SRunner * sr, TCase * tc, TF * tfun, int i)
+   pid_t pid;
+   int status = 0;
+   struct timespec ts_start = { 0, 0 }, ts_end = {
+-  0, 0};
++    0, 0
++  };
+ 
+   timer_t timerid;
+   struct itimerspec timer_spec;
+diff --git a/libs/gst/check/libcheck/libcompat/getline.c b/libs/gst/check/libcheck/libcompat/getline.c
+index edc073f1..6e85856e 100644
+--- a/libs/gst/check/libcheck/libcompat/getline.c
++++ b/libs/gst/check/libcheck/libcompat/getline.c
+@@ -25,7 +25,7 @@
+ #define DELIMITER '\n'
+ 
+ ssize_t
+-getline (char **lineptr, size_t * n, FILE * stream)
++getline (char **lineptr, size_t *n, FILE * stream)
+ {
+   ssize_t written = 0;
+   int character;
+diff --git a/libs/gst/controller/gstinterpolationcontrolsource.c b/libs/gst/controller/gstinterpolationcontrolsource.c
+index c0b6c86c..5d473a76 100644
+--- a/libs/gst/controller/gstinterpolationcontrolsource.c
++++ b/libs/gst/controller/gstinterpolationcontrolsource.c
+@@ -607,15 +607,16 @@ static struct
+   GstControlSourceGetValueArray get_value_array;
+ } interpolation_modes[] = {
+   {
+-  (GstControlSourceGetValue) interpolate_none_get,
+-        (GstControlSourceGetValueArray) interpolate_none_get_value_array}, {
+-  (GstControlSourceGetValue) interpolate_linear_get,
+-        (GstControlSourceGetValueArray) interpolate_linear_get_value_array}, {
+-  (GstControlSourceGetValue) interpolate_cubic_get,
+-        (GstControlSourceGetValueArray) interpolate_cubic_get_value_array}, {
+-    (GstControlSourceGetValue) interpolate_cubic_monotonic_get,
++        (GstControlSourceGetValue) interpolate_none_get,
++      (GstControlSourceGetValueArray) interpolate_none_get_value_array}, {
++        (GstControlSourceGetValue) interpolate_linear_get,
++      (GstControlSourceGetValueArray) interpolate_linear_get_value_array}, {
++        (GstControlSourceGetValue) interpolate_cubic_get,
++      (GstControlSourceGetValueArray) interpolate_cubic_get_value_array}, {
++        (GstControlSourceGetValue) interpolate_cubic_monotonic_get,
+         (GstControlSourceGetValueArray)
+-interpolate_cubic_monotonic_get_value_array}};
++      interpolate_cubic_monotonic_get_value_array}
++};
+ 
+ static const guint num_interpolation_modes = G_N_ELEMENTS (interpolation_modes);
+ 
+diff --git a/libs/gst/controller/gstlfocontrolsource.c b/libs/gst/controller/gstlfocontrolsource.c
+index 1706efdd..582b7ecf 100644
+--- a/libs/gst/controller/gstlfocontrolsource.c
++++ b/libs/gst/controller/gstlfocontrolsource.c
+@@ -352,16 +352,16 @@ static struct
+   GstControlSourceGetValueArray get_value_array;
+ } waveforms[] = {
+   {
+-  (GstControlSourceGetValue) waveform_sine_get,
+-        (GstControlSourceGetValueArray) waveform_sine_get_value_array}, {
+-  (GstControlSourceGetValue) waveform_square_get,
+-        (GstControlSourceGetValueArray) waveform_square_get_value_array}, {
+-  (GstControlSourceGetValue) waveform_saw_get,
+-        (GstControlSourceGetValueArray) waveform_saw_get_value_array}, {
+-  (GstControlSourceGetValue) waveform_rsaw_get,
+-        (GstControlSourceGetValueArray) waveform_rsaw_get_value_array}, {
+-  (GstControlSourceGetValue) waveform_triangle_get,
+-        (GstControlSourceGetValueArray) waveform_triangle_get_value_array}
++        (GstControlSourceGetValue) waveform_sine_get,
++      (GstControlSourceGetValueArray) waveform_sine_get_value_array}, {
++        (GstControlSourceGetValue) waveform_square_get,
++      (GstControlSourceGetValueArray) waveform_square_get_value_array}, {
++        (GstControlSourceGetValue) waveform_saw_get,
++      (GstControlSourceGetValueArray) waveform_saw_get_value_array}, {
++        (GstControlSourceGetValue) waveform_rsaw_get,
++      (GstControlSourceGetValueArray) waveform_rsaw_get_value_array}, {
++        (GstControlSourceGetValue) waveform_triangle_get,
++      (GstControlSourceGetValueArray) waveform_triangle_get_value_array}
+ };
+ 
+ static const guint num_waveforms = G_N_ELEMENTS (waveforms);
+diff --git a/plugins/elements/gstinputselector.c b/plugins/elements/gstinputselector.c
+index 186132f9..270b96c1 100644
+--- a/plugins/elements/gstinputselector.c
++++ b/plugins/elements/gstinputselector.c
+@@ -1542,7 +1542,7 @@ gst_input_selector_set_property (GObject * object, guint prop_id,
+ 
+       GST_INPUT_SELECTOR_LOCK (sel);
+ 
+-      sel->active_sinkpad_from_user = ! !pad;
++      sel->active_sinkpad_from_user = !!pad;
+ #if DEBUG_CACHED_BUFFERS
+       gst_input_selector_debug_cached_buffers (sel);
+ #endif
+diff --git a/plugins/elements/gstqueue2.c b/plugins/elements/gstqueue2.c
+index 9ceb7c86..50068ab8 100644
+--- a/plugins/elements/gstqueue2.c
++++ b/plugins/elements/gstqueue2.c
+@@ -3741,7 +3741,7 @@ gst_queue2_src_activate_pull (GstPad * pad, GstObject * parent, gboolean active)
+         result = gst_queue2_open_temp_location_file (queue);
+       } else if (!queue->ring_buffer) {
+         queue->ring_buffer = g_malloc (queue->ring_buffer_max_size);
+-        result = ! !queue->ring_buffer;
++        result = !!queue->ring_buffer;
+       } else {
+         result = TRUE;
+       }
+diff --git a/plugins/elements/gsttypefindelement.c b/plugins/elements/gsttypefindelement.c
+index 7ba30c38..6cd4e4b6 100644
+--- a/plugins/elements/gsttypefindelement.c
++++ b/plugins/elements/gsttypefindelement.c
+@@ -490,7 +490,7 @@ gst_type_find_element_seek (GstTypeFindElement * typefind, GstEvent * event)
+   gst_segment_do_seek (&seeksegment, rate, format, flags,
+       start_type, start, stop_type, stop, NULL);
+ 
+-  flush = ! !(flags & GST_SEEK_FLAG_FLUSH);
++  flush = !!(flags & GST_SEEK_FLAG_FLUSH);
+ 
+   GST_DEBUG_OBJECT (typefind, "New segment %" GST_SEGMENT_FORMAT, &seeksegment);
+ 
+diff --git a/tests/check/elements/tee.c b/tests/check/elements/tee.c
+index a19e73ea..aa219069 100644
+--- a/tests/check/elements/tee.c
++++ b/tests/check/elements/tee.c
+@@ -339,7 +339,8 @@ GST_START_TEST (test_internal_links)
+   GstIteratorResult res;
+   GValue val1 = { 0, }
+   , val2 = {
+-  0,};
++    0,
++  };
+ 
+   tee = gst_check_setup_element ("tee");
+ 
+diff --git a/tests/check/gst/gstdevice.c b/tests/check/gst/gstdevice.c
+index 0c4d91f1..baddb337 100644
+--- a/tests/check/gst/gstdevice.c
++++ b/tests/check/gst/gstdevice.c
+@@ -178,7 +178,6 @@ GST_DEVICE_PROVIDER_REGISTER_DECLARE (testdeviceprovider);
+ 
+ GST_DEVICE_PROVIDER_REGISTER_DEFINE (testdeviceprovider, "testdeviceprovider",
+     1, gst_test_device_provider_get_type ())
+-
+      static void register_test_device_provider (void)
+ {
+   gst_device_provider_register (NULL, "testdeviceprovider", 1,
+diff --git a/tests/check/gst/gstutils.c b/tests/check/gst/gstutils.c
+index 4ac2b67b..0697c840 100644
+--- a/tests/check/gst/gstutils.c
++++ b/tests/check/gst/gstutils.c
+@@ -410,11 +410,11 @@ GST_START_TEST (test_parse_bin_from_description)
+     const gchar *pad_names;
+   } bin_tests[] = {
+     {
+-    "identity", "identity0/sink,identity0/src"}, {
+-    "identity ! identity ! identity", "identity1/sink,identity3/src"}, {
+-    "identity ! fakesink", "identity4/sink"}, {
+-    "fakesrc ! identity", "identity5/src"}, {
+-    "fakesrc ! fakesink", ""}
++        "identity", "identity0/sink,identity0/src"}, {
++        "identity ! identity ! identity", "identity1/sink,identity3/src"}, {
++        "identity ! fakesink", "identity4/sink"}, {
++        "fakesrc ! identity", "identity5/src"}, {
++        "fakesrc ! fakesink", ""}
+   };
+   gint i;
+ 
+@@ -1904,15 +1904,15 @@ struct test_entry
+   guint64 expect_denom;
+ } times[] = {
+   {
+-  32, times1, 257154512360784, 120670380469753, 4052622913376634109,
+-        4052799313904261962}, {
+-  64, times1, 257359198881356, 120875054227405, 2011895759027682422,
+-        2012014931360215503}, {
+-  32, times2, 291705506022294, 162134297192792, 2319535707505209857,
+-        2321009753483354451}, {
+-  32, times3, 291922315691409, 162234934150296, 1370930728180888261,
+-        4392719527011673456}, {
+-  6, times4, 60, 100, 2, 1}
++        32, times1, 257154512360784, 120670380469753, 4052622913376634109,
++      4052799313904261962}, {
++        64, times1, 257359198881356, 120875054227405, 2011895759027682422,
++      2012014931360215503}, {
++        32, times2, 291705506022294, 162134297192792, 2319535707505209857,
++      2321009753483354451}, {
++        32, times3, 291922315691409, 162234934150296, 1370930728180888261,
++      4392719527011673456}, {
++      6, times4, 60, 100, 2, 1}
+ };
+ 
+ GST_START_TEST (test_regression)
+diff --git a/tests/check/gst/gstvalue.c b/tests/check/gst/gstvalue.c
+index 768e184d..1162b546 100644
+--- a/tests/check/gst/gstvalue.c
++++ b/tests/check/gst/gstvalue.c
+@@ -819,28 +819,28 @@ GST_START_TEST (test_deserialize_string)
+     const gchar *to;
+   } tests[] = {
+     {
+-    "\"foo\"", "foo"}, {
+-    "\"foo\\%\"", "foo%"}, {
+-    "\"0123456789_-+/:.\"", "0123456789_-+/:."}, {
+-    "\"Hello\\ World\"", "Hello World"}, {
+-    "\"Hello\\ World", "\"Hello\\ World"}, {
+-    "\"\\", "\"\\"}, {
+-    "\"\\0", "\"\\0"}, {
+-    "\"t\\303\\274t\"", "tüt"}, {
+-      /* utf8 octal sequence */
+-    "", ""},                    /* empty strings */
++        "\"foo\"", "foo"}, {
++        "\"foo\\%\"", "foo%"}, {
++        "\"0123456789_-+/:.\"", "0123456789_-+/:."}, {
++        "\"Hello\\ World\"", "Hello World"}, {
++        "\"Hello\\ World", "\"Hello\\ World"}, {
++        "\"\\", "\"\\"}, {
++        "\"\\0", "\"\\0"}, {
++        "\"t\\303\\274t\"", "tüt"}, {
++          /* utf8 octal sequence */
++        "", ""},                /* empty strings */
+     {
+-    "\"\"", ""}, {              /* quoted empty string -> empty string */
+-    "\" \"", " "}, {            /* allow spaces to be not escaped */
+-    "tüüt", "tüüt"},        /* allow special chars to be not escaped */
+-        /* Expected FAILURES: */
++        "\"\"", ""}, {          /* quoted empty string -> empty string */
++        "\" \"", " "}, {        /* allow spaces to be not escaped */
++        "tüüt", "tüüt"},    /* allow special chars to be not escaped */
++    /* Expected FAILURES: */
+     {
+-    "\"\\0\"", NULL}, {         /* unfinished escaped character */
+-    "\"", NULL}, {              /* solitary quote */
+-    "\"\\380\"", NULL}, {       /* invalid octal sequence */
+-    "\"\\344\\204\\062\"", NULL}, {
+-      /* invalid utf8: wrong end byte */
+-    "\"\\344\\204\"", NULL}     /* invalid utf8: wrong number of bytes */
++        "\"\\0\"", NULL}, {     /* unfinished escaped character */
++        "\"", NULL}, {          /* solitary quote */
++        "\"\\380\"", NULL}, {   /* invalid octal sequence */
++        "\"\\344\\204\\062\"", NULL}, {
++          /* invalid utf8: wrong end byte */
++        "\"\\344\\204\"", NULL} /* invalid utf8: wrong number of bytes */
+   };
+   guint i;
+   GValue v = { 0, };
+@@ -2806,7 +2806,8 @@ GST_START_TEST (test_compare_caps)
+ {
+   GValue value = { 0 }
+   , value2 = {
+-  0};
++    0
++  };
+ 
+   g_value_init (&value, GST_TYPE_CAPS);
+   g_value_init (&value2, GST_TYPE_CAPS);
+@@ -3280,21 +3281,22 @@ GST_START_TEST (test_stepped_int_range_ops)
+     const gchar *result;
+   } ranges[] = {
+     {
+-    "[16, 4096, 16]", "inter", "[100, 200, 10]", "160"}, {
+-    "[16, 4096, 16]", "inter", "[100, 200, 100]", NULL}, {
+-    "[16, 4096, 16]", "inter", "[0, 512, 256]", "[256, 512, 256]"}, {
+-    "[16, 32, 16]", "union", "[32, 96, 16]", "[16, 96, 16]"}, {
+-    "[16, 32, 16]", "union", "[48, 96, 16]", "[16, 96, 16]"}, {
+-    "[112, 192, 16]", "union", "[48, 96, 16]", "[48, 192, 16]"}, {
+-    "[16, 32, 16]", "union", "[64, 96, 16]", NULL}, {
+-    "[112, 192, 16]", "union", "[48, 96, 8]", NULL}, {
+-    "[10, 20, 5]", "union", "10", "[10, 20, 5]"}, {
+-    "[10, 20, 5]", "union", "20", "[10, 20, 5]"}, {
+-    "[10, 20, 5]", "union", "15", "[10, 20, 5]"}, {
+-    "[10, 20, 5]", "union", "5", "[5, 20, 5]"}, {
+-    "[10, 20, 5]", "union", "12", NULL}, {
+-    "[10, 20, 5]", "union", "30", NULL}, {
+-  "[10, 20, 5]", "union", "25", "[10, 25, 5]"},};
++        "[16, 4096, 16]", "inter", "[100, 200, 10]", "160"}, {
++        "[16, 4096, 16]", "inter", "[100, 200, 100]", NULL}, {
++        "[16, 4096, 16]", "inter", "[0, 512, 256]", "[256, 512, 256]"}, {
++        "[16, 32, 16]", "union", "[32, 96, 16]", "[16, 96, 16]"}, {
++        "[16, 32, 16]", "union", "[48, 96, 16]", "[16, 96, 16]"}, {
++        "[112, 192, 16]", "union", "[48, 96, 16]", "[48, 192, 16]"}, {
++        "[16, 32, 16]", "union", "[64, 96, 16]", NULL}, {
++        "[112, 192, 16]", "union", "[48, 96, 8]", NULL}, {
++        "[10, 20, 5]", "union", "10", "[10, 20, 5]"}, {
++        "[10, 20, 5]", "union", "20", "[10, 20, 5]"}, {
++        "[10, 20, 5]", "union", "15", "[10, 20, 5]"}, {
++        "[10, 20, 5]", "union", "5", "[5, 20, 5]"}, {
++        "[10, 20, 5]", "union", "12", NULL}, {
++        "[10, 20, 5]", "union", "30", NULL}, {
++        "[10, 20, 5]", "union", "25", "[10, 25, 5]"},
++  };
+ 
+   for (n = 0; n < G_N_ELEMENTS (ranges); ++n) {
+     gchar *end = NULL;
+@@ -3397,8 +3399,9 @@ GST_START_TEST (test_structure_single_ops)
+     gboolean can_fixate;
+   } single_struct[] = {
+     {
+-    "foo,bar=(int)1", TRUE, TRUE}, {
+-  "foo,bar=(int)[1,2]", FALSE, TRUE},};
++        "foo,bar=(int)1", TRUE, TRUE}, {
++        "foo,bar=(int)[1,2]", FALSE, TRUE},
++  };
+   gint i;
+ 
+   for (i = 0; i < G_N_ELEMENTS (single_struct); i++) {
+diff --git a/tools/gst-inspect.c b/tools/gst-inspect.c
+index 069754e5..a245dfd4 100644
+--- a/tools/gst-inspect.c
++++ b/tools/gst-inspect.c
+@@ -455,7 +455,7 @@ print_object_properties_info (GObject * obj, GObjectClass * obj_class,
+ 
+     first_flag = TRUE;
+     n_print ("%sflags%s: ", PROP_ATTR_NAME_COLOR, RESET_COLOR);
+-    readable = ! !(param->flags & G_PARAM_READABLE);
++    readable = !!(param->flags & G_PARAM_READABLE);
+     if (readable && obj != NULL) {
+       g_object_get_property (obj, param->name, &value);
+     } else {
+-- 
+2.40.1
+

@@ -1,0 +1,35 @@
+From 731cc08d4d2169fe45efddc16acecd07557ffe0c Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Mon, 7 Aug 2023 15:04:38 +0800
+Subject: [PATCH 5/8] meson: Fix libdrm and vaapi configure checks
+
+We do not need fallback: for libdrm checks because the wrap file
+already has a [provide] section.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4428>
+
+Backport from upstream:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/55ee0635d3f63c408067dd904f8e8b718983ba0e
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ meson.build | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 4feaec59..422875fe 100644
+--- a/meson.build
++++ b/meson.build
+@@ -88,8 +88,7 @@ libva_wayland_dep = dependency('libva-wayland', version: libva_req,
+ libva_x11_dep = dependency('libva-x11', version: libva_req,
+   required: get_option('x11'), fallback : ['libva', 'libva_x11_dep'])
+ 
+-libdrm_dep = dependency('libdrm', version: libdrm_req,
+-  required: get_option('drm'), fallback: ['libdrm', 'ext_libdrm'])
++libdrm_dep = dependency('libdrm', version: libdrm_req, required: get_option('drm'))
+ libudev_dep = dependency('libudev', required: get_option('drm'))
+ 
+ x11_dep = dependency('x11', required: get_option('x11'))
+-- 
+2.40.1
+

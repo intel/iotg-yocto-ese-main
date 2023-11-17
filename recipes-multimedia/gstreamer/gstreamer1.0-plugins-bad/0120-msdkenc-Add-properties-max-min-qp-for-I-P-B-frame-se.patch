@@ -1,0 +1,390 @@
+From 638f1bf91685d38b0e557711cc3c22452b4219a2 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Thu, 27 Apr 2023 10:19:57 +0800
+Subject: [PATCH 120/205] msdkenc: Add properties max/min-qp for I/P/B frame
+ separately in avc and hevc
+
+max-qp and min-qp will set the same quantizer scale for I/P/B frames,
+while max-qp-i/p/b and min-qp-i/p/b enable the max/min quantizer for I,P,B
+frame separately. When max/min-qp and max/min-qp-i/p/b are given
+simultaneously, the later set one will overide the previous one.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4589>
+---
+ sys/msdk/gstmsdkh264enc.c | 100 ++++++++++++++++++++++++++++++++--
+ sys/msdk/gstmsdkh264enc.h |   6 ++
+ sys/msdk/gstmsdkh265enc.c | 112 ++++++++++++++++++++++++++++++++++++--
+ sys/msdk/gstmsdkh265enc.h |   6 ++
+ 4 files changed, 212 insertions(+), 12 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkh264enc.c b/sys/msdk/gstmsdkh264enc.c
+index 819288810..7e69d9319 100644
+--- a/sys/msdk/gstmsdkh264enc.c
++++ b/sys/msdk/gstmsdkh264enc.c
+@@ -81,7 +81,13 @@ enum
+   PROP_TUNE_MODE,
+   PROP_P_PYRAMID,
+   PROP_MIN_QP,
++  PROP_MIN_QP_I,
++  PROP_MIN_QP_P,
++  PROP_MIN_QP_B,
+   PROP_MAX_QP,
++  PROP_MAX_QP_I,
++  PROP_MAX_QP_P,
++  PROP_MAX_QP_B,
+   PROP_INTRA_REFRESH_TYPE,
+   PROP_INTRA_REFRESH_CYCLE_SIZE,
+   PROP_INTRA_REFRESH_QP_DELTA,
+@@ -423,10 +429,12 @@ gst_msdkh264enc_configure (GstMsdkEnc * encoder)
+ 
+   encoder->option2.Trellis = thiz->trellis ? thiz->trellis : MFX_TRELLIS_OFF;
+   encoder->option2.MaxSliceSize = thiz->max_slice_size;
+-  encoder->option2.MinQPI = encoder->option2.MinQPP = encoder->option2.MinQPB =
+-      thiz->min_qp;
+-  encoder->option2.MaxQPI = encoder->option2.MaxQPP = encoder->option2.MaxQPB =
+-      thiz->max_qp;
++  encoder->option2.MinQPI = thiz->min_qp_i;
++  encoder->option2.MinQPP = thiz->min_qp_p;
++  encoder->option2.MinQPB = thiz->min_qp_b;
++  encoder->option2.MaxQPI = thiz->max_qp_i;
++  encoder->option2.MaxQPP = thiz->max_qp_p;
++  encoder->option2.MaxQPB = thiz->max_qp_b;
+   encoder->option2.IntRefType = thiz->intra_refresh_type;
+   encoder->option2.IntRefCycleSize = thiz->intra_refresh_cycle_size;
+   encoder->option2.IntRefQPDelta = thiz->intra_refresh_qp_delta;
+@@ -630,9 +638,29 @@ gst_msdkh264enc_set_property (GObject * object, guint prop_id,
+       break;
+     case PROP_MIN_QP:
+       thiz->min_qp = g_value_get_uint (value);
++      thiz->min_qp_i = thiz->min_qp_p = thiz->min_qp_b = thiz->min_qp;
++      break;
++    case PROP_MIN_QP_I:
++      thiz->min_qp_i = g_value_get_uint (value);
++      break;
++    case PROP_MIN_QP_P:
++      thiz->min_qp_p = g_value_get_uint (value);
++      break;
++    case PROP_MIN_QP_B:
++      thiz->min_qp_b = g_value_get_uint (value);
+       break;
+     case PROP_MAX_QP:
+       thiz->max_qp = g_value_get_uint (value);
++      thiz->max_qp_i = thiz->max_qp_p = thiz->max_qp_b = thiz->max_qp;
++      break;
++    case PROP_MAX_QP_I:
++      thiz->max_qp_i = g_value_get_uint (value);
++      break;
++    case PROP_MAX_QP_P:
++      thiz->max_qp_p = g_value_get_uint (value);
++      break;
++    case PROP_MAX_QP_B:
++      thiz->max_qp_b = g_value_get_uint (value);
+       break;
+     case PROP_INTRA_REFRESH_TYPE:
+       thiz->intra_refresh_type = g_value_get_enum (value);
+@@ -700,9 +728,27 @@ gst_msdkh264enc_get_property (GObject * object, guint prop_id, GValue * value,
+     case PROP_MIN_QP:
+       g_value_set_uint (value, thiz->min_qp);
+       break;
++    case PROP_MIN_QP_I:
++      g_value_set_uint (value, thiz->min_qp_i);
++      break;
++    case PROP_MIN_QP_P:
++      g_value_set_uint (value, thiz->min_qp_p);
++      break;
++    case PROP_MIN_QP_B:
++      g_value_set_uint (value, thiz->min_qp_b);
++      break;
+     case PROP_MAX_QP:
+       g_value_set_uint (value, thiz->max_qp);
+       break;
++    case PROP_MAX_QP_I:
++      g_value_set_uint (value, thiz->max_qp_i);
++      break;
++    case PROP_MAX_QP_P:
++      g_value_set_uint (value, thiz->max_qp_p);
++      break;
++    case PROP_MAX_QP_B:
++      g_value_set_uint (value, thiz->max_qp_b);
++      break;
+     case PROP_INTRA_REFRESH_TYPE:
+       g_value_set_enum (value, thiz->intra_refresh_type);
+       break;
+@@ -804,13 +850,49 @@ _msdkh264enc_install_properties (GObjectClass * gobject_class,
+ 
+   g_object_class_install_property (gobject_class, PROP_MIN_QP,
+       g_param_spec_uint ("min-qp", "Min QP",
+-          "Minimal quantizer for I/P/B frames",
++          "Minimal quantizer scale for I/P/B frames",
++          0, 51, PROP_MIN_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MIN_QP_I,
++      g_param_spec_uint ("min-qp-i", "Min QP I",
++          "Minimal quantizer scale for I frame",
++          0, 51, PROP_MIN_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MIN_QP_P,
++      g_param_spec_uint ("min-qp-p", "Min QP P",
++          "Minimal quantizer scale for P frame",
++          0, 51, PROP_MIN_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MIN_QP_B,
++      g_param_spec_uint ("min-qp-b", "Min QP B",
++          "Minimal quantizer scale for B frame",
+           0, 51, PROP_MIN_QP_DEFAULT,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
+   g_object_class_install_property (gobject_class, PROP_MAX_QP,
+       g_param_spec_uint ("max-qp", "Max QP",
+-          "Maximum quantizer for I/P/B frames",
++          "Maximum quantizer scale for I/P/B frames",
++          0, 51, PROP_MAX_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MAX_QP_I,
++      g_param_spec_uint ("max-qp-i", "Max QP I",
++          "Maximum quantizer scale for I frame",
++          0, 51, PROP_MAX_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MAX_QP_P,
++      g_param_spec_uint ("max-qp-p", "Max QP P",
++          "Maximum quantizer scale for P frame",
++          0, 51, PROP_MAX_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MAX_QP_B,
++      g_param_spec_uint ("max-qp-b", "Max QP B",
++          "Maximum quantizer scale for B frame",
+           0, 51, PROP_MAX_QP_DEFAULT,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
+@@ -904,7 +986,13 @@ gst_msdkh264enc_init (GTypeInstance * instance, gpointer g_class)
+   thiz->tune_mode = PROP_TUNE_MODE_DEFAULT;
+   thiz->p_pyramid = PROP_P_PYRAMID_DEFAULT;
+   thiz->min_qp = PROP_MIN_QP_DEFAULT;
++  thiz->min_qp_i = PROP_MIN_QP_DEFAULT;
++  thiz->min_qp_p = PROP_MIN_QP_DEFAULT;
++  thiz->min_qp_b = PROP_MIN_QP_DEFAULT;
+   thiz->max_qp = PROP_MAX_QP_DEFAULT;
++  thiz->max_qp_i = PROP_MAX_QP_DEFAULT;
++  thiz->max_qp_p = PROP_MAX_QP_DEFAULT;
++  thiz->max_qp_b = PROP_MAX_QP_DEFAULT;
+   thiz->intra_refresh_type = PROP_INTRA_REFRESH_TYPE_DEFAULT;
+   thiz->intra_refresh_cycle_size = PROP_INTRA_REFRESH_CYCLE_SIZE_DEFAULT;
+   thiz->intra_refresh_qp_delta = PROP_INTRA_REFRESH_QP_DELTA_DEFAULT;
+diff --git a/sys/msdk/gstmsdkh264enc.h b/sys/msdk/gstmsdkh264enc.h
+index e003b4c99..1f8f6f040 100644
+--- a/sys/msdk/gstmsdkh264enc.h
++++ b/sys/msdk/gstmsdkh264enc.h
+@@ -62,7 +62,13 @@ struct _GstMsdkH264Enc
+   guint prop_flag;
+   guint p_pyramid;
+   guint min_qp;
++  guint min_qp_i;
++  guint min_qp_p;
++  guint min_qp_b;
+   guint max_qp;
++  guint max_qp_i;
++  guint max_qp_p;
++  guint max_qp_b;
+   guint intra_refresh_type;
+   guint intra_refresh_cycle_size;
+   gint intra_refresh_qp_delta;
+diff --git a/sys/msdk/gstmsdkh265enc.c b/sys/msdk/gstmsdkh265enc.c
+index a15a4579a..3ecea2018 100644
+--- a/sys/msdk/gstmsdkh265enc.c
++++ b/sys/msdk/gstmsdkh265enc.c
+@@ -80,7 +80,13 @@ enum
+   PROP_B_PYRAMID,
+   PROP_P_PYRAMID,
+   PROP_MIN_QP,
++  PROP_MIN_QP_I,
++  PROP_MIN_QP_P,
++  PROP_MIN_QP_B,
+   PROP_MAX_QP,
++  PROP_MAX_QP_I,
++  PROP_MAX_QP_P,
++  PROP_MAX_QP_B,
+   PROP_INTRA_REFRESH_TYPE,
+   PROP_INTRA_REFRESH_CYCLE_SIZE,
+   PROP_INTRA_REFRESH_QP_DELTA,
+@@ -464,10 +470,12 @@ gst_msdkh265enc_configure (GstMsdkEnc * encoder)
+ 
+   /* Enable Extended coding options */
+   encoder->option2.MaxSliceSize = h265enc->max_slice_size;
+-  encoder->option2.MinQPI = encoder->option2.MinQPP = encoder->option2.MinQPB =
+-      h265enc->min_qp;
+-  encoder->option2.MaxQPI = encoder->option2.MaxQPP = encoder->option2.MaxQPB =
+-      h265enc->max_qp;
++  encoder->option2.MinQPI = h265enc->min_qp_i;
++  encoder->option2.MinQPP = h265enc->min_qp_p;
++  encoder->option2.MinQPB = h265enc->min_qp_b;
++  encoder->option2.MaxQPI = h265enc->max_qp_i;
++  encoder->option2.MaxQPP = h265enc->max_qp_p;
++  encoder->option2.MaxQPB = h265enc->max_qp_b;
+   encoder->option2.DisableDeblockingIdc = h265enc->dblk_idc;
+ 
+   if (h265enc->tune_mode == 16 || h265enc->lowpower) {
+@@ -708,10 +716,36 @@ gst_msdkh265enc_set_property (GObject * object, guint prop_id,
+ 
+     case PROP_MIN_QP:
+       thiz->min_qp = g_value_get_uint (value);
++      thiz->min_qp_i = thiz->min_qp_p = thiz->min_qp_b = thiz->min_qp;
++      break;
++
++    case PROP_MIN_QP_I:
++      thiz->min_qp_i = g_value_get_uint (value);
++      break;
++
++    case PROP_MIN_QP_P:
++      thiz->min_qp_p = g_value_get_uint (value);
++      break;
++
++    case PROP_MIN_QP_B:
++      thiz->min_qp_b = g_value_get_uint (value);
+       break;
+ 
+     case PROP_MAX_QP:
+       thiz->max_qp = g_value_get_uint (value);
++      thiz->max_qp_i = thiz->max_qp_p = thiz->max_qp_b = thiz->max_qp;
++      break;
++
++    case PROP_MAX_QP_I:
++      thiz->max_qp_i = g_value_get_uint (value);
++      break;
++
++    case PROP_MAX_QP_P:
++      thiz->max_qp_p = g_value_get_uint (value);
++      break;
++
++    case PROP_MAX_QP_B:
++      thiz->max_qp_b = g_value_get_uint (value);
+       break;
+ 
+     case PROP_INTRA_REFRESH_TYPE:
+@@ -790,10 +824,34 @@ gst_msdkh265enc_get_property (GObject * object, guint prop_id, GValue * value,
+       g_value_set_uint (value, thiz->min_qp);
+       break;
+ 
++    case PROP_MIN_QP_I:
++      g_value_set_uint (value, thiz->min_qp_i);
++      break;
++
++    case PROP_MIN_QP_P:
++      g_value_set_uint (value, thiz->min_qp_p);
++      break;
++
++    case PROP_MIN_QP_B:
++      g_value_set_uint (value, thiz->min_qp_b);
++      break;
++
+     case PROP_MAX_QP:
+       g_value_set_uint (value, thiz->max_qp);
+       break;
+ 
++    case PROP_MAX_QP_I:
++      g_value_set_uint (value, thiz->max_qp_i);
++      break;
++
++    case PROP_MAX_QP_P:
++      g_value_set_uint (value, thiz->max_qp_p);
++      break;
++
++    case PROP_MAX_QP_B:
++      g_value_set_uint (value, thiz->max_qp_b);
++      break;
++
+     case PROP_INTRA_REFRESH_TYPE:
+       g_value_set_enum (value, thiz->intra_refresh_type);
+       break;
+@@ -930,13 +988,49 @@ _msdkh265enc_install_properties (GObjectClass * gobject_class,
+ 
+   g_object_class_install_property (gobject_class, PROP_MIN_QP,
+       g_param_spec_uint ("min-qp", "Min QP",
+-          "Minimal quantizer for I/P/B frames",
++          "Minimal quantizer scale for I/P/B frames",
++          0, 51, PROP_MIN_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MIN_QP_I,
++      g_param_spec_uint ("min-qp-i", "Min QP I",
++          "Minimal quantizer scale for I frame",
++          0, 51, PROP_MIN_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MIN_QP_P,
++      g_param_spec_uint ("min-qp-p", "Min QP P",
++          "Minimal quantizer scale for P frame",
++          0, 51, PROP_MIN_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MIN_QP_B,
++      g_param_spec_uint ("min-qp-b", "Min QP B",
++          "Minimal quantizer scale for B frame",
+           0, 51, PROP_MIN_QP_DEFAULT,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
+   g_object_class_install_property (gobject_class, PROP_MAX_QP,
+       g_param_spec_uint ("max-qp", "Max QP",
+-          "Maximum quantizer for I/P/B frames",
++          "Maximum quantizer scale for I/P/B frames",
++          0, 51, PROP_MAX_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MAX_QP_I,
++      g_param_spec_uint ("max-qp-i", "Max QP I",
++          "Maximum quantizer scale for I frame",
++          0, 51, PROP_MAX_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MAX_QP_P,
++      g_param_spec_uint ("max-qp-p", "Max QP P",
++          "Maximum quantizer scale for P frame",
++          0, 51, PROP_MAX_QP_DEFAULT,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_MAX_QP_B,
++      g_param_spec_uint ("max-qp-b", "Max QP B",
++          "Maximum quantizer scale for B frame",
+           0, 51, PROP_MAX_QP_DEFAULT,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
+@@ -1031,7 +1125,13 @@ gst_msdkh265enc_init (GTypeInstance * instance, gpointer g_class)
+   thiz->b_pyramid = PROP_B_PYRAMID_DEFAULT;
+   thiz->p_pyramid = PROP_P_PYRAMID_DEFAULT;
+   thiz->min_qp = PROP_MIN_QP_DEFAULT;
++  thiz->min_qp_i = PROP_MIN_QP_DEFAULT;
++  thiz->min_qp_p = PROP_MIN_QP_DEFAULT;
++  thiz->min_qp_b = PROP_MIN_QP_DEFAULT;
+   thiz->max_qp = PROP_MAX_QP_DEFAULT;
++  thiz->max_qp_i = PROP_MAX_QP_DEFAULT;
++  thiz->max_qp_p = PROP_MAX_QP_DEFAULT;
++  thiz->max_qp_b = PROP_MAX_QP_DEFAULT;
+   thiz->intra_refresh_type = PROP_INTRA_REFRESH_TYPE_DEFAULT;
+   thiz->intra_refresh_cycle_size = PROP_INTRA_REFRESH_CYCLE_SIZE_DEFAULT;
+   thiz->intra_refresh_qp_delta = PROP_INTRA_REFRESH_QP_DELTA_DEFAULT;
+diff --git a/sys/msdk/gstmsdkh265enc.h b/sys/msdk/gstmsdkh265enc.h
+index 902b42f50..5dfe28fd2 100644
+--- a/sys/msdk/gstmsdkh265enc.h
++++ b/sys/msdk/gstmsdkh265enc.h
+@@ -55,7 +55,13 @@ struct _GstMsdkH265Enc
+   guint b_pyramid;
+   guint p_pyramid;
+   guint min_qp;
++  guint min_qp_i;
++  guint min_qp_p;
++  guint min_qp_b;
+   guint max_qp;
++  guint max_qp_i;
++  guint max_qp_p;
++  guint max_qp_b;
+   guint intra_refresh_type;
+   guint intra_refresh_cycle_size;
+   gint intra_refresh_qp_delta;
+-- 
+2.40.1
+

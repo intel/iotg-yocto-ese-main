@@ -1,0 +1,35 @@
+From 9c6faee32fd2784836813f3f27670e36e41be9e2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 15:59:55 +0000
+Subject: [PATCH 03/77] encodebin: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/encoding/gstencodebasebin.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst/encoding/gstencodebasebin.c b/gst/encoding/gstencodebasebin.c
+index 85a4913e..b500dfda 100644
+--- a/gst/encoding/gstencodebasebin.c
++++ b/gst/encoding/gstencodebasebin.c
+@@ -1469,7 +1469,7 @@ _create_stream_group (GstEncodeBaseBin * ebin, GstEncodingProfile * sprof,
+       GST_PTR_FORMAT, format, sinkcaps);
+   GST_DEBUG ("avoid_reencoding:%d", ebin->avoid_reencoding);
+ 
+-  sgroup = g_slice_new0 (StreamGroup);
++  sgroup = g_new0 (StreamGroup, 1);
+   sgroup->ebin = ebin;
+   sgroup->profile = sprof;
+ 
+@@ -2464,7 +2464,7 @@ stream_group_free (GstEncodeBaseBin * ebin, StreamGroup * sgroup)
+   if (sgroup->outfilter)
+     gst_bin_remove ((GstBin *) ebin, sgroup->outfilter);
+ 
+-  g_slice_free (StreamGroup, sgroup);
++  g_free (sgroup);
+ }
+ 
+ static void
+-- 
+2.40.1
+

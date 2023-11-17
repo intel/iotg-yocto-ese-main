@@ -1,0 +1,67 @@
+From 8f579f660748acb1828089c04a6c08d746a1b43d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sat, 7 Jan 2023 19:42:29 +0000
+Subject: [PATCH 11/43] bus, poll: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/gstbus.c  | 6 +++---
+ gst/gstpoll.c | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/gst/gstbus.c b/gst/gstbus.c
+index 15cf16b9..bfecd9bd 100644
+--- a/gst/gstbus.c
++++ b/gst/gstbus.c
+@@ -1149,7 +1149,7 @@ poll_destroy (GstBusPollData * poll_data, gpointer unused)
+   poll_data->source_running = FALSE;
+   if (!poll_data->timeout_id) {
+     g_main_loop_unref (poll_data->loop);
+-    g_slice_free (GstBusPollData, poll_data);
++    g_free (poll_data);
+   }
+ }
+ 
+@@ -1159,7 +1159,7 @@ poll_destroy_timeout (GstBusPollData * poll_data)
+   poll_data->timeout_id = 0;
+   if (!poll_data->source_running) {
+     g_main_loop_unref (poll_data->loop);
+-    g_slice_free (GstBusPollData, poll_data);
++    g_free (poll_data);
+   }
+ }
+ 
+@@ -1217,7 +1217,7 @@ gst_bus_poll (GstBus * bus, GstMessageType events, GstClockTime timeout)
+ 
+   g_return_val_if_fail (GST_IS_BUS (bus), NULL);
+ 
+-  poll_data = g_slice_new (GstBusPollData);
++  poll_data = g_new (GstBusPollData, 1);
+   poll_data->source_running = TRUE;
+   poll_data->loop = g_main_loop_new (NULL, FALSE);
+   poll_data->events = events;
+diff --git a/gst/gstpoll.c b/gst/gstpoll.c
+index f5f10bc5..b6e72a99 100644
+--- a/gst/gstpoll.c
++++ b/gst/gstpoll.c
+@@ -677,7 +677,7 @@ gst_poll_new (gboolean controllable)
+ {
+   GstPoll *nset;
+ 
+-  nset = g_slice_new0 (GstPoll);
++  nset = g_new0 (GstPoll, 1);
+   GST_DEBUG ("%p: new controllable : %d", nset, controllable);
+   g_mutex_init (&nset->lock);
+ #ifndef G_OS_WIN32
+@@ -794,7 +794,7 @@ gst_poll_free (GstPoll * set)
+   g_array_free (set->active_fds, TRUE);
+   g_array_free (set->fds, TRUE);
+   g_mutex_clear (&set->lock);
+-  g_slice_free (GstPoll, set);
++  g_free (set);
+ }
+ 
+ /**
+-- 
+2.40.1
+

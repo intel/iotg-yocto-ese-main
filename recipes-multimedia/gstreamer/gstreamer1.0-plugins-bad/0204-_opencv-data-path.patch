@@ -1,0 +1,45 @@
+From 2c4ca08b035da6f39444a6f606578d96de120dc4 Mon Sep 17 00:00:00 2001
+From: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Date: Tue, 1 Feb 2022 16:36:52 -0500
+Subject: [PATCH 204/205] _opencv-data-path
+
+===================================================================
+---
+ ext/opencv/gstfaceblur.cpp   | 5 ++---
+ ext/opencv/gstfacedetect.cpp | 4 +---
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/ext/opencv/gstfaceblur.cpp b/ext/opencv/gstfaceblur.cpp
+index 91bda2fda..93671e4cb 100644
+--- a/ext/opencv/gstfaceblur.cpp
++++ b/ext/opencv/gstfaceblur.cpp
+@@ -68,9 +68,8 @@
+ GST_DEBUG_CATEGORY_STATIC (gst_face_blur_debug);
+ #define GST_CAT_DEFAULT gst_face_blur_debug
+ 
+-#define DEFAULT_PROFILE OPENCV_PREFIX G_DIR_SEPARATOR_S "share" \
+-    G_DIR_SEPARATOR_S OPENCV_PATH_NAME G_DIR_SEPARATOR_S "haarcascades" \
+-    G_DIR_SEPARATOR_S "haarcascade_frontalface_default.xml"
++#define HAAR_CASCADES_DIR "/usr/share/opencv4/haarcascades/"
++#define DEFAULT_PROFILE HAAR_CASCADES_DIR HAAR_CASCADES_DIR "haarcascade_frontalface_default.xml"
+ #define DEFAULT_SCALE_FACTOR 1.25
+ #if (CV_MAJOR_VERSION >= 4)
+ #define DEFAULT_FLAGS CASCADE_DO_CANNY_PRUNING
+diff --git a/ext/opencv/gstfacedetect.cpp b/ext/opencv/gstfacedetect.cpp
+index 5e1c78187..59e1d0a78 100644
+--- a/ext/opencv/gstfacedetect.cpp
++++ b/ext/opencv/gstfacedetect.cpp
+@@ -86,9 +86,7 @@ using namespace std;
+ GST_DEBUG_CATEGORY_STATIC (gst_face_detect_debug);
+ #define GST_CAT_DEFAULT gst_face_detect_debug
+ 
+-#define HAAR_CASCADES_DIR OPENCV_PREFIX G_DIR_SEPARATOR_S "share" \
+-    G_DIR_SEPARATOR_S OPENCV_PATH_NAME G_DIR_SEPARATOR_S "haarcascades" \
+-    G_DIR_SEPARATOR_S
++#define HAAR_CASCADES_DIR "/usr/share/opencv4/haarcascades/"
+ #define DEFAULT_FACE_PROFILE HAAR_CASCADES_DIR "haarcascade_frontalface_default.xml"
+ #define DEFAULT_NOSE_PROFILE HAAR_CASCADES_DIR "haarcascade_mcs_nose.xml"
+ #define DEFAULT_MOUTH_PROFILE HAAR_CASCADES_DIR "haarcascade_mcs_mouth.xml"
+-- 
+2.40.1
+

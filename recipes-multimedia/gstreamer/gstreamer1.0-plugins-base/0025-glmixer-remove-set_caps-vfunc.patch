@@ -1,0 +1,155 @@
+From f188f528f78d21d57a12bea5b0d14fe98e174e98 Mon Sep 17 00:00:00 2001
+From: Matthew Waters <matthew@centricular.com>
+Date: Mon, 8 May 2023 17:51:43 +1000
+Subject: [PATCH 25/77] glmixer: remove set_caps() vfunc
+
+All of its implementors can be moved to gl_start/stop() from
+GstGLBaseMixer instead.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4608>
+---
+ ext/gl/gstglmosaic.c         | 11 -----------
+ ext/gl/gstglvideomixer.c     | 16 ++--------------
+ gst-libs/gst/gl/gstglmixer.c |  6 ------
+ gst-libs/gst/gl/gstglmixer.h |  3 ---
+ 4 files changed, 2 insertions(+), 34 deletions(-)
+
+diff --git a/ext/gl/gstglmosaic.c b/ext/gl/gstglmosaic.c
+index bae95d06..d7c72c90 100644
+--- a/ext/gl/gstglmosaic.c
++++ b/ext/gl/gstglmosaic.c
+@@ -74,7 +74,6 @@ static GstPad *gst_gl_mosaic_request_new_pad (GstElement * element,
+ static void gst_gl_mosaic_release_pad (GstElement * element, GstPad * pad);
+ 
+ static void gst_gl_mosaic_gl_stop (GstGLBaseMixer * base_mix);
+-static gboolean gst_gl_mosaic_set_caps (GstGLMixer * mixer, GstCaps * outcaps);
+ 
+ static gboolean gst_gl_mosaic_process_textures (GstGLMixer * mixer,
+     GstGLMemory * out_tex);
+@@ -136,7 +135,6 @@ gst_gl_mosaic_class_init (GstGLMosaicClass * klass)
+       "Filter/Effect/Video", "OpenGL mosaic",
+       "Julien Isorce <julien.isorce@gmail.com>");
+ 
+-  GST_GL_MIXER_CLASS (klass)->set_caps = gst_gl_mosaic_set_caps;
+   GST_GL_BASE_MIXER_CLASS (klass)->gl_stop = gst_gl_mosaic_gl_stop;
+   GST_GL_MIXER_CLASS (klass)->process_textures = gst_gl_mosaic_process_textures;
+ }
+@@ -204,15 +202,6 @@ gst_gl_mosaic_gl_stop (GstGLBaseMixer * mixer)
+   GST_GL_BASE_MIXER_CLASS (gst_gl_mosaic_parent_class)->gl_stop (mixer);
+ }
+ 
+-static gboolean
+-gst_gl_mosaic_set_caps (GstGLMixer * mixer, GstCaps * outcaps)
+-{
+-  GstGLMosaic *mosaic = GST_GL_MOSAIC (mixer);
+-
+-  g_clear_object (&mosaic->shader);
+-  return TRUE;
+-}
+-
+ static void
+ _mosaic_render (GstGLContext * context, GstGLMosaic * mosaic)
+ {
+diff --git a/ext/gl/gstglvideomixer.c b/ext/gl/gstglvideomixer.c
+index 887577ef..fdc613dd 100644
+--- a/ext/gl/gstglvideomixer.c
++++ b/ext/gl/gstglvideomixer.c
+@@ -554,8 +554,6 @@ static gboolean gst_gl_video_mixer_propose_allocation (GstAggregator *
+     agg, GstAggregatorPad * agg_pad, GstQuery * decide_query, GstQuery * query);
+ static gboolean gst_gl_video_mixer_gl_start (GstGLBaseMixer * base_mix);
+ static void gst_gl_video_mixer_gl_stop (GstGLBaseMixer * base_mix);
+-static gboolean gst_gl_video_mixer_set_caps (GstGLMixer * mixer,
+-    GstCaps * outcaps);
+ 
+ static gboolean gst_gl_video_mixer_process_textures (GstGLMixer * mixer,
+     GstGLMemory * out_tex);
+@@ -1102,7 +1100,6 @@ gst_gl_video_mixer_class_init (GstGLVideoMixerClass * klass)
+           GST_TYPE_GL_VIDEO_MIXER_BACKGROUND,
+           DEFAULT_BACKGROUND, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ 
+-  GST_GL_MIXER_CLASS (klass)->set_caps = gst_gl_video_mixer_set_caps;
+   GST_GL_MIXER_CLASS (klass)->process_textures =
+       gst_gl_video_mixer_process_textures;
+ 
+@@ -1472,17 +1469,6 @@ gst_gl_video_mixer_src_event (GstAggregator * agg, GstEvent * event)
+   return GST_AGGREGATOR_CLASS (parent_class)->src_event (agg, event);
+ }
+ 
+-static gboolean
+-gst_gl_video_mixer_set_caps (GstGLMixer * mixer, GstCaps * outcaps)
+-{
+-  GstGLVideoMixer *video_mixer = GST_GL_VIDEO_MIXER (mixer);
+-
+-  /* need reconfigure output geometry */
+-  video_mixer->output_geo_change = TRUE;
+-
+-  return TRUE;
+-}
+-
+ static void
+ gst_gl_video_mixer_gl_stop (GstGLBaseMixer * base_mix)
+ {
+@@ -1501,6 +1487,8 @@ gst_gl_video_mixer_gl_start (GstGLBaseMixer * base_mix)
+ {
+   GstGLVideoMixer *video_mixer = GST_GL_VIDEO_MIXER (base_mix);
+ 
++  video_mixer->output_geo_change = TRUE;
++
+   if (!video_mixer->shader) {
+     gchar *frag_str = g_strdup_printf ("%s%s",
+         gst_gl_shader_string_get_highest_precision (base_mix->context,
+diff --git a/gst-libs/gst/gl/gstglmixer.c b/gst-libs/gst/gl/gstglmixer.c
+index 810629f4..688371a9 100644
+--- a/gst-libs/gst/gl/gstglmixer.c
++++ b/gst-libs/gst/gl/gstglmixer.c
+@@ -452,8 +452,6 @@ gst_gl_mixer_class_init (GstGLMixerClass * klass)
+   /* Register the pad class */
+   g_type_class_ref (GST_TYPE_GL_MIXER_PAD);
+ 
+-  klass->set_caps = NULL;
+-
+   gst_type_mark_as_plugin_api (GST_TYPE_GL_MIXER_PAD, 0);
+   gst_type_mark_as_plugin_api (GST_TYPE_GL_MIXER, 0);
+ }
+@@ -581,7 +579,6 @@ gst_gl_mixer_decide_allocation (GstAggregator * agg, GstQuery * query)
+ {
+   GstGLBaseMixer *base_mix = GST_GL_BASE_MIXER (agg);
+   GstGLMixer *mix = GST_GL_MIXER (base_mix);
+-  GstGLMixerClass *mixer_class = GST_GL_MIXER_GET_CLASS (mix);
+   GstGLContext *context;
+   GstBufferPool *pool = NULL;
+   GstStructure *config;
+@@ -614,9 +611,6 @@ gst_gl_mixer_decide_allocation (GstAggregator * agg, GstQuery * query)
+     goto context_error;
+   }
+ 
+-  if (mixer_class->set_caps)
+-    mixer_class->set_caps (mix, mix->out_caps);
+-
+   mix->priv->gl_resource_ready = TRUE;
+   g_cond_signal (&mix->priv->gl_resource_cond);
+   g_mutex_unlock (&mix->priv->gl_resource_lock);
+diff --git a/gst-libs/gst/gl/gstglmixer.h b/gst-libs/gst/gl/gstglmixer.h
+index 130010f7..7262dd66 100644
+--- a/gst-libs/gst/gl/gstglmixer.h
++++ b/gst-libs/gst/gl/gstglmixer.h
+@@ -76,8 +76,6 @@ GType gst_gl_mixer_pad_get_type (void);
+ #define GST_GL_MIXER_GET_CLASS(obj) \
+         (G_TYPE_INSTANCE_GET_CLASS((obj),GST_TYPE_GL_MIXER,GstGLMixerClass))
+ 
+-typedef gboolean (*GstGLMixerSetCaps) (GstGLMixer* mixer,
+-  GstCaps* outcaps);
+ typedef gboolean (*GstGLMixerProcessFunc) (GstGLMixer *mix, GstBuffer *outbuf);
+ typedef gboolean (*GstGLMixerProcessTextures) (GstGLMixer *mix, GstGLMemory *out_tex);
+ 
+@@ -94,7 +92,6 @@ struct _GstGLMixerClass
+ {
+   GstGLBaseMixerClass parent_class;
+ 
+-  GstGLMixerSetCaps set_caps;
+   GstGLMixerProcessFunc process_buffers;
+   GstGLMixerProcessTextures process_textures;
+ };
+-- 
+2.40.1
+

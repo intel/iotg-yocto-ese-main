@@ -1,0 +1,34 @@
+From a52d9cfb88e72f6e1badca3e16752c91ea533bf4 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 9 Jun 2023 22:19:47 +0800
+Subject: [PATCH 134/205] va: Lower the message level for
+ va_export_surface_to_dmabuf()
+
+Some surface formats such as GST_VIDEO_FORMAT_Y42B and GST_VIDEO_FORMAT_RGB
+can be created but can not be exported as DMA buffer. You can not say that
+this is a driver bug because the driver may never want to share this kind of
+surface out of libva.
+And this function will be used to detect modifiers later, so the error message
+will be annoying.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4821>
+---
+ gst-libs/gst/va/vasurfaceimage.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/va/vasurfaceimage.c b/gst-libs/gst/va/vasurfaceimage.c
+index 307aff56e..05e37d1a2 100644
+--- a/gst-libs/gst/va/vasurfaceimage.c
++++ b/gst-libs/gst/va/vasurfaceimage.c
+@@ -135,7 +135,7 @@ va_export_surface_to_dmabuf (GstVaDisplay * display, VASurfaceID surface,
+   status = vaExportSurfaceHandle (dpy, surface,
+       VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2, flags, desc);
+   if (status != VA_STATUS_SUCCESS) {
+-    GST_ERROR ("vaExportSurfaceHandle: %s", vaErrorStr (status));
++    GST_INFO ("vaExportSurfaceHandle: %s", vaErrorStr (status));
+     return FALSE;
+   }
+ 
+-- 
+2.40.1
+

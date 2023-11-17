@@ -1,0 +1,64 @@
+From 16a99c0dfa1438ae10e76d40237326e21a3344a5 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Wed, 15 Feb 2023 17:16:47 +0800
+Subject: [PATCH 040/205] msdkenc: Set pts at handle_frame
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3998>
+---
+ sys/msdk/gstmsdkenc.c | 17 +++++++++++++++++
+ sys/msdk/gstmsdkenc.h |  3 +++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 2b225ebaf..2627881aa 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -690,6 +690,15 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+   thiz->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
+   thiz->param.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV420;
+ 
++  /* work-around to avoid zero fps in msdk structure */
++  if (0 == thiz->param.mfx.FrameInfo.FrameRateExtN)
++    thiz->param.mfx.FrameInfo.FrameRateExtN = 30;
++
++  thiz->frame_duration =
++      gst_util_uint64_scale (GST_SECOND,
++      thiz->param.mfx.FrameInfo.FrameRateExtN,
++      thiz->param.mfx.FrameInfo.FrameRateExtD);
++
+   switch (encoder_input_fmt) {
+     case GST_VIDEO_FORMAT_P010_10LE:
+       thiz->param.mfx.FrameInfo.FourCC = MFX_FOURCC_P010;
+@@ -1870,7 +1879,15 @@ gst_msdkenc_handle_frame (GstVideoEncoder * encoder, GstVideoCodecFrame * frame)
+ 
+     fdata->frame_surface = surface;
+ 
++    /* It is possible to have input frame without any framerate/pts info,
++     * we need to set the correct pts here. */
++    if (frame->presentation_frame_number == 0)
++      thiz->start_pts = frame->pts;
++
+     if (frame->pts != GST_CLOCK_TIME_NONE) {
++      frame->pts = thiz->start_pts +
++          frame->presentation_frame_number * thiz->frame_duration;
++      frame->duration = thiz->frame_duration;
+       surface->surface->Data.TimeStamp =
+           gst_util_uint64_scale (frame->pts, 90000, GST_SECOND);
+     } else {
+diff --git a/sys/msdk/gstmsdkenc.h b/sys/msdk/gstmsdkenc.h
+index e54d8b010..52b79c863 100644
+--- a/sys/msdk/gstmsdkenc.h
++++ b/sys/msdk/gstmsdkenc.h
+@@ -167,6 +167,9 @@ struct _GstMsdkEnc
+   guint max_frame_size_p;
+   gint16 lowdelay_brc;
+ 
++  GstClockTime start_pts;
++  GstClockTime frame_duration;
++
+   GstStructure *ext_coding_props;
+ 
+   gboolean reconfig;
+-- 
+2.40.1
+

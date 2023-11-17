@@ -1,0 +1,37 @@
+From 3d7dd8cc500e805e3f0dc7911c29a488e2fedb85 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Wed, 30 Aug 2023 11:10:26 +0000
+Subject: [PATCH 35/35] ui/gtk: fullscreening display state as well
+
+When full screening all detached windows, the main window
+connected to the display state should also be fullscreened.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index 3314ce5577..ee56d0e0f4 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1875,7 +1875,7 @@ static void gd_menu_full_screen(GtkMenuItem *item, void *opaque)
+         gtk_notebook_set_show_tabs(GTK_NOTEBOOK(s->notebook), FALSE);
+         gtk_widget_hide(s->menu_bar);
+         s->full_screen = TRUE;
+-
++        gtk_window_fullscreen(GTK_WINDOW(s->window));
+         for (i = 0; i < s->nb_vcs; i++) {
+             vc = &s->vc[i];
+             if (!vc->window) {
+@@ -1887,6 +1887,7 @@ static void gd_menu_full_screen(GtkMenuItem *item, void *opaque)
+             gtk_window_fullscreen(GTK_WINDOW(vc->window));
+ 	}
+     } else {
++        gtk_window_unfullscreen(GTK_WINDOW(s->window));
+         for (i = 0; i < s->nb_vcs; i++) {
+             vc = &s->vc[i];
+             if (!vc->window) {
+-- 
+2.34.1
+

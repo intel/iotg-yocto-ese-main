@@ -1,0 +1,48 @@
+From 48f2847c192921f5f61f5914765d0f6d043f2dd0 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 31 Aug 2023 11:08:19 +0000
+Subject: [PATCH] ui/gtk: show ui and enable guest display only when window
+ exists
+
+window state event is triggered when the detached window is
+closed and gd_ui_show is called in there which accidently
+enables the guest display. gd_ui_show in the call is now
+executed only if window for the VC exists.
+
+And dpy_gl_scanout_disable is not necessary in
+gd_tab_window_close because there will be no draw activities
+anyway after the window is closed. Changing scanout mode done
+in dpy_gl_scanout_disable is often causing some timing issue.
+So it's better to remove it.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/ui/gtk.c b/ui/gtk.c
+index ee56d0e0f4..2b951c4570 100644
+--- a/ui/gtk.c
++++ b/ui/gtk.c
+@@ -1529,7 +1529,6 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+ 
+     gd_ui_hide(vc);
+ 
+-    dpy_gl_scanout_disable(vc->gfx.dcl.con);
+     gtk_widget_set_sensitive(vc->menu_item, true);
+     gd_widget_reparent(vc->window, s->notebook, vc->tab_item);
+     gtk_notebook_set_tab_label_text(GTK_NOTEBOOK(s->notebook),
+@@ -1561,7 +1560,9 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+     if (event->window_state.new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
+         gd_ui_hide(vc);
+     } else {
+-        gd_ui_show(vc);
++        if (vc->window) {
++            gd_ui_show(vc);
++        }
+     }
+ 
+     return TRUE;
+-- 
+2.34.1
+

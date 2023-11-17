@@ -1,0 +1,49 @@
+From e29a6fee1c1191fae92b79a09ca359356dbf75f7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 00:46:42 +0000
+Subject: [PATCH 15/43] meta: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/gstformat.c | 2 +-
+ gst/gstmeta.c   | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gst/gstformat.c b/gst/gstformat.c
+index 130fc77f..b9f2560d 100644
+--- a/gst/gstformat.c
++++ b/gst/gstformat.c
+@@ -153,7 +153,7 @@ gst_format_register (const gchar * nick, const gchar * description)
+     return query;
+ 
+   g_mutex_lock (&mutex);
+-  format = g_slice_new (GstFormatDefinition);
++  format = g_new (GstFormatDefinition, 1);
+   format->value = (GstFormat) _n_values;
+   format->nick = g_strdup (nick);
+   format->description = g_strdup (description);
+diff --git a/gst/gstmeta.c b/gst/gstmeta.c
+index 9fc61986..6068210c 100644
+--- a/gst/gstmeta.c
++++ b/gst/gstmeta.c
+@@ -78,7 +78,7 @@ typedef struct
+ static void
+ free_info (gpointer data)
+ {
+-  g_slice_free (GstMetaInfoImpl, data);
++  g_free (data);
+ }
+ 
+ void
+@@ -394,7 +394,7 @@ gst_meta_register (GType api, const gchar * impl, gsize size,
+   if (type == G_TYPE_INVALID)
+     return NULL;
+ 
+-  info = (GstMetaInfo *) g_slice_new (GstMetaInfoImpl);
++  info = (GstMetaInfo *) g_new (GstMetaInfoImpl, 1);
+   info->api = api;
+   info->type = type;
+   info->size = size;
+-- 
+2.40.1
+

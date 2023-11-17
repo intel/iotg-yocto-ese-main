@@ -1,0 +1,41 @@
+From c312b89c19ea0289856919d16348be451dc46c63 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Wed, 19 Jul 2023 13:19:06 +0800
+Subject: [PATCH 162/205] vah265enc: Correct the value of cu_qp_delta flag and
+ depth
+
+According to libva API description, cu_qp_delta in VAConfigAttribValEncHEVCFeatures
+is supposed to be used as a flag not the value of depth. And if flag enabled,
+diff_cu_qp_delta_depth should be decided by log2_diff_max_min_luma_coding_block_size.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5068>
+---
+ sys/va/gstvah265enc.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 7f1f326b9..828c810e9 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -4137,9 +4137,15 @@ _h265_setup_encoding_features (GstVaH265Enc * self)
+   self->features.transform_skip_enabled_flag =
+       (features.bits.transform_skip != 0);
+ 
+-  self->features.cu_qp_delta_enabled_flag =
+-      (self->rc.rc_ctrl_mode != VA_RC_CQP);
+-  self->features.diff_cu_qp_delta_depth = features.bits.cu_qp_delta;
++  if (self->rc.rc_ctrl_mode != VA_RC_CQP)
++    self->features.cu_qp_delta_enabled_flag = !!features.bits.cu_qp_delta;
++  else
++    self->features.cu_qp_delta_enabled_flag = 0;
++
++  if (self->features.cu_qp_delta_enabled_flag) {
++    self->features.diff_cu_qp_delta_depth =
++        self->features.log2_diff_max_min_luma_coding_block_size;
++  }
+ 
+   /* TODO: use weighted pred */
+   self->features.weighted_pred_flag = FALSE;
+-- 
+2.40.1
+

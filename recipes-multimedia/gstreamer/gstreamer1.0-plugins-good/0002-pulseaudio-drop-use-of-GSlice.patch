@@ -1,0 +1,44 @@
+From e8ad9414950315c0bdb32919f3e0a6823226a7bb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 17:25:25 +0000
+Subject: [PATCH 02/16] pulseaudio: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ ext/pulse/pulsesink.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/ext/pulse/pulsesink.c b/ext/pulse/pulsesink.c
+index c0ffff38..e965e1b0 100644
+--- a/ext/pulse/pulsesink.c
++++ b/ext/pulse/pulsesink.c
+@@ -371,7 +371,7 @@ gst_pulsering_destroy_context (GstPulseRingBuffer * pbuf)
+         g_hash_table_remove (gst_pulse_shared_contexts, pbuf->context_name);
+ 
+         pa_context_unref (pctx->context);
+-        g_slice_free (GstPulseContext, pctx);
++        g_free (pctx);
+       }
+     }
+     g_free (pbuf->context_name);
+@@ -528,7 +528,7 @@ gst_pulseringbuffer_open_device (GstAudioRingBuffer * buf)
+ 
+   pctx = g_hash_table_lookup (gst_pulse_shared_contexts, pbuf->context_name);
+   if (pctx == NULL) {
+-    pctx = g_slice_new0 (GstPulseContext);
++    pctx = g_new0 (GstPulseContext, 1);
+ 
+     /* get the mainloop api and create a context */
+     GST_INFO_OBJECT (psink, "new context with name %s, pbuf=%p, pctx=%p",
+@@ -608,7 +608,7 @@ create_failed:
+   {
+     GST_ELEMENT_ERROR (psink, RESOURCE, FAILED,
+         ("Failed to create context"), (NULL));
+-    g_slice_free (GstPulseContext, pctx);
++    g_free (pctx);
+     goto unlock_and_fail;
+   }
+ connect_failed:
+-- 
+2.40.1
+

@@ -63,6 +63,13 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0030-qemu-remove-invisible-boundary-of-guest-mouse-cursor.patch \
            file://0031-virtio-gpu-io-mediator-for-blob-true.patch \
            file://0001-ui-gtk-fullscreen-control-on-all-QEMU-windows.patch \
+           file://0001-ui-gtk-fullscreening-display-state-as-well.patch \
+           file://0001-The-Ctrl-Alt-G-does-not-work-in-fullscreen-mode.patch \
+           file://0002-Switch-audio-status-with-Guest-VM-switch-from-QMP-co.patch \
+           file://0001-ui-gtk-egl-using-window-scale-factor-when-calculatin.patch \
+           file://0001-ui-gtk-show-menu-bar-and-tabs-after-HPD-if-not-full-.patch \
+           file://0001-ui-gtk-show-ui-and-enable-guest-display-only-when-wi.patch \
+           file://0001-ui-gtk-apply-window-scale-in-gd_egl_scanout_flush.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 

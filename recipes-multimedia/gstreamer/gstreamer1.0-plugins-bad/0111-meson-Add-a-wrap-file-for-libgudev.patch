@@ -1,0 +1,75 @@
+From 7628d777f7be0e30ca52da30cd05c3ef69dd4324 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Mon, 7 Aug 2023 15:16:45 +0800
+Subject: [PATCH 111/205] meson: Add a wrap file for libgudev
+
+And allow fallback to it.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4447>
+
+Backport from upstream:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/e709e2d97c27910b6b3f6bf7c24f84d1cc7c0da2
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ sys/msdk/meson.build       | 2 +-
+ sys/uvch264/meson.build    | 2 +-
+ sys/v4l2codecs/meson.build | 2 +-
+ sys/va/meson.build         | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sys/msdk/meson.build b/sys/msdk/meson.build
+index f1710f3fb..aaf3bdab7 100644
+--- a/sys/msdk/meson.build
++++ b/sys/msdk/meson.build
+@@ -182,7 +182,7 @@ if host_machine.system() == 'windows'
+   msdk_deps_found = gstd3d11_dep.found() and legacy_stdio_dep.found() and cc.get_id() == 'msvc'
+ else
+   libdl_dep = cc.find_library('dl', required: get_option('msdk'))
+-  libgudev_dep = dependency('gudev-1.0', required: get_option('msdk'))
++  libgudev_dep = dependency('gudev-1.0', required: get_option('msdk'), allow_fallback: true)
+   libdrm_dep = dependency('libdrm', required: get_option('msdk'))
+   msdk_deps = declare_dependency(dependencies: [gstva_dep, libdl_dep, libgudev_dep, libdrm_dep])
+   msdk_deps_found = gstva_dep.found() and libdl_dep.found() and libgudev_dep.found() and libdrm_dep.found()
+diff --git a/sys/uvch264/meson.build b/sys/uvch264/meson.build
+index 8968f965f..69d4bb1f3 100644
+--- a/sys/uvch264/meson.build
++++ b/sys/uvch264/meson.build
+@@ -6,7 +6,7 @@ uvch264_sources = [
+   'uvc_h264.c',
+ ]
+ 
+-libgudev_dep = dependency('gudev-1.0', required : get_option('uvch264'))
++libgudev_dep = dependency('gudev-1.0', required : get_option('uvch264'), allow_fallback: true)
+ libusb_dep = dependency('libusb-1.0', required : get_option('uvch264'))
+ has_uvcvideo_h = cc.has_header('linux/uvcvideo.h')
+ if not has_uvcvideo_h and get_option('uvch264').enabled()
+diff --git a/sys/v4l2codecs/meson.build b/sys/v4l2codecs/meson.build
+index 836dc5312..bd678bf76 100644
+--- a/sys/v4l2codecs/meson.build
++++ b/sys/v4l2codecs/meson.build
+@@ -13,7 +13,7 @@ v4l2codecs_sources = [
+   'gstv4l2codecalphadecodebin.c',
+ ]
+ 
+-libgudev_dep = dependency('gudev-1.0', required: get_option('v4l2codecs'))
++libgudev_dep = dependency('gudev-1.0', required: get_option('v4l2codecs'), allow_fallback: true)
+ 
+ if get_option('v4l2codecs').disabled()
+   have_v4l2 = false
+diff --git a/sys/va/meson.build b/sys/va/meson.build
+index 6315217a1..7227b39fb 100644
+--- a/sys/va/meson.build
++++ b/sys/va/meson.build
+@@ -54,7 +54,7 @@ extra_dep = []
+ c_std_arg = ['c_std=c99']
+ 
+ if host_system == 'linux'
+-  libgudev_dep = dependency('gudev-1.0', required: false)
++  libgudev_dep = dependency('gudev-1.0', required: false, allow_fallback: true)
+   if libgudev_dep.found()
+     extra_args += ['-DHAVE_GUDEV']
+     extra_dep += [libgudev_dep]
+-- 
+2.40.1
+

@@ -1,0 +1,35 @@
+From 4ac0df8ab93f0acc41bcd393ea63441c87b8d5e9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
+Date: Sun, 8 Jan 2023 00:56:23 +0000
+Subject: [PATCH 25/43] sample: drop use of GSlice
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
+---
+ gst/gstsample.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst/gstsample.c b/gst/gstsample.c
+index 57a32855..eb4bf7b7 100644
+--- a/gst/gstsample.c
++++ b/gst/gstsample.c
+@@ -106,7 +106,7 @@ _gst_sample_free (GstSample * sample)
+   memset (sample, 0xff, sizeof (GstSample));
+ #endif
+ 
+-  g_slice_free1 (sizeof (GstSample), sample);
++  g_free (sample);
+ }
+ 
+ /**
+@@ -129,7 +129,7 @@ gst_sample_new (GstBuffer * buffer, GstCaps * caps, const GstSegment * segment,
+ {
+   GstSample *sample;
+ 
+-  sample = g_slice_new0 (GstSample);
++  sample = g_new0 (GstSample, 1);
+ 
+   GST_LOG ("new %p", sample);
+ 
+-- 
+2.40.1
+

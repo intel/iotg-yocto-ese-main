@@ -1,0 +1,41 @@
+From 140685495c97ba7ea927e8912bf9f21be17cda0d Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Thu, 14 Sep 2023 10:20:54 +0000
+Subject: [PATCH] ui/gtk-egl: using window scale factor when calculating width
+ and height
+
+Window scaling factor needs to be taken into consideration
+when calculating width and height of GTK window.
+
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ ui/gtk-egl.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
+index f07150d120..9968906c93 100644
+--- a/ui/gtk-egl.c
++++ b/ui/gtk-egl.c
+@@ -68,15 +68,16 @@ void gd_egl_draw(VirtualConsole *vc)
+ #ifdef CONFIG_GBM
+     QemuDmaBuf *dmabuf = vc->gfx.guest_fb.dmabuf;
+ #endif
+-    int ww, wh;
++    int ww, wh, ws;
+ 
+     if (!vc->gfx.gls) {
+         return;
+     }
+ 
+     window = gtk_widget_get_window(vc->gfx.drawing_area);
+-    ww = gdk_window_get_width(window);
+-    wh = gdk_window_get_height(window);
++    ws = gdk_window_get_scale_factor(window);
++    ww = gdk_window_get_width(window) * ws;
++    wh = gdk_window_get_height(window) * ws;
+ 
+     if (vc->gfx.scanout_mode) {
+ #ifdef CONFIG_GBM
+-- 
+2.34.1
+
