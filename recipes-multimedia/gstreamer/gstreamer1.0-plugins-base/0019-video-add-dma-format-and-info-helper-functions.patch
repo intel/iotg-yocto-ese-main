@@ -1,4 +1,4 @@
-From 77ce987c139d75ffa0d5301a06cbd6a31a47bbc2 Mon Sep 17 00:00:00 2001
+From 4feb3ab949af725649c4f9efbd7700f2f28bcfac Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Thu, 15 Sep 2022 16:19:37 +0800
 Subject: [PATCH 19/77] video: add dma format and info helper functions

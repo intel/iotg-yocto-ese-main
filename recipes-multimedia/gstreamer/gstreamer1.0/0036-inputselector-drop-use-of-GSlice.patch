@@ -1,7 +1,7 @@
-From 5786d75cbc5145e6bd51ab0216c468c1b7a9db9d Mon Sep 17 00:00:00 2001
+From 83dcc38a84574677c61e07fcf4b09498b5ca3c29 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 01:32:50 +0000
-Subject: [PATCH 36/43] inputselector: drop use of GSlice
+Subject: [PATCH 36/42] inputselector: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---
@@ -9,7 +9,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/36
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/plugins/elements/gstinputselector.c b/plugins/elements/gstinputselector.c
-index 89852348..186132f9 100644
+index b025c706..884e4e0f 100644
 --- a/plugins/elements/gstinputselector.c
 +++ b/plugins/elements/gstinputselector.c
 @@ -361,7 +361,7 @@ static GstSelectorPadCachedBuffer *

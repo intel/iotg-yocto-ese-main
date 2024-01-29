@@ -1,7 +1,7 @@
-From 68876a08a06ec271999e381048c8301af7ee72db Mon Sep 17 00:00:00 2001
+From 00a011013dcb187400978a11814cffe096f2843e Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
-Date: Mon, 7 Aug 2023 16:30:48 +0800
-Subject: [PATCH 27/77] gl: update docs for mixer move
+Date: Tue, 24 Oct 2023 08:58:39 +0800
+Subject: [PATCH 27/77]  gl: update docs for mixer move
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4608>
 

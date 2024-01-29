@@ -1,7 +1,7 @@
-From e4dde808b145bc5910952efccdc401a69c2085b0 Mon Sep 17 00:00:00 2001
+From 5fa20cf91297cf907f5e0110e5ff912e6b0be86a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sat, 7 Jan 2023 19:40:42 +0000
-Subject: [PATCH 09/43] taglist, tagsetter: drop use of GSlice
+Subject: [PATCH 09/42] taglist, tagsetter: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---
@@ -10,10 +10,10 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/36
  2 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/gst/gsttaglist.c b/gst/gsttaglist.c
-index 07519fe1..14fd397d 100644
+index 456580c7..eb3f9ce6 100644
 --- a/gst/gsttaglist.c
 +++ b/gst/gsttaglist.c
-@@ -549,7 +549,7 @@ gst_tag_register_static (const gchar * name, GstTagFlag flag, GType type,
+@@ -548,7 +548,7 @@ gst_tag_register_static (const gchar * name, GstTagFlag flag, GType type,
      return;
    }
  
@@ -22,7 +22,7 @@ index 07519fe1..14fd397d 100644
    info->flag = flag;
    info->type = type;
    info->name_quark = g_quark_from_static_string (name);
-@@ -693,7 +693,7 @@ gst_tag_list_new_internal (GstStructure * s, GstTagScope scope)
+@@ -692,7 +692,7 @@ gst_tag_list_new_internal (GstStructure * s, GstTagScope scope)
  
    g_assert (s != NULL);
  
@@ -31,7 +31,7 @@ index 07519fe1..14fd397d 100644
  
    gst_mini_object_init (GST_MINI_OBJECT_CAST (tag_list), 0, GST_TYPE_TAG_LIST,
        (GstMiniObjectCopyFunction) __gst_tag_list_copy, NULL,
-@@ -724,7 +724,7 @@ __gst_tag_list_free (GstTagList * list)
+@@ -723,7 +723,7 @@ __gst_tag_list_free (GstTagList * list)
    memset (list, 0xff, sizeof (GstTagListImpl));
  #endif
  

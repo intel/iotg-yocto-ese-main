@@ -1,0 +1,60 @@
+From af8a9f022dbf61106eb70ad84bc4e66d26fa953a Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 4 Aug 2023 20:47:38 +0800
+Subject: [PATCH 167/232] va: Include drm fourcc header file in
+ gstvavideoformat.h
+
+And add some definition to pass the Windows compiling.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4044>
+---
+ gst-libs/gst/va/gstvaallocator.c   |  4 ----
+ gst-libs/gst/va/gstvavideoformat.h | 17 +++++++++++++++++
+ 2 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/gst-libs/gst/va/gstvaallocator.c b/gst-libs/gst/va/gstvaallocator.c
+index 46534589d..d24a55dc3 100644
+--- a/gst-libs/gst/va/gstvaallocator.c
++++ b/gst-libs/gst/va/gstvaallocator.c
+@@ -40,10 +40,6 @@
+ #ifndef G_OS_WIN32
+ #include <sys/types.h>
+ #include <unistd.h>
+-#include <libdrm/drm_fourcc.h>
+-#else
+-#define DRM_FORMAT_MOD_LINEAR  0ULL
+-#define DRM_FORMAT_MOD_INVALID 0xffffffffffffff
+ #endif
+ 
+ #include "gstvasurfacecopy.h"
+diff --git a/gst-libs/gst/va/gstvavideoformat.h b/gst-libs/gst/va/gstvavideoformat.h
+index 950f1e673..43b61352b 100644
+--- a/gst-libs/gst/va/gstvavideoformat.h
++++ b/gst-libs/gst/va/gstvavideoformat.h
+@@ -25,6 +25,23 @@
+ #include <gst/video/video.h>
+ #include <va/va.h>
+ 
++#ifndef G_OS_WIN32
++#include <libdrm/drm_fourcc.h>
++#else
++/**
++ * DRM_FORMAT_INVALID: (skip) (attributes doc.skip=true)
++ */
++#define DRM_FORMAT_INVALID     0
++/**
++ * DRM_FORMAT_MOD_LINEAR: (skip) (attributes doc.skip=true)
++ */
++#define DRM_FORMAT_MOD_LINEAR  0ULL
++/**
++ * DRM_FORMAT_MOD_INVALID: (skip) (attributes doc.skip=true)
++ */
++#define DRM_FORMAT_MOD_INVALID 0xffffffffffffff
++#endif
++
+ G_BEGIN_DECLS
+ 
+ GST_VA_API
+-- 
+2.40.1
+

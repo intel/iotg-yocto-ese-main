@@ -1,4 +1,4 @@
-From e6c6a0901e0d74376fa4659ca8468d3f5f9bcc4d Mon Sep 17 00:00:00 2001
+From 0ce1c1657f030e80692345eee16d9ebc07a7844e Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Thu, 25 May 2023 10:41:21 +0800
 Subject: [PATCH 60/77] glupload: make raw manner only consider system memory

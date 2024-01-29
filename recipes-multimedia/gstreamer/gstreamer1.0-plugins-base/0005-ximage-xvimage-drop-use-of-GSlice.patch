@@ -1,4 +1,4 @@
-From 0c37b4f16bd1ca7e29058efcb2ea8dcb77fd5122 Mon Sep 17 00:00:00 2001
+From 28cc9a5d24f5ba6197476092e2a336eadb3f0cb8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 16:03:16 +0000
 Subject: [PATCH 05/77] ximage, xvimage: drop use of GSlice

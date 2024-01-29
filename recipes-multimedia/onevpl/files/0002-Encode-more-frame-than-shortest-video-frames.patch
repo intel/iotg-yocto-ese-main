@@ -1,0 +1,405 @@
+From 0802c9441e8b3e71c67de1047d61e1770cb6809a Mon Sep 17 00:00:00 2001
+From: "Ch'ng, Seng Guan" <seng.guan.chng@intel.com>
+Date: Thu, 13 Jul 2023 22:09:11 +0800
+Subject: [PATCH 2/7] Encode more frame than shortest video frames
+
+https://jira.devtools.intel.com/browse/NEXGRAPHIC-112
+
+Signed-off-by: Ch'ng, Seng Guan <seng.guan.chng@intel.com>
+---
+ .../include/pipeline_transcode.h              |  11 +-
+ .../include/smt_cli_params.h                  |   1 +
+ .../src/pipeline_transcode.cpp                | 201 +++++++++++++++++-
+ .../sample_multi_transcode/src/smt_cli.cpp    |  11 +
+ 4 files changed, 215 insertions(+), 9 deletions(-)
+
+diff --git a/tools/legacy/sample_multi_transcode/include/pipeline_transcode.h b/tools/legacy/sample_multi_transcode/include/pipeline_transcode.h
+index 8f9521e..586baaa 100644
+--- a/tools/legacy/sample_multi_transcode/include/pipeline_transcode.h
++++ b/tools/legacy/sample_multi_transcode/include/pipeline_transcode.h
+@@ -64,6 +64,9 @@ const mfxF64 MCTF_LOSSLESS_BPP        = 0.0;
+ #endif
+ 
+ namespace TranscodingSample {
++
++enum ProlongStatus { NormalFrame = 0x5F, BlackFrame = 0xBF, AllBlack = 0xAB };
++
+ enum VppCompDumpMode { NULL_RENDER_VPP_COMP = 1, DUMP_FILE_VPP_COMP = 2 };
+ 
+ enum MemoryModel {
+@@ -146,6 +149,7 @@ struct PreEncAuxBuffer {
+ 
+ struct ExtendedSurface {
+     mfxU32 TargetID;
++    mfxU8 FrameAttrib;
+ 
+     mfxFrameSurface1* pSurface;
+     PreEncAuxBuffer* pAuxCtrl;
+@@ -291,7 +295,8 @@ class CTranscodingPipeline;
+ class SafetySurfaceBuffer {
+ public:
+     //this is used only for sanity check
+-    mfxU32 TargetID = 0;
++    mfxU32 TargetID       = 0;
++    ProlongStatus Prolong = NormalFrame;
+ 
+     struct SurfaceDescriptor {
+         SurfaceDescriptor() : ExtSurface(), Locked(false) {}
+@@ -468,6 +473,7 @@ protected:
+     virtual mfxStatus Encode();
+     virtual mfxStatus Transcode();
+     virtual mfxStatus DecodeOneFrame(ExtendedSurface* pExtSurface);
++    virtual mfxStatus CreateBlackFrame(ExtendedSurface* pExtSurface);
+     virtual mfxStatus DecodeLastFrame(ExtendedSurface* pExtSurface);
+     virtual mfxStatus VPPOneFrame(ExtendedSurface* pSurfaceIn,
+                                   ExtendedSurface* pExtSurface,
+@@ -525,6 +531,7 @@ protected:
+     mfxStatus PutBS();
+ 
+     mfxStatus DumpSurface2File(mfxFrameSurface1* pSurface);
++    mfxStatus ReplaceBlackSurface(mfxFrameSurface1* pSurface);
+     mfxStatus Surface2BS(ExtendedSurface* pSurf, mfxBitstreamWrapper* pBS, mfxU32 fourCC);
+     mfxStatus NV12toBS(mfxFrameSurface1* pSurface, mfxBitstreamWrapper* pBS);
+     mfxStatus I420toBS(mfxFrameSurface1* pSurface, mfxBitstreamWrapper* pBS);
+@@ -677,6 +684,8 @@ protected:
+     mfxU32 m_MaxFramesForTranscode;
+     mfxU32 m_MaxFramesForEncode;
+ 
++    mfxU16 m_Prolonged;
++
+     // pointer to already extended bs processor
+     FileBitstreamProcessor* m_pBSProcessor;
+ 
+diff --git a/tools/legacy/sample_multi_transcode/include/smt_cli_params.h b/tools/legacy/sample_multi_transcode/include/smt_cli_params.h
+index 08f21bf..87e4d32 100644
+--- a/tools/legacy/sample_multi_transcode/include/smt_cli_params.h
++++ b/tools/legacy/sample_multi_transcode/include/smt_cli_params.h
+@@ -222,6 +222,7 @@ typedef struct sInputParams {
+ 
+     mfxU32 FrameNumberPreference; // how many surfaces user wants
+     mfxU32 MaxFrameNumber; // maximum frames for transcoding
++    mfxU16 prolonged;
+     mfxU32 numSurf4Comp;
+     mfxU16 numTiles4Comp;
+ 
+diff --git a/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp b/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
+index fb38bb9..1469a12 100644
+--- a/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
++++ b/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
+@@ -489,6 +489,124 @@ mfxVideoParam CTranscodingPipeline::GetDecodeParam(mfxU32 ID) {
+ // 1 ms provides better result in range [0..5] ms
+ enum { TIME_TO_SLEEP = 1 };
+ 
++mfxStatus CTranscodingPipeline::CreateBlackFrame(ExtendedSurface* pExtSurface) {
++    MFX_ITT_TASK("CreateBlackFrame");
++    MSDK_CHECK_POINTER(pExtSurface, MFX_ERR_NULL_PTR);
++
++    mfxStatus sts                 = MFX_ERR_MORE_SURFACE;
++    mfxFrameSurface1* pmfxSurface = NULL;
++    pExtSurface->pSurface         = NULL;
++    if (1 == m_Prolonged) {
++        //--- Time measurements
++        if (statisticsWindowSize) {
++            inputStatistics.StopTimeMeasurementWithCheck();
++            inputStatistics.StartTimeMeasurement();
++        }
++
++        CTimer DevBusyTimer;
++        DevBusyTimer.Start();
++
++        if (m_rawInput) {
++            m_ScalerConfig.Tracer->BeginEvent(SMTTracer::ThreadType::DEC,
++                                              TargetID,
++                                              SMTTracer::EventName::SURF_WAIT,
++                                              nullptr,
++                                              nullptr);
++            pExtSurface->pSurface = GetFreeSurface(false, MSDK_SURFACE_WAIT_INTERVAL);
++            m_ScalerConfig.Tracer->EndEvent(SMTTracer::ThreadType::DEC,
++                                            TargetID,
++                                            SMTTracer::EventName::SURF_WAIT,
++                                            nullptr,
++                                            nullptr);
++
++            m_ScalerConfig.Tracer->BeginEvent(SMTTracer::ThreadType::DEC,
++                                              TargetID,
++                                              SMTTracer::EventName::READ_YUV,
++                                              nullptr,
++                                              nullptr);
++            sts = m_pBSProcessor->GetInputFrame(pExtSurface->pSurface);
++            m_ScalerConfig.Tracer->EndEvent(SMTTracer::ThreadType::DEC,
++                                            TargetID,
++                                            SMTTracer::EventName::READ_YUV,
++                                            nullptr,
++                                            pExtSurface->pSurface);
++
++            if (sts != MFX_ERR_NONE)
++                return sts;
++        }
++
++        if (!m_rawInput) {
++            if (m_MemoryModel == GENERAL_ALLOC) {
++                // Find new working surface
++                m_ScalerConfig.Tracer->BeginEvent(SMTTracer::ThreadType::DEC,
++                                                  TargetID,
++                                                  SMTTracer::EventName::SURF_WAIT,
++                                                  nullptr,
++                                                  nullptr);
++                pmfxSurface = GetFreeSurface(true, MSDK_SURFACE_WAIT_INTERVAL);
++                m_ScalerConfig.Tracer->EndEvent(SMTTracer::ThreadType::DEC,
++                                                TargetID,
++                                                SMTTracer::EventName::SURF_WAIT,
++                                                nullptr,
++                                                nullptr);
++            }
++            else if (m_MemoryModel == VISIBLE_INT_ALLOC) {
++                sts = m_pmfxDEC->GetSurface(&pmfxSurface);
++                MSDK_CHECK_STATUS(sts, "m_pmfxDEC->GetSurface failed");
++            }
++
++            if (m_MemoryModel != HIDDEN_INT_ALLOC) {
++                if (m_bForceStop)
++                    m_nTimeout = 0;
++                sts = CheckStopCondition();
++                if (MFX_ERR_NONE != sts) {
++                    return sts;
++                }
++
++                // return an error if a free surface wasn't found
++                MSDK_CHECK_POINTER_SAFE(
++                    pmfxSurface,
++                    MFX_ERR_MEMORY_ALLOC,
++                    printf("ERROR: No free surfaces in decoder pool (during long period)\n"));
++            }
++
++            m_ScalerConfig.Tracer->BeforeDecodeStart();
++            m_ScalerConfig.Tracer->BeginEvent(SMTTracer::ThreadType::DEC,
++                                              TargetID,
++                                              SMTTracer::EventName::UNDEF,
++                                              nullptr,
++                                              nullptr);
++
++            pExtSurface->FrameAttrib = BlackFrame;
++            pExtSurface->pSurface    = pmfxSurface; //force point to new created mfxFrameSurface1
++            sts                      = ReplaceBlackSurface(pExtSurface->pSurface);
++            m_ScalerConfig.Tracer->EndEvent(SMTTracer::ThreadType::DEC,
++                                            TargetID,
++                                            SMTTracer::EventName::UNDEF,
++                                            nullptr,
++                                            pExtSurface->pSurface);
++            if (pExtSurface->Syncp) {
++                m_ScalerConfig.Tracer->AfterDecodeStart();
++            }
++
++            if (m_MemoryModel == VISIBLE_INT_ALLOC) {
++                mfxStatus sts_release = pmfxSurface->FrameInterface->Release(pmfxSurface);
++                MSDK_CHECK_STATUS(sts_release, "FrameInterface->Release failed");
++            }
++        }
++
++        if (sts == MFX_ERR_NONE) {
++            m_LastDecSyncPoint = pExtSurface->Syncp;
++        }
++        // ignore warnings if output is available,
++        if (MFX_ERR_NONE < sts && pExtSurface->Syncp) {
++            sts = MFX_ERR_NONE;
++        }
++    }
++    return sts;
++
++} // mfxStatus CTranscodingPipeline::CreateBlackFrame(ExtendedSurface *pExtSurface)
++
+ mfxStatus CTranscodingPipeline::DecodeOneFrame(ExtendedSurface* pExtSurface) {
+     MFX_ITT_TASK("DecodeOneFrame");
+     MSDK_CHECK_POINTER(pExtSurface, MFX_ERR_NULL_PTR);
+@@ -602,10 +720,11 @@ mfxStatus CTranscodingPipeline::DecodeOneFrame(ExtendedSurface* pExtSurface) {
+                                               SMTTracer::EventName::UNDEF,
+                                               nullptr,
+                                               nullptr);
+-            sts = m_pmfxDEC->DecodeFrameAsync(m_pmfxBS,
++            sts                      = m_pmfxDEC->DecodeFrameAsync(m_pmfxBS,
+                                               pmfxSurface,
+                                               &pExtSurface->pSurface,
+                                               &pExtSurface->Syncp);
++            pExtSurface->FrameAttrib = NormalFrame;
+             m_ScalerConfig.Tracer->EndEvent(SMTTracer::ThreadType::DEC,
+                                             TargetID,
+                                             SMTTracer::EventName::UNDEF,
+@@ -1047,8 +1166,20 @@ mfxStatus CTranscodingPipeline::Decode() {
+                 if (!m_bUseOverlay) {
+                     sts = DecodeOneFrame(&DecExtSurface);
+                     if (MFX_ERR_MORE_DATA == sts) {
+-                        sts = bLastCycle ? DecodeLastFrame(&DecExtSurface) : MFX_ERR_MORE_DATA;
+-                        bEndOfFile = bLastCycle ? true : false;
++                        if (1 == m_Prolonged) {
++                            if (AllBlack == m_pBuffer->Prolong) {
++                                DecodeLastFrame(&DecExtSurface);
++                                bEndOfFile = true;
++                            }
++                            else {
++                                CreateBlackFrame(&DecExtSurface);
++                                sts = MFX_ERR_NONE;
++                            }
++                        }
++                        else {
++                            sts = bLastCycle ? DecodeLastFrame(&DecExtSurface) : MFX_ERR_MORE_DATA;
++                            bEndOfFile = bLastCycle ? true : false;
++                        }
+                     }
+                 }
+                 else {
+@@ -1166,8 +1297,9 @@ mfxStatus CTranscodingPipeline::Decode() {
+         }
+         else // no VPP - just copy pointers
+         {
+-            VppExtSurface.pSurface = DecExtSurface.pSurface;
+-            VppExtSurface.Syncp    = DecExtSurface.Syncp;
++            VppExtSurface.pSurface    = DecExtSurface.pSurface;
++            VppExtSurface.Syncp       = DecExtSurface.Syncp;
++            VppExtSurface.FrameAttrib = DecExtSurface.FrameAttrib;
+         }
+ 
+         //--- Sometimes VPP may return 2 surfaces on output, for the first one it'll return status MFX_ERR_MORE_SURFACE - we have to call VPPOneFrame again in this case
+@@ -1189,8 +1321,9 @@ mfxStatus CTranscodingPipeline::Decode() {
+         MSDK_BREAK_ON_ERROR(sts);
+ 
+         {
+-            PreEncExtSurface.pSurface = VppExtSurface.pSurface;
+-            PreEncExtSurface.Syncp    = VppExtSurface.Syncp;
++            PreEncExtSurface.pSurface    = VppExtSurface.pSurface;
++            PreEncExtSurface.Syncp       = VppExtSurface.Syncp;
++            PreEncExtSurface.FrameAttrib = VppExtSurface.FrameAttrib;
+         }
+ 
+         if (m_pSurfaceUtilizationSynchronizer && m_MemoryModel != GENERAL_ALLOC) {
+@@ -1339,6 +1472,7 @@ mfxStatus CTranscodingPipeline::Encode() {
+     ExtendedBS* pBS                = NULL;
+     bool isQuit                    = false;
+     bool bPollFlag                 = false;
++    bool bAllBlackFrame            = true;
+     int nFramesAlreadyPut          = 0;
+     SafetySurfaceBuffer* curBuffer = m_pBuffer;
+ 
+@@ -1349,7 +1483,6 @@ mfxStatus CTranscodingPipeline::Encode() {
+             if (isQuit) {
+                 // We're here because one of decoders has reported that there're no any more frames ready.
+                 //So, let's pass null surface to extract data from the VPP and encoder caches.
+-
+                 MSDK_ZERO_MEMORY(DecExtSurface);
+             }
+             else {
+@@ -1378,6 +1511,9 @@ mfxStatus CTranscodingPipeline::Encode() {
+                     }
+                 }
+             }
++            if (NormalFrame == DecExtSurface.FrameAttrib) {
++                bAllBlackFrame = false;
++            }
+ 
+             // if session is not joined and it is not parent - synchronize
+             if (!m_bIsJoinSession && m_pParentPipeline) {
+@@ -1510,10 +1646,23 @@ mfxStatus CTranscodingPipeline::Encode() {
+                         VppExtSurface.pSurface = 0;
+                     }
+                     sts = EncodeOneFrame(&VppExtSurface, &m_BSPool.back()->Bitstream);
++                    if (bAllBlackFrame && (1 == m_Prolonged)) {
++                        isQuit = true;
++                        if (m_nVPPCompMode > 0) {
++                            curBuffer->Prolong = AllBlack; //first thread
++                            while (curBuffer->m_pNext != NULL) {
++                                curBuffer = curBuffer->m_pNext;
++                                curBuffer->Prolong =
++                                    AllBlack; //indicate All Black detected for remaining thread
++                            }
++                        }
++                        curBuffer = m_pBuffer;
++                    }
+ 
+                     // Count only real surfaces
+                     if (VppExtSurface.pSurface) {
+                         m_nProcessedFramesNum++;
++                        bAllBlackFrame = true; //reset value, default to true
+                     }
+ 
+                     if (m_nProcessedFramesNum >= m_MaxFramesForTranscode) {
+@@ -2144,6 +2293,41 @@ mfxStatus CTranscodingPipeline::PutBS() {
+     return sts;
+ } //mfxStatus CTranscodingPipeline::PutBS()
+ 
++mfxStatus CTranscodingPipeline::ReplaceBlackSurface(mfxFrameSurface1* pSurf) {
++    mfxStatus sts = MFX_ERR_NONE;
++
++    if (pSurf == nullptr) {
++        return MFX_ERR_NULL_PTR;
++    }
++
++    if (m_MemoryModel == GENERAL_ALLOC) {
++        sts = m_pMFXAllocator->Lock(m_pMFXAllocator->pthis, pSurf->Data.MemId, &pSurf->Data);
++        MSDK_CHECK_STATUS(sts, "m_pMFXAllocator->Lock failed");
++    }
++    else {
++        sts = pSurf->FrameInterface->Map(pSurf, MFX_MAP_READ);
++        MSDK_CHECK_STATUS(sts, "FrameInterface->Map failed");
++    }
++
++    if (pSurf->Info.FourCC == MFX_FOURCC_NV12) {
++        memset(pSurf->Data.Y, 0x10, (uint32_t)(pSurf->Data.Pitch) * (uint32_t)(pSurf->Info.Height));
++        memset(pSurf->Data.UV,
++               0x80,
++               (uint32_t)(pSurf->Data.Pitch) * (uint32_t)(pSurf->Info.Height) / 2);
++    }
++
++    if (m_MemoryModel == GENERAL_ALLOC) {
++        sts = m_pMFXAllocator->Unlock(m_pMFXAllocator->pthis, pSurf->Data.MemId, &pSurf->Data);
++        MSDK_CHECK_STATUS(sts, "m_pMFXAllocator->Unlock failed");
++    }
++    else {
++        sts = pSurf->FrameInterface->Unmap(pSurf);
++        MSDK_CHECK_STATUS(sts, "FrameInterface->Unmap failed");
++    }
++
++    return sts;
++}
++
+ mfxStatus CTranscodingPipeline::DumpSurface2File(mfxFrameSurface1* pSurf) {
+     mfxStatus sts = MFX_ERR_NONE;
+ 
+@@ -3938,6 +4122,7 @@ mfxStatus CTranscodingPipeline::Init(sInputParams* pParams,
+     TargetID       = pParams->TargetID;
+ 
+     m_MaxFramesForTranscode = pParams->MaxFrameNumber;
++    m_Prolonged             = pParams->prolonged;
+     // if no number of frames for a particular session is undefined, default
+     // value is 0xFFFFFFFF. Thus, use it as a marker to assign parent
+     // MaxFramesForTranscode to m_MaxFramesForTranscode
+diff --git a/tools/legacy/sample_multi_transcode/src/smt_cli.cpp b/tools/legacy/sample_multi_transcode/src/smt_cli.cpp
+index d13be71..933eded 100644
+--- a/tools/legacy/sample_multi_transcode/src/smt_cli.cpp
++++ b/tools/legacy/sample_multi_transcode/src/smt_cli.cpp
+@@ -781,6 +781,9 @@ void PrintHelp() {
+     HELP_LINE("                Disabling rendering after VPP Composition.");
+     HELP_LINE("                This is for performance measurements");
+     HELP_LINE("");
++    HELP_LINE("  -prolong 1");
++    HELP_LINE("                Prolonged the short video with black frame.");
++    HELP_LINE("");
+     HELP_LINE("  -dec_postproc Resize after decoder using direct pipe");
+     HELP_LINE("                (should be used in decoder session)");
+     HELP_LINE("");
+@@ -2804,6 +2807,14 @@ mfxStatus CmdProcessor::ParseParamsForOneSession(mfxU32 argc, char* argv[]) {
+                 return MFX_ERR_UNSUPPORTED;
+             }
+         }
++        else if (msdk_match(argv[i], "-prolong")) {
++            VAL_CHECK(i + 1 == argc, i, argv[i]);
++            i++;
++            if (MFX_ERR_NONE != msdk_opt_read(argv[i], InputParams.prolonged)) {
++                PrintError("-prolong %s is invalid", argv[i]);
++                return MFX_ERR_UNSUPPORTED;
++            }
++        }
+         else if (msdk_match(argv[i], "-angle")) {
+             VAL_CHECK(i + 1 == argc, i, argv[i]);
+             i++;
+-- 
+2.40.1
+

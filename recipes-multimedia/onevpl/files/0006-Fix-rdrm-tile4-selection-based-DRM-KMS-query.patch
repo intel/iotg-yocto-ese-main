@@ -1,0 +1,244 @@
+From cf6bb14d6eddc74f9662e7f50bfc4a6bce565145 Mon Sep 17 00:00:00 2001
+From: Vincent Cheah Beng Keat <vincent.beng.keat.cheah@intel.com>
+Date: Mon, 6 Nov 2023 16:23:18 +0800
+Subject: [PATCH 6/7] Fix rdrm tile4 selection based DRM/KMS query
+
+---
+ tools/legacy/sample_common/CMakeLists.txt     | 10 +++
+ .../sample_common/include/vaapi_utils.h       | 12 +--
+ .../sample_common/include/vaapi_utils_drm.h   | 10 +--
+ .../legacy/sample_common/src/vaapi_utils.cpp  |  8 +-
+ .../sample_common/src/vaapi_utils_drm.cpp     | 77 +++++++++++++++----
+ 5 files changed, 83 insertions(+), 34 deletions(-)
+
+diff --git a/tools/legacy/sample_common/CMakeLists.txt b/tools/legacy/sample_common/CMakeLists.txt
+index fa861c5..335aaa3 100644
+--- a/tools/legacy/sample_common/CMakeLists.txt
++++ b/tools/legacy/sample_common/CMakeLists.txt
+@@ -186,6 +186,16 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
+             )
+           endif()
+ 
++          if("${PKG_LIBDRM_VERSION}" VERSION_GREATER 2.4.107)
++            target_compile_definitions(
++              ${TARGET} PUBLIC DRM_LINUX_FORMAT_MODIFIER_BLOB_SUPPORT)
++          else()
++            message(
++              STATUS
++                "libdrm version ${PKG_LIBDRM_VERSION} does not support drmModeFormatModifierBlobIterNext() API"
++            )
++          endif()
++
+           if("${PKG_LIBDRM_VERSION}" VERSION_GREATER 2.4.104)
+             target_compile_definitions(${TARGET} PUBLIC DRM_LINUX_HDR_SUPPORT)
+           else()
+diff --git a/tools/legacy/sample_common/include/vaapi_utils.h b/tools/legacy/sample_common/include/vaapi_utils.h
+index aaa719d..a3a8544 100644
+--- a/tools/legacy/sample_common/include/vaapi_utils.h
++++ b/tools/legacy/sample_common/include/vaapi_utils.h
+@@ -185,6 +185,10 @@ public:
+                                                    uint64_t modifier[4],
+                                                    uint32_t* buf_id,
+                                                    uint32_t flags);
++        #if defined(DRM_LINUX_FORMAT_MODIFIER_BLOB_SUPPORT)
++    typedef bool (*drmModeFormatModifierBlobIterNext_type)(const drmModePropertyBlobRes* blob,
++                                                           drmModeFormatModifierIterator* iter);
++        #endif
+     typedef void (*drmModeFreeConnector_type)(drmModeConnectorPtr ptr);
+     typedef void (*drmModeFreeCrtc_type)(drmModeCrtcPtr ptr);
+     typedef void (*drmModeFreeEncoder_type)(drmModeEncoderPtr ptr);
+@@ -221,9 +225,6 @@ public:
+                                         uint32_t src_y,
+                                         uint32_t src_w,
+                                         uint32_t src_h);
+-    typedef int (*drmGetDevices2_type)(uint32_t flags, drmDevicePtr devices[], int max_devices);
+-    typedef void (*drmFreeDevices_type)(drmDevicePtr devices[], int count);
+-
+     DRM_Proxy();
+     ~DRM_Proxy();
+ 
+@@ -231,6 +232,9 @@ public:
+     __DECLARE(drmIoctl);
+     __DECLARE(drmModeAddFB);
+     __DECLARE(drmModeAddFB2WithModifiers);
++        #if defined(DRM_LINUX_FORMAT_MODIFIER_BLOB_SUPPORT)
++    __DECLARE(drmModeFormatModifierBlobIterNext);
++        #endif
+     __DECLARE(drmSetClientCap);
+     __DECLARE(drmModeObjectGetProperties);
+     __DECLARE(drmModeFreeObjectProperties);
+@@ -262,8 +266,6 @@ public:
+     __DECLARE(drmSetMaster);
+     __DECLARE(drmDropMaster);
+     __DECLARE(drmModeSetPlane);
+-    __DECLARE(drmGetDevices2);
+-    __DECLARE(drmFreeDevices);
+         #undef __DECLARE
+ };
+ 
+diff --git a/tools/legacy/sample_common/include/vaapi_utils_drm.h b/tools/legacy/sample_common/include/vaapi_utils_drm.h
+index e412231..f7c2500 100644
+--- a/tools/legacy/sample_common/include/vaapi_utils_drm.h
++++ b/tools/legacy/sample_common/include/vaapi_utils_drm.h
+@@ -58,10 +58,6 @@ enum drm_static_metadata_id { DRM_STATIC_METADATA_TYPE1 = 0 };
+ #define EDID_CEA_EXT_TAG_STATIC_METADATA  0x6
+ #define EDID_CEA_EXT_TAG_DYNAMIC_METADATA 0x7
+ 
+-#define IS_GEN13(devId)                                                                  \
+-    ((devId) == 0x7D40 || (devId) == 0x7D60 || (devId) == 0x7D45 || (devId) == 0x7D55 || \
+-     (devId) == 0x7DD5)
+-
+ #if defined(LIBVA_DRM_SUPPORT)
+ 
+     #include <va/va_drm.h>
+@@ -114,6 +110,7 @@ private:
+     bool getConnector(drmModeRes* resource, uint32_t connector_type);
+     bool setupConnection(drmModeRes* resource, drmModeConnector* connector);
+     bool getPlane();
++    bool getAllFormatsAndModifiers();
+ 
+     bool getConnectorProperties(int fd, int connectorId);
+     bool getCRTCProperties(int fd, int crtcId);
+@@ -134,11 +131,6 @@ private:
+     int drmSendHdrMetaData(mfxExtMasteringDisplayColourVolume* displayColor,
+                            mfxExtContentLightLevelInfo* contentLight,
+                            bool enableHDR);
+-    struct freeDevices {
+-        void operator()(drmDevicePtr* p) {
+-            free(p);
+-        }
+-    };
+ 
+     const MfxLoader::DRM_Proxy m_drmlib;
+     const MfxLoader::DrmIntel_Proxy m_drmintellib;
+diff --git a/tools/legacy/sample_common/src/vaapi_utils.cpp b/tools/legacy/sample_common/src/vaapi_utils.cpp
+index 69ca315..f01b07f 100644
+--- a/tools/legacy/sample_common/src/vaapi_utils.cpp
++++ b/tools/legacy/sample_common/src/vaapi_utils.cpp
+@@ -93,6 +93,9 @@ DRM_Proxy::DRM_Proxy()
+           SIMPLE_LOADER_FUNCTION(drmIoctl),
+           SIMPLE_LOADER_FUNCTION(drmModeAddFB),
+           SIMPLE_LOADER_FUNCTION(drmModeAddFB2WithModifiers),
++        #if defined(DRM_LINUX_FORMAT_MODIFIER_BLOB_SUPPORT)
++          SIMPLE_LOADER_FUNCTION(drmModeFormatModifierBlobIterNext),
++        #endif
+           SIMPLE_LOADER_FUNCTION(drmSetClientCap),
+           SIMPLE_LOADER_FUNCTION(drmModeObjectGetProperties),
+           SIMPLE_LOADER_FUNCTION(drmModeFreeObjectProperties),
+@@ -123,9 +126,8 @@ DRM_Proxy::DRM_Proxy()
+           SIMPLE_LOADER_FUNCTION(drmModeSetCrtc),
+           SIMPLE_LOADER_FUNCTION(drmSetMaster),
+           SIMPLE_LOADER_FUNCTION(drmDropMaster),
+-          SIMPLE_LOADER_FUNCTION(drmModeSetPlane),
+-          SIMPLE_LOADER_FUNCTION(drmGetDevices2),
+-          SIMPLE_LOADER_FUNCTION(drmFreeDevices) {}
++          SIMPLE_LOADER_FUNCTION(drmModeSetPlane) {
++}
+ 
+ DrmIntel_Proxy::~DrmIntel_Proxy() {}
+ 
+diff --git a/tools/legacy/sample_common/src/vaapi_utils_drm.cpp b/tools/legacy/sample_common/src/vaapi_utils_drm.cpp
+index c593eb9..721d376 100644
+--- a/tools/legacy/sample_common/src/vaapi_utils_drm.cpp
++++ b/tools/legacy/sample_common/src/vaapi_utils_drm.cpp
+@@ -221,23 +221,6 @@ drmRenderer::drmRenderer(int fd, mfxI32 monitorType)
+           m_bRequiredTiled4(false),
+           m_pCurrentRenderTargetSurface(NULL) {
+     bool res = false;
+-    int ret  = -1, maxDevices;
+-
+-    maxDevices = m_drmlib.drmGetDevices2(0, NULL, 0);
+-    if (maxDevices < 0)
+-        throw std::invalid_argument("No devices found");
+-
+-    auto devices = std::unique_ptr<drmDevicePtr, freeDevices>{ reinterpret_cast<drmDevicePtr*>(
+-        malloc(sizeof(drmDevicePtr) * maxDevices)) };
+-
+-    ret = m_drmlib.drmGetDevices2(0, devices.get(), maxDevices);
+-    if (ret < 0)
+-        throw std::invalid_argument("drmGetDevices2() returned error");
+-
+-    if (IS_GEN13((devices.get())[0]->deviceinfo.pci->device_id))
+-        m_bRequiredTiled4 = true;
+-
+-    m_drmlib.drmFreeDevices(devices.get(), maxDevices);
+ 
+     if (m_drmlib.drmSetClientCap(m_fd, DRM_CLIENT_CAP_ATOMIC, 1) != 0)
+         throw std::invalid_argument("Failed to set atomic");
+@@ -538,6 +521,10 @@ bool drmRenderer::getPlane() {
+     #endif
+                         (plane->formats[j] == DRM_FORMAT_NV12)) {
+                         m_planeID = plane->plane_id;
++
++                        if (!getAllFormatsAndModifiers())
++                            printf("drmrender: failed to obtain plane properties\n");
++
+                         m_drmlib.drmModeFreePlane(plane);
+                         m_drmlib.drmModeFreePlaneResources(planes);
+                         return true;
+@@ -551,6 +538,62 @@ bool drmRenderer::getPlane() {
+     return false;
+ }
+ 
++bool drmRenderer::getAllFormatsAndModifiers() {
++    drmModeObjectProperties* planeProps = NULL;
++    drmModePropertyRes** planePropsInfo = NULL;
++    drmModePropertyBlobPtr blob;
++    #if defined(DRM_LINUX_FORMAT_MODIFIER_BLOB_SUPPORT)
++    drmModeFormatModifierIterator iter = { 0 };
++    #endif
++    uint32_t i;
++
++    planeProps = m_drmlib.drmModeObjectGetProperties(m_fd, m_planeID, DRM_MODE_OBJECT_PLANE);
++    if (!planeProps)
++        return false;
++
++    planePropsInfo =
++        (drmModePropertyRes**)malloc(planeProps->count_props * sizeof(drmModePropertyRes*));
++
++    for (i = 0; i < planeProps->count_props; i++)
++        planePropsInfo[i] = m_drmlib.drmModeGetProperty(m_fd, planeProps->props[i]);
++
++    for (i = 0; i < planeProps->count_props; i++) {
++        if (strcmp(planePropsInfo[i]->name, "IN_FORMATS"))
++            continue;
++
++        blob = m_drmlib.drmModeGetPropertyBlob(m_fd, planeProps->prop_values[i]);
++        if (!blob)
++            continue;
++
++    #if defined(DRM_LINUX_FORMAT_MODIFIER_BLOB_SUPPORT)
++        while (m_drmlib.drmModeFormatModifierBlobIterNext(blob, &iter)) {
++            if (iter.mod == DRM_FORMAT_MOD_INVALID)
++                break;
++
++        #if defined(DRM_LINUX_MODIFIER_TILED4_SUPPORT)
++            if ((iter.fmt == DRM_FORMAT_NV12 || iter.fmt == DRM_FORMAT_P010) &&
++                (iter.mod == I915_FORMAT_MOD_4_TILED)) {
++                m_bRequiredTiled4 = true;
++                break;
++            }
++        #endif
++        }
++    #endif
++        m_drmlib.drmModeFreePropertyBlob(blob);
++    }
++
++    if (planePropsInfo) {
++        for (i = 0; i < planeProps->count_props; i++) {
++            if (planePropsInfo[i])
++                m_drmlib.drmModeFreeProperty(planePropsInfo[i]);
++        }
++        free(planePropsInfo);
++    }
++
++    m_drmlib.drmModeFreeObjectProperties(planeProps);
++    return true;
++}
++
+ bool drmRenderer::setMaster() {
+     int wait_count = 0;
+     do {
+-- 
+2.40.1
+

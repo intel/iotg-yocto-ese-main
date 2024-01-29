@@ -1,7 +1,7 @@
-From f8c43764f5bab71674b7c8b6f31916ad293da210 Mon Sep 17 00:00:00 2001
+From 3beea069217a17a4d48aaeae18f4c679d650bde8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 4 Jan 2023 17:57:05 +0000
-Subject: [PATCH 01/43] tools: gst-stats: drop use of GSlice allocator
+Subject: [PATCH 01/42] tools: gst-stats: drop use of GSlice allocator
 
 https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/291
 

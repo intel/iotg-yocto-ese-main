@@ -1,4 +1,4 @@
-From 5f0aabb6b4cd2e2caf350f5271c19774f410fabd Mon Sep 17 00:00:00 2001
+From 22d2d4c99e6ee439dc73b405352c523690841fc1 Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Fri, 4 Aug 2023 16:45:46 +0800
 Subject: [PATCH 73/77] glbasemixer: use gst_display_ensure_context

@@ -1,0 +1,118 @@
+From aa2bb5a168a14d90fd1c9f9bb30efb55f6e6b56e Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Wed, 22 Feb 2023 10:23:00 +0800
+Subject: [PATCH 090/232] msdk: Add function to get the implementation
+ description
+
+Through the implementation description, we can dynamically obtain
+the codec capabilities supported by the platform.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4177>
+---
+ sys/msdk/msdk.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ sys/msdk/msdk.h |  6 ++++++
+ 2 files changed, 55 insertions(+), 1 deletion(-)
+
+diff --git a/sys/msdk/msdk.c b/sys/msdk/msdk.c
+index 8612a95d8..bfbadfcfa 100644
+--- a/sys/msdk/msdk.c
++++ b/sys/msdk/msdk.c
+@@ -179,6 +179,40 @@ msdk_get_platform_codename (mfxSession session)
+ 
+ #if (MFX_VERSION >= 2000)
+ 
++gpointer
++msdk_get_impl_description (const mfxLoader * loader, mfxU32 impl_idx)
++{
++  mfxImplDescription *desc = NULL;
++  mfxStatus status = MFX_ERR_NONE;
++
++  g_return_val_if_fail (loader != NULL, NULL);
++
++  status = MFXEnumImplementations (*loader, impl_idx,
++      MFX_IMPLCAPS_IMPLDESCSTRUCTURE, (mfxHDL *) & desc);
++  if (status != MFX_ERR_NONE) {
++    GST_ERROR ("Failed to get implementation description, %s",
++        msdk_status_to_string (status));
++    return NULL;
++  }
++
++  return desc;
++}
++
++gboolean
++msdk_release_impl_description (const mfxLoader * loader, gpointer impl_desc)
++{
++  mfxStatus status = MFX_ERR_NONE;
++  mfxImplDescription *desc = (mfxImplDescription *) impl_desc;
++
++  g_return_val_if_fail (loader != NULL, FALSE);
++
++  status = MFXDispReleaseImplDescription (*loader, desc);
++  if (status != MFX_ERR_NONE)
++    return FALSE;
++
++  return TRUE;
++}
++
+ mfxStatus
+ msdk_init_msdk_session (mfxIMPL impl, mfxVersion * pver,
+     MsdkSession * msdk_session)
+@@ -258,8 +292,10 @@ msdk_init_msdk_session (mfxIMPL impl, mfxVersion * pver,
+     sts = MFXCreateSession (loader, impl_idx, &session);
+     MFXDispReleaseImplDescription (loader, impl_desc);
+ 
+-    if (sts == MFX_ERR_NONE)
++    if (sts == MFX_ERR_NONE) {
++      msdk_session->impl_idx = impl_idx;
+       break;
++    }
+ 
+     impl_idx++;
+   }
+@@ -282,6 +318,18 @@ msdk_init_msdk_session (mfxIMPL impl, mfxVersion * pver,
+ 
+ #else
+ 
++gpointer
++msdk_get_impl_description (const mfxLoader * loader, mfxU32 impl_idx)
++{
++  return NULL;
++}
++
++gboolean
++msdk_release_impl_description (const mfxLoader * loader, gpointer impl_desc)
++{
++  return TRUE;
++}
++
+ mfxStatus
+ msdk_init_msdk_session (mfxIMPL impl, mfxVersion * pver,
+     MsdkSession * msdk_session)
+diff --git a/sys/msdk/msdk.h b/sys/msdk/msdk.h
+index f15bd0b36..3c9defca5 100644
+--- a/sys/msdk/msdk.h
++++ b/sys/msdk/msdk.h
+@@ -106,6 +106,7 @@ typedef struct _MsdkSession MsdkSession;
+ 
+ struct _MsdkSession
+ {
++  mfxU32 impl_idx;
+   mfxSession session;
+   mfxLoader loader;
+ };
+@@ -154,6 +155,11 @@ mfxStatus
+ msdk_init_msdk_session (mfxIMPL impl, mfxVersion * pver,
+     MsdkSession * msdk_session);
+ 
++gpointer
++msdk_get_impl_description (const mfxLoader * loader, mfxU32 impl_idx);
++gboolean
++msdk_release_impl_description (const mfxLoader * loader, gpointer impl_desc);
++
+ G_END_DECLS
+ 
+ #endif /* __MSDK_H__ */
+-- 
+2.40.1
+

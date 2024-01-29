@@ -1,4 +1,4 @@
-From 03c5dc146eb1c66bfb69117a97aa95682a3489c9 Mon Sep 17 00:00:00 2001
+From f7bf65487e7ac84bc48a5777f480f47de1136652 Mon Sep 17 00:00:00 2001
 From: Edward Hervey <edward@centricular.com>
 Date: Sun, 7 May 2023 09:27:16 +0200
 Subject: [PATCH 29/77] videodecoder: refactor and document finish_frame some
@@ -13,10 +13,10 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/46
  1 file changed, 80 insertions(+), 75 deletions(-)
 
 diff --git a/gst-libs/gst/video/gstvideodecoder.c b/gst-libs/gst/video/gstvideodecoder.c
-index c6e3cd72..9cc76a43 100644
+index 01e9d197..d5af002f 100644
 --- a/gst-libs/gst/video/gstvideodecoder.c
 +++ b/gst-libs/gst/video/gstvideodecoder.c
-@@ -2976,7 +2976,9 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
+@@ -2975,7 +2975,9 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
  {
    GstVideoDecoderPrivate *priv = decoder->priv;
    GList *l, *events = NULL;
@@ -27,7 +27,7 @@ index c6e3cd72..9cc76a43 100644
  
  #ifndef GST_DISABLE_GST_DEBUG
    GST_LOG_OBJECT (decoder, "n %d in %" G_GSIZE_FORMAT " out %" G_GSIZE_FORMAT,
-@@ -3046,79 +3048,84 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
+@@ -3045,79 +3047,84 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
          GST_TIME_ARGS (frame->duration));
    }
  
@@ -176,7 +176,7 @@ index c6e3cd72..9cc76a43 100644
  
    if (frame->pts == GST_CLOCK_TIME_NONE) {
      /* Last ditch timestamp guess: Just add the duration to the previous
-@@ -3145,16 +3152,14 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
+@@ -3144,16 +3151,14 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
      }
    }
  

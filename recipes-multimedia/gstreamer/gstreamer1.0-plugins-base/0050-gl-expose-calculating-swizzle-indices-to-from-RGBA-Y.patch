@@ -1,4 +1,4 @@
-From 2aa39c3415729bb348cc885fce5372395492a85c Mon Sep 17 00:00:00 2001
+From bdce03211320bd44f048a3ac70483b695fd9cedb Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Fri, 4 Aug 2023 11:27:12 +0800
 Subject: [PATCH 50/77] gl: expose calculating swizzle indices to/from

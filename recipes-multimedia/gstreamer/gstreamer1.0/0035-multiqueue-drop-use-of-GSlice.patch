@@ -1,7 +1,7 @@
-From f42f1ef4e3b0eddad74761629bd4a60535afd183 Mon Sep 17 00:00:00 2001
+From a662921029b3128557b9d3e25bc25bf731ff8ca6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 01:32:32 +0000
-Subject: [PATCH 35/43] multiqueue: drop use of GSlice
+Subject: [PATCH 35/42] multiqueue: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

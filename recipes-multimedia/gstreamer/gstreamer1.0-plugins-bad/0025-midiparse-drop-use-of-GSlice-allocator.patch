@@ -1,7 +1,7 @@
-From 33436dc0c6c5c7348122fdd1f32f954767f02d62 Mon Sep 17 00:00:00 2001
+From 6d959596e9bf1177db22732b9268c3132b58d9a4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 25 Jan 2023 00:39:54 +0000
-Subject: [PATCH 025/205] midiparse: drop use of GSlice allocator
+Subject: [PATCH 025/232] midiparse: drop use of GSlice allocator
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3784>
 ---

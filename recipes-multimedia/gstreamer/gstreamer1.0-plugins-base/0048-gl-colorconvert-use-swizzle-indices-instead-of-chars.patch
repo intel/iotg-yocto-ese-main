@@ -1,4 +1,4 @@
-From 4020da0ba09b2306d8add50bb023fdeb11905ef6 Mon Sep 17 00:00:00 2001
+From b06b4b42abc66ceb5af075287c6c2856291b7d89 Mon Sep 17 00:00:00 2001
 From: Matthew Waters <matthew@centricular.com>
 Date: Fri, 7 Jul 2023 17:32:48 +1000
 Subject: [PATCH 48/77] gl/colorconvert: use swizzle indices instead of chars

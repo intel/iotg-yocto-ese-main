@@ -1,4 +1,4 @@
-From b479d2a4ab73cbeba35e7dffab539be5362c07cd Mon Sep 17 00:00:00 2001
+From 1cfa5bc2a6b6748f81ed06941e4588fc5f853573 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 15 Mar 2023 18:51:58 +0000
 Subject: [PATCH 15/77] gst-plugins-base: re-indent with GNU indent 2.2.12
@@ -731,7 +731,7 @@ index 1e5b2e2d..4dd23223 100644
    } else {
      g_object_set (self->identity, "silent", TRUE, "signal-handoffs", FALSE,
 diff --git a/gst/playback/gstsubtitleoverlay.c b/gst/playback/gstsubtitleoverlay.c
-index f57cbd4c..9a0c5741 100644
+index 53189e52..cc2ee06c 100644
 --- a/gst/playback/gstsubtitleoverlay.c
 +++ b/gst/playback/gstsubtitleoverlay.c
 @@ -750,8 +750,9 @@ _get_silent_property (GstElement * element, gboolean * invert)
@@ -747,7 +747,7 @@ index f57cbd4c..9a0c5741 100644
  
    for (i = 0; i < G_N_ELEMENTS (properties); i++) {
 diff --git a/gst/subparse/gstsubparse.c b/gst/subparse/gstsubparse.c
-index b33ddbb2..2a4348e4 100644
+index 1867dee6..2b69595e 100644
 --- a/gst/subparse/gstsubparse.c
 +++ b/gst/subparse/gstsubparse.c
 @@ -95,8 +95,6 @@ G_DEFINE_TYPE (GstSubParse, gst_sub_parse, GST_TYPE_ELEMENT);

@@ -1,4 +1,4 @@
-From 8e57858dc3ac3a6c0dc57b1ed80fcc7e21992cad Mon Sep 17 00:00:00 2001
+From cb93f1769319162f97cbd6478093beb8056fd430 Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Fri, 4 Aug 2023 10:57:33 +0800
 Subject: [PATCH 49/77] gl/format: add helper for returning the number of

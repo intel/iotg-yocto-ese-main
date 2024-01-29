@@ -1,4 +1,4 @@
-From d2d4bd54eeddb53e33ffc2ae7a5d07fb403067bc Mon Sep 17 00:00:00 2001
+From c06adb8a5e6965acdc12de1e1a5ff36bed6bae30 Mon Sep 17 00:00:00 2001
 From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
 Date: Wed, 8 Feb 2023 16:50:10 -0500
 Subject: [PATCH 14/77] allocators: Add a DRM Dumb Allocator
@@ -920,7 +920,7 @@ index 6ee0bfd0..879c2fcb 100644
    subdirs : pkgconfig_subdirs,
    name : pkg_name,
 diff --git a/meson.build b/meson.build
-index bedc1545..27d54d1d 100644
+index 01456615..8110a2ee 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -305,6 +305,13 @@ if get_option('default_library') == 'static'

@@ -1,7 +1,7 @@
-From 2546f5b4ec7620e6dd2059090a9d0e8db76e0721 Mon Sep 17 00:00:00 2001
+From 59b6deebae58b8b6bf9de958b54559e4458f54b4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 15 Mar 2023 18:51:03 +0000
-Subject: [PATCH 41/43] gstreamer: re-indent with GNU indent 2.2.12
+Subject: [PATCH 41/42] gstreamer: re-indent with GNU indent 2.2.12
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4182>
 ---
@@ -279,7 +279,7 @@ index 1706efdd..582b7ecf 100644
  
  static const guint num_waveforms = G_N_ELEMENTS (waveforms);
 diff --git a/plugins/elements/gstinputselector.c b/plugins/elements/gstinputselector.c
-index 186132f9..270b96c1 100644
+index 884e4e0f..29d5625b 100644
 --- a/plugins/elements/gstinputselector.c
 +++ b/plugins/elements/gstinputselector.c
 @@ -1542,7 +1542,7 @@ gst_input_selector_set_property (GObject * object, guint prop_id,
@@ -503,10 +503,10 @@ index 768e184d..1162b546 100644
  
    for (i = 0; i < G_N_ELEMENTS (single_struct); i++) {
 diff --git a/tools/gst-inspect.c b/tools/gst-inspect.c
-index 069754e5..a245dfd4 100644
+index 06ed2dd4..1037cc50 100644
 --- a/tools/gst-inspect.c
 +++ b/tools/gst-inspect.c
-@@ -455,7 +455,7 @@ print_object_properties_info (GObject * obj, GObjectClass * obj_class,
+@@ -456,7 +456,7 @@ print_object_properties_info (GObject * obj, GObjectClass * obj_class,
  
      first_flag = TRUE;
      n_print ("%sflags%s: ", PROP_ATTR_NAME_COLOR, RESET_COLOR);

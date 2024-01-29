@@ -1,7 +1,7 @@
-From 132843caf694fd0578f07ddb301b98b466aba2bf Mon Sep 17 00:00:00 2001
+From 5fe464540911815c3eacf83923d83b8fa839dae2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:10:12 +0000
-Subject: [PATCH 010/205] wpe: drop use of GSlice
+Subject: [PATCH 010/232] wpe: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

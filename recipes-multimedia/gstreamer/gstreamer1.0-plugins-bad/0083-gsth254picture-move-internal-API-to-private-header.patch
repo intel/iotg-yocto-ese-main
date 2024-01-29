@@ -1,0 +1,44 @@
+From d8f6cbc29760cd52ff44708148dc2722d1def621 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Wed, 29 Mar 2023 09:20:52 +0200
+Subject: [PATCH 083/232] gsth254picture: move internal API to private header
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4288>
+---
+ gst-libs/gst/codecs/gsth264picture-private.h | 4 ++++
+ gst-libs/gst/codecs/gsth264picture.h         | 5 -----
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/gst-libs/gst/codecs/gsth264picture-private.h b/gst-libs/gst/codecs/gsth264picture-private.h
+index f71741d65..06010c6a4 100644
+--- a/gst-libs/gst/codecs/gsth264picture-private.h
++++ b/gst-libs/gst/codecs/gsth264picture-private.h
+@@ -25,4 +25,8 @@ G_BEGIN_DECLS
+ 
+ gint32 gst_h264_dpb_get_last_output_poc (GstH264Dpb * dpb);
+ 
++void   gst_h264_picture_set_reference   (GstH264Picture * picture,
++                                         GstH264PictureReference reference,
++                                         gboolean other_field);
++
+ G_END_DECLS
+diff --git a/gst-libs/gst/codecs/gsth264picture.h b/gst-libs/gst/codecs/gsth264picture.h
+index 6c2b91c99..803e93afa 100644
+--- a/gst-libs/gst/codecs/gsth264picture.h
++++ b/gst-libs/gst/codecs/gsth264picture.h
+@@ -330,11 +330,6 @@ gboolean         gst_h264_dpb_perform_memory_management_control_operation (GstH2
+                                                                            GstH264RefPicMarking *ref_pic_marking,
+                                                                            GstH264Picture * picture);
+ 
+-/* Internal methods */
+-void  gst_h264_picture_set_reference (GstH264Picture * picture,
+-                                      GstH264PictureReference reference,
+-                                      gboolean other_field);
+-
+ G_DEFINE_AUTOPTR_CLEANUP_FUNC(GstH264Picture, gst_h264_picture_unref)
+ 
+ G_END_DECLS
+-- 
+2.40.1
+

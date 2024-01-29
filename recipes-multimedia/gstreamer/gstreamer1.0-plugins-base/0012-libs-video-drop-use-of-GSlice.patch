@@ -1,4 +1,4 @@
-From d2f6e0a2944cf2ccf34bb3cc6dc59e9b98f54e23 Mon Sep 17 00:00:00 2001
+From fdbc8302d70b15f9755125744a0b7a6703428ab0 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 17:10:57 +0000
 Subject: [PATCH 12/77] libs: video: drop use of GSlice
@@ -40,10 +40,10 @@ index 144e23be..58bd3d5c 100644
    g_mutex_init (&ctx->mutex);
    ctx->sample = gst_sample_ref (sample);
 diff --git a/gst-libs/gst/video/gstvideodecoder.c b/gst-libs/gst/video/gstvideodecoder.c
-index 016aa7dd..e335668d 100644
+index 6a040863..a86eb749 100644
 --- a/gst-libs/gst/video/gstvideodecoder.c
 +++ b/gst-libs/gst/video/gstvideodecoder.c
-@@ -792,7 +792,7 @@ _new_input_state (GstCaps * caps)
+@@ -795,7 +795,7 @@ _new_input_state (GstCaps * caps)
    GstStructure *structure;
    const GValue *codec_data;
  
@@ -52,7 +52,7 @@ index 016aa7dd..e335668d 100644
    state->ref_count = 1;
    gst_video_info_init (&state->info);
    if (G_UNLIKELY (!gst_video_info_from_caps (&state->info, caps)))
-@@ -809,7 +809,7 @@ _new_input_state (GstCaps * caps)
+@@ -812,7 +812,7 @@ _new_input_state (GstCaps * caps)
  
  parse_fail:
    {
@@ -61,7 +61,7 @@ index 016aa7dd..e335668d 100644
      return NULL;
    }
  }
-@@ -821,12 +821,12 @@ _new_output_state (GstVideoFormat fmt, GstVideoInterlaceMode interlace_mode,
+@@ -824,12 +824,12 @@ _new_output_state (GstVideoFormat fmt, GstVideoInterlaceMode interlace_mode,
  {
    GstVideoCodecState *state;
  
@@ -76,7 +76,7 @@ index 016aa7dd..e335668d 100644
      return NULL;
    }
  
-@@ -2200,7 +2200,7 @@ struct _Timestamp
+@@ -2203,7 +2203,7 @@ struct _Timestamp
  static void
  timestamp_free (Timestamp * ts)
  {
@@ -85,7 +85,7 @@ index 016aa7dd..e335668d 100644
  }
  
  static void
-@@ -2219,7 +2219,7 @@ gst_video_decoder_add_buffer_info (GstVideoDecoder * decoder,
+@@ -2222,7 +2222,7 @@ gst_video_decoder_add_buffer_info (GstVideoDecoder * decoder,
      return;
    }
  
@@ -94,7 +94,7 @@ index 016aa7dd..e335668d 100644
  
    GST_LOG_OBJECT (decoder,
        "adding PTS %" GST_TIME_FORMAT " DTS %" GST_TIME_FORMAT
-@@ -2933,7 +2933,7 @@ gst_video_decoder_new_frame (GstVideoDecoder * decoder)
+@@ -2932,7 +2932,7 @@ gst_video_decoder_new_frame (GstVideoDecoder * decoder)
    GstVideoDecoderPrivate *priv = decoder->priv;
    GstVideoCodecFrame *frame;
  

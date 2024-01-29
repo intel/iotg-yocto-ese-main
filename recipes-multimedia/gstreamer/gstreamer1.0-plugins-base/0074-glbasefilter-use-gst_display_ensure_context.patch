@@ -1,4 +1,4 @@
-From dce72ea74fd1d9ba4a4aed8e5a941ef8afb60971 Mon Sep 17 00:00:00 2001
+From 32ba60965ede677372cc93bbfe8278742afd4ae5 Mon Sep 17 00:00:00 2001
 From: Anders Hellerup Madsen <ahem@github.com>
 Date: Mon, 6 Feb 2023 16:15:46 +0100
 Subject: [PATCH 74/77] glbasefilter: use gst_display_ensure_context

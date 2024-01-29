@@ -1,0 +1,113 @@
+From bf7455583f92ccf55cfeccf494579c7ac686f27f Mon Sep 17 00:00:00 2001
+From: Seungha Yang <seungha@centricular.com>
+Date: Tue, 7 Mar 2023 01:16:26 +0900
+Subject: [PATCH 040/232] va: Drop all GSlice bits
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4114>
+---
+ sys/va/gstvadecoder.c | 6 +++---
+ sys/va/gstvaencoder.c | 4 ++--
+ sys/va/gstvah264enc.c | 4 ++--
+ sys/va/gstvah265enc.c | 4 ++--
+ 4 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/sys/va/gstvadecoder.c b/sys/va/gstvadecoder.c
+index a6a03c23d..7b324f18a 100644
+--- a/sys/va/gstvadecoder.c
++++ b/sys/va/gstvadecoder.c
+@@ -773,7 +773,7 @@ gst_va_decode_picture_new (GstVaDecoder * self, GstBuffer * buffer)
+   g_return_val_if_fail (buffer && GST_IS_BUFFER (buffer), NULL);
+   g_return_val_if_fail (self && GST_IS_VA_DECODER (self), NULL);
+ 
+-  pic = g_slice_new (GstVaDecodePicture);
++  pic = g_new (GstVaDecodePicture, 1);
+   pic->gstbuffer = gst_buffer_ref (buffer);
+   pic->buffers = g_array_sized_new (FALSE, FALSE, sizeof (VABufferID), 16);
+   pic->slices = g_array_sized_new (FALSE, FALSE, sizeof (VABufferID), 64);
+@@ -812,7 +812,7 @@ gst_va_decode_picture_free (GstVaDecodePicture * pic)
+   g_clear_pointer (&pic->slices, g_array_unref);
+   gst_clear_object (&pic->display);
+ 
+-  g_slice_free (GstVaDecodePicture, pic);
++  g_free (pic);
+ }
+ 
+ GstVaDecodePicture *
+@@ -822,7 +822,7 @@ gst_va_decode_picture_dup (GstVaDecodePicture * pic)
+ 
+   g_return_val_if_fail (pic, NULL);
+ 
+-  dup = g_slice_new0 (GstVaDecodePicture);
++  dup = g_new0 (GstVaDecodePicture, 1);
+ 
+   dup->display = gst_object_ref (pic->display);
+   /* dups only need gstbuffer */
+diff --git a/sys/va/gstvaencoder.c b/sys/va/gstvaencoder.c
+index fa8d64eaa..4a745138e 100644
+--- a/sys/va/gstvaencoder.c
++++ b/sys/va/gstvaencoder.c
+@@ -1201,7 +1201,7 @@ gst_va_encode_picture_new (GstVaEncoder * self, GstBuffer * raw_buffer)
+     return NULL;
+   }
+ 
+-  pic = g_slice_new (GstVaEncodePicture);
++  pic = g_new (GstVaEncodePicture, 1);
+   pic->raw_buffer = gst_buffer_ref (raw_buffer);
+   pic->reconstruct_buffer = reconstruct_buffer;
+   pic->display = gst_object_ref (self->display);
+@@ -1228,7 +1228,7 @@ gst_va_encode_picture_free (GstVaEncodePicture * pic)
+   g_clear_pointer (&pic->params, g_array_unref);
+   gst_clear_object (&pic->display);
+ 
+-  g_slice_free (GstVaEncodePicture, pic);
++  g_free (pic);
+ }
+ 
+ /* currently supported rate controls */
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index a548bc569..97c5d524a 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -375,7 +375,7 @@ gst_va_enc_frame_new (void)
+ {
+   GstVaH264EncFrame *frame;
+ 
+-  frame = g_slice_new (GstVaH264EncFrame);
++  frame = g_new (GstVaH264EncFrame, 1);
+   frame->frame_num = 0;
+   frame->unused_for_reference_pic_num = -1;
+   frame->picture = NULL;
+@@ -390,7 +390,7 @@ gst_va_enc_frame_free (gpointer pframe)
+ {
+   GstVaH264EncFrame *frame = pframe;
+   g_clear_pointer (&frame->picture, gst_va_encode_picture_free);
+-  g_slice_free (GstVaH264EncFrame, frame);
++  g_free (frame);
+ }
+ 
+ static inline GstVaH264EncFrame *
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index c58509359..454fb10a9 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -448,7 +448,7 @@ gst_va_h265_enc_frame_new (void)
+ {
+   GstVaH265EncFrame *frame;
+ 
+-  frame = g_slice_new (GstVaH265EncFrame);
++  frame = g_new (GstVaH265EncFrame, 1);
+   frame->last_frame = FALSE;
+   frame->picture = NULL;
+   frame->total_frame_count = 0;
+@@ -461,7 +461,7 @@ gst_va_h265_enc_frame_free (gpointer pframe)
+ {
+   GstVaH265EncFrame *frame = pframe;
+   g_clear_pointer (&frame->picture, gst_va_encode_picture_free);
+-  g_slice_free (GstVaH265EncFrame, frame);
++  g_free (frame);
+ }
+ 
+ static inline GstVaH265EncFrame *
+-- 
+2.40.1
+

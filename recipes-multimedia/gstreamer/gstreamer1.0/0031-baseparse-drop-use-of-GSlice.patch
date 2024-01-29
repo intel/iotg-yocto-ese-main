@@ -1,7 +1,7 @@
-From a475ab939978503ad9fffe47c4c6380de206ab71 Mon Sep 17 00:00:00 2001
+From c7a108c26cfb4998134c84b771be2541fee805f8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 01:30:20 +0000
-Subject: [PATCH 31/43] baseparse: drop use of GSlice
+Subject: [PATCH 31/42] baseparse: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

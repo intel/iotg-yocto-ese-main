@@ -1,4 +1,4 @@
-From 6a137b1ecf925cb718c4b893daabfa156f4a4cde Mon Sep 17 00:00:00 2001
+From 65cb4fdf68ba7e3a147f3b682bbfc18d5be4cfe8 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Fri, 2 Jun 2023 23:18:35 +0800
 Subject: [PATCH 66/77] doc: Update the caps for glupload related plugins

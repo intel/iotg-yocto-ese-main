@@ -70,6 +70,9 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0001-ui-gtk-show-menu-bar-and-tabs-after-HPD-if-not-full-.patch \
            file://0001-ui-gtk-show-ui-and-enable-guest-display-only-when-wi.patch \
            file://0001-ui-gtk-apply-window-scale-in-gd_egl_scanout_flush.patch \
+           file://0001-ui-gtk-attach-fullscreen-hotkey-cb-to-new-vc-window.patch \
+           file://0001-ui-gtk-reshow-VC-if-it-s-main-VC.patch \
+           file://0001-ui-gtk-properly-handling-detached-VC-window.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 

@@ -1,4 +1,4 @@
-From fc3d1616dabf12eecd58a2801f23811018abe102 Mon Sep 17 00:00:00 2001
+From de1c81ae8affe951ae46c8c1cc8970fff8355843 Mon Sep 17 00:00:00 2001
 From: Matthew Waters <matthew@centricular.com>
 Date: Mon, 8 May 2023 17:50:23 +1000
 Subject: [PATCH 24/77] glmixer: remove reset vfunc

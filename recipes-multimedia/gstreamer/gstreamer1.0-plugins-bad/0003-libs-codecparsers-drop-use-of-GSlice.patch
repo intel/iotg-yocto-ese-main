@@ -1,7 +1,7 @@
-From 193b27e0c2e08a1aae538c7184ab8a70f2bfaa10 Mon Sep 17 00:00:00 2001
+From 5d49d82f3a5b80b02ca656c2d37e84670be10e97 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:02:47 +0000
-Subject: [PATCH 003/205] libs: codecparsers: drop use of GSlice
+Subject: [PATCH 003/232] libs: codecparsers: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---
@@ -14,7 +14,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/36
  6 files changed, 30 insertions(+), 29 deletions(-)
 
 diff --git a/gst-libs/gst/codecparsers/gstav1parser.c b/gst-libs/gst/codecparsers/gstav1parser.c
-index 22ffefd16..4b0e0e72a 100644
+index 9fda4fbb5..5f696fa04 100644
 --- a/gst-libs/gst/codecparsers/gstav1parser.c
 +++ b/gst-libs/gst/codecparsers/gstav1parser.c
 @@ -544,7 +544,7 @@ gst_av1_parse_reset_state (GstAV1Parser * parser, gboolean free_sps)
@@ -39,7 +39,7 @@ index 22ffefd16..4b0e0e72a 100644
    gst_av1_parse_reset_state (parser, FALSE);
  
    /* choose_operating_point() set the operating_point */
-@@ -4665,7 +4665,7 @@ gst_av1_parser_set_operating_point (GstAV1Parser * parser,
+@@ -4682,7 +4682,7 @@ gst_av1_parser_set_operating_point (GstAV1Parser * parser,
  GstAV1Parser *
  gst_av1_parser_new (void)
  {
@@ -48,7 +48,7 @@ index 22ffefd16..4b0e0e72a 100644
  }
  
  /**
-@@ -4684,6 +4684,6 @@ gst_av1_parser_free (GstAV1Parser * parser)
+@@ -4701,6 +4701,6 @@ gst_av1_parser_free (GstAV1Parser * parser)
    g_return_if_fail (parser != NULL);
  
    if (parser->seq_header)
@@ -80,7 +80,7 @@ index 349d6d23b..7f9000a6d 100644
    nalparser = NULL;
  }
 diff --git a/gst-libs/gst/codecparsers/gsth265parser.c b/gst-libs/gst/codecparsers/gsth265parser.c
-index fe775a86c..f81ea3c29 100644
+index 44b723737..b19e099a9 100644
 --- a/gst-libs/gst/codecparsers/gsth265parser.c
 +++ b/gst-libs/gst/codecparsers/gsth265parser.c
 @@ -1357,7 +1357,7 @@ gst_h265_parser_new (void)

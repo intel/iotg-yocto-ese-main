@@ -1,4 +1,4 @@
-From 1bb99987fc617ab14e27d456061c99ddf9548086 Mon Sep 17 00:00:00 2001
+From 693ae6478219ffb76ef79af31a1b30578fdb0512 Mon Sep 17 00:00:00 2001
 From: Anders Hellerup Madsen <ahem@github.com>
 Date: Mon, 6 Feb 2023 16:14:07 +0100
 Subject: [PATCH 71/77] gldisplay: Add gst_gl_display_ensure_context

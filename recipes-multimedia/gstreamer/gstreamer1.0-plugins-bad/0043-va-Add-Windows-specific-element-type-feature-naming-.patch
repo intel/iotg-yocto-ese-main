@@ -1,0 +1,566 @@
+From 3aed0efc7382fa19e360b093843201be553b80d9 Mon Sep 17 00:00:00 2001
+From: Seungha Yang <seungha@centricular.com>
+Date: Wed, 8 Mar 2023 22:44:42 +0900
+Subject: [PATCH 043/232] va: Add Windows specific element type/feature naming
+ support
+
+Adapter LUID will be changed per boot. Use different naming rule on Windows
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4114>
+---
+ sys/va/gstvaav1dec.c      | 19 ++--------
+ sys/va/gstvabasedec.h     |  1 +
+ sys/va/gstvacompositor.c  | 21 ++---------
+ sys/va/gstvadeinterlace.c | 21 ++---------
+ sys/va/gstvah264dec.c     | 19 ++--------
+ sys/va/gstvah264enc.c     | 30 ++++------------
+ sys/va/gstvah265dec.c     | 19 ++--------
+ sys/va/gstvah265enc.c     | 31 ++++------------
+ sys/va/gstvajpegdec.c     | 20 ++---------
+ sys/va/gstvampeg2dec.c    | 19 ++--------
+ sys/va/gstvapluginutils.c | 74 +++++++++++++++++++++++++++++++++++++++
+ sys/va/gstvapluginutils.h | 21 ++++++-----
+ sys/va/gstvavp8dec.c      | 19 ++--------
+ sys/va/gstvavp9dec.c      | 19 ++--------
+ sys/va/gstvavpp.c         | 21 ++---------
+ sys/va/meson.build        |  1 +
+ 16 files changed, 132 insertions(+), 223 deletions(-)
+ create mode 100644 sys/va/gstvapluginutils.c
+
+diff --git a/sys/va/gstvaav1dec.c b/sys/va/gstvaav1dec.c
+index 3659b354e..43e7edb7d 100644
+--- a/sys/va/gstvaav1dec.c
++++ b/sys/va/gstvaav1dec.c
+@@ -1107,22 +1107,9 @@ gst_va_av1_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first decoder to be registered should use a constant name,
+-   * like vaav1dec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaAV1Dec");
+-    feature_name = g_strdup ("vaav1dec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sAV1Dec", basename);
+-    feature_name = g_strdup_printf ("va%sav1dec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaAV1Dec", "GstVa%sAV1Dec",
++      &type_name, "vaav1dec", "va%sav1dec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvabasedec.h b/sys/va/gstvabasedec.h
+index 411a7072b..35121c4c0 100644
+--- a/sys/va/gstvabasedec.h
++++ b/sys/va/gstvabasedec.h
+@@ -32,6 +32,7 @@
+ #include "gstvadecoder.h"
+ #include "gstvadevice.h"
+ #include "gstvaprofile.h"
++#include "gstvapluginutils.h"
+ 
+ G_BEGIN_DECLS
+ 
+diff --git a/sys/va/gstvacompositor.c b/sys/va/gstvacompositor.c
+index 868ae5275..f54267eb0 100644
+--- a/sys/va/gstvacompositor.c
++++ b/sys/va/gstvacompositor.c
+@@ -1515,24 +1515,9 @@ gst_va_compositor_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  type_name = g_strdup ("GstVaCompositor");
+-  feature_name = g_strdup ("vacompositor");
+-
+-  /* The first compositor to be registered should use a constant
+-   * name, like vacompositor, for any additional compositors, we
+-   * create unique names, using the render device name. */
+-  if (g_type_from_name (type_name)) {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    g_free (type_name);
+-    g_free (feature_name);
+-    type_name = g_strdup_printf ("GstVa%sCompositor", basename);
+-    feature_name = g_strdup_printf ("va%scompositor", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaCompositor", "GstVa%sCompositor",
++      &type_name, "vacompositor", "va%scompositor", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvadeinterlace.c b/sys/va/gstvadeinterlace.c
+index 9a56dea8c..5337c3286 100644
+--- a/sys/va/gstvadeinterlace.c
++++ b/sys/va/gstvadeinterlace.c
+@@ -829,24 +829,9 @@ gst_va_deinterlace_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  type_name = g_strdup ("GstVaDeinterlace");
+-  feature_name = g_strdup ("vadeinterlace");
+-
+-  /* The first postprocessor to be registered should use a constant
+-   * name, like vadeinterlace, for any additional postprocessors, we
+-   * create unique names, using inserting the render device name. */
+-  if (g_type_from_name (type_name)) {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    g_free (type_name);
+-    g_free (feature_name);
+-    type_name = g_strdup_printf ("GstVa%sDeinterlace", basename);
+-    feature_name = g_strdup_printf ("va%sdeinterlace", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaDeinterlace", "GstVa%sDeinterlace",
++      &type_name, "vadeinterlace", "va%sdeinterlace", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvah264dec.c b/sys/va/gstvah264dec.c
+index a899f6d72..44a1ba6d5 100644
+--- a/sys/va/gstvah264dec.c
++++ b/sys/va/gstvah264dec.c
+@@ -967,22 +967,9 @@ gst_va_h264_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first decoder to be registered should use a constant name,
+-   * like vah264dec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaH264Dec");
+-    feature_name = g_strdup ("vah264dec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sH264Dec", basename);
+-    feature_name = g_strdup_printf ("va%sh264dec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaH264Dec", "GstVa%sH264Dec",
++      &type_name, "vah264dec", "va%sh264dec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index e3f05e386..586540039 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -3840,30 +3840,14 @@ gst_va_h264_enc_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first encoder to be registered should use a constant name,
+-   * like vah264enc, for any additional encoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    if (entrypoint == VAEntrypointEncSlice) {
+-      type_name = g_strdup ("GstVaH264Enc");
+-      feature_name = g_strdup ("vah264enc");
+-    } else {
+-      type_name = g_strdup ("GstVaH264LPEnc");
+-      feature_name = g_strdup ("vah264lpenc");
+-    }
++  if (entrypoint == VAEntrypointEncSlice) {
++    gst_va_create_feature_name (device, "GstVaH264Enc", "GstVa%sH264Enc",
++        &type_name, "vah264enc", "va%sh264enc", &feature_name,
++        &cdata->description, &rank);
+   } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    if (entrypoint == VAEntrypointEncSlice) {
+-      type_name = g_strdup_printf ("GstVa%sH264Enc", basename);
+-      feature_name = g_strdup_printf ("va%sh264enc", basename);
+-    } else {
+-      type_name = g_strdup_printf ("GstVa%sH264LPEnc", basename);
+-      feature_name = g_strdup_printf ("va%sh264lpenc", basename);
+-    }
+-    cdata->description = basename;
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
++    gst_va_create_feature_name (device, "GstVaH264LPEnc", "GstVa%sH264LPEnc",
++        &type_name, "vah264lpenc", "va%sh264lpenc", &feature_name,
++        &cdata->description, &rank);
+   }
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+diff --git a/sys/va/gstvah265dec.c b/sys/va/gstvah265dec.c
+index 7f17516bb..dd31003f1 100644
+--- a/sys/va/gstvah265dec.c
++++ b/sys/va/gstvah265dec.c
+@@ -1323,22 +1323,9 @@ gst_va_h265_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first decoder to be registered should use a constant name,
+-   * like vah265dec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaH265Dec");
+-    feature_name = g_strdup ("vah265dec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sH265Dec", basename);
+-    feature_name = g_strdup_printf ("va%sh265dec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaH265Dec", "GstVa%sH265Dec",
++      &type_name, "vah265dec", "va%sh265dec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 9b1a79820..d8e57db80 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -5313,31 +5313,14 @@ gst_va_h265_enc_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first encoder to be registered should use a constant name,
+-   * like vah265enc, for any additional encoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    if (entrypoint == VAEntrypointEncSlice) {
+-      type_name = g_strdup ("GstVaH265Enc");
+-      feature_name = g_strdup ("vah265enc");
+-    } else {
+-      type_name = g_strdup ("GstVaH265LPEnc");
+-      feature_name = g_strdup ("vah265lpenc");
+-    }
++  if (entrypoint == VAEntrypointEncSlice) {
++    gst_va_create_feature_name (device, "GstVaH265Enc", "GstVa%sH265Enc",
++        &type_name, "vah265enc", "va%sh265enc", &feature_name,
++        &cdata->description, &rank);
+   } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    if (entrypoint == VAEntrypointEncSlice) {
+-      type_name = g_strdup_printf ("GstVa%sH265Enc", basename);
+-      feature_name = g_strdup_printf ("va%sh265enc", basename);
+-    } else {
+-      type_name = g_strdup_printf ("GstVa%sH265LPEnc", basename);
+-      feature_name = g_strdup_printf ("va%sh265lpenc", basename);
+-    }
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
++    gst_va_create_feature_name (device, "GstVaH265LPEnc", "GstVa%sH265LPEnc",
++        &type_name, "vah265lpenc", "va%sh265lpenc", &feature_name,
++        &cdata->description, &rank);
+   }
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+diff --git a/sys/va/gstvajpegdec.c b/sys/va/gstvajpegdec.c
+index 33d2b8db8..6aeca2a61 100644
+--- a/sys/va/gstvajpegdec.c
++++ b/sys/va/gstvajpegdec.c
+@@ -619,23 +619,9 @@ gst_va_jpeg_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-
+-  /* The first decoder to be registered should use a constant name,
+-   * like vajpegdec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaJpegDec");
+-    feature_name = g_strdup ("vajpegdec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sJpegDec", basename);
+-    feature_name = g_strdup_printf ("va%sjpegdec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaJpegDec", "GstVa%sJpegDec",
++      &type_name, "vajpegdec", "va%sjpegdec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvampeg2dec.c b/sys/va/gstvampeg2dec.c
+index 010c5d0df..5e67b48a4 100644
+--- a/sys/va/gstvampeg2dec.c
++++ b/sys/va/gstvampeg2dec.c
+@@ -646,22 +646,9 @@ gst_va_mpeg2_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first decoder to be registered should use a constant name,
+-   * like vampeg2dec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaMpeg2Dec");
+-    feature_name = g_strdup ("vampeg2dec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sMpeg2Dec", basename);
+-    feature_name = g_strdup_printf ("va%smpeg2dec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaMpeg2Dec", "GstVa%sMpeg2Dec",
++      &type_name, "vampeg2dec", "va%smpeg2dec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvapluginutils.c b/sys/va/gstvapluginutils.c
+new file mode 100644
+index 000000000..d47c5b44c
+--- /dev/null
++++ b/sys/va/gstvapluginutils.c
+@@ -0,0 +1,74 @@
++/* GStreamer
++ * Copyright (C) 2023 Seungha Yang <seungha@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include "gstvapluginutils.h"
++
++GstVaDisplay *
++gst_va_display_platform_new (const gchar * path)
++{
++#ifdef G_OS_WIN32
++  return gst_va_display_win32_new (path);
++#else
++  return gst_va_display_drm_new_from_path (path);
++#endif
++}
++
++void
++gst_va_create_feature_name (GstVaDevice * device,
++    const gchar * type_name_default, const gchar * type_name_templ,
++    gchar ** type_name, const gchar * feature_name_default,
++    const gchar * feature_name_templ, gchar ** feature_name,
++    gchar ** desc, guint * rank)
++{
++  gchar *basename;
++
++  /* The first element to be registered should use a constant name,
++   * like vah264dec, for any additional elements, we create unique
++   * names, using inserting the render device name. */
++  if (device->index == 0) {
++    *type_name = g_strdup (type_name_default);
++    *feature_name = g_strdup (feature_name_default);
++#ifdef G_OS_WIN32
++    g_object_get (device->display, "description", desc, NULL);
++#endif
++    return;
++  }
++#ifdef G_OS_WIN32
++  basename = g_strdup_printf ("device%d", device->index);
++#else
++  basename = g_path_get_basename (device->render_device_path);
++#endif
++
++  *type_name = g_strdup_printf (type_name_templ, basename);
++  *feature_name = g_strdup_printf (feature_name_templ, basename);
++
++#ifdef G_OS_WIN32
++  g_object_get (device->display, "description", desc, NULL);
++  g_free (basename);
++#else
++  *desc = basename;
++#endif
++
++  if (*rank > 0)
++    *rank -= 1;
++}
+diff --git a/sys/va/gstvapluginutils.h b/sys/va/gstvapluginutils.h
+index ead92da8b..5852d7704 100644
+--- a/sys/va/gstvapluginutils.h
++++ b/sys/va/gstvapluginutils.h
+@@ -21,6 +21,7 @@
+ 
+ #include <gst/gst.h>
+ #include <gst/va/gstva.h>
++#include "gstvadevice.h"
+ 
+ G_BEGIN_DECLS
+ 
+@@ -30,14 +31,16 @@ G_BEGIN_DECLS
+ #define GST_IS_VA_DISPLAY_PLATFORM(dpy) GST_IS_VA_DISPLAY_DRM(dpy)
+ #endif
+ 
+-static GstVaDisplay *
+-gst_va_display_platform_new (const gchar * path)
+-{
+-#ifdef G_OS_WIN32
+-  return gst_va_display_win32_new (path);
+-#else
+-  return gst_va_display_drm_new_from_path (path);
+-#endif
+-}
++GstVaDisplay * gst_va_display_platform_new (const gchar * path);
++
++void gst_va_create_feature_name (GstVaDevice * device,
++                                 const gchar * type_name_default,
++                                 const gchar * type_name_templ,
++                                 gchar ** type_name,
++                                 const gchar * feature_name_default,
++                                 const gchar * feature_name_templ,
++                                 gchar ** feature_name,
++                                 gchar ** desc,
++                                 guint * rank);
+ 
+ G_END_DECLS
+diff --git a/sys/va/gstvavp8dec.c b/sys/va/gstvavp8dec.c
+index 1871622bc..cbdef0205 100644
+--- a/sys/va/gstvavp8dec.c
++++ b/sys/va/gstvavp8dec.c
+@@ -520,22 +520,9 @@ gst_va_vp8_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first decoder to be registered should use a constant name,
+-   * like vavp8dec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaVp8Dec");
+-    feature_name = g_strdup ("vavp8dec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sVp8Dec", basename);
+-    feature_name = g_strdup_printf ("va%svp8dec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaVp8Dec", "GstVa%sVp8Dec",
++      &type_name, "vavp8dec", "va%svp8dec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvavp9dec.c b/sys/va/gstvavp9dec.c
+index b35bd66f3..ec1c7037d 100644
+--- a/sys/va/gstvavp9dec.c
++++ b/sys/va/gstvavp9dec.c
+@@ -718,22 +718,9 @@ gst_va_vp9_dec_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  /* The first decoder to be registered should use a constant name,
+-   * like vavp9dec, for any additional decoders, we create unique
+-   * names, using inserting the render device name. */
+-  if (device->index == 0) {
+-    type_name = g_strdup ("GstVaVp9Dec");
+-    feature_name = g_strdup ("vavp9dec");
+-  } else {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    type_name = g_strdup_printf ("GstVa%sVp9Dec", basename);
+-    feature_name = g_strdup_printf ("va%svp9dec", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaVp9Dec", "GstVa%sVp9Dec",
++      &type_name, "vavp9dec", "va%svp9dec", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/gstvavpp.c b/sys/va/gstvavpp.c
+index fc03922d1..c5dc7121c 100644
+--- a/sys/va/gstvavpp.c
++++ b/sys/va/gstvavpp.c
+@@ -2321,24 +2321,9 @@ gst_va_vpp_register (GstPlugin * plugin, GstVaDevice * device,
+ 
+   type_info.class_data = cdata;
+ 
+-  type_name = g_strdup ("GstVaPostProc");
+-  feature_name = g_strdup ("vapostproc");
+-
+-  /* The first postprocessor to be registered should use a constant
+-   * name, like vapostproc, for any additional postprocessors, we
+-   * create unique names, using inserting the render device name. */
+-  if (g_type_from_name (type_name)) {
+-    gchar *basename = g_path_get_basename (device->render_device_path);
+-    g_free (type_name);
+-    g_free (feature_name);
+-    type_name = g_strdup_printf ("GstVa%sPostProc", basename);
+-    feature_name = g_strdup_printf ("va%spostproc", basename);
+-    cdata->description = basename;
+-
+-    /* lower rank for non-first device */
+-    if (rank > 0)
+-      rank--;
+-  }
++  gst_va_create_feature_name (device, "GstVaPostProc", "GstVa%sPostProc",
++      &type_name, "vapostproc", "va%spostproc", &feature_name,
++      &cdata->description, &rank);
+ 
+   g_once (&debug_once, _register_debug_category, NULL);
+ 
+diff --git a/sys/va/meson.build b/sys/va/meson.build
+index a99cdfe01..6315217a1 100644
+--- a/sys/va/meson.build
++++ b/sys/va/meson.build
+@@ -17,6 +17,7 @@ va_sources = [
+   'gstvah265enc.c',
+   'gstvajpegdec.c',
+   'gstvampeg2dec.c',
++  'gstvapluginutils.c',
+   'gstvaprofile.c',
+   'gstvavp8dec.c',
+   'gstvavp9dec.c',
+-- 
+2.40.1
+

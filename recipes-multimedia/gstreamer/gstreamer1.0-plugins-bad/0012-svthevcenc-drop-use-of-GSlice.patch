@@ -1,7 +1,7 @@
-From d694dd49babfb36de0c7580233035449fa765321 Mon Sep 17 00:00:00 2001
+From 97e7aa2b46ba1a95516658f8c884d656bf43344d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:14:24 +0000
-Subject: [PATCH 012/205] svthevcenc: drop use of GSlice
+Subject: [PATCH 012/232] svthevcenc: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

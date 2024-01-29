@@ -1,4 +1,4 @@
-From 966b6a46d354b81b9d2a361db319715b8ce9125e Mon Sep 17 00:00:00 2001
+From 35363cb8698df47e6165ea2f42724e9950f9e850 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 15 Mar 2023 18:52:48 +0000
 Subject: [PATCH 15/16] gst-plugins-good: re-indent with GNU indent 2.2.12
@@ -827,7 +827,7 @@ index 6a2431ab..468318fe 100644
        if (format != GST_FORMAT_TIME && format != GST_FORMAT_DEFAULT) {
          GST_ERROR_OBJECT (pad, "Seek in invalid format: %s",
 diff --git a/gst/isomp4/qtdemux.c b/gst/isomp4/qtdemux.c
-index 5137e1ee..175b9016 100644
+index efd48b14..6a6f50a4 100644
 --- a/gst/isomp4/qtdemux.c
 +++ b/gst/isomp4/qtdemux.c
 @@ -1413,8 +1413,8 @@ gst_qtdemux_perform_seek (GstQTDemux * qtdemux, GstSegment * segment,
@@ -861,7 +861,7 @@ index 5137e1ee..175b9016 100644
  
        if (seqnum == qtdemux->segment_seqnum) {
          GST_LOG_OBJECT (pad,
-@@ -9544,7 +9544,7 @@ qtdemux_stbl_init (GstQTDemux * qtdemux, QtDemuxStream * stream, GNode * stbl)
+@@ -9591,7 +9591,7 @@ qtdemux_stbl_init (GstQTDemux * qtdemux, QtDemuxStream * stream, GNode * stbl)
    /* sync sample atom */
    stream->stps_present = FALSE;
    if ((stream->stss_present =
@@ -870,7 +870,7 @@ index 5137e1ee..175b9016 100644
                &stream->stss) ? TRUE : FALSE) == TRUE) {
      /* copy atom data into a new buffer for later use */
      stream->stss.data = g_memdup2 (stream->stss.data, stream->stss.size);
-@@ -9562,7 +9562,7 @@ qtdemux_stbl_init (GstQTDemux * qtdemux, QtDemuxStream * stream, GNode * stbl)
+@@ -9609,7 +9609,7 @@ qtdemux_stbl_init (GstQTDemux * qtdemux, QtDemuxStream * stream, GNode * stbl)
  
      /* partial sync sample atom */
      if ((stream->stps_present =
@@ -879,7 +879,7 @@ index 5137e1ee..175b9016 100644
                  &stream->stps) ? TRUE : FALSE) == TRUE) {
        /* copy atom data into a new buffer for later use */
        stream->stps.data = g_memdup2 (stream->stps.data, stream->stps.size);
-@@ -9662,7 +9662,7 @@ qtdemux_stbl_init (GstQTDemux * qtdemux, QtDemuxStream * stream, GNode * stbl)
+@@ -9709,7 +9709,7 @@ qtdemux_stbl_init (GstQTDemux * qtdemux, QtDemuxStream * stream, GNode * stbl)
  
    /* composition time-to-sample */
    if ((stream->ctts_present =
@@ -1038,7 +1038,7 @@ index f2b384d6..af728863 100644
  
  struct _GstQtDemuxTagList
 diff --git a/gst/matroska/matroska-demux.c b/gst/matroska/matroska-demux.c
-index 1e771b04..5eecc14d 100644
+index 2cb7acf2..5c47fc68 100644
 --- a/gst/matroska/matroska-demux.c
 +++ b/gst/matroska/matroska-demux.c
 @@ -2811,12 +2811,12 @@ gst_matroska_demux_handle_seek_event (GstMatroskaDemux * demux,
@@ -1202,7 +1202,7 @@ index bac99458..811eaee6 100644
    gint payload_len;
    guint8 *payload;
 diff --git a/gst/rtsp/gstrtspsrc.c b/gst/rtsp/gstrtspsrc.c
-index d042ee4f..1a1655c3 100644
+index 8666d26e..391a92d4 100644
 --- a/gst/rtsp/gstrtspsrc.c
 +++ b/gst/rtsp/gstrtspsrc.c
 @@ -2977,7 +2977,7 @@ gst_rtspsrc_perform_seek (GstRTSPSrc * src, GstEvent * event)
@@ -1277,10 +1277,10 @@ index 506bcf17..ab0c6726 100644
          GST_LOG_OBJECT (oss, "  output routing %d: %s", i,
              &routings.strings[routings.strindex[i]]);
 diff --git a/sys/v4l2/gstv4l2object.c b/sys/v4l2/gstv4l2object.c
-index 6d8a7259..7e3dccca 100644
+index d201f7ea..ec6d665a 100644
 --- a/sys/v4l2/gstv4l2object.c
 +++ b/sys/v4l2/gstv4l2object.c
-@@ -4426,7 +4426,7 @@ unsupported_format:
+@@ -4420,7 +4420,7 @@ unsupported_format:
   * Returns: %TRUE on success, %FALSE on failure.
   */
  gboolean
@@ -1289,7 +1289,7 @@ index 6d8a7259..7e3dccca 100644
  {
    struct v4l2_selection sel = { 0 };
    struct v4l2_crop crop = { 0 };
-@@ -4549,14 +4549,13 @@ gst_v4l2_object_get_crop_rect (GstV4l2Object * obj, guint target,
+@@ -4543,14 +4543,13 @@ gst_v4l2_object_get_crop_rect (GstV4l2Object * obj, guint target,
  }
  
  gboolean

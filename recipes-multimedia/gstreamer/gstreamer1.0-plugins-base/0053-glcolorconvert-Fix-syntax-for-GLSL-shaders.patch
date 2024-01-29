@@ -1,4 +1,4 @@
-From 6ad2ad2e9a562b03a38874fe4442b09a88a57c5e Mon Sep 17 00:00:00 2001
+From bc3ac270c88c679af23d4895ddb429e5813ed585 Mon Sep 17 00:00:00 2001
 From: Nirbheek Chauhan <nirbheek@centricular.com>
 Date: Mon, 31 Jul 2023 17:31:46 +0530
 Subject: [PATCH 53/77] glcolorconvert: Fix syntax for GLSL shaders

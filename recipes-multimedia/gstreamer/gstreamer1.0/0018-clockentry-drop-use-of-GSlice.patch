@@ -1,7 +1,7 @@
-From 250ecf5a7ea451bb5c45d607314b918c2b150e66 Mon Sep 17 00:00:00 2001
+From 4de593570e17c71073e22c5ef3dda2bb7b70a882 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 00:48:46 +0000
-Subject: [PATCH 18/43] clockentry: drop use of GSlice
+Subject: [PATCH 18/42] clockentry: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

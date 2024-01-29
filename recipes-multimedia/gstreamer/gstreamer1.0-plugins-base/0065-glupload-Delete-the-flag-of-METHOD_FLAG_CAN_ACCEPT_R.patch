@@ -1,4 +1,4 @@
-From a1bbb840aac5fab575eec651f44b56a80635dc19 Mon Sep 17 00:00:00 2001
+From 2e54816d4a67f4d7450cb532fd46660d46304448 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Thu, 1 Jun 2023 18:52:28 +0800
 Subject: [PATCH 65/77] glupload: Delete the flag of METHOD_FLAG_CAN_ACCEPT_RAW

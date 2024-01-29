@@ -1,15 +1,17 @@
-From d5880d97cc7622e72ccc2e408231c12e2618efac Mon Sep 17 00:00:00 2001
+From 9df4b6d71f7766565d0c58d3e3c34db0be9abed3 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Fri, 2 Jun 2023 18:17:25 +0800
 Subject: [PATCH 77/77] video DMA: Add several video formats support
 
 Add Y410, Y412, Y210, Y212, BGR10A2, P010 and P012 format support.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5159>
 ---
  gst-libs/gst/video/video-info-dma.c | 37 +++++++++++++++++++++++++++++
  1 file changed, 37 insertions(+)
 
 diff --git a/gst-libs/gst/video/video-info-dma.c b/gst-libs/gst/video/video-info-dma.c
-index 2fb9c01e..0063b4a7 100644
+index 2fb9c01e..a52a3cca 100644
 --- a/gst-libs/gst/video/video-info-dma.c
 +++ b/gst-libs/gst/video/video-info-dma.c
 @@ -99,6 +99,36 @@
@@ -37,14 +39,14 @@ index 2fb9c01e..0063b4a7 100644
 + * index 0 = Y plane, [15:0] Y:x [10:6] little endian
 + * index 1 = Cr:Cb plane, [31:0] Cr:x:Cb:x [10:6:10:6] little endian
 + */
-+#define DRM_FORMAT_P010		  fourcc_code('P', '0', '1', '0')       /* 2x2 subsampled Cr:Cb plane 10 bits per channel */
++#define DRM_FORMAT_P010       fourcc_code('P', '0', '1', '0')   /* 2x2 subsampled Cr:Cb plane 10 bits per channel */
 +
 +/*
 + * 2 plane YCbCr MSB aligned
 + * index 0 = Y plane, [15:0] Y:x [12:4] little endian
 + * index 1 = Cr:Cb plane, [31:0] Cr:x:Cb:x [12:4:12:4] little endian
 + */
-+#define DRM_FORMAT_P012		  fourcc_code('P', '0', '1', '2')       /* 2x2 subsampled Cr:Cb plane 12 bits per channel */
++#define DRM_FORMAT_P012       fourcc_code('P', '0', '1', '2')   /* 2x2 subsampled Cr:Cb plane 12 bits per channel */
 +
  /*
   * Linear Layout

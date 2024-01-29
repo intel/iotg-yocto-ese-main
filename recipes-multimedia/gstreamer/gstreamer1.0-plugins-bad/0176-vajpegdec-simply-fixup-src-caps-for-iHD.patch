@@ -1,0 +1,74 @@
+From f52572c76d2f4c69778bff1b0baafe6717c0e913 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Mon, 7 Aug 2023 13:12:02 +0200
+Subject: [PATCH 176/232] vajpegdec: simply fixup src caps for iHD
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4044>
+---
+ sys/va/gstvajpegdec.c | 40 ++++++++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 18 deletions(-)
+
+diff --git a/sys/va/gstvajpegdec.c b/sys/va/gstvajpegdec.c
+index 9835b2c2f..2244c5550 100644
+--- a/sys/va/gstvajpegdec.c
++++ b/sys/va/gstvajpegdec.c
+@@ -543,33 +543,37 @@ _fixup_src_caps (GstVaDisplay * display, GstCaps * caps)
+ {
+   if (GST_VA_DISPLAY_IS_IMPLEMENTATION (display, INTEL_IHD)) {
+     GstCaps *ret;
+-    GstStructure *s;
+-    GstCapsFeatures *f;
+     guint i, len;
+ 
+     ret = gst_caps_copy (caps);
+ 
+     len = gst_caps_get_size (ret);
+     for (i = 0; i < len; i++) {
+-      s = gst_caps_get_structure (ret, i);
++      guint j, size;
++      GValue out = G_VALUE_INIT;
++      const GValue *in;
++      GstStructure *s;
++      GstCapsFeatures *f;
++
+       f = gst_caps_get_features (ret, i);
+-      if (gst_caps_features_is_equal (f,
+-              GST_CAPS_FEATURES_MEMORY_SYSTEM_MEMORY)) {
++      if (!gst_caps_features_is_equal (f,
++              GST_CAPS_FEATURES_MEMORY_SYSTEM_MEMORY))
++        continue;
++
++      s = gst_caps_get_structure (ret, i);
++
++      in = gst_structure_get_value (s, "format");
++
++      size = gst_value_list_get_size (in);
++      gst_value_list_init (&out, size);
++      for (j = 0; j < size; j++) {
++        const GValue *fmt = gst_value_list_get_value (in, j);
++
+         /* rgbp is not correctly mapped into memory */
+-        guint i, size;
+-        GValue out = G_VALUE_INIT;
+-        const GValue *in = gst_structure_get_value (s, "format");
+-
+-        size = gst_value_list_get_size (in);
+-        gst_value_list_init (&out, size);
+-        for (i = 0; i < size; i++) {
+-          const GValue *fmt = gst_value_list_get_value (in, i);
+-          if (g_strcmp0 (g_value_get_string (fmt), "RGBP") != 0)
+-            gst_value_list_append_value (&out, fmt);
+-        }
+-        gst_structure_set_value (s, "format", &out);
+-        g_value_unset (&out);
++        if (g_strcmp0 (g_value_get_string (fmt), "RGBP") != 0)
++          gst_value_list_append_value (&out, fmt);
+       }
++      gst_structure_take_value (s, "format", &out);
+     }
+ 
+     return ret;
+-- 
+2.40.1
+

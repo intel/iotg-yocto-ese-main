@@ -1,7 +1,7 @@
-From 2d0d7419ca528e924ee7ac5beb8bbd90df4a9e7f Mon Sep 17 00:00:00 2001
+From 1e01548f545d68caafd6c3a51b8395b722918157 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 4 Jan 2023 17:58:13 +0000
-Subject: [PATCH 02/43] core: tests: drop use of GSlice allocator
+Subject: [PATCH 02/42] core: tests: drop use of GSlice allocator
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

@@ -1,7 +1,7 @@
-From f6852cb5a80fc0da684c45ac24757ae48715eab9 Mon Sep 17 00:00:00 2001
+From 74394de4b2bc402142d2a9e4520f1233e37c6167 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:10:42 +0000
-Subject: [PATCH 011/205] x265: drop use of GSlice
+Subject: [PATCH 011/232] x265: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

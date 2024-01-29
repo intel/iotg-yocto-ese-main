@@ -1,7 +1,7 @@
-From 804bb8802a8426e9bbbf748d1b3bd3d771da75bc Mon Sep 17 00:00:00 2001
+From 1bc1b7250bc6e89f4598c74e4b143ba569ce4781 Mon Sep 17 00:00:00 2001
 From: Nirbheek Chauhan <nirbheek@centricular.com>
 Date: Thu, 9 Mar 2023 08:46:17 +0530
-Subject: [PATCH 39/43] gstvalue: Implement union for GstFractionRange
+Subject: [PATCH 39/42] gstvalue: Implement union for GstFractionRange
 
 This fixes simplification of caps with GstFractionRange structures,
 for example, this caps:

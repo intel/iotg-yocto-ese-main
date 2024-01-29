@@ -1,4 +1,4 @@
-From 8a1b51dd7b6efb48443e627a07410e42b114f9de Mon Sep 17 00:00:00 2001
+From fe5a5c3ab6f3dd56b8891b8c13ff8bcc8a19059a Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Thu, 25 May 2023 14:15:33 +0800
 Subject: [PATCH 63/77] glupload: make directviv upload manner only consider

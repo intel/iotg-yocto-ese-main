@@ -1,4 +1,4 @@
-From 932ec4960ea78091f9a0b0f3523f328b0f532857 Mon Sep 17 00:00:00 2001
+From 0b78b6d8ae40ecadfc590433af32d1b3921bfd26 Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Mon, 31 Jul 2023 18:53:35 +0800
 Subject: [PATCH 44/77] video: dma: Set DMA caps' format field to DMA_DRM

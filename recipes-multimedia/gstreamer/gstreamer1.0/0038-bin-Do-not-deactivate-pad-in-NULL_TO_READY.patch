@@ -1,7 +1,7 @@
-From c2d8cd58478005a564fad617c887994f5773812f Mon Sep 17 00:00:00 2001
+From a03c15ca66761183eb8ddcbac871e42b6866c5e4 Mon Sep 17 00:00:00 2001
 From: Thibault Saunier <tsaunier@igalia.com>
 Date: Mon, 30 Jan 2023 23:49:25 -0300
-Subject: [PATCH 38/43] bin: Do not deactivate pad in NULL_TO_READY
+Subject: [PATCH 38/42] bin: Do not deactivate pad in NULL_TO_READY
 
 Since https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/b76d3365497ded1fd4d536f0da2b9702f614b806
 pads are deactivated when going to READY but in `uridecodebin(3)`, the

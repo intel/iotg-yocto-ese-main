@@ -1,4 +1,4 @@
-From 273a17fd533183472c509e6c586bfeea8885b3a9 Mon Sep 17 00:00:00 2001
+From 15fe2f0960fd20ad2c83f3ff54963ee9437e3d88 Mon Sep 17 00:00:00 2001
 From: Marek Vasut <marex@denx.de>
 Date: Fri, 19 May 2023 20:38:39 +0200
 Subject: [PATCH 37/77] videotestsrc: Move video/x-bayer caps parsing in one

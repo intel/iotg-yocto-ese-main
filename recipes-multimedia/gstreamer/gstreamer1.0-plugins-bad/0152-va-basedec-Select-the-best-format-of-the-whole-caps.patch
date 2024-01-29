@@ -1,0 +1,59 @@
+From 3bbda55059b612fa73b32c7ed0fed15d100a6cde Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 23 Jun 2023 20:01:04 +0800
+Subject: [PATCH 152/232] va: basedec: Select the best format of the whole caps
+
+The current way only selects the best video format from the first
+structure of the caps. The caps like:
+
+  video/x-raw(memory:VAMemory),drm-format=(string)NV12;  \
+  video/x-raw(memory:VAMemory),format=(string){ NV12, Y210 }
+
+Will just choose NV12 as the result, even the bitstream is 10 bits.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4928>
+---
+ sys/va/gstvabasedec.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/sys/va/gstvabasedec.c b/sys/va/gstvabasedec.c
+index 5f5990204..8319fd2a3 100644
+--- a/sys/va/gstvabasedec.c
++++ b/sys/va/gstvabasedec.c
+@@ -798,6 +798,7 @@ _caps_video_format_from_chroma (GstCaps * caps, GstCapsFeatures * features,
+   GstCapsFeatures *feats;
+   GstStructure *structure;
+   const GValue *format;
++  GstVideoFormat fmt, ret_fmt = GST_VIDEO_FORMAT_UNKNOWN;
+ 
+   num_structures = gst_caps_get_size (caps);
+   for (i = 0; i < num_structures; i++) {
+@@ -806,10 +807,23 @@ _caps_video_format_from_chroma (GstCaps * caps, GstCapsFeatures * features,
+       continue;
+     structure = gst_caps_get_structure (caps, i);
+     format = gst_structure_get_value (structure, "format");
+-    return _find_video_format_from_chroma (format, chroma_type);
++
++    fmt = _find_video_format_from_chroma (format, chroma_type);
++    if (fmt == GST_VIDEO_FORMAT_UNKNOWN)
++      continue;
++
++    /* Record the first valid format as the fallback if we can
++       not find a better one. */
++    if (ret_fmt == GST_VIDEO_FORMAT_UNKNOWN)
++      ret_fmt = fmt;
++
++    if (gst_va_chroma_from_video_format (fmt) == chroma_type) {
++      ret_fmt = fmt;
++      break;
++    }
+   }
+ 
+-  return GST_VIDEO_FORMAT_UNKNOWN;
++  return ret_fmt;
+ }
+ 
+ static GstVideoFormat
+-- 
+2.40.1
+

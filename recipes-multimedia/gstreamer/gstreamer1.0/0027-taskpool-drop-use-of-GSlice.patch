@@ -1,7 +1,7 @@
-From 7603416b70ab096a57681c1623dae7d6d53f4de8 Mon Sep 17 00:00:00 2001
+From eb0b770c7dde265eed1f661308767c0e5a58d5e4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 00:57:01 +0000
-Subject: [PATCH 27/43] taskpool: drop use of GSlice
+Subject: [PATCH 27/42] taskpool: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

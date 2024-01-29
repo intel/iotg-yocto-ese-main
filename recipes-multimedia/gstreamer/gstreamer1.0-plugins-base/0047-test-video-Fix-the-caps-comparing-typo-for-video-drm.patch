@@ -1,4 +1,4 @@
-From ba1aeb1ed712463fe9bc05be6cfa398397985747 Mon Sep 17 00:00:00 2001
+From 26c31165f0b51abe17e454fb65829ebfe2dd69c9 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Wed, 26 Jul 2023 23:49:05 +0800
 Subject: [PATCH 47/77] test: video: Fix the caps comparing typo for video drm

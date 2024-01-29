@@ -1,4 +1,4 @@
-From 976c050f6cb8ed0d2838bca581813aef423e2136 Mon Sep 17 00:00:00 2001
+From 88fafded01162834788fd64a51bc29bff9820c92 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 17:38:17 +0000
 Subject: [PATCH 13/16] v4l2: drop use of GSlice
@@ -11,7 +11,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/36
  3 files changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/sys/v4l2/gstv4l2allocator.c b/sys/v4l2/gstv4l2allocator.c
-index f04bae14..33a5fd2c 100644
+index 059039e5..129a4198 100644
 --- a/sys/v4l2/gstv4l2allocator.c
 +++ b/sys/v4l2/gstv4l2allocator.c
 @@ -154,7 +154,7 @@ _v4l2mem_new (GstMemoryFlags flags, GstAllocator * allocator,
@@ -50,7 +50,7 @@ index f04bae14..33a5fd2c 100644
      return NULL;
    }
  
-@@ -401,7 +401,7 @@ gst_v4l2_allocator_free (GstAllocator * gallocator, GstMemory * gmem)
+@@ -399,7 +399,7 @@ gst_v4l2_allocator_free (GstAllocator * gallocator, GstMemory * gmem)
        close (mem->dmafd);
    }
  
@@ -60,7 +60,7 @@ index f04bae14..33a5fd2c 100644
  
  static void
 diff --git a/sys/v4l2/gstv4l2bufferpool.c b/sys/v4l2/gstv4l2bufferpool.c
-index 3e1098da..3e5ae9cf 100644
+index 8c6eba17..c4fe7e3c 100644
 --- a/sys/v4l2/gstv4l2bufferpool.c
 +++ b/sys/v4l2/gstv4l2bufferpool.c
 @@ -220,7 +220,7 @@ _unmap_userptr_frame (struct UserPtrData *data)

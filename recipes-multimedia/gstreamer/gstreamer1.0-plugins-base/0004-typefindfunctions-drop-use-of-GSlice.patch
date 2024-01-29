@@ -1,4 +1,4 @@
-From ea4586229324cdd281d9eb170893a95dc129a5d3 Mon Sep 17 00:00:00 2001
+From 3458b5b660253bec0a6da51b33895a08ef053438 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 16:01:52 +0000
 Subject: [PATCH 04/77] typefindfunctions: drop use of GSlice

@@ -1,7 +1,7 @@
-From 142c3bf084723dff9a6ccfcdd14ae625b9403627 Mon Sep 17 00:00:00 2001
+From ed85dc6d18e97a07aea637d692bb8ab3c3101011 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:15:46 +0000
-Subject: [PATCH 013/205] dvbsuboverlay: drop use of GSlice
+Subject: [PATCH 013/232] dvbsuboverlay: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

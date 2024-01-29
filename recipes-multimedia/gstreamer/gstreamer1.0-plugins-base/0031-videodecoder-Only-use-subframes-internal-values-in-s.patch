@@ -1,4 +1,4 @@
-From 5f32c639effa46b3eb691774caafe8d29140c75d Mon Sep 17 00:00:00 2001
+From 55c0bbd3d281d27ac4f726c4508f16155fd70cea Mon Sep 17 00:00:00 2001
 From: Edward Hervey <edward@centricular.com>
 Date: Wed, 10 May 2023 08:42:15 +0200
 Subject: [PATCH 31/77] videodecoder: Only use subframes internal values in
@@ -12,10 +12,10 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/46
  1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/gst-libs/gst/video/gstvideodecoder.c b/gst-libs/gst/video/gstvideodecoder.c
-index 3e2de9df..b96fd47d 100644
+index 0ee7d209..74bcab1e 100644
 --- a/gst-libs/gst/video/gstvideodecoder.c
 +++ b/gst-libs/gst/video/gstvideodecoder.c
-@@ -2441,8 +2441,8 @@ gst_video_decoder_chain_forward (GstVideoDecoder * decoder,
+@@ -2444,8 +2444,8 @@ gst_video_decoder_chain_forward (GstVideoDecoder * decoder,
  
      frame = priv->current_frame;
  
@@ -25,7 +25,7 @@ index 3e2de9df..b96fd47d 100644
        /* End the frame if the marker flag is set */
        if (!GST_BUFFER_FLAG_IS_SET (buf, GST_VIDEO_BUFFER_FLAG_MARKER)
            && (decoder->input_segment.rate > 0.0))
-@@ -3859,15 +3859,17 @@ gst_video_decoder_have_frame (GstVideoDecoder * decoder)
+@@ -3868,15 +3868,17 @@ gst_video_decoder_have_frame (GstVideoDecoder * decoder)
      priv->current_frame = NULL;
    } else {
      GstVideoCodecFrame *frame = priv->current_frame;
@@ -46,7 +46,7 @@ index 3e2de9df..b96fd47d 100644
  
      /* Decode the frame, which gives away our ref */
      ret = gst_video_decoder_decode_frame (decoder, frame);
-@@ -3955,7 +3957,8 @@ gst_video_decoder_decode_frame (GstVideoDecoder * decoder,
+@@ -3964,7 +3966,8 @@ gst_video_decoder_decode_frame (GstVideoDecoder * decoder,
  
    frame->distance_from_sync = priv->distance_from_sync;
  
@@ -56,7 +56,7 @@ index 3e2de9df..b96fd47d 100644
      frame->abidata.ABI.ts = frame->dts;
      frame->abidata.ABI.ts2 = frame->pts;
    }
-@@ -4992,7 +4995,9 @@ guint
+@@ -5001,7 +5004,9 @@ guint
  gst_video_decoder_get_input_subframe_index (GstVideoDecoder * decoder,
      GstVideoCodecFrame * frame)
  {

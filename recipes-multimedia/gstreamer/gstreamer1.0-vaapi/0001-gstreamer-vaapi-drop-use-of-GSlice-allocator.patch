@@ -1,4 +1,4 @@
-From d70cfafd1bd7b09c2bfcfaf0ecf3025bb6fa49d1 Mon Sep 17 00:00:00 2001
+From 61333a647406e21c9d73ad6ca135b52e74501c00 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Tue, 24 Jan 2023 19:16:47 +0000
 Subject: [PATCH 1/8] gstreamer-vaapi: drop use of GSlice allocator
@@ -353,10 +353,10 @@ index 394a089b..4f2c68c7 100644
  
  static void
 diff --git a/gst/vaapi/gstvaapidecode.c b/gst/vaapi/gstvaapidecode.c
-index 9f6eaba6..c7725803 100644
+index 1eb6208b..83fb5e1a 100644
 --- a/gst/vaapi/gstvaapidecode.c
 +++ b/gst/vaapi/gstvaapidecode.c
-@@ -145,7 +145,7 @@ copy_video_codec_state (const GstVideoCodecState * in_state)
+@@ -144,7 +144,7 @@ copy_video_codec_state (const GstVideoCodecState * in_state)
  
    g_return_val_if_fail (in_state != NULL, NULL);
  

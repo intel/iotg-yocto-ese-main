@@ -1,4 +1,4 @@
-From fa10e0a778b14949e14f4f22100ff6229bad098e Mon Sep 17 00:00:00 2001
+From 3bcf221edfa9c2880f654e9515d2afaac0c21441 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 17:02:27 +0000
 Subject: [PATCH 10/77] libs: sdp: drop use of GSlice

@@ -1,4 +1,4 @@
-From 3144d724a13de719d67609ab9702cb93b584b74e Mon Sep 17 00:00:00 2001
+From e4b59e836cff2b3e556891523ec5e5e6327c7c9e Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Fri, 28 Jul 2023 18:23:59 +0800
 Subject: [PATCH 08/77] libs: audio: drop use of GSlice
@@ -208,7 +208,7 @@ index 5605dc7b..21d1d82d 100644
        meta->offsets = meta->priv_offsets_arr;
  
 diff --git a/gst-libs/gst/audio/gstaudioringbuffer.c b/gst-libs/gst/audio/gstaudioringbuffer.c
-index ac71dd06..15de9c1d 100644
+index d718b85d..3954e628 100644
 --- a/gst-libs/gst/audio/gstaudioringbuffer.c
 +++ b/gst-libs/gst/audio/gstaudioringbuffer.c
 @@ -633,7 +633,7 @@ gst_audio_ring_buffer_acquire (GstAudioRingBuffer * buf,

@@ -1,7 +1,7 @@
-From 6e4be930b9104bfb347b26d0c599e91e490815ff Mon Sep 17 00:00:00 2001
+From 68104678498dc0903ad5d8493c8e56fd32af6a4f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 00:19:23 +0000
-Subject: [PATCH 13/43] gstvalue: drop use of GSlice
+Subject: [PATCH 13/42] gstvalue: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

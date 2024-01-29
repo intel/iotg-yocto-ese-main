@@ -1,7 +1,7 @@
-From 17e4b5a0f762df156ed519edbc3646ea04df9c36 Mon Sep 17 00:00:00 2001
+From 39e4e05d6cc1f554a3244545e5ccb72569afc8b2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 01:32:13 +0000
-Subject: [PATCH 34/43] queue2: drop use of GSlice
+Subject: [PATCH 34/42] queue2: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

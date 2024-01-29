@@ -1,7 +1,7 @@
-From d00e8819a688af13b0bd8bb57651197bddd1a2a4 Mon Sep 17 00:00:00 2001
+From d48f46238c3719a8a074ecbc0c0c668cbd995b52 Mon Sep 17 00:00:00 2001
 From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
 Date: Wed, 21 Dec 2022 16:32:10 +0800
-Subject: [PATCH 023/205] msdkallocator: Use const ptr of videoinfo in func
+Subject: [PATCH 023/232] msdkallocator: Use const ptr of videoinfo in func
  param
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3621>

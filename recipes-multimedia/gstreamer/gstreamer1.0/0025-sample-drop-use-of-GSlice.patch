@@ -1,7 +1,7 @@
-From 4ac0df8ab93f0acc41bcd393ea63441c87b8d5e9 Mon Sep 17 00:00:00 2001
+From fa751605b8e0fc8daf29c90cbeaba78096ca4d34 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 00:56:23 +0000
-Subject: [PATCH 25/43] sample: drop use of GSlice
+Subject: [PATCH 25/42] sample: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

@@ -1,4 +1,4 @@
-From ec73f35b55ad73281bc132eda9f24d367ff05bf1 Mon Sep 17 00:00:00 2001
+From e9187c9d05ce8bf8bb958af7f86db5b654d517e1 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Thu, 25 May 2023 13:18:14 +0800
 Subject: [PATCH 62/77] glupload: make gl memory upload manner only consider

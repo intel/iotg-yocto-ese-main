@@ -1,7 +1,7 @@
-From c302906b3ee28f4a8474dc8b21255b548179dace Mon Sep 17 00:00:00 2001
+From 8fddb5d342387f20df63f920cd7c4b1e5f6cfede Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:06:48 +0000
-Subject: [PATCH 007/205] resindvd: drop use of GSlice
+Subject: [PATCH 007/232] resindvd: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

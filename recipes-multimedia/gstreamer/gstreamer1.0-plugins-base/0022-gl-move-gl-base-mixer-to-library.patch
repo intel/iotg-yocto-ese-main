@@ -1,4 +1,4 @@
-From 8e4f3c578512916e55973876aa8b7d69da8c4d18 Mon Sep 17 00:00:00 2001
+From 32b5bb021b9c4f40b7571f355431b704f55cce36 Mon Sep 17 00:00:00 2001
 From: Matthew Waters <matthew@centricular.com>
 Date: Mon, 8 May 2023 13:40:01 +1000
 Subject: [PATCH 22/77] gl: move gl(base)mixer to library
@@ -197,10 +197,10 @@ index 886e0094..773396d1 100644
  
  G_END_DECLS
 diff --git a/gst-libs/gst/gl/meson.build b/gst-libs/gst/gl/meson.build
-index fdd1b8cf..b4032fb2 100644
+index 57b85b59..637898f6 100644
 --- a/gst-libs/gst/gl/meson.build
 +++ b/gst-libs/gst/gl/meson.build
-@@ -14,6 +14,7 @@ gl_sources = files([
+@@ -15,6 +15,7 @@ gl_sources = files([
    'gstglapi.c',
    'gstglbasefilter.c',
    'gstglbasememory.c',
@@ -208,7 +208,7 @@ index fdd1b8cf..b4032fb2 100644
    'gstglbasesrc.c',
    'gstglcolorconvert.c',
    'gstglbuffer.c',
-@@ -29,6 +30,7 @@ gl_sources = files([
+@@ -30,6 +31,7 @@ gl_sources = files([
    'gstglframebuffer.c',
    'gstglmemory.c',
    'gstglmemorypbo.c',
@@ -216,7 +216,7 @@ index fdd1b8cf..b4032fb2 100644
    'gstgloverlaycompositor.c',
    'gstglquery.c',
    'gstglrenderbuffer.c',
-@@ -53,6 +55,7 @@ gir_gl_headers = files([
+@@ -54,6 +56,7 @@ gir_gl_headers = files([
    'gstglapi.h',
    'gstglbasefilter.h',
    'gstglbasememory.h',
@@ -224,7 +224,7 @@ index fdd1b8cf..b4032fb2 100644
    'gstglbasesrc.h',
    'gstglbuffer.h',
    'gstglbufferpool.h',
-@@ -67,6 +70,7 @@ gir_gl_headers = files([
+@@ -68,6 +71,7 @@ gir_gl_headers = files([
    'gstglframebuffer.h',
    'gstglmemory.h',
    'gstglmemorypbo.h',

@@ -1,4 +1,4 @@
-From b523f5a408dd4e49cd536b3d11b881f065da891c Mon Sep 17 00:00:00 2001
+From 2fa740c533034b1581100603f2b525f3a5b2fa7c Mon Sep 17 00:00:00 2001
 From: Marek Vasut <marex@denx.de>
 Date: Sat, 10 Jun 2023 14:53:52 +0200
 Subject: [PATCH 38/77] videotestsrc: Simplify ARGB to Bayer conversion

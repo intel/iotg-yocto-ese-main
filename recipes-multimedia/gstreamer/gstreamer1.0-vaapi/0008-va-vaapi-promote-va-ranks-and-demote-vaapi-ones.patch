@@ -1,0 +1,87 @@
+From fff5d48ad025d959e1d618dccb30432c07a18b1e Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Tue, 24 Oct 2023 11:02:43 +0800
+Subject: [PATCH 8/8] va/vaapi: promote va ranks and demote vaapi ones
+
+VA decoders implementation has been verified from 1.18 through 1.22
+development cycles and also via the Fluster test framework. Similar
+to other cases, we can prefer hardware over software in most cases.
+
+At the same time, GStreamer-VAAPI decoders are demoted to NONE to
+avoid collisions. The first step to their deprecation.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/2312>
+
+upstream-status: backport
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/e1765c4ce8e5f00be2bcdc091d6a94297dc00540
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ gst/vaapi/gstvaapi.c       |  6 ++----
+ gst/vaapi/gstvaapidecode.c | 22 +++++++++++-----------
+ 2 files changed, 13 insertions(+), 15 deletions(-)
+
+diff --git a/gst/vaapi/gstvaapi.c b/gst/vaapi/gstvaapi.c
+index 3fc761ea..8f4bb0ec 100644
+--- a/gst/vaapi/gstvaapi.c
++++ b/gst/vaapi/gstvaapi.c
+@@ -201,7 +201,7 @@ plugin_init (GstPlugin * plugin)
+   if (decoders) {
+     gst_vaapidecode_register (plugin, decoders);
+     gst_element_register (plugin, "vaapidecodebin",
+-        GST_RANK_PRIMARY + 2, GST_TYPE_VAAPI_DECODE_BIN);
++        GST_RANK_NONE, GST_TYPE_VAAPI_DECODE_BIN);
+     g_array_unref (decoders);
+   }
+ 
+@@ -212,9 +212,7 @@ plugin_init (GstPlugin * plugin)
+         GST_RANK_NONE, GST_TYPE_VAAPIPOSTPROC);
+   }
+ 
+-  rank = GST_RANK_SECONDARY;
+-  if (g_getenv ("WAYLAND_DISPLAY"))
+-    rank = GST_RANK_MARGINAL;
++  rank = GST_RANK_NONE;
+   gst_element_register (plugin, "vaapisink", rank, GST_TYPE_VAAPISINK);
+ 
+ #if GST_VAAPI_USE_ENCODERS
+diff --git a/gst/vaapi/gstvaapidecode.c b/gst/vaapi/gstvaapidecode.c
+index 20276d1b..a54f85e5 100644
+--- a/gst/vaapi/gstvaapidecode.c
++++ b/gst/vaapi/gstvaapidecode.c
+@@ -96,21 +96,21 @@ struct _GstVaapiDecoderMap
+ };
+ 
+ static const GstVaapiDecoderMap vaapi_decode_map[] = {
+-  {GST_VAAPI_CODEC_JPEG, GST_RANK_MARGINAL, "jpeg", "image/jpeg", NULL},
+-  {GST_VAAPI_CODEC_MPEG2, GST_RANK_PRIMARY, "mpeg2",
++  {GST_VAAPI_CODEC_JPEG, GST_RANK_NONE, "jpeg", "image/jpeg", NULL},
++  {GST_VAAPI_CODEC_MPEG2, GST_RANK_NONE, "mpeg2",
+       "video/mpeg, mpegversion=2, systemstream=(boolean)false", NULL},
+-  {GST_VAAPI_CODEC_MPEG4, GST_RANK_PRIMARY, "mpeg4",
++  {GST_VAAPI_CODEC_MPEG4, GST_RANK_NONE, "mpeg4",
+       "video/mpeg, mpegversion=4", NULL},
+-  {GST_VAAPI_CODEC_H263, GST_RANK_PRIMARY, "h263", "video/x-h263", NULL},
+-  {GST_VAAPI_CODEC_H264, GST_RANK_PRIMARY, "h264", "video/x-h264",
++  {GST_VAAPI_CODEC_H263, GST_RANK_NONE, "h263", "video/x-h263", NULL},
++  {GST_VAAPI_CODEC_H264, GST_RANK_NONE, "h264", "video/x-h264",
+       gst_vaapi_decode_h264_install_properties},
+-  {GST_VAAPI_CODEC_VC1, GST_RANK_PRIMARY, "vc1",
++  {GST_VAAPI_CODEC_VC1, GST_RANK_NONE, "vc1",
+       "video/x-wmv, wmvversion=3, format={WMV3,WVC1}", NULL},
+-  {GST_VAAPI_CODEC_VP8, GST_RANK_PRIMARY, "vp8", "video/x-vp8", NULL},
+-  {GST_VAAPI_CODEC_VP9, GST_RANK_PRIMARY, "vp9", "video/x-vp9", NULL},
+-  {GST_VAAPI_CODEC_H265, GST_RANK_PRIMARY, "h265", "video/x-h265", NULL},
+-  {GST_VAAPI_CODEC_AV1, GST_RANK_PRIMARY, "av1", "video/x-av1", NULL},
+-  {0 /* the rest */ , GST_RANK_PRIMARY + 1, NULL, NULL, NULL},
++  {GST_VAAPI_CODEC_VP8, GST_RANK_NONE, "vp8", "video/x-vp8", NULL},
++  {GST_VAAPI_CODEC_VP9, GST_RANK_NONE, "vp9", "video/x-vp9", NULL},
++  {GST_VAAPI_CODEC_H265, GST_RANK_NONE, "h265", "video/x-h265", NULL},
++  {GST_VAAPI_CODEC_AV1, GST_RANK_NONE, "av1", "video/x-av1", NULL},
++  {0 /* the rest */ , GST_RANK_NONE, NULL, NULL, NULL},
+ };
+ 
+ static GstElementClass *parent_class = NULL;
+-- 
+2.40.1
+

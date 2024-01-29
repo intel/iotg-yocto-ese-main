@@ -1,4 +1,4 @@
-From 450852c13c0b8c592a883e43f7cc18172e54acfc Mon Sep 17 00:00:00 2001
+From 5ea1ec538ad9ef93df96587b8c88b6e538ee9b12 Mon Sep 17 00:00:00 2001
 From: Anders Hellerup Madsen <ahem@github.com>
 Date: Mon, 6 Feb 2023 16:14:34 +0100
 Subject: [PATCH 72/77] glbasesrc: use gst_display_ensure_context

@@ -1,0 +1,36 @@
+From c484ffb4df9bbc8d109148607b6877b15a5c51bb Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Fri, 14 Jul 2023 13:41:34 +0800
+Subject: [PATCH 156/232] msdkh264enc: Set profile as unknown when not
+ specified by downstream
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5039>
+---
+ sys/msdk/gstmsdkh264enc.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkh264enc.c b/sys/msdk/gstmsdkh264enc.c
+index e6966b441..1d85c1385 100644
+--- a/sys/msdk/gstmsdkh264enc.c
++++ b/sys/msdk/gstmsdkh264enc.c
+@@ -301,8 +301,6 @@ gst_msdkh264enc_set_format (GstMsdkEnc * encoder)
+       return FALSE;
+     }
+ 
+-    allowed_caps = gst_caps_make_writable (allowed_caps);
+-    allowed_caps = gst_caps_fixate (allowed_caps);
+     s = gst_caps_get_structure (allowed_caps, 0);
+ 
+     profile = gst_structure_get_string (s, "profile");
+@@ -316,7 +314,7 @@ gst_msdkh264enc_set_format (GstMsdkEnc * encoder)
+       } else if (!strcmp (profile, "constrained-baseline")) {
+         thiz->profile = MFX_PROFILE_AVC_CONSTRAINED_BASELINE;
+       } else {
+-        g_assert_not_reached ();
++        thiz->profile = MFX_PROFILE_UNKNOWN;
+       }
+     }
+ 
+-- 
+2.40.1
+

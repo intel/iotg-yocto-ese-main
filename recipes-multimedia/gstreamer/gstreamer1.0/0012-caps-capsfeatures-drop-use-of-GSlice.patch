@@ -1,7 +1,7 @@
-From b2a5b4200d6bde83099ee9f87525c44d164622cc Mon Sep 17 00:00:00 2001
+From 937016983d8f1981c7af9863ecc237106105cd99 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sat, 7 Jan 2023 19:43:02 +0000
-Subject: [PATCH 12/43] caps, capsfeatures: drop use of GSlice
+Subject: [PATCH 12/42] caps, capsfeatures: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

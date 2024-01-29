@@ -1,0 +1,45 @@
+From c8da41022851217a4821ba668b6918e031c57bce Mon Sep 17 00:00:00 2001
+From: Eva Pace <eba.pachi@gmail.com>
+Date: Thu, 6 Apr 2023 16:50:23 -0300
+Subject: [PATCH 103/232] webrtcbin: Fix trace log 'from' value
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`webrtc->signaling_state` (from) and `new_signaling_state` (to) had the
+same value when printed in a trace log. This commit adds a
+`old_signaling_state` variable to hold the previous value, so that the
+print statement works as intented.
+
+Spotted by: Mustafa Asım REYHAN
+Fixes #1802
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4362>
+---
+ ext/webrtc/gstwebrtcbin.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/ext/webrtc/gstwebrtcbin.c b/ext/webrtc/gstwebrtcbin.c
+index f554ec2c1..3711542dd 100644
+--- a/ext/webrtc/gstwebrtcbin.c
++++ b/ext/webrtc/gstwebrtcbin.c
+@@ -6284,6 +6284,7 @@ get_last_generated_description (GstWebRTCBin * webrtc, SDPSource source,
+ static GstStructure *
+ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
+ {
++  GstWebRTCSignalingState old_signaling_state = webrtc->signaling_state;
+   GstWebRTCSignalingState new_signaling_state = webrtc->signaling_state;
+   gboolean signalling_state_changed = FALSE;
+   GError *error = NULL;
+@@ -6638,7 +6639,7 @@ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
+    */
+   if (signalling_state_changed) {
+     const gchar *from = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALING_STATE,
+-        webrtc->signaling_state);
++        old_signaling_state);
+     const gchar *to = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALING_STATE,
+         new_signaling_state);
+     GST_TRACE_OBJECT (webrtc, "notify signaling-state from %s "
+-- 
+2.40.1
+

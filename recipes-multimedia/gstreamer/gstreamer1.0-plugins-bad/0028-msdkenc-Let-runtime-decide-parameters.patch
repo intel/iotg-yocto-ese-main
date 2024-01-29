@@ -1,7 +1,7 @@
-From dbae2838548946cd1cf53da72c61a52235be88e9 Mon Sep 17 00:00:00 2001
+From c607219b972cdcf9680bc6c06b2e16fcb999b401 Mon Sep 17 00:00:00 2001
 From: "Ma, Mingyang" <mingyang.ma@intel.com>
 Date: Thu, 24 Nov 2022 12:50:33 +0800
-Subject: [PATCH 028/205] msdkenc: Let runtime decide parameters
+Subject: [PATCH 028/232] msdkenc: Let runtime decide parameters
 
 Some parameters can be determined by runtime instead of default values. So unset the default and let runtime choose the best parameters
 

@@ -1,7 +1,7 @@
-From d7a820059bc76658353a5b7c49b40dea448641ea Mon Sep 17 00:00:00 2001
+From bc5cb34d01546f5fa482d91af4edcd92b001d98c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sat, 7 Jan 2023 19:27:30 +0000
-Subject: [PATCH 06/43] registrychunks: get rid of internal
+Subject: [PATCH 06/42] registrychunks: get rid of internal
  GST_REGISTRY_CHUNK_FLAG_MALLOC
 
 Not actually needed.

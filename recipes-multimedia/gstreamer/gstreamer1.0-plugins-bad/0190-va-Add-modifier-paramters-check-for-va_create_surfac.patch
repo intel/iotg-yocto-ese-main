@@ -1,0 +1,27 @@
+From 6734ff7848f6884336e26ce97b0477bca3ebdfbf Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 1 Sep 2023 17:26:51 +0800
+Subject: [PATCH 190/232] va: Add modifier paramters check for
+ va_create_surfaces()
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5267>
+---
+ gst-libs/gst/va/vasurfaceimage.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/gst-libs/gst/va/vasurfaceimage.c b/gst-libs/gst/va/vasurfaceimage.c
+index 0a1d56428..5c5005ae7 100644
+--- a/gst-libs/gst/va/vasurfaceimage.c
++++ b/gst-libs/gst/va/vasurfaceimage.c
+@@ -81,6 +81,8 @@ va_create_surfaces (GstVaDisplay * display, guint rt_format, guint fourcc,
+   guint num_attrs = 2;
+ 
+   g_return_val_if_fail (num_surfaces > 0, FALSE);
++  /* must have modifiers when num_modifiers > 0 */
++  g_return_val_if_fail (num_modifiers == 0 || modifiers, FALSE);
+ 
+   if (fourcc > 0) {
+     /* *INDENT-OFF* */
+-- 
+2.40.1
+

@@ -1,0 +1,508 @@
+From 868eb394763afa90e56c0b7c713fab1d03460a9e Mon Sep 17 00:00:00 2001
+From: Seungha Yang <seungha@centricular.com>
+Date: Sat, 4 Mar 2023 04:37:06 +0900
+Subject: [PATCH 042/232] va: Add support for Win32 backend
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4114>
+---
+ sys/va/gstvabasedec.c                         |   3 +-
+ sys/va/gstvabaseenc.c                         |   3 +-
+ sys/va/gstvabasetransform.c                   |   3 +-
+ sys/va/gstvacompositor.c                      |   5 +-
+ sys/va/gstvadeinterlace.c                     |   3 +-
+ sys/va/{gstvadevice.c => gstvadevice_linux.c} |   4 +-
+ sys/va/gstvadevice_win32.cpp                  | 116 ++++++++++++++++++
+ sys/va/gstvah264enc.c                         |   4 +-
+ sys/va/gstvah265enc.c                         |   4 +-
+ sys/va/gstvapluginutils.h                     |  43 +++++++
+ sys/va/gstvavpp.c                             |   3 +-
+ sys/va/meson.build                            |  48 ++++++--
+ sys/va/plugin.c                               |   2 +
+ 13 files changed, 216 insertions(+), 25 deletions(-)
+ rename sys/va/{gstvadevice.c => gstvadevice_linux.c} (99%)
+ create mode 100644 sys/va/gstvadevice_win32.cpp
+ create mode 100644 sys/va/gstvapluginutils.h
+
+diff --git a/sys/va/gstvabasedec.c b/sys/va/gstvabasedec.c
+index 0a1ef5f0f..4f3c7c115 100644
+--- a/sys/va/gstvabasedec.c
++++ b/sys/va/gstvabasedec.c
+@@ -24,6 +24,7 @@
+ #include <gst/va/gstvavideoformat.h>
+ 
+ #include "gstvacaps.h"
++#include "gstvapluginutils.h"
+ 
+ #define GST_CAT_DEFAULT (base->debug_category)
+ #define GST_VA_BASE_DEC_GET_PARENT_CLASS(obj) (GST_VA_BASE_DEC_GET_CLASS(obj)->parent_decoder_class)
+@@ -36,7 +37,7 @@ gst_va_base_dec_get_property (GObject * object, guint prop_id,
+ 
+   switch (prop_id) {
+     case GST_VA_DEC_PROP_DEVICE_PATH:{
+-      if (!(self->display && GST_IS_VA_DISPLAY_DRM (self->display))) {
++      if (!(self->display && GST_IS_VA_DISPLAY_PLATFORM (self->display))) {
+         g_value_set_string (value, NULL);
+         return;
+       }
+diff --git a/sys/va/gstvabaseenc.c b/sys/va/gstvabaseenc.c
+index 56f73db11..06ee8dbbb 100644
+--- a/sys/va/gstvabaseenc.c
++++ b/sys/va/gstvabaseenc.c
+@@ -25,6 +25,7 @@
+ 
+ #include "vacompat.h"
+ #include "gstvacaps.h"
++#include "gstvapluginutils.h"
+ 
+ #define GST_CAT_DEFAULT gst_va_base_enc_debug
+ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
+@@ -851,7 +852,7 @@ gst_va_base_enc_get_property (GObject * object, guint prop_id,
+ 
+   switch (prop_id) {
+     case PROP_DEVICE_PATH:{
+-      if (!(base->display && GST_IS_VA_DISPLAY_DRM (base->display))) {
++      if (!(base->display && GST_IS_VA_DISPLAY_PLATFORM (base->display))) {
+         g_value_set_string (value, NULL);
+         return;
+       }
+diff --git a/sys/va/gstvabasetransform.c b/sys/va/gstvabasetransform.c
+index fbc72300a..4379bf5a1 100644
+--- a/sys/va/gstvabasetransform.c
++++ b/sys/va/gstvabasetransform.c
+@@ -27,6 +27,7 @@
+ #include <gst/va/gstva.h>
+ 
+ #include "gstvacaps.h"
++#include "gstvapluginutils.h"
+ 
+ #define GST_CAT_DEFAULT gst_va_base_transform_debug
+ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
+@@ -76,7 +77,7 @@ gst_va_base_transform_get_property (GObject * object, guint prop_id,
+ 
+   switch (prop_id) {
+     case PROP_DEVICE_PATH:{
+-      if (!(self->display && GST_IS_VA_DISPLAY_DRM (self->display))) {
++      if (!(self->display && GST_IS_VA_DISPLAY_PLATFORM (self->display))) {
+         g_value_set_string (value, NULL);
+         return;
+       }
+diff --git a/sys/va/gstvacompositor.c b/sys/va/gstvacompositor.c
+index 6dcc87a90..868ae5275 100644
+--- a/sys/va/gstvacompositor.c
++++ b/sys/va/gstvacompositor.c
+@@ -53,6 +53,7 @@
+ #include "gstvacaps.h"
+ #include "gstvadisplay_priv.h"
+ #include "gstvafilter.h"
++#include "gstvapluginutils.h"
+ 
+ GST_DEBUG_CATEGORY_STATIC (gst_va_compositor_debug);
+ #define GST_CAT_DEFAULT gst_va_compositor_debug
+@@ -291,7 +292,7 @@ gst_va_compositor_get_property (GObject * object, guint prop_id,
+   switch (prop_id) {
+     case PROP_DEVICE_PATH:
+     {
+-      if (!(self->display && GST_IS_VA_DISPLAY_DRM (self->display))) {
++      if (!(self->display && GST_IS_VA_DISPLAY_PLATFORM (self->display))) {
+         g_value_set_string (value, NULL);
+         return;
+       }
+@@ -1337,7 +1338,7 @@ gst_va_compositor_class_init (gpointer g_class, gpointer class_data)
+     long_name = g_strdup ("VA-API Video Compositor");
+   }
+ 
+-  display = gst_va_display_drm_new_from_path (klass->render_device_path);
++  display = gst_va_display_platform_new (klass->render_device_path);
+   filter = gst_va_filter_new (display);
+ 
+   if (gst_va_filter_open (filter)) {
+diff --git a/sys/va/gstvadeinterlace.c b/sys/va/gstvadeinterlace.c
+index 518c1b9bf..9a56dea8c 100644
+--- a/sys/va/gstvadeinterlace.c
++++ b/sys/va/gstvadeinterlace.c
+@@ -59,6 +59,7 @@
+ #include "gstvacaps.h"
+ #include "gstvadisplay_priv.h"
+ #include "gstvafilter.h"
++#include "gstvapluginutils.h"
+ 
+ GST_DEBUG_CATEGORY_STATIC (gst_va_deinterlace_debug);
+ #define GST_CAT_DEFAULT gst_va_deinterlace_debug
+@@ -718,7 +719,7 @@ gst_va_deinterlace_class_init (gpointer g_class, gpointer class_data)
+       "Filter/Effect/Video/Deinterlace",
+       "VA-API based deinterlacer", "Víctor Jáquez <vjaquez@igalia.com>");
+ 
+-  display = gst_va_display_drm_new_from_path (btrans_class->render_device_path);
++  display = gst_va_display_platform_new (btrans_class->render_device_path);
+   filter = gst_va_filter_new (display);
+ 
+   if (gst_va_filter_open (filter)) {
+diff --git a/sys/va/gstvadevice.c b/sys/va/gstvadevice_linux.c
+similarity index 99%
+rename from sys/va/gstvadevice.c
+rename to sys/va/gstvadevice_linux.c
+index 832fc0ccb..417761deb 100644
+--- a/sys/va/gstvadevice.c
++++ b/sys/va/gstvadevice_linux.c
+@@ -24,7 +24,7 @@
+ 
+ #include "gstvadevice.h"
+ 
+-#if HAVE_GUDEV
++#ifdef HAVE_GUDEV
+ #include <gudev/gudev.h>
+ #endif
+ 
+@@ -66,7 +66,7 @@ compare_device_path (gconstpointer a, gconstpointer b, gpointer user_data)
+   return g_strcmp0 (pa->render_device_path, pb->render_device_path);
+ }
+ 
+-#if HAVE_GUDEV
++#ifdef HAVE_GUDEV
+ GList *
+ gst_va_device_find_devices (void)
+ {
+diff --git a/sys/va/gstvadevice_win32.cpp b/sys/va/gstvadevice_win32.cpp
+new file mode 100644
+index 000000000..ef3c29cea
+--- /dev/null
++++ b/sys/va/gstvadevice_win32.cpp
+@@ -0,0 +1,116 @@
++/* GStreamer
++ * Copyright (C) 2020 Igalia, S.L.
++ *     Author: Víctor Jáquez <vjaquez@igalia.com>
++ * Copyright (C) 2023 Seungha Yang <seungha@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include "gstvadevice.h"
++
++#include <wrl.h>
++#include <dxgi.h>
++#include <string>
++
++/* *INDENT-OFF* */
++using namespace Microsoft::WRL;
++
++extern "C" {
++GST_DEBUG_CATEGORY_EXTERN (gstva_debug);
++#define GST_CAT_DEFAULT gstva_debug
++}
++/* *INDENT-ON* */
++
++GST_DEFINE_MINI_OBJECT_TYPE (GstVaDevice, gst_va_device);
++
++static void
++gst_va_device_free (GstVaDevice * device)
++{
++  gst_clear_object (&device->display);
++  g_free (device->render_device_path);
++  g_free (device);
++}
++
++static GstVaDevice *
++gst_va_device_new (GstVaDisplay * display, const gchar * render_device_path,
++    gint index)
++{
++  GstVaDevice *device = g_new0 (GstVaDevice, 1);
++
++  gst_mini_object_init (GST_MINI_OBJECT_CAST (device), 0, GST_TYPE_VA_DEVICE,
++      NULL, NULL, (GstMiniObjectFreeFunction) gst_va_device_free);
++
++  /* take ownership */
++  device->display = display;
++  device->render_device_path = g_strdup (render_device_path);
++  device->index = index;
++
++  return device;
++}
++
++GList *
++gst_va_device_find_devices (void)
++{
++  HRESULT hr;
++  ComPtr < IDXGIFactory1 > factory;
++  GList *ret = nullptr;
++  guint idx = 0;
++
++  hr = CreateDXGIFactory1 (IID_PPV_ARGS (&factory));
++  if (FAILED (hr))
++    return nullptr;
++
++  for (guint i = 0;; i++) {
++    ComPtr < IDXGIAdapter > adapter;
++    LARGE_INTEGER val;
++    DXGI_ADAPTER_DESC desc;
++    std::string luid_str;
++    GstVaDisplay *dpy;
++    GstVaDevice *dev;
++
++    hr = factory->EnumAdapters (i, &adapter);
++    if (FAILED (hr))
++      break;
++
++    hr = adapter->GetDesc (&desc);
++    if (FAILED (hr))
++      continue;
++
++    val.LowPart = desc.AdapterLuid.LowPart;
++    val.HighPart = desc.AdapterLuid.HighPart;
++
++    luid_str = std::to_string (val.QuadPart);
++    dpy = gst_va_display_win32_new (luid_str.c_str ());
++    if (!dpy)
++      continue;
++
++    dev = gst_va_device_new (dpy, luid_str.c_str (), idx);
++    ret = g_list_append (ret, dev);
++    idx++;
++  }
++
++  return ret;
++}
++
++void
++gst_va_device_list_free (GList * devices)
++{
++  g_list_free_full (devices, (GDestroyNotify) gst_mini_object_unref);
++}
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index 97c5d524a..e3f05e386 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -66,6 +66,7 @@
+ #include "gstvaencoder.h"
+ #include "gstvaprofile.h"
+ #include "vacompat.h"
++#include "gstvapluginutils.h"
+ 
+ GST_DEBUG_CATEGORY_STATIC (gst_va_h264enc_debug);
+ #define GST_CAT_DEFAULT gst_va_h264enc_debug
+@@ -3531,8 +3532,7 @@ gst_va_h264_enc_class_init (gpointer g_klass, gpointer class_data)
+       GST_DEBUG_FUNCPTR (gst_va_h264_enc_prepare_output);
+ 
+   {
+-    display =
+-        gst_va_display_drm_new_from_path (va_enc_class->render_device_path);
++    display = gst_va_display_platform_new (va_enc_class->render_device_path);
+     encoder = gst_va_encoder_new (display, va_enc_class->codec,
+         va_enc_class->entrypoint);
+     if (gst_va_encoder_get_rate_control_enum (encoder,
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 454fb10a9..9b1a79820 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -56,6 +56,7 @@
+ #include "gstvacaps.h"
+ #include "gstvaprofile.h"
+ #include "gstvadisplay_priv.h"
++#include "gstvapluginutils.h"
+ 
+ GST_DEBUG_CATEGORY_STATIC (gst_va_h265enc_debug);
+ #define GST_CAT_DEFAULT gst_va_h265enc_debug
+@@ -4999,8 +5000,7 @@ gst_va_h265_enc_class_init (gpointer g_klass, gpointer class_data)
+       GST_DEBUG_FUNCPTR (gst_va_h265_enc_prepare_output);
+ 
+   {
+-    display =
+-        gst_va_display_drm_new_from_path (va_enc_class->render_device_path);
++    display = gst_va_display_platform_new (va_enc_class->render_device_path);
+     encoder = gst_va_encoder_new (display, va_enc_class->codec,
+         va_enc_class->entrypoint);
+     if (gst_va_encoder_get_rate_control_enum (encoder,
+diff --git a/sys/va/gstvapluginutils.h b/sys/va/gstvapluginutils.h
+new file mode 100644
+index 000000000..ead92da8b
+--- /dev/null
++++ b/sys/va/gstvapluginutils.h
+@@ -0,0 +1,43 @@
++/* GStreamer
++ * Copyright (C) 2023 Seungha Yang <seungha@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#pragma once
++
++#include <gst/gst.h>
++#include <gst/va/gstva.h>
++
++G_BEGIN_DECLS
++
++#ifdef G_OS_WIN32
++#define GST_IS_VA_DISPLAY_PLATFORM(dpy) GST_IS_VA_DISPLAY_WIN32(dpy)
++#else
++#define GST_IS_VA_DISPLAY_PLATFORM(dpy) GST_IS_VA_DISPLAY_DRM(dpy)
++#endif
++
++static GstVaDisplay *
++gst_va_display_platform_new (const gchar * path)
++{
++#ifdef G_OS_WIN32
++  return gst_va_display_win32_new (path);
++#else
++  return gst_va_display_drm_new_from_path (path);
++#endif
++}
++
++G_END_DECLS
+diff --git a/sys/va/gstvavpp.c b/sys/va/gstvavpp.c
+index 831cdf502..fc03922d1 100644
+--- a/sys/va/gstvavpp.c
++++ b/sys/va/gstvavpp.c
+@@ -70,6 +70,7 @@
+ #include "gstvacaps.h"
+ #include "gstvadisplay_priv.h"
+ #include "gstvafilter.h"
++#include "gstvapluginutils.h"
+ 
+ GST_DEBUG_CATEGORY_STATIC (gst_va_vpp_debug);
+ #define GST_CAT_DEFAULT gst_va_vpp_debug
+@@ -2114,7 +2115,7 @@ gst_va_vpp_class_init (gpointer g_class, gpointer class_data)
+ 
+   klass = g_string_new ("Converter/Filter/Colorspace/Scaler/Video/Hardware");
+ 
+-  display = gst_va_display_drm_new_from_path (btrans_class->render_device_path);
++  display = gst_va_display_platform_new (btrans_class->render_device_path);
+   filter = gst_va_filter_new (display);
+ 
+   if (gst_va_filter_open (filter)) {
+diff --git a/sys/va/meson.build b/sys/va/meson.build
+index b12f9b3e4..a99cdfe01 100644
+--- a/sys/va/meson.build
++++ b/sys/va/meson.build
+@@ -8,7 +8,6 @@ va_sources = [
+   'gstvacompositor.c',
+   'gstvadecoder.c',
+   'gstvadeinterlace.c',
+-  'gstvadevice.c',
+   'gstvadisplay_priv.c',
+   'gstvaencoder.c',
+   'gstvafilter.c',
+@@ -24,7 +23,15 @@ va_sources = [
+   'gstvavpp.c',
+ ]
+ 
+-if host_system != 'linux'
++va_linux_sources = [
++  'gstvadevice_linux.c'
++]
++
++va_win32_sources = [
++  'gstvadevice_win32.cpp'
++]
++
++if host_system not in ['linux', 'windows']
+   subdir_done()
+ endif
+ 
+@@ -33,28 +40,45 @@ if va_option.disabled()
+   subdir_done()
+ endif
+ 
+-libgudev_dep = dependency('gudev-1.0', required: false)
+-cdata.set10('HAVE_GUDEV', libgudev_dep.found())
+-
+-if libva_dep.version().version_compare('>= 1.8')
+-  va_sources += 'gstvaav1dec.c'
+-endif
+-
+ driverdir = libva_dep.get_variable('driverdir', default_value: '')
+ if driverdir == ''
+   driverdir = join_paths(get_option('prefix'), get_option('libdir'), 'dri')
+ endif
+-gstva_cargs = [
++
++extra_args = [
+   '-DLIBVA_DRIVERS_PATH="' + driverdir + '"',
+-  '-std=c99',
+   '-DGST_USE_UNSTABLE_API',
+ ]
++extra_dep = []
++c_std_arg = ['c_std=c99']
++
++if host_system == 'linux'
++  libgudev_dep = dependency('gudev-1.0', required: false)
++  if libgudev_dep.found()
++    extra_args += ['-DHAVE_GUDEV']
++    extra_dep += [libgudev_dep]
++  endif
++  va_sources += va_linux_sources
++else
++  va_sources += va_win32_sources
++endif
++
++# MSVC does not understand c99
++if cc.get_id() == 'msvc'
++  c_std_arg = ['c_std=c11']
++endif
++
++if libva_dep.version().version_compare('>= 1.8')
++  va_sources += 'gstvaav1dec.c'
++endif
+ 
+ gstva = library('gstva',
+   va_sources,
+-  c_args : gst_plugins_bad_args + gstva_cargs,
++  c_args : gst_plugins_bad_args + extra_args,
++  cpp_args : gst_plugins_bad_args + extra_args,
+   include_directories : [configinc],
+   dependencies : [gstcodecs_dep, gstva_dep, libgudev_dep] + extra_dep,
++  override_options : c_std_arg,
+   install : true,
+   install_dir : plugins_install_dir,
+ )
+diff --git a/sys/va/plugin.c b/sys/va/plugin.c
+index 937fa04e7..f8b69b271 100644
+--- a/sys/va/plugin.c
++++ b/sys/va/plugin.c
+@@ -54,6 +54,7 @@ GRecMutex GST_VA_SHARED_LOCK = { 0, };
+ static void
+ plugin_add_dependencies (GstPlugin * plugin)
+ {
++#ifndef G_OS_WIN32
+   const gchar *env_vars[] = { "LIBVA_DRIVER_NAME", NULL };
+   const gchar *kernel_paths[] = { "/dev/dri", NULL };
+   const gchar *kernel_names[] = { "renderD", NULL };
+@@ -72,6 +73,7 @@ plugin_add_dependencies (GstPlugin * plugin)
+       LIBVA_DRIVERS_PATH, "_drv_video.so",
+       GST_PLUGIN_DEPENDENCY_FLAG_FILE_NAME_IS_SUFFIX |
+       GST_PLUGIN_DEPENDENCY_FLAG_PATHS_ARE_DEFAULT_ONLY);
++#endif
+ }
+ 
+ static void
+-- 
+2.40.1
+

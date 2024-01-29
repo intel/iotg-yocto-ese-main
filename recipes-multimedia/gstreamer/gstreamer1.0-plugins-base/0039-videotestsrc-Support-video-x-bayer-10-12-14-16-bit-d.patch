@@ -1,4 +1,4 @@
-From d77f5875aaecfa8f6b9458643013baea40d4250e Mon Sep 17 00:00:00 2001
+From 6b8f90bfe0d415adf2dc4be9abe1ea1e22cb8bbf Mon Sep 17 00:00:00 2001
 From: Marek Vasut <marex@denx.de>
 Date: Fri, 19 May 2023 20:44:33 +0200
 Subject: [PATCH 39/77] videotestsrc: Support video/x-bayer 10/12/14/16 bit

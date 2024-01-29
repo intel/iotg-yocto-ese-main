@@ -1,0 +1,81 @@
+From 82f3da90acdec9b4848268ff5a473ee45832f61a Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Tue, 24 Oct 2023 11:01:05 +0800
+Subject: [PATCH 177/232] va/vaapi: promote va ranks and demote vaapi ones
+
+VA decoders implementation has been verified from 1.18 through 1.22
+development cycles and also via the Fluster test framework. Similar
+to other cases, we can prefer hardware over software in most cases.
+
+At the same time, GStreamer-VAAPI decoders are demoted to NONE to
+avoid collisions. The first step to their deprecation.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/2312>
+
+upstream-status: backport
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/e1765c4ce8e5f00be2bcdc091d6a94297dc00540
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ sys/va/plugin.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/sys/va/plugin.c b/sys/va/plugin.c
+index 0b186377d..eb2852aac 100644
+--- a/sys/va/plugin.c
++++ b/sys/va/plugin.c
+@@ -103,43 +103,45 @@ plugin_register_decoders (GstPlugin * plugin, GstVaDevice * device,
+ 
+     switch (codec) {
+       case H264:
++        /* avdec_h264 has primary rank, make this higher than it */
+         if (!gst_va_h264_dec_register (plugin, device, sinkcaps, srccaps,
+-                GST_RANK_NONE)) {
++                GST_RANK_PRIMARY + 1)) {
+           GST_WARNING ("Failed to register H264 decoder: %s",
+               device->render_device_path);
+         }
+         break;
+       case HEVC:
++        /* avdec_h265 has primary rank, make this higher than it */
+         if (!gst_va_h265_dec_register (plugin, device, sinkcaps, srccaps,
+-                GST_RANK_NONE)) {
++                GST_RANK_PRIMARY + 1)) {
+           GST_WARNING ("Failed to register H265 decoder: %s",
+               device->render_device_path);
+         }
+         break;
+       case VP8:
+         if (!gst_va_vp8_dec_register (plugin, device, sinkcaps, srccaps,
+-                GST_RANK_NONE)) {
++                GST_RANK_PRIMARY)) {
+           GST_WARNING ("Failed to register VP8 decoder: %s",
+               device->render_device_path);
+         }
+         break;
+       case VP9:
+         if (!gst_va_vp9_dec_register (plugin, device, sinkcaps, srccaps,
+-                GST_RANK_NONE)) {
++                GST_RANK_PRIMARY)) {
+           GST_WARNING ("Failed to register VP9 decoder: %s",
+               device->render_device_path);
+         }
+         break;
+       case MPEG2:
+         if (!gst_va_mpeg2_dec_register (plugin, device, sinkcaps, srccaps,
+-                GST_RANK_NONE)) {
++                GST_RANK_SECONDARY)) {
+           GST_WARNING ("Failed to register Mpeg2 decoder: %s",
+               device->render_device_path);
+         }
+         break;
+       case AV1:
+         if (!gst_va_av1_dec_register (plugin, device, sinkcaps, srccaps,
+-                GST_RANK_NONE)) {
++                GST_RANK_PRIMARY)) {
+           GST_WARNING ("Failed to register AV1 decoder: %s",
+               device->render_device_path);
+         }
+-- 
+2.40.1
+

@@ -1,4 +1,4 @@
-From 8083230ae474f60551b6ebd41a26466daac5a5f3 Mon Sep 17 00:00:00 2001
+From fe56a8ea37916d21338e5b0d654ccba010b3d364 Mon Sep 17 00:00:00 2001
 From: Edward Hervey <edward@centricular.com>
 Date: Fri, 5 May 2023 14:38:56 +0200
 Subject: [PATCH 28/77] videodecoder: Refactor post-decode PTS/DTS recovery
@@ -15,10 +15,10 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/46
  1 file changed, 36 insertions(+), 38 deletions(-)
 
 diff --git a/gst-libs/gst/video/gstvideodecoder.c b/gst-libs/gst/video/gstvideodecoder.c
-index e335668d..c6e3cd72 100644
+index a86eb749..01e9d197 100644
 --- a/gst-libs/gst/video/gstvideodecoder.c
 +++ b/gst-libs/gst/video/gstvideodecoder.c
-@@ -3046,30 +3046,45 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
+@@ -3045,30 +3045,45 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
          GST_TIME_ARGS (frame->duration));
    }
  
@@ -78,7 +78,7 @@ index e335668d..c6e3cd72 100644
      }
  
      /* and set if needed;
-@@ -3077,44 +3092,27 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
+@@ -3076,44 +3091,27 @@ gst_video_decoder_prepare_finish_frame (GstVideoDecoder *
      /* also, if we ended up reordered, means this approach is conflicting
       * with some sparse existing PTS, and so it does not work out */
      if (!priv->reordered_output &&

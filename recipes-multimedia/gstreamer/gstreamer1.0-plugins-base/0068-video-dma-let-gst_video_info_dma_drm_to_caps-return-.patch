@@ -1,4 +1,4 @@
-From 76d292f774922dba23616e2d608813b531b308f2 Mon Sep 17 00:00:00 2001
+From cc3de20aa35de7493de79a9417c71b66868ebab5 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Wed, 26 Jul 2023 23:47:42 +0800
 Subject: [PATCH 68/77] video: dma: let gst_video_info_dma_drm_to_caps() return

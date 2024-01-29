@@ -1,4 +1,4 @@
-From affd4930db580adb1f15598bdf3e2d4958a98d97 Mon Sep 17 00:00:00 2001
+From ecdee5749ee8591c14a881351dfc10275432fafa Mon Sep 17 00:00:00 2001
 From: Matthew Waters <matthew@centricular.com>
 Date: Wed, 5 Jul 2023 16:29:16 +1000
 Subject: [PATCH 42/77] videorate: properly handle variable framerate input and

@@ -1,0 +1,58 @@
+From 09a0350e132496a8233b1aa22b39764146a30fb1 Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Tue, 15 Nov 2022 18:08:12 +0800
+Subject: [PATCH 092/232] msdk: add function to get the format list
+
+This static format list will be used to check the formats
+supported by the platform.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4177>
+---
+ sys/msdk/msdk.c | 16 ++++++++++++++++
+ sys/msdk/msdk.h |  3 +++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/sys/msdk/msdk.c b/sys/msdk/msdk.c
+index bfbadfcfa..c8237d1aa 100644
+--- a/sys/msdk/msdk.c
++++ b/sys/msdk/msdk.c
+@@ -595,6 +595,22 @@ gst_msdk_get_video_format_from_mfx_fourcc (mfxU32 fourcc)
+   return GST_VIDEO_FORMAT_UNKNOWN;
+ }
+ 
++void
++gst_msdk_get_video_format_list (GValue * formats)
++{
++  GValue gfmt = G_VALUE_INIT;
++  const struct map *m = gst_msdk_video_format_to_mfx_map;
++
++  g_value_init (&gfmt, G_TYPE_UINT);
++
++  for (; m->format != 0; m++) {
++    g_value_set_uint (&gfmt, m->format);
++    gst_value_list_append_value (formats, &gfmt);
++  }
++
++  g_value_unset (&gfmt);
++}
++
+ void
+ gst_msdk_update_mfx_frame_info_from_mfx_video_param (mfxFrameInfo * mfx_info,
+     mfxVideoParam * param)
+diff --git a/sys/msdk/msdk.h b/sys/msdk/msdk.h
+index 3c9defca5..ae2e20847 100644
+--- a/sys/msdk/msdk.h
++++ b/sys/msdk/msdk.h
+@@ -136,6 +136,9 @@ gst_msdk_is_va_mem (GstMemory * mem);
+ GstVideoFormat
+ gst_msdk_get_video_format_from_mfx_fourcc (mfxU32 fourcc);
+ 
++void
++gst_msdk_get_video_format_list (GValue * formats);
++
+ void
+ gst_msdk_update_mfx_frame_info_from_mfx_video_param (mfxFrameInfo * mfx_info,
+     mfxVideoParam * param);
+-- 
+2.40.1
+

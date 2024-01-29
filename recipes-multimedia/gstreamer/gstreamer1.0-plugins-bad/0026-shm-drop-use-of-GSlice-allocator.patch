@@ -1,7 +1,7 @@
-From ed687ab6b7f6d8c413b377c4d35f9901ebca1917 Mon Sep 17 00:00:00 2001
+From e13abbe249aefc0056e5982c93e9153e44c9ad35 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 25 Jan 2023 01:11:14 +0000
-Subject: [PATCH 026/205] shm: drop use of GSlice allocator
+Subject: [PATCH 026/232] shm: drop use of GSlice allocator
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3784>
 ---

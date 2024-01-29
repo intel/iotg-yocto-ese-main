@@ -1,13 +1,13 @@
-From ec11a29b7f19d372c064a7d7ae0f6948e5f7a4a7 Mon Sep 17 00:00:00 2001
+From 4aeb2dfe70b4788d56970bef749b65500dc60dab Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
-Date: Mon, 7 Aug 2023 15:19:56 +0800
+Date: Tue, 24 Oct 2023 08:33:57 +0800
 Subject: [PATCH 18/77] meson: Add a wrap file for libgudev
 
 And allow fallback to it.
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4447>
 
-Backport from upstream:
+upstream-status: backport
 https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/e709e2d97c27910b6b3f6bf7c24f84d1cc7c0da2
 
 Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
@@ -16,10 +16,10 @@ Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/gst-libs/gst/gl/meson.build b/gst-libs/gst/gl/meson.build
-index 1080b5df..fdd1b8cf 100644
+index 55e91215..57b85b59 100644
 --- a/gst-libs/gst/gl/meson.build
 +++ b/gst-libs/gst/gl/meson.build
-@@ -896,7 +896,7 @@ if need_win_gbm != 'no'
+@@ -899,7 +899,7 @@ if need_win_gbm != 'no'
      endif
    endif
  

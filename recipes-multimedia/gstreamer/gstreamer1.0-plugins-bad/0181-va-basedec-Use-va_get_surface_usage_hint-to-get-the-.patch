@@ -1,0 +1,105 @@
+From 0e5452c4b0d0e51e1719962465458a4d2e403744 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Mon, 21 Aug 2023 16:33:05 +0800
+Subject: [PATCH 181/232] va: basedec: Use va_get_surface_usage_hint() to get
+ the usage hint
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5210>
+---
+ sys/va/gstvaav1dec.c  |  8 ++++++--
+ sys/va/gstvabasedec.c | 15 +++++++++++----
+ 2 files changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/sys/va/gstvaav1dec.c b/sys/va/gstvaav1dec.c
+index 916342c59..17ac9d67a 100644
+--- a/sys/va/gstvaav1dec.c
++++ b/sys/va/gstvaav1dec.c
+@@ -44,6 +44,7 @@
+ #endif
+ 
+ #include <gst/va/gstva.h>
++#include <gst/va/vasurfaceimage.h>
+ 
+ #include "gstvaav1dec.h"
+ #include "gstvabasedec.h"
+@@ -255,6 +256,7 @@ _create_internal_pool (GstVaAV1Dec * self, gint width, gint height)
+   GstAllocator *allocator;
+   GstCaps *caps = NULL;
+   GstBufferPool *pool;
++  guint usage_hint;
+   GstAllocationParams params = { 0, };
+ 
+   gst_allocation_params_init (&params);
+@@ -288,9 +290,11 @@ _create_internal_pool (GstVaAV1Dec * self, gint width, gint height)
+   surface_formats = gst_va_decoder_get_surface_formats (base->decoder);
+   allocator = gst_va_allocator_new (base->display, surface_formats);
+ 
++  usage_hint = va_get_surface_usage_hint (base->display,
++      VAEntrypointVLD, GST_PAD_SRC, FALSE);
++
+   pool = gst_va_pool_new_with_config (caps, GST_VIDEO_INFO_SIZE (&info),
+-      1, 0, VA_SURFACE_ATTRIB_USAGE_HINT_DECODER, GST_VA_FEATURE_AUTO,
+-      allocator, &params);
++      1, 0, usage_hint, GST_VA_FEATURE_AUTO, allocator, &params);
+ 
+   gst_clear_caps (&caps);
+   gst_object_unref (allocator);
+diff --git a/sys/va/gstvabasedec.c b/sys/va/gstvabasedec.c
+index 877a4bf04..4ede32815 100644
+--- a/sys/va/gstvabasedec.c
++++ b/sys/va/gstvabasedec.c
+@@ -22,6 +22,7 @@
+ 
+ #include <gst/va/gstva.h>
+ #include <gst/va/gstvavideoformat.h>
++#include <gst/va/vasurfaceimage.h>
+ 
+ #include "gstvacaps.h"
+ #include "gstvapluginutils.h"
+@@ -283,7 +284,7 @@ _decide_allocation_for_video_crop (GstVideoDecoder * decoder,
+   GstAllocationParams other_params, params;
+   gboolean update_pool = FALSE, update_allocator = FALSE;
+   GstBufferPool *pool = NULL, *other_pool = NULL;
+-  guint size = 0, min, max;
++  guint size = 0, min, max, usage_hint;
+   GstVaBaseDec *base = GST_VA_BASE_DEC (decoder);
+   gboolean ret = TRUE;
+   gboolean dont_use_other_pool = FALSE;
+@@ -405,8 +406,11 @@ _decide_allocation_for_video_crop (GstVideoDecoder * decoder,
+     if (_need_video_crop (base))
+       gst_buffer_pool_config_set_va_alignment (config, &base->valign);
+ 
++    usage_hint = va_get_surface_usage_hint (base->display,
++        VAEntrypointVLD, GST_PAD_SRC, gst_video_is_dma_drm_caps (caps));
++
+     gst_buffer_pool_config_set_va_allocation_params (config,
+-        VA_SURFACE_ATTRIB_USAGE_HINT_DECODER, GST_VA_FEATURE_AUTO);
++        usage_hint, GST_VA_FEATURE_AUTO);
+ 
+     if (!gst_buffer_pool_set_config (pool, config)) {
+       ret = FALSE;
+@@ -491,7 +495,7 @@ gst_va_base_dec_decide_allocation (GstVideoDecoder * decoder, GstQuery * query)
+   GstCaps *caps = NULL;
+   GstVideoInfo info;
+   GstVaBaseDec *base = GST_VA_BASE_DEC (decoder);
+-  guint size = 0, min, max;
++  guint size = 0, min, max, usage_hint;
+   gboolean update_pool = FALSE, update_allocator = FALSE;
+   gboolean has_videometa, has_video_crop_meta;
+   gboolean dont_use_other_pool = FALSE;
+@@ -593,8 +597,11 @@ gst_va_base_dec_decide_allocation (GstVideoDecoder * decoder, GstQuery * query)
+     if (base->need_valign)
+       gst_buffer_pool_config_set_va_alignment (config, &base->valign);
+ 
++    usage_hint = va_get_surface_usage_hint (base->display,
++        VAEntrypointVLD, GST_PAD_SRC, gst_video_is_dma_drm_caps (caps));
++
+     gst_buffer_pool_config_set_va_allocation_params (config,
+-        VA_SURFACE_ATTRIB_USAGE_HINT_DECODER, GST_VA_FEATURE_AUTO);
++        usage_hint, GST_VA_FEATURE_AUTO);
+ 
+     if (!gst_buffer_pool_set_config (pool, config)) {
+       ret = FALSE;
+-- 
+2.40.1
+

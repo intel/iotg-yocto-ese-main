@@ -1,4 +1,4 @@
-From 33abfcffb2e48fbfb998ce217de6f7ca34eb7e2a Mon Sep 17 00:00:00 2001
+From 72b3b773170be451db4bd5b5866978de6e7ac29d Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Fri, 4 Aug 2023 14:36:09 +0800
 Subject: [PATCH 58/77] glupload: enable drm kind caps in glupload plugin for

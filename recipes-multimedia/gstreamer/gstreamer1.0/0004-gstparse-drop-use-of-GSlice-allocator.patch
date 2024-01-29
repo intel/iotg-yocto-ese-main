@@ -1,7 +1,7 @@
-From b812928adc0bc50a253478a528f4c53c649212a0 Mon Sep 17 00:00:00 2001
+From c2d46a8d797cc329de7bd267b4cc582b5282bbf5 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Fri, 6 Jan 2023 01:40:08 +0000
-Subject: [PATCH 04/43] gstparse: drop use of GSlice allocator
+Subject: [PATCH 04/42] gstparse: drop use of GSlice allocator
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

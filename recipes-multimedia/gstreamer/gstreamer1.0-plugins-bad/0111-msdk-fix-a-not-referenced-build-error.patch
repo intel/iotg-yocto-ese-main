@@ -1,0 +1,30 @@
+From 6dec82078ac486bf7b01287d224ef757aac3dc53 Mon Sep 17 00:00:00 2001
+From: Tong Wu <tong1.wu@intel.com>
+Date: Wed, 10 May 2023 14:34:32 +0800
+Subject: [PATCH 111/232] msdk: fix a not referenced build error
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Error Type: error C4189: ‘dma_caps’: local variable is initialized but not referenced
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4587>
+---
+ sys/msdk/gstmsdkcaps.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sys/msdk/gstmsdkcaps.c b/sys/msdk/gstmsdkcaps.c
+index 5d9988aa5..d23db0c28 100644
+--- a/sys/msdk/gstmsdkcaps.c
++++ b/sys/msdk/gstmsdkcaps.c
+@@ -1702,6 +1702,7 @@ gst_msdkcaps_dec_create_static_caps (GstMsdkContext * context,
+       gst_caps_from_string
+       ("video/x-raw(memory:VAMemory), format=(string){ NV12 }"));
+ #else
++  VAR_UNUSED (dma_caps);
+   VAR_UNUSED (dma_caps_str);
+   VAR_UNUSED (dma_fmts);
+   gst_caps_append (out_caps,
+-- 
+2.40.1
+

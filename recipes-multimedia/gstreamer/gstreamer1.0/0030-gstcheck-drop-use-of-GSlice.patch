@@ -1,7 +1,7 @@
-From 00b57a87adbb3ef3b7123a3dce0764eaeef3815e Mon Sep 17 00:00:00 2001
+From 46e824b189ab7b44204777a1bc4ef9d336a0b3d7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 01:28:43 +0000
-Subject: [PATCH 30/43] gstcheck: drop use of GSlice
+Subject: [PATCH 30/42] gstcheck: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

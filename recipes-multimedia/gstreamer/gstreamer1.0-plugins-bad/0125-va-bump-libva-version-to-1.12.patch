@@ -1,0 +1,378 @@
+From caef3bf0f07f78fb1abd0147ea9e398ac59f3d4d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Tue, 6 Jun 2023 13:26:12 +0200
+Subject: [PATCH 125/232] va: bump libva version to 1.12
+
+Remove all checks in gstva for all version lower than 1.12
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4781>
+---
+ gst-libs/gst/va/gstvasurfacecopy.c |  4 ---
+ gst-libs/gst/va/meson.build        |  2 +-
+ gst-libs/gst/va/vasurfaceimage.c   |  4 ---
+ sys/va/gstvaencoder.c              |  4 ---
+ sys/va/gstvafilter.c               |  4 ---
+ sys/va/gstvah265dec.c              |  7 +----
+ sys/va/gstvah265enc.c              | 50 +++++-------------------------
+ sys/va/gstvaprofile.c              |  4 ---
+ sys/va/plugin.c                    |  2 --
+ 9 files changed, 9 insertions(+), 72 deletions(-)
+
+diff --git a/gst-libs/gst/va/gstvasurfacecopy.c b/gst-libs/gst/va/gstvasurfacecopy.c
+index ad1fc8b44..79a9232be 100644
+--- a/gst-libs/gst/va/gstvasurfacecopy.c
++++ b/gst-libs/gst/va/gstvasurfacecopy.c
+@@ -41,7 +41,6 @@ struct _GstVaSurfaceCopy
+ static gboolean
+ _has_copy (GstVaDisplay * display)
+ {
+-#if VA_CHECK_VERSION (1, 12, 0)
+   VADisplay dpy;
+   VADisplayAttribute attr = {
+     .type = VADisplayAttribCopy,
+@@ -58,9 +57,6 @@ _has_copy (GstVaDisplay * display)
+   }
+ 
+   return TRUE;
+-#else
+-  return FALSE;
+-#endif
+ }
+ 
+ GstVaSurfaceCopy *
+diff --git a/gst-libs/gst/va/meson.build b/gst-libs/gst/va/meson.build
+index a9b1de64b..7ffd6e633 100644
+--- a/gst-libs/gst/va/meson.build
++++ b/gst-libs/gst/va/meson.build
+@@ -64,7 +64,7 @@ else
+   va_required = va_opt
+ endif
+ 
+-libva_req = ['>= 1.6']
++libva_req = ['>= 1.12']
+ if host_system == 'windows'
+   libva_req = ['>= 1.18']
+ endif
+diff --git a/gst-libs/gst/va/vasurfaceimage.c b/gst-libs/gst/va/vasurfaceimage.c
+index d6d8f4985..85f6d6a2c 100644
+--- a/gst-libs/gst/va/vasurfaceimage.c
++++ b/gst-libs/gst/va/vasurfaceimage.c
+@@ -296,7 +296,6 @@ va_check_surface (GstVaDisplay * display, VASurfaceID surface)
+ gboolean
+ va_copy_surface (GstVaDisplay * display, VASurfaceID dst, VASurfaceID src)
+ {
+-#if VA_CHECK_VERSION (1, 12, 0)
+   VADisplay dpy = gst_va_display_get_va_dpy (display);
+   /* *INDENT-OFF* */
+   VACopyObject obj_src = {
+@@ -326,7 +325,4 @@ va_copy_surface (GstVaDisplay * display, VASurfaceID dst, VASurfaceID src)
+     return FALSE;
+   }
+   return TRUE;
+-#else
+-  return FALSE;
+-#endif
+ }
+diff --git a/sys/va/gstvaencoder.c b/sys/va/gstvaencoder.c
+index c4c8bdef0..d1e8ed1d0 100644
+--- a/sys/va/gstvaencoder.c
++++ b/sys/va/gstvaencoder.c
+@@ -679,7 +679,6 @@ guint
+ gst_va_encoder_get_prediction_direction (GstVaEncoder * self,
+     VAProfile profile, VAEntrypoint entrypoint)
+ {
+-#if VA_CHECK_VERSION(1,9,0)
+   VAStatus status;
+   VADisplay dpy;
+   VAConfigAttrib attrib = {.type = VAConfigAttribPredictionDirection };
+@@ -708,9 +707,6 @@ gst_va_encoder_get_prediction_direction (GstVaEncoder * self,
+ 
+   return attrib.value & (VA_PREDICTION_DIRECTION_PREVIOUS |
+       VA_PREDICTION_DIRECTION_FUTURE | VA_PREDICTION_DIRECTION_BI_NOT_EMPTY);
+-#else
+-  return 0;
+-#endif
+ }
+ 
+ guint32
+diff --git a/sys/va/gstvafilter.c b/sys/va/gstvafilter.c
+index 4d1645276..92ab0e3df 100644
+--- a/sys/va/gstvafilter.c
++++ b/sys/va/gstvafilter.c
+@@ -446,9 +446,7 @@ static const struct VaFilterCapMap {
+   F(TotalColorCorrection, VAProcTotalColorCorrectionCount),
+   F(HVSNoiseReduction, 0),
+   F(HighDynamicRangeToneMapping, VAProcHighDynamicRangeMetadataTypeCount),
+-#if VA_CHECK_VERSION (1, 12, 0)
+   F(3DLUT, 16),
+-#endif
+ #undef F
+ };
+ /* *INDENT-ON* */
+@@ -485,9 +483,7 @@ struct VaFilter
+     VAProcFilterCapTotalColorCorrection cc[VAProcTotalColorCorrectionCount];
+       VAProcFilterCapHighDynamicRange
+         hdr[VAProcHighDynamicRangeMetadataTypeCount];
+-#if VA_CHECK_VERSION (1, 12, 0)
+     VAProcFilterCap3DLUT lut[16];
+-#endif
+   } caps;
+ };
+ 
+diff --git a/sys/va/gstvah265dec.c b/sys/va/gstvah265dec.c
+index dd31003f1..ea46e30c4 100644
+--- a/sys/va/gstvah265dec.c
++++ b/sys/va/gstvah265dec.c
+@@ -126,10 +126,7 @@ _is_screen_content_ext_profile (VAProfile profile)
+ {
+   if (profile == VAProfileHEVCSccMain || profile == VAProfileHEVCSccMain10
+       || profile == VAProfileHEVCSccMain444
+-#if VA_CHECK_VERSION(1, 8, 0)
+-      || profile == VAProfileHEVCSccMain444_10
+-#endif
+-      )
++      || profile == VAProfileHEVCSccMain444_10)
+     return TRUE;
+ 
+   return FALSE;
+@@ -964,9 +961,7 @@ static const struct
+   P (SCREEN_EXTENDED_MAIN, SccMain),
+   P (SCREEN_EXTENDED_MAIN_10, SccMain10),
+   P (SCREEN_EXTENDED_MAIN_444, SccMain444),
+-#if VA_CHECK_VERSION(1, 8, 0)
+   P (SCREEN_EXTENDED_MAIN_444_10, SccMain444_10),
+-#endif
+   /*P (SCREEN_EXTENDED_HIGH_THROUGHPUT_444, ),
+   P (SCREEN_EXTENDED_HIGH_THROUGHPUT_444_10, ),
+   P (SCREEN_EXTENDED_HIGH_THROUGHPUT_444_14, ),
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index d8e57db80..7f1f326b9 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -487,10 +487,7 @@ _is_scc_enabled (GstVaH265Enc * self)
+   if (base->profile == VAProfileHEVCSccMain
+       || base->profile == VAProfileHEVCSccMain10
+       || base->profile == VAProfileHEVCSccMain444
+-#if VA_CHECK_VERSION(1, 8, 0)
+-      || base->profile == VAProfileHEVCSccMain444_10
+-#endif
+-      )
++      || base->profile == VAProfileHEVCSccMain444_10)
+     return TRUE;
+ 
+   return FALSE;
+@@ -686,7 +683,6 @@ _h265_fill_ptl (GstVaH265Enc * self,
+         ptl->one_picture_only_constraint_flag = 0;
+         ptl->lower_bit_rate_constraint_flag = 1;
+         break;
+-#if VA_CHECK_VERSION(1, 8, 0)
+       case VAProfileHEVCSccMain444_10:
+         ptl->max_14bit_constraint_flag = 1;
+         ptl->max_12bit_constraint_flag = 1;
+@@ -699,7 +695,6 @@ _h265_fill_ptl (GstVaH265Enc * self,
+         ptl->one_picture_only_constraint_flag = 0;
+         ptl->lower_bit_rate_constraint_flag = 1;
+         break;
+-#endif
+       default:
+         GST_WARNING_OBJECT (self, "do not support the profile: %s of screen"
+             " content coding extensions.", gst_va_profile_name (base->profile));
+@@ -893,7 +888,6 @@ _h265_fill_sps (GstVaH265Enc * self,
+     .sps_3d_extension_flag = 0,
+     .sps_scc_extension_flag = _is_scc_enabled (self),
+     /* if sps_scc_extension_flag */
+-#if VA_CHECK_VERSION(1, 8, 0)
+     .sps_scc_extension_params = {
+       .sps_curr_pic_ref_enabled_flag = 1,
+       .palette_mode_enabled_flag =
+@@ -906,7 +900,6 @@ _h265_fill_sps (GstVaH265Enc * self,
+       .motion_vector_resolution_control_idc = 0,
+       .intra_boundary_filtering_disabled_flag = 0,
+     },
+-#endif
+   };
+   /* *INDENT-ON* */
+ 
+@@ -984,14 +977,12 @@ _h265_fill_pps (GstVaH265Enc * self,
+     .pps_3d_extension_flag = 0,
+     .pps_scc_extension_flag = _is_scc_enabled (self),
+     /* if pps_scc_extension_flag*/
+-#if VA_CHECK_VERSION(1, 8, 0)
+     .pps_scc_extension_params = {
+       .pps_curr_pic_ref_enabled_flag =
+           pic_param->scc_fields.bits.pps_curr_pic_ref_enabled_flag,
+       .residual_adaptive_colour_transform_enabled_flag = 0,
+       .pps_palette_predictor_initializers_present_flag = 0,
+     },
+-#endif
+   };
+   /* *INDENT-ON* */
+ }
+@@ -1355,9 +1346,7 @@ _h265_fill_sequence_parameter (GstVaH265Enc * self,
+     case VAProfileHEVCSccMain:
+     case VAProfileHEVCSccMain10:
+     case VAProfileHEVCSccMain444:
+-#if VA_CHECK_VERSION(1, 8, 0)
+     case VAProfileHEVCSccMain444_10:
+-#endif
+       profile_idc = GST_H265_PROFILE_IDC_SCREEN_CONTENT_CODING;
+       break;
+     default:
+@@ -1431,9 +1420,7 @@ _h265_fill_sequence_parameter (GstVaH265Enc * self,
+     /* if (vui_fields.bits.vui_timing_info_present_flag) */
+     .vui_num_units_in_tick = GST_VIDEO_INFO_FPS_D (&base->input_state->info),
+     .vui_time_scale = GST_VIDEO_INFO_FPS_N (&base->input_state->info),
+-#if VA_CHECK_VERSION(1, 8, 0)
+     .scc_fields.bits.palette_mode_enabled_flag = _is_scc_enabled (self),
+-#endif
+   };
+   /* *INDENT-ON* */
+ 
+@@ -1553,10 +1540,8 @@ _h265_fill_picture_parameter (GstVaH265Enc * self, GstVaH265EncFrame * frame,
+     },
+     /* We use coding_type here, set this to 0. */
+     .hierarchical_level_plus1 = hierarchical_level_plus1,
+-#if VA_CHECK_VERSION(1, 8, 0)
+     .scc_fields.bits.pps_curr_pic_ref_enabled_flag =
+         _is_scc_enabled (self),
+-#endif
+   };
+   /* *INDENT-ON* */
+ 
+@@ -1727,10 +1712,8 @@ _h265_fill_slice_parameter (GstVaH265Enc * self, GstVaH265EncFrame * frame,
+       .collocated_from_l0_flag = (frame_type == GST_H265_I_SLICE ?
+           0 : self->features.collocated_from_l0_flag),
+     },
+-#if VA_CHECK_VERSION(1, 10, 0)
+     .pred_weight_table_bit_offset = 0,
+     .pred_weight_table_bit_length = 0,
+-#endif
+   };
+   /* *INDENT-ON* */
+ 
+@@ -2632,15 +2615,6 @@ _h265_decide_profile (GstVaH265Enc * self, VAProfile * _profile,
+   GArray *caps_candidates = NULL;
+   GArray *chroma_candidates = NULL;
+   guint depth = 0, chrome = 0;
+-  gboolean support_scc = TRUE;
+-
+-  /* We do not have scc_fields defined in sequence and picture
+-     before 1.8.0, just disable scc all. */
+-#if VA_CHECK_VERSION(1, 8, 0)
+-  support_scc = TRUE;
+-#else
+-  support_scc = FALSE;
+-#endif
+ 
+   caps_candidates = g_array_new (TRUE, TRUE, sizeof (VAProfile));
+   chroma_candidates = g_array_new (TRUE, TRUE, sizeof (VAProfile));
+@@ -2706,19 +2680,15 @@ _h265_decide_profile (GstVaH265Enc * self, VAProfile * _profile,
+     if (depth == 8) {
+       profile = VAProfileHEVCMain444;
+       g_array_append_val (chroma_candidates, profile);
+-      if (support_scc) {
+-        profile = VAProfileHEVCSccMain444;
+-        g_array_append_val (chroma_candidates, profile);
+-      }
++      profile = VAProfileHEVCSccMain444;
++      g_array_append_val (chroma_candidates, profile);
+     }
+ 
+     if (depth <= 10) {
+       profile = VAProfileHEVCMain444_10;
+       g_array_append_val (chroma_candidates, profile);
+-#if VA_CHECK_VERSION(1, 8, 0)
+       profile = VAProfileHEVCSccMain444_10;
+       g_array_append_val (chroma_candidates, profile);
+-#endif
+     }
+ 
+     if (depth <= 12) {
+@@ -2741,19 +2711,15 @@ _h265_decide_profile (GstVaH265Enc * self, VAProfile * _profile,
+     if (depth == 8) {
+       profile = VAProfileHEVCMain;
+       g_array_append_val (chroma_candidates, profile);
+-      if (support_scc) {
+-        profile = VAProfileHEVCSccMain;
+-        g_array_append_val (chroma_candidates, profile);
+-      }
++      profile = VAProfileHEVCSccMain;
++      g_array_append_val (chroma_candidates, profile);
+     }
+ 
+     if (depth <= 10) {
+       profile = VAProfileHEVCMain10;
+       g_array_append_val (chroma_candidates, profile);
+-      if (support_scc) {
+-        profile = VAProfileHEVCSccMain10;
+-        g_array_append_val (chroma_candidates, profile);
+-      }
++      profile = VAProfileHEVCSccMain10;
++      g_array_append_val (chroma_candidates, profile);
+     }
+ 
+     if (depth <= 12) {
+@@ -3819,7 +3785,6 @@ _h265_generate_gop_structure (GstVaH265Enc * self)
+   prediction_direction = gst_va_encoder_get_prediction_direction (base->encoder,
+       base->profile, GST_VA_BASE_ENC_ENTRYPOINT (base));
+   if (prediction_direction) {
+-#if VA_CHECK_VERSION(1,9,0)
+     if (!(prediction_direction & VA_PREDICTION_DIRECTION_PREVIOUS)) {
+       GST_INFO_OBJECT (self, "No forward prediction support");
+       forward_num = 0;
+@@ -3841,7 +3806,6 @@ _h265_generate_gop_structure (GstVaH265Enc * self)
+       GST_INFO_OBJECT (self, "Enable low-delay-b mode");
+       self->gop.low_delay_b_mode = TRUE;
+     }
+-#endif
+   }
+ 
+   if (forward_num > self->gop.num_ref_frames)
+diff --git a/sys/va/gstvaprofile.c b/sys/va/gstvaprofile.c
+index 67dca999d..572e42d03 100644
+--- a/sys/va/gstvaprofile.c
++++ b/sys/va/gstvaprofile.c
+@@ -91,7 +91,6 @@ static const struct ProfileMap
+       "profile = (string) screen-extended-main-10"),
+   P (HEVC, SccMain444, "screen-extended-main-444", "video/x-h265",
+       "profile = (string) screen-extended-main-444"),
+-#if VA_CHECK_VERSION(1,7,0)
+   /* Spec A.2:
+      "Main" compliant decoders must be able to decode streams with
+      seq_profile equal to 0.
+@@ -110,11 +109,8 @@ static const struct ProfileMap
+      we just map "0" to "main" and "1" to "high".  */
+   P (AV1, Profile0, "main", "video/x-av1", "profile = (string) main"),
+   P (AV1, Profile1, "high", "video/x-av1", "profile = (string) high"),
+-#endif
+-#if VA_CHECK_VERSION(1, 8, 0)
+   P (HEVC, SccMain444_10, "screen-extended-main-444-10", "video/x-h265",
+       "profile = (string) screen-extended-main-444-10"),
+-#endif
+ #undef P
+ };
+ /* *INDENT-ON* */
+diff --git a/sys/va/plugin.c b/sys/va/plugin.c
+index ffa00f461..0b186377d 100644
+--- a/sys/va/plugin.c
++++ b/sys/va/plugin.c
+@@ -137,7 +137,6 @@ plugin_register_decoders (GstPlugin * plugin, GstVaDevice * device,
+               device->render_device_path);
+         }
+         break;
+-#if VA_CHECK_VERSION(1, 8, 0)
+       case AV1:
+         if (!gst_va_av1_dec_register (plugin, device, sinkcaps, srccaps,
+                 GST_RANK_NONE)) {
+@@ -145,7 +144,6 @@ plugin_register_decoders (GstPlugin * plugin, GstVaDevice * device,
+               device->render_device_path);
+         }
+         break;
+-#endif
+       case JPEG:
+         if (!gst_va_jpeg_dec_register (plugin, device, sinkcaps, srccaps,
+                 GST_RANK_NONE)) {
+-- 
+2.40.1
+

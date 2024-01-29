@@ -1,7 +1,7 @@
-From f72d6145a5880a4a9ee018da20c9534b27813d9b Mon Sep 17 00:00:00 2001
+From b97673383bffd351b14d9fc4f376dbbd3a56c3ee Mon Sep 17 00:00:00 2001
 From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
 Date: Wed, 15 Feb 2023 13:10:25 -0500
-Subject: [PATCH 40/43] basesink: Add GST_BASE_SINK_FLOW_DROPPED return value
+Subject: [PATCH 40/42] basesink: Add GST_BASE_SINK_FLOW_DROPPED return value
 
 This new flow return value can be used in ::render virtual method
 to signal that a frame is not being rendered.

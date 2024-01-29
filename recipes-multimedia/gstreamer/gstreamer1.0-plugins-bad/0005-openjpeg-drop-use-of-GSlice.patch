@@ -1,7 +1,7 @@
-From 375e6695f6e35a7b109acd2ccc043951d5ea0e84 Mon Sep 17 00:00:00 2001
+From 620a0db0b2e6046499d62b6006deefde1c4316ca Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:06:07 +0000
-Subject: [PATCH 005/205] openjpeg: drop use of GSlice
+Subject: [PATCH 005/232] openjpeg: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

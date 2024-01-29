@@ -1,0 +1,57 @@
+From d059930ca033fe39f7c919a3f4f7021b64c65f55 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 16 May 2023 14:38:44 +0800
+Subject: [PATCH 114/232] va: Sort udev path name before register the va
+ plugins
+
+The devices list returned by g_udev_client_query_by_subsystem() may
+contain udev devices in disorder path name. For example, on some
+platform it may contain renderD129 before renderD128 device. This
+will cause we register wrong va plugin name. In this case, the
+renderD129 will be registered as default plugins such as vah265dec,
+while the renderD128 will be registered as varenderD128h265dec.
+This conflicts with the non-udev version of gst_va_device_find_devices().
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4643>
+---
+ sys/va/gstvadevice_linux.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/sys/va/gstvadevice_linux.c b/sys/va/gstvadevice_linux.c
+index 417761deb..be080ba85 100644
+--- a/sys/va/gstvadevice_linux.c
++++ b/sys/va/gstvadevice_linux.c
+@@ -67,6 +67,16 @@ compare_device_path (gconstpointer a, gconstpointer b, gpointer user_data)
+ }
+ 
+ #ifdef HAVE_GUDEV
++static gint
++compare_udev_path (gconstpointer a, gconstpointer b)
++{
++  GUdevDevice *pa = (GUdevDevice *) a;
++  GUdevDevice *pb = (GUdevDevice *) b;
++
++  return g_strcmp0 (g_udev_device_get_device_file (pa),
++      g_udev_device_get_device_file (pb));
++}
++
+ GList *
+ gst_va_device_find_devices (void)
+ {
+@@ -78,6 +88,13 @@ gst_va_device_find_devices (void)
+   client = g_udev_client_new (NULL);
+   udev_devices = g_udev_client_query_by_subsystem (client, "drm");
+ 
++  if (!udev_devices) {
++    g_object_unref (client);
++    return NULL;
++  }
++
++  udev_devices = g_list_sort (udev_devices, compare_udev_path);
++
+   for (dev = udev_devices; dev; dev = g_list_next (dev)) {
+     GstVaDisplay *dpy;
+     GUdevDevice *udev = (GUdevDevice *) dev->data;
+-- 
+2.40.1
+

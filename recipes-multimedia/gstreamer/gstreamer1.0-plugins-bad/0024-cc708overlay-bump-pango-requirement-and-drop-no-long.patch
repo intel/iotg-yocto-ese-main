@@ -1,7 +1,7 @@
-From d50117385b2c30aefde764ccf99586422e01e41e Mon Sep 17 00:00:00 2001
+From 35a85f8c95f4c77c2881dcf50574c2f0aeeea228 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Wed, 25 Jan 2023 00:33:33 +0000
-Subject: [PATCH 024/205] cc708overlay: bump pango requirement and drop no
+Subject: [PATCH 024/232] cc708overlay: bump pango requirement and drop no
  longer required locking
 
 Gets rid of GSlice allocation that's never freed.

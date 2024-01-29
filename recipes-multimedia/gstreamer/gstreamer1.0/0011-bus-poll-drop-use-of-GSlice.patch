@@ -1,7 +1,7 @@
-From 8f579f660748acb1828089c04a6c08d746a1b43d Mon Sep 17 00:00:00 2001
+From 99e407573a80083bcd653b9771d82a17e1ac25ab Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sat, 7 Jan 2023 19:42:29 +0000
-Subject: [PATCH 11/43] bus, poll: drop use of GSlice
+Subject: [PATCH 11/42] bus, poll: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

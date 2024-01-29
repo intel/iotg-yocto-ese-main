@@ -1,7 +1,7 @@
-From 93346836521b24e384ea4766f5710160c083df46 Mon Sep 17 00:00:00 2001
+From a483fdae731637cf656a1335c6d5ad4f5bf881ce Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:06:24 +0000
-Subject: [PATCH 006/205] kate: drop use of GSlice
+Subject: [PATCH 006/232] kate: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

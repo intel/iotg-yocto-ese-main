@@ -1,0 +1,199 @@
+From e14a4c14ac71964ce7495e1ed61f395e75685b8a Mon Sep 17 00:00:00 2001
+From: Yinhang Liu <yinhang.liu@intel.com>
+Date: Fri, 7 Apr 2023 14:09:40 +0800
+Subject: [PATCH 088/232] msdk: Create msdk context without job_type
+
+The job_type is not necessary when creating a normal msdk
+context. Make the APIs for creating context more flexible.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4177>
+---
+ sys/msdk/gstmsdk.c            |  6 +++++-
+ sys/msdk/gstmsdkcontext.c     | 30 +++++++++++++++++++++++-------
+ sys/msdk/gstmsdkcontext.h     |  8 +++++++-
+ sys/msdk/gstmsdkcontextutil.c |  2 +-
+ sys/msdk/msdk.c               | 14 --------------
+ sys/msdk/msdk.h               |  2 --
+ 6 files changed, 36 insertions(+), 26 deletions(-)
+
+diff --git a/sys/msdk/gstmsdk.c b/sys/msdk/gstmsdk.c
+index 7808bfb1c..d36328eaa 100644
+--- a/sys/msdk/gstmsdk.c
++++ b/sys/msdk/gstmsdk.c
+@@ -115,6 +115,7 @@ static gboolean
+ plugin_init (GstPlugin * plugin)
+ {
+   gboolean ret;
++  GstMsdkContext *context;
+ 
+   GST_DEBUG_CATEGORY_INIT (gst_msdk_debug, "msdk", 0, "msdk");
+   GST_DEBUG_CATEGORY_INIT (gst_msdkdec_debug, "msdkdec", 0, "msdkdec");
+@@ -145,7 +146,8 @@ plugin_init (GstPlugin * plugin)
+ 
+   plugin_add_dependencies (plugin);
+ 
+-  if (!msdk_is_available ())
++  context = gst_msdk_context_new (TRUE);
++  if (!context)
+     return TRUE;                /* return TRUE to avoid getting blacklisted */
+ 
+   ret = gst_element_register (plugin, "msdkh264dec", GST_RANK_NONE,
+@@ -196,6 +198,8 @@ plugin_init (GstPlugin * plugin)
+   ret = gst_element_register (plugin, "msdkvpp", GST_RANK_NONE,
+       GST_TYPE_MSDKVPP);
+ 
++  gst_object_unref (context);
++
+   return ret;
+ }
+ 
+diff --git a/sys/msdk/gstmsdkcontext.c b/sys/msdk/gstmsdkcontext.c
+index 8527d10ac..1b3cf6916 100644
+--- a/sys/msdk/gstmsdkcontext.c
++++ b/sys/msdk/gstmsdkcontext.c
+@@ -304,15 +304,13 @@ gst_msdk_context_use_d3d11 (GstMsdkContext * context)
+ #endif
+ 
+ static gboolean
+-gst_msdk_context_open (GstMsdkContext * context, gboolean hardware,
+-    GstMsdkContextJobType job_type)
++gst_msdk_context_open (GstMsdkContext * context, gboolean hardware)
+ {
+   mfxU16 codename;
+   GstMsdkContextPrivate *priv = context->priv;
+   MsdkSession msdk_session;
+   mfxIMPL impl;
+ 
+-  priv->job_type = job_type;
+   priv->hardware = hardware;
+ 
+   impl = hardware ? MFX_IMPL_HARDWARE_ANY : MFX_IMPL_SOFTWARE;
+@@ -410,19 +408,30 @@ gst_msdk_context_class_init (GstMsdkContextClass * klass)
+ }
+ 
+ GstMsdkContext *
+-gst_msdk_context_new (gboolean hardware, GstMsdkContextJobType job_type)
++gst_msdk_context_new (gboolean hardware)
+ {
+   GstMsdkContext *obj = g_object_new (GST_TYPE_MSDK_CONTEXT, NULL);
+ 
+-  if (obj && !gst_msdk_context_open (obj, hardware, job_type)) {
+-    if (obj)
+-      gst_object_unref (obj);
++  if (obj && !gst_msdk_context_open (obj, hardware)) {
++    gst_object_unref (obj);
+     return NULL;
+   }
+ 
+   return obj;
+ }
+ 
++GstMsdkContext *
++gst_msdk_context_new_with_job_type (gboolean hardware,
++    GstMsdkContextJobType job_type)
++{
++  GstMsdkContext *obj = gst_msdk_context_new (hardware);
++
++  if (obj)
++    obj->priv->job_type = job_type;
++
++  return obj;
++}
++
+ GstMsdkContext *
+ gst_msdk_context_new_with_parent (GstMsdkContext * parent)
+ {
+@@ -783,6 +792,13 @@ gst_msdk_context_get_job_type (GstMsdkContext * context)
+   return context->priv->job_type;
+ }
+ 
++void
++gst_msdk_context_set_job_type (GstMsdkContext * context,
++    GstMsdkContextJobType job_type)
++{
++  context->priv->job_type = job_type;
++}
++
+ void
+ gst_msdk_context_add_job_type (GstMsdkContext * context,
+     GstMsdkContextJobType job_type)
+diff --git a/sys/msdk/gstmsdkcontext.h b/sys/msdk/gstmsdkcontext.h
+index 7c1cc5ac4..38e0cf25c 100644
+--- a/sys/msdk/gstmsdkcontext.h
++++ b/sys/msdk/gstmsdkcontext.h
+@@ -87,7 +87,9 @@ struct _GstMsdkContextClass
+ 
+ GType gst_msdk_context_get_type (void);
+ 
+-GstMsdkContext * gst_msdk_context_new (gboolean hardware, GstMsdkContextJobType job_type);
++GstMsdkContext * gst_msdk_context_new (gboolean hardware);
++GstMsdkContext * gst_msdk_context_new_with_job_type (gboolean hardware,
++    GstMsdkContextJobType job_type);
+ GstMsdkContext * gst_msdk_context_new_with_parent (GstMsdkContext * parent);
+ #ifndef _WIN32
+ GstMsdkContext * gst_msdk_context_new_with_va_display (GstObject * display_obj,
+@@ -141,6 +143,10 @@ gst_msdk_context_get_alloc_pool (GstMsdkContext * context);
+ GstMsdkContextJobType
+ gst_msdk_context_get_job_type (GstMsdkContext * context);
+ 
++void
++gst_msdk_context_set_job_type (GstMsdkContext * context,
++    GstMsdkContextJobType job_type);
++
+ void
+ gst_msdk_context_add_job_type (GstMsdkContext * context, GstMsdkContextJobType job_type);
+ 
+diff --git a/sys/msdk/gstmsdkcontextutil.c b/sys/msdk/gstmsdkcontextutil.c
+index c739cae96..6cb0a5d72 100644
+--- a/sys/msdk/gstmsdkcontextutil.c
++++ b/sys/msdk/gstmsdkcontextutil.c
+@@ -264,7 +264,7 @@ gst_msdk_ensure_new_context (GstElement * element, gboolean hardware,
+      to enable user to choose GPU device in multi-GPU environment. This variable
+      is only valid when there's no context returned by upstream or downstream.
+      Otherwise it will use the device that created by upstream or downstream. */
+-  msdk_context = gst_msdk_context_new (hardware, job);
++  msdk_context = gst_msdk_context_new_with_job_type (hardware, job);
+   if (!msdk_context) {
+     GST_ERROR_OBJECT (element, "Context creation failed");
+     return FALSE;
+diff --git a/sys/msdk/msdk.c b/sys/msdk/msdk.c
+index 62ff1b392..8612a95d8 100644
+--- a/sys/msdk/msdk.c
++++ b/sys/msdk/msdk.c
+@@ -388,20 +388,6 @@ failed:
+   return msdk_session;
+ }
+ 
+-gboolean
+-msdk_is_available (void)
+-{
+-  /* Make sure we can create GstMsdkContext instance (the job type is not used actually) */
+-  GstMsdkContext *msdk_context = gst_msdk_context_new (1, GST_MSDK_JOB_DECODER);
+-
+-  if (!msdk_context) {
+-    return FALSE;
+-  }
+-
+-  gst_object_unref (msdk_context);
+-  return TRUE;
+-}
+-
+ void
+ gst_msdk_set_video_alignment (GstVideoInfo * info, guint alloc_w, guint alloc_h,
+     GstVideoAlignment * alignment)
+diff --git a/sys/msdk/msdk.h b/sys/msdk/msdk.h
+index 6c4b49d12..f15bd0b36 100644
+--- a/sys/msdk/msdk.h
++++ b/sys/msdk/msdk.h
+@@ -114,8 +114,6 @@ MsdkSession msdk_open_session (mfxIMPL impl);
+ void msdk_close_mfx_session (mfxSession session);
+ void msdk_close_session (MsdkSession * session);
+ 
+-gboolean msdk_is_available (void);
+-
+ mfxFrameSurface1 *msdk_get_free_surface (mfxFrameSurface1 * surfaces,
+     guint size);
+ void msdk_frame_to_surface (GstVideoFrame * frame, mfxFrameSurface1 * surface);
+-- 
+2.40.1
+

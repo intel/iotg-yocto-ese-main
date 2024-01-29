@@ -1,0 +1,76 @@
+From 227e417324f562b13f42b0498dba9929ba40f451 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 8 Jun 2023 21:53:28 +0800
+Subject: [PATCH 129/232] va: Add a helper function to convert video drm info
+ to video info
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4821>
+---
+ gst-libs/gst/va/gstvavideoformat.c | 34 ++++++++++++++++++++++++++++++
+ gst-libs/gst/va/gstvavideoformat.h |  5 +++++
+ 2 files changed, 39 insertions(+)
+
+diff --git a/gst-libs/gst/va/gstvavideoformat.c b/gst-libs/gst/va/gstvavideoformat.c
+index 6f47b1f4e..e173501ed 100644
+--- a/gst-libs/gst/va/gstvavideoformat.c
++++ b/gst-libs/gst/va/gstvavideoformat.c
+@@ -362,6 +362,40 @@ gst_va_video_surface_format_from_image_format (GstVideoFormat image_format,
+   return GST_VIDEO_FORMAT_UNKNOWN;
+ }
+ 
++/* Convert the GstVideoInfoDmaDrm into a traditional GstVideoInfo
++   with recognized format. */
++gboolean
++gst_va_video_info_from_dma_info (GstVideoInfo * info,
++    const GstVideoInfoDmaDrm * drm_info)
++{
++  GstVideoFormat video_format;
++
++  g_return_val_if_fail (drm_info, FALSE);
++  g_return_val_if_fail (info, FALSE);
++
++  if (GST_VIDEO_INFO_FORMAT (&drm_info->vinfo) != GST_VIDEO_FORMAT_ENCODED) {
++    *info = drm_info->vinfo;
++    return TRUE;
++  }
++
++  /* The non linear DMA format will be recognized as FORMAT_ENCODED,
++     but we still need to know its real format to set the info such
++     as pitch and stride. Because va plugins have its internal mapping
++     between drm fourcc and video format, we do not use the standard
++     conversion API here. */
++  video_format = gst_va_video_format_from_drm_fourcc (drm_info->drm_fourcc);
++  if (video_format == GST_VIDEO_FORMAT_UNKNOWN)
++    return FALSE;
++
++  *info = drm_info->vinfo;
++
++  if (!gst_video_info_set_format (info, video_format,
++          GST_VIDEO_INFO_WIDTH (info), GST_VIDEO_INFO_HEIGHT (info)))
++    return FALSE;
++
++  return TRUE;
++}
++
+ static GstVideoFormat
+ find_gst_video_format_in_rgb32_map (VAImageFormat * image_format,
+     guint * drm_fourcc)
+diff --git a/gst-libs/gst/va/gstvavideoformat.h b/gst-libs/gst/va/gstvavideoformat.h
+index 9854c6bb0..3d5712c63 100644
+--- a/gst-libs/gst/va/gstvavideoformat.h
++++ b/gst-libs/gst/va/gstvavideoformat.h
+@@ -54,6 +54,11 @@ GstVideoFormat        gst_va_video_format_from_va_image_format (const VAImageFor
+ GST_VA_API
+ GstVideoFormat        gst_va_video_surface_format_from_image_format (GstVideoFormat image_format,
+                                                                      GArray * surface_formats);
++
++GST_VA_API
++gboolean              gst_va_video_info_from_dma_info     (GstVideoInfo * info,
++                                                           const GstVideoInfoDmaDrm * drm_info);
++
+ GST_VA_API
+ void                  gst_va_video_format_fix_map         (VAImageFormat * image_formats,
+                                                            gint num);
+-- 
+2.40.1
+

@@ -1,4 +1,4 @@
-From 75943263f419725c14f2cd92fcad6b80d855b1be Mon Sep 17 00:00:00 2001
+From 8954e9a6da329f2265f22fee305f60d4c511dea0 Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Mon, 31 Jul 2023 16:50:37 +0800
 Subject: [PATCH 34/77] video-info-dma: add

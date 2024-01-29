@@ -1,0 +1,40 @@
+From d69e3eeba0eb0533bc8c7460d5bca911102477c3 Mon Sep 17 00:00:00 2001
+From: Matthew Waters <matthew@centricular.com>
+Date: Wed, 27 Sep 2023 19:43:59 +1000
+Subject: [PATCH] gl/format: fix swizzle indices for RGB10A2/BGR10A2
+
+Fixes: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/3003
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5400>
+---
+ gst-libs/gst/gl/gstglformat.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/gst-libs/gst/gl/gstglformat.c b/gst-libs/gst/gl/gstglformat.c
+index 240a8e82..d80686a5 100644
+--- a/gst-libs/gst/gl/gstglformat.c
++++ b/gst-libs/gst/gl/gstglformat.c
+@@ -466,6 +466,21 @@ get_single_planar_format_gl_swizzle_order (GstVideoFormat format,
+   g_return_if_fail (finfo->flags & GST_VIDEO_FORMAT_FLAG_RGB
+       || format == GST_VIDEO_FORMAT_AYUV || format == GST_VIDEO_FORMAT_VUYA);
+ 
++  if (format == GST_VIDEO_FORMAT_BGR10A2_LE) {
++    swizzle[0] = 2;
++    swizzle[1] = 1;
++    swizzle[2] = 0;
++    swizzle[3] = 3;
++    return;
++  }
++  if (format == GST_VIDEO_FORMAT_RGB10A2_LE) {
++    swizzle[0] = 0;
++    swizzle[1] = 1;
++    swizzle[2] = 2;
++    swizzle[3] = 3;
++    return;
++  }
++
+   for (i = 0; i < finfo->n_components; i++) {
+     swizzle[c_i++] = finfo->poffset[i];
+   }
+-- 
+2.34.1
+

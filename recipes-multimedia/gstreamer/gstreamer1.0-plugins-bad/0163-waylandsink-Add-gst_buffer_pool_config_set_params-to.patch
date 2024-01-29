@@ -1,0 +1,27 @@
+From e923141191cb85251371b3c7d932465f38c0274c Mon Sep 17 00:00:00 2001
+From: "Cheah, Vincent Beng Keat" <vincent.beng.keat.cheah@intel.com>
+Date: Thu, 27 Jul 2023 15:53:55 +0800
+Subject: [PATCH 163/232] waylandsink: Add gst_buffer_pool_config_set_params()
+ to a pool
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5103>
+---
+ ext/wayland/gstwaylandsink.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 7c99b1446..145558201 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -773,6 +773,8 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
+     GstStructure *config;
+     pool = gst_wl_video_buffer_pool_new ();
+     config = gst_buffer_pool_get_config (pool);
++    gst_buffer_pool_config_set_params (config,
++        caps, self->video_info.size, 2, 0);
+     gst_buffer_pool_config_set_allocator (config,
+         gst_wl_shm_allocator_get (), NULL);
+     gst_buffer_pool_set_config (pool, config);
+-- 
+2.40.1
+

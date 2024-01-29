@@ -1,4 +1,4 @@
-From f949f28295784ac7eac9f069fed0a5a8c8ce1e24 Mon Sep 17 00:00:00 2001
+From d802e2823ddcb6133e455cb4b4e246051a68a239 Mon Sep 17 00:00:00 2001
 From: Anders Hellerup Madsen <ahem@github.com>
 Date: Mon, 6 Feb 2023 16:16:14 +0100
 Subject: [PATCH 75/77] glstereosplit: use gst_display_ensure_context

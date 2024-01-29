@@ -1,4 +1,4 @@
-From f188f528f78d21d57a12bea5b0d14fe98e174e98 Mon Sep 17 00:00:00 2001
+From e8014c46ddc567b3a465596a9a9052072831a341 Mon Sep 17 00:00:00 2001
 From: Matthew Waters <matthew@centricular.com>
 Date: Mon, 8 May 2023 17:51:43 +1000
 Subject: [PATCH 25/77] glmixer: remove set_caps() vfunc

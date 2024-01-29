@@ -1,7 +1,7 @@
-From 587006a58b6492ffd29d9524316bd10f49e7da29 Mon Sep 17 00:00:00 2001
+From 91543324fc3d1a232cf4c8ccec83c9864dadb9f9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:43:02 +0000
-Subject: [PATCH 016/205] jp2kdecimator: drop use of GSlice
+Subject: [PATCH 016/232] jp2kdecimator: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

@@ -1,7 +1,7 @@
-From a2abfa1601eb9ac8f2572cd9d1fe40a39b3695ce Mon Sep 17 00:00:00 2001
+From 5c60c171d89f2fb9f294733f16a9df0393f60e6c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sat, 7 Jan 2023 19:20:41 +0000
-Subject: [PATCH 05/43] registry: drop use of GSlice
+Subject: [PATCH 05/42] registry: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---

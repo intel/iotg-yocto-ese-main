@@ -1,7 +1,7 @@
-From 448bbb1daf2a2688b3f431c08d40d9c44c868457 Mon Sep 17 00:00:00 2001
+From bf81b4b9853e32b9f45950530b3e73bc3ad2ead1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Tim-Philipp=20M=C3=BCller?= <tim@centricular.com>
 Date: Sun, 8 Jan 2023 18:39:59 +0000
-Subject: [PATCH 015/205] rtmp2: drop use of GSlice
+Subject: [PATCH 015/232] rtmp2: drop use of GSlice
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3695>
 ---
@@ -72,7 +72,7 @@ index d3471e76b..617f88446 100644
  
  GstRtmpChunkStream *
 diff --git a/gst/rtmp2/rtmp/rtmpclient.c b/gst/rtmp2/rtmp/rtmpclient.c
-index dd7773fb7..154b4d869 100644
+index bef6f5eed..fdd1419fd 100644
 --- a/gst/rtmp2/rtmp/rtmpclient.c
 +++ b/gst/rtmp2/rtmp/rtmpclient.c
 @@ -336,7 +336,7 @@ typedef struct
@@ -93,7 +93,7 @@ index dd7773fb7..154b4d869 100644
  }
  
  static GRegex *auth_regex = NULL;
-@@ -1074,7 +1074,7 @@ static StreamTaskData *
+@@ -1069,7 +1069,7 @@ static StreamTaskData *
  stream_task_data_new (GstRtmpConnection * connection, const gchar * stream,
      gboolean publish)
  {
@@ -102,7 +102,7 @@ index dd7773fb7..154b4d869 100644
    data->connection = g_object_ref (connection);
    data->stream = g_strdup (stream);
    data->publish = publish;
-@@ -1090,7 +1090,7 @@ stream_task_data_free (gpointer ptr)
+@@ -1085,7 +1085,7 @@ stream_task_data_free (gpointer ptr)
      g_signal_handler_disconnect (data->connection, data->error_handler_id);
    }
    g_clear_object (&data->connection);
