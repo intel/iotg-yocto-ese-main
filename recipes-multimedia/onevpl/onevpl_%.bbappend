@@ -7,4 +7,7 @@ SRC_URI:append = " file://0001-Fix-rdrm-NV12-and-P010-render-for-MTL.patch \
                    file://0006-Fix-rdrm-tile4-selection-based-DRM-KMS-query.patch \
                    file://0007-Remove-unused-codes.patch \
                    file://0008-Enable-JPEG-BGR4-encode.patch \
+                   file://0009-Fix-sample_decode-output-format-print.patch \
+                   file://0010-Fix-X11-render.patch \
+                   file://0011-Fix-Wayland-render.patch \
                  "

@@ -6,5 +6,7 @@ SRC_URI:append = " file://0001-dri2-Add-support-for-TGL.patch \
                    file://0004-xorg-xserver-Add-support-for-ADL-N.patch \
                    file://0005-xorg-xserver-Add-support-for-RPL-S.patch \
                    file://0006-xorg-xserver-Add-support-for-RPL-P.patch \
+                   file://0001-modesetting-Fix-dirty-updates-for-sw-rotation.patch \
+                   file://0002-modesetting-Correct-coordinate-info-of-dirty-clips-f.patch \
                  "
 

@@ -1,0 +1,37 @@
+From a78fac71d0fdf43dc51091b85dc7feae9fe6960c Mon Sep 17 00:00:00 2001
+From: "Hoe, Sheng Yang" <sheng.yang.hoe@intel.com>
+Date: Wed, 8 Nov 2023 11:47:08 +0000
+Subject: [PATCH 9/9] Fix sample_decode output format print
+
+Signed-off-by: Hoe, Sheng Yang <sheng.yang.hoe@intel.com>
+---
+ tools/legacy/sample_decode/src/pipeline_decode.cpp | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/tools/legacy/sample_decode/src/pipeline_decode.cpp b/tools/legacy/sample_decode/src/pipeline_decode.cpp
+index 5fec7cda..e505186b 100644
+--- a/tools/legacy/sample_decode/src/pipeline_decode.cpp
++++ b/tools/legacy/sample_decode/src/pipeline_decode.cpp
+@@ -2149,9 +2149,16 @@ void CDecodingPipeline::PrintStreamInfo() {
+                m_bOutI420 ? "I420(YUV)" : CodecIdToStr(m_mfxVppVideoParams.vpp.Out.FourCC).c_str());
+     }
+     else {
+-        printf(
+-            "Output format\t%s\n",
+-            m_bOutI420 ? "I420(YUV)" : CodecIdToStr(m_mfxVideoParams.mfx.FrameInfo.FourCC).c_str());
++        mfxU32 fourcc = m_mfxVideoParams.mfx.FrameInfo.FourCC;
++
++        if (m_mfxVideoParams.mfx.CodecId == MFX_CODEC_AVC ||
++            m_mfxVideoParams.mfx.CodecId == MFX_CODEC_HEVC) {
++            auto decPostProcessing = m_mfxVideoParams.GetExtBuffer<mfxExtDecVideoProcessing>();
++            if (decPostProcessing)
++                fourcc = decPostProcessing->Out.FourCC;
++        }
++
++        printf("Output format\t%s\n", m_bOutI420 ? "I420(YUV)" : CodecIdToStr(fourcc).c_str());
+     }
+ 
+     mfxFrameInfo Info = m_mfxVideoParams.mfx.FrameInfo;
+-- 
+2.34.1
+

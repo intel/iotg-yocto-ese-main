@@ -1,0 +1,40 @@
+From 0df03801b3239da8f80fea83851fad22c7018c7a Mon Sep 17 00:00:00 2001
+From: "Hoe, Sheng Yang" <sheng.yang.hoe@intel.com>
+Date: Wed, 29 Nov 2023 10:44:15 +0800
+Subject: [PATCH 11/11] Fix Wayland render
+
+Signed-off-by: Hoe, Sheng Yang <sheng.yang.hoe@intel.com>
+---
+ tools/legacy/sample_common/include/vaapi_device.h | 2 +-
+ tools/legacy/sample_common/src/vaapi_device.cpp   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/legacy/sample_common/include/vaapi_device.h b/tools/legacy/sample_common/include/vaapi_device.h
+index 4ea2f57f..5752a284 100644
+--- a/tools/legacy/sample_common/include/vaapi_device.h
++++ b/tools/legacy/sample_common/include/vaapi_device.h
+@@ -124,7 +124,7 @@ class Wayland;
+ 
+ class CVAAPIDeviceWayland : public CHWDevice {
+ public:
+-    CVAAPIDeviceWayland() {
++    CVAAPIDeviceWayland(const std::string& devicePath = "") : m_DRMLibVA(devicePath) {
+         m_nRenderWinX            = 0;
+         m_nRenderWinY            = 0;
+         m_nRenderWinW            = 0;
+diff --git a/tools/legacy/sample_common/src/vaapi_device.cpp b/tools/legacy/sample_common/src/vaapi_device.cpp
+index cdde38e8..c44e67e7 100644
+--- a/tools/legacy/sample_common/src/vaapi_device.cpp
++++ b/tools/legacy/sample_common/src/vaapi_device.cpp
+@@ -498,7 +498,7 @@ CHWDevice* CreateVAAPIDevice(const std::string& devicePath, int type) {
+             break;
+         case MFX_LIBVA_WAYLAND:
+         #if defined(LIBVA_WAYLAND_SUPPORT)
+-            device = new CVAAPIDeviceWayland;
++            device = new CVAAPIDeviceWayland(devicePath);
+         #endif
+             break;
+         case MFX_LIBVA_AUTO:
+-- 
+2.34.1
+
