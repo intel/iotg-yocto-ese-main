@@ -1,0 +1,38 @@
+From 17b4c5d7d5b473c079e8648792cf5a960b05fdff Mon Sep 17 00:00:00 2001
+From: "Yuan, Jenny" <jenny.yuan@intel.com>
+Date: Tue, 26 Mar 2024 18:29:28 -0700
+Subject: [PATCH] [RT Common] DevID for Arc A750E and A580E export fused SKUs
+ secured
+
+[Internal]
+OSPR: Auto
+Commit_Type: Feature
+Platforms: Gen12HP
+OS: Windows, Linux
+Feature impact: RT common
+Resolves: VSMGWL-72633
+Related-to: VSMGWL-72633
+Klocwork: N/A
+TP_Passed: N/A
+IP Scan: N/A
+Open/Embargo Dependency: N/A
+---
+ _studio/shared/include/mfxstructures-int.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/_studio/shared/include/mfxstructures-int.h b/_studio/shared/include/mfxstructures-int.h
+index b203ac70..a635ec3b 100644
+--- a/_studio/shared/include/mfxstructures-int.h
++++ b/_studio/shared/include/mfxstructures-int.h
+@@ -534,6 +534,8 @@ typedef struct {
+     { 0x56BB, MFX_HW_DG2, MFX_GT4 }, // DG2
+     { 0x56BC, MFX_HW_DG2, MFX_GT4 }, // DG2
+     { 0x56BD, MFX_HW_DG2, MFX_GT4 }, // DG2
++    { 0x56BE, MFX_HW_DG2, MFX_GT4 }, // DG2
++    { 0x56BF, MFX_HW_DG2, MFX_GT4 }, // DG2
+     { 0x56C2, MFX_HW_DG2, MFX_GT4 }, // DG2
+ 
+     /* PVC */
+-- 
+2.34.1
+

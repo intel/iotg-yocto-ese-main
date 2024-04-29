@@ -1,0 +1,38 @@
+From df6e01a4b3ba32c306f8b2b255443081580a1f52 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Fri, 17 Nov 2023 10:23:45 +0800
+Subject: [PATCH 03/12] Force enable MTL Media CCS by default
+
+Enable Media CCS by default, set FORCE_DISABLE_MTL_MEDIA_CCS
+environment variable to disable MTL Media CCS
+
+Signed-off-by: Teng, Jin Chung <jin.chung.teng@intel.com>
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ media_softlet/linux/Xe_M_plus/ddi/media_sku_wa_mtl.cpp | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/media_softlet/linux/Xe_M_plus/ddi/media_sku_wa_mtl.cpp b/media_softlet/linux/Xe_M_plus/ddi/media_sku_wa_mtl.cpp
+index 72265289c..0833b06a2 100644
+--- a/media_softlet/linux/Xe_M_plus/ddi/media_sku_wa_mtl.cpp
++++ b/media_softlet/linux/Xe_M_plus/ddi/media_sku_wa_mtl.cpp
+@@ -178,6 +178,16 @@ static bool InitMtlMediaSkuExt(struct GfxDeviceInfo *devInfo,
+     MEDIA_WR_SKU(skuTable, Ftr10bitDecMemoryCompression, 0);
+ 
+     MEDIA_WR_SKU(skuTable, FtrCCSNode, 1);
++    // get user CCS value from environment variable
++    char *CCS_Env = getenv("FORCE_DISABLE_INTEL_MEDIA_MTL_CCS");
++    if (CCS_Env != nullptr)
++    {
++       uint8_t user_ccs_env_value = (uint8_t)atoi(CCS_Env);
++       if (user_ccs_env_value == 1)
++        {
++           MEDIA_WR_SKU(skuTable, FtrCCSNode, 0);
++       }
++    }
+ 
+     MEDIA_WR_SKU(skuTable, FtrVpP010Output, 1);
+     MEDIA_WR_SKU(skuTable, FtrVp10BitSupport, 1);
+-- 
+2.40.1
+

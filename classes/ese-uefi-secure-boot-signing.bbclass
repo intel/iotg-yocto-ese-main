@@ -42,7 +42,12 @@ python do_ese_boot_sign(){
     return '(EFI application)' in magic
 
   def file_magic(d, file):
-    p = subprocess.run(args=['file', '-bk', file], stdout=subprocess.PIPE, check=True, universal_newlines=True)
+    # Older verison of file installed on HOSTOOLS i.e. build host machine may not detect EFI binaries correctly
+    # Use more recent version of file command from RECIPE_SYSROOT_NATIVE
+    file_env = os.environ.copy()
+    file_native_path = os.path.join(d.getVar('RECIPE_SYSROOT_NATIVE'), 'usr/bin/file-native')
+    file_env["PATH"] = file_native_path + ":" + file_env["PATH"]
+    p = subprocess.run(args=['file', '-bk', file], stdout=subprocess.PIPE, check=True, universal_newlines=True, env=file_env)
     return p.stdout.strip()
 
   def do_signing_task(d, workqueue):

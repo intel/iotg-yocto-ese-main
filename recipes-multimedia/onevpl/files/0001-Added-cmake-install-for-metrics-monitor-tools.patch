@@ -1,0 +1,37 @@
+From c81e0a890ee0170a073b0da043c9d4fdb5ee5b02 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Tue, 27 Feb 2024 12:36:16 +0800
+Subject: [PATCH] Added cmake install for metrics monitor tools.
+
+Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
+---
+ tools/legacy/metrics_monitor/CMakeLists.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/tools/legacy/metrics_monitor/CMakeLists.txt b/tools/legacy/metrics_monitor/CMakeLists.txt
+index faa65e7..77e9c6e 100644
+--- a/tools/legacy/metrics_monitor/CMakeLists.txt
++++ b/tools/legacy/metrics_monitor/CMakeLists.txt
+@@ -75,6 +75,9 @@ if(PKG_LIBDRM_FOUND)
+   target_compile_definitions(cttmetrics_static PRIVATE LIBVA_DRM_SUPPORT
+                                                        LIBVA_SUPPORT)
+ 
++  install(TARGETS cttmetrics LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++                                      COMPONENT dev)
++
+   # metrics_monitor
+   set(sources sample/cttmetrics_sample.cpp)
+   file(GLOB_RECURSE srcs "${CMAKE_CURRENT_SOURCE_DIR}/sample/*.cpp")
+@@ -91,6 +94,9 @@ if(PKG_LIBDRM_FOUND)
+   target_compile_definitions(metrics_monitor PRIVATE LIBVA_DRM_SUPPORT
+                                                      LIBVA_SUPPORT)
+ 
++  install(TARGETS metrics_monitor RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++                                      COMPONENT dev)
++
+   # test_monitor
+   if(BUILD_TESTS)
+     if(PKG_PCIACCESS_FOUND)
+-- 
+2.40.1
+

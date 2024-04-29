@@ -1,0 +1,62 @@
+From 88b7ca68ba747c8a33527e74911b46596d2acdca Mon Sep 17 00:00:00 2001
+From: Vincent Cheah Beng Keat <vincent.beng.keat.cheah@intel.com>
+Date: Wed, 20 Mar 2024 09:41:02 +0800
+Subject: [PATCH] Fix BGRx AVC/HEVC Enc for g12
+
+upstream-status: submitted
+https://github.com/intel/media-driver/pull/1780
+
+Signed-off-by: Cheah, Vincent Beng Keat <vincent.beng.keat.cheah@intel.com>
+---
+ .../agnostic/gen12/codec/hal/codechal_encode_csc_ds_g12.cpp     | 1 +
+ media_driver/linux/common/codec/ddi/media_ddi_encode_avc.h      | 1 +
+ media_driver/linux/common/codec/ddi/media_ddi_encode_hevc.h     | 2 ++
+ 3 files changed, 4 insertions(+)
+
+diff --git a/media_driver/agnostic/gen12/codec/hal/codechal_encode_csc_ds_g12.cpp b/media_driver/agnostic/gen12/codec/hal/codechal_encode_csc_ds_g12.cpp
+index 28c6e9107..b507832dc 100644
+--- a/media_driver/agnostic/gen12/codec/hal/codechal_encode_csc_ds_g12.cpp
++++ b/media_driver/agnostic/gen12/codec/hal/codechal_encode_csc_ds_g12.cpp
+@@ -96,6 +96,7 @@ MOS_STATUS CodechalEncodeCscDsG12::CheckRawColorFormat(MOS_FORMAT format, MOS_TI
+         m_cscRequireConvTo8bPlanar = (uint8_t)HCP_CHROMA_FORMAT_YUV422 == m_outputChromaFormat;
+         break;
+     case Format_A8R8G8B8:
++    case Format_X8R8G8B8:
+         m_colorRawSurface = cscColorARGB;
+         m_cscUsingSfc = IsSfcEnabled() ? 1 : 0;
+         m_cscRequireColor = 1;
+diff --git a/media_driver/linux/common/codec/ddi/media_ddi_encode_avc.h b/media_driver/linux/common/codec/ddi/media_ddi_encode_avc.h
+index 438bd01e6..289f4f068 100644
+--- a/media_driver/linux/common/codec/ddi/media_ddi_encode_avc.h
++++ b/media_driver/linux/common/codec/ddi/media_ddi_encode_avc.h
+@@ -527,6 +527,7 @@ private:
+     inline bool NeedDisplayFormatSwizzle(DDI_MEDIA_SURFACE *rawSurface)
+     {
+         if (Media_Format_A8R8G8B8 == rawSurface->format ||
++            Media_Format_X8R8G8B8 == rawSurface->format ||
+             Media_Format_B10G10R10A2 == rawSurface->format)
+         {
+             return true;
+diff --git a/media_driver/linux/common/codec/ddi/media_ddi_encode_hevc.h b/media_driver/linux/common/codec/ddi/media_ddi_encode_hevc.h
+index 631218f2f..3cf3860eb 100644
+--- a/media_driver/linux/common/codec/ddi/media_ddi_encode_hevc.h
++++ b/media_driver/linux/common/codec/ddi/media_ddi_encode_hevc.h
+@@ -293,6 +293,7 @@ private:
+         bool ret = false;
+ 
+         if (Media_Format_A8R8G8B8 == rawSurface->format ||
++           Media_Format_X8R8G8B8 == rawSurface->format  ||
+            Media_Format_B10G10R10A2 == rawSurface->format)
+         {
+             ret = true;
+@@ -300,6 +301,7 @@ private:
+ 
+         if (ret && 
+             (Media_Format_A8R8G8B8 == reconSurface->format ||
++            Media_Format_X8R8G8B8 == reconSurface->format ||
+             Media_Format_B10G10R10A2 == reconSurface->format))
+         {
+             ret = false;
+-- 
+2.25.1
+

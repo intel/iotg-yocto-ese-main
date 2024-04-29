@@ -8,5 +8,6 @@ SRC_URI:append = " file://0001-dri2-Add-support-for-TGL.patch \
                    file://0006-xorg-xserver-Add-support-for-RPL-P.patch \
                    file://0001-modesetting-Fix-dirty-updates-for-sw-rotation.patch \
                    file://0002-modesetting-Correct-coordinate-info-of-dirty-clips-f.patch \
+                   file://0001-modesetting-Empty-the-damage-after-updating-front-bu.patch \
                  "
 
