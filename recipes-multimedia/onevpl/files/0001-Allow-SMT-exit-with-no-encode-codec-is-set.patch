@@ -1,0 +1,65 @@
+From 1a1a39701dec9a77a8742317b00318ff1fe52d30 Mon Sep 17 00:00:00 2001
+From: "Lui, Jonathan Ming Jun" <jonathan.ming.jun.lui@intel.com>
+Date: Thu, 18 Apr 2024 23:27:02 +0000
+Subject: [PATCH] Allow SMT exit with no encode codec is set
+
+Upstream-Status: Backport [https://github.com/intel-innersource/libraries.media.vpl.lib/commit/334510e3146bc361340d2b326f1c01671cbd6442]
+
+Signed-off-by: Lui, Jonathan Ming Jun<jonathan.ming.jun.lui@intel.com>
+---
+ .../src/pipeline_transcode.cpp                | 28 ++++++++++---------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
+
+diff --git a/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp b/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
+index 2e6c67e..bae1aa5 100644
+--- a/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
++++ b/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
+@@ -1652,23 +1652,10 @@ mfxStatus CTranscodingPipeline::Encode() {
+                         VppExtSurface.pSurface = 0;
+                     }
+                     sts = EncodeOneFrame(&VppExtSurface, &m_BSPool.back()->Bitstream);
+-                    if (bAllBlackFrame && (1 == m_Prolonged)) {
+-                        isQuit = true;
+-                        if (m_nVPPCompMode > 0) {
+-                            curBuffer->Prolong = AllBlack; //first thread
+-                            while (curBuffer->m_pNext != NULL) {
+-                                curBuffer = curBuffer->m_pNext;
+-                                curBuffer->Prolong =
+-                                    AllBlack; //indicate All Black detected for remaining thread
+-                            }
+-                        }
+-                        curBuffer = m_pBuffer;
+-                    }
+ 
+                     // Count only real surfaces
+                     if (VppExtSurface.pSurface) {
+                         m_nProcessedFramesNum++;
+-                        bAllBlackFrame = true; //reset value, default to true
+                     }
+ 
+                     if (m_nProcessedFramesNum >= m_MaxFramesForTranscode) {
+@@ -1695,6 +1682,21 @@ mfxStatus CTranscodingPipeline::Encode() {
+             m_pBuffer->ReleaseSurface(DecExtSurface.pSurface);
+         }
+ 
++        if (bAllBlackFrame && (1 == m_Prolonged)) {
++            isQuit = true;
++            if (m_nVPPCompMode > 0) {
++                curBuffer->Prolong = AllBlack; //first thread
++                while (curBuffer->m_pNext != NULL) {
++                    curBuffer = curBuffer->m_pNext;
++                    curBuffer->Prolong =
++                        AllBlack; //indicate All Black detected for remaining thread
++                }
++            }
++            curBuffer = m_pBuffer;
++        }
++
++        bAllBlackFrame = true; //reset value, default to true
++
+         // check if we need one more frame from decode
+         if (MFX_ERR_MORE_DATA == sts) {
+             // the task in not in Encode queue
+-- 
+2.34.1
+
