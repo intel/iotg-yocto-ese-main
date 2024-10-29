@@ -1,0 +1,45 @@
+From e2622cf5b29bf2b7be8719b1e37c4970f4190738 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 6 Apr 2023 19:57:29 +0800
+Subject: [PATCH 49/98] va: encoder: Do not continue when push_buffer gets
+ error
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4359>
+---
+ sys/va/gstvabaseenc.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvabaseenc.c b/sys/va/gstvabaseenc.c
+index 59cb46dd349d..44ce979039ef 100644
+--- a/sys/va/gstvabaseenc.c
++++ b/sys/va/gstvabaseenc.c
+@@ -660,9 +660,12 @@ gst_va_base_enc_handle_frame (GstVideoEncoder * venc,
+     if (ret != GST_FLOW_OK)
+       goto error_encode;
+ 
+-    while (g_queue_get_length (&base->output_list) > 0)
++    while (ret == GST_FLOW_OK && g_queue_get_length (&base->output_list) > 0)
+       ret = _push_out_one_buffer (base);
+ 
++    if (ret != GST_FLOW_OK)
++      goto error_push_buffer;
++
+     frame_encode = NULL;
+     if (!base_class->reorder_frame (base, NULL, FALSE, &frame_encode))
+       goto error_reorder;
+@@ -706,6 +709,12 @@ error_encode:
+     gst_video_encoder_finish_frame (venc, frame_encode);
+     return ret;
+   }
++error_push_buffer:
++  {
++    GST_ELEMENT_ERROR (venc, STREAM, ENCODE,
++        ("Failed to push one frame."), (NULL));
++    return ret;
++  }
+ }
+ 
+ static GstFlowReturn
+-- 
+2.43.0
+

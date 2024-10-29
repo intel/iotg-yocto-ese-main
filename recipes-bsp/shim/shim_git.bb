@@ -3,7 +3,8 @@ execute another application."
 LICENSE = "BSD-2-Clause-Patent"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=b92e63892681ee4e8d27e7a7e87ef2bc"
 
-SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1"
+SRC_URI = "gitsm://github.com/rhboot/shim.git;protocol=https;nobranch=1 \
+           file://0001-shim-build-target-libefi.a-and-libgnuefi.a-once.patch"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"

@@ -1,0 +1,45 @@
+From 27535e4cc3695a37d915ce0302f5ce4f35353aa1 Mon Sep 17 00:00:00 2001
+From: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Date: Thu, 14 Sep 2023 17:12:12 -0700
+Subject: [PATCH 2/7] channel-display-gst: Add "byte-stream" as the stream
+ format for h264
+
+Adding the string "stream-format=byte-stream" to decoder capabilities
+(dec_caps) for h264/h265 codecs stops Gstreamer from complaining
+about missing stream format.
+
+Cc: Frediano Ziglio <freddy77@gmail.com>
+Cc: Dongwon Kim <dongwon.kim@intel.com>
+Cc: Jin Chung Teng <jin.chung.teng@intel.com>
+Cc: Hazwan Arif Mazlan <hazwan.arif.mazlan@intel.com>
+Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Acked-by: Frediano Ziglio <freddy77@gmail.com>
+---
+ src/channel-display-priv.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/channel-display-priv.h b/src/channel-display-priv.h
+index 66c9cff9661a..1a7590ab3b5c 100644
+--- a/src/channel-display-priv.h
++++ b/src/channel-display-priv.h
+@@ -177,7 +177,7 @@ static const struct {
+      * (hardcoded in spice-server), let's add it here to avoid the warning.
+      */
+     { SPICE_DISPLAY_CAP_CODEC_H264, "h264",
+-      "h264parse ! avdec_h264", "video/x-h264" },
++      "h264parse ! avdec_h264", "video/x-h264,stream-format=byte-stream" },
+ 
+     /* SPICE_VIDEO_CODEC_TYPE_VP9 */
+     { SPICE_DISPLAY_CAP_CODEC_VP9, "vp9",
+@@ -185,7 +185,7 @@ static const struct {
+ 
+     /* SPICE_DISPLAY_CAP_CODEC_H265 */
+     { SPICE_DISPLAY_CAP_CODEC_H265, "h265",
+-      "h265parse ! avdec_h265", "video/x-h265" },
++      "h265parse ! avdec_h265", "video/x-h265,stream-format=byte-stream" },
+ 
+ };
+ 
+-- 
+2.34.1
+

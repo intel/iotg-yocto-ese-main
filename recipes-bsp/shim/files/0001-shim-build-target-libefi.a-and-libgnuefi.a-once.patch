@@ -1,0 +1,39 @@
+From f38ce4d04bf7254b6ca1396bc09e7c3ca72a4cd1 Mon Sep 17 00:00:00 2001
+From: Preeti Sachan <preeti.sachan@intel.com>
+Date: Sun, 14 Jul 2024 22:26:48 +0800
+Subject: [PATCH] shim build target libefi.a and libgnuefi.a once
+
+Targets libgnuefi.a and libefi.a calling same build command (make) are
+getting executed parallel thus causing build failure with different errors.
+Make Targets libgnuefi.a and libefi.a build once to fix errors.
+
+Error:
+ar: libgnuefi.a: file format not recognized
+ar: libefi.a: file format not recognized
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
+---
+ Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 8283d56f..7cf4870d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -153,8 +153,9 @@ MokManager.o: $(MOK_SOURCES)
+ $(MMSONAME): $(MOK_OBJS) $(LIBS)
+ 	$(LD) -o $@ $(LDFLAGS) $^ $(EFI_LIBS) lib/lib.a
+ 
+-gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a: CFLAGS+=-DGNU_EFI_USE_EXTERNAL_STDARG
+-gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a:
++gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a: gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a
++gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a: CFLAGS+=-DGNU_EFI_USE_EXTERNAL_STDARG
++gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a:
+ 	mkdir -p gnu-efi/lib gnu-efi/gnuefi
+ 	$(MAKE) -C gnu-efi \
+ 		COMPILER="$(COMPILER)" \
+-- 
+2.34.1
+

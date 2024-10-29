@@ -1,0 +1,32 @@
+From 4ca4e9a922df8f0c36c387dd46912f6b962f885a Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 22 Mar 2024 23:59:25 +0800
+Subject: [PATCH 09/98] va: encoder: Enable ICQ and QVBR mode in rate control
+ map
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6433>
+---
+ sys/va/gstvaencoder.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sys/va/gstvaencoder.c b/sys/va/gstvaencoder.c
+index bee9b7bed19c..09975f758e9b 100644
+--- a/sys/va/gstvaencoder.c
++++ b/sys/va/gstvaencoder.c
+@@ -1288,11 +1288,11 @@ static const GEnumValue rate_control_map[] = {
+   {VA_RC_CQP, "Constant Quantizer", "cqp"},
+   /* {VA_RC_VBR_CONSTRAINED, "VBR with peak rate higher than average bitrate", */
+   /*  "vbr-constrained"}, */
+-  /* {VA_RC_ICQ, "Intelligent Constant Quality", "icq"}, */
++  {VA_RC_ICQ, "Intelligent Constant Quality", "icq"},
+   /* {VA_RC_MB, "Macroblock based rate control", "mb"}, */
+   /* {VA_RC_CFS, "Constant Frame Size", "cfs"}, */
+   /* {VA_RC_PARALLEL, "Parallel BRC", "parallel"}, */
+-  /* {VA_RC_QVBR, "Quality defined VBR", "qvbr"}, */
++  {VA_RC_QVBR, "Quality defined VBR", "qvbr"},
+   /* {VA_RC_AVBR, "Average VBR", "avbr"}, */
+ };
+ 
+-- 
+2.43.0
+

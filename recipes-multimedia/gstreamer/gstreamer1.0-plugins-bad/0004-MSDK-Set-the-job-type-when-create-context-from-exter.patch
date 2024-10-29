@@ -1,0 +1,94 @@
+From 8cc846c530070e2d156192ffcc332fe4455f2fa5 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Mon, 26 Feb 2024 22:19:57 +0800
+Subject: [PATCH 04/98] MSDK: Set the job type when create context from
+ external handle
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6221>
+---
+ sys/msdk/gstmsdkdec.c | 10 ++++------
+ sys/msdk/gstmsdkenc.c | 10 ++++------
+ sys/msdk/gstmsdkvpp.c | 10 ++++------
+ 3 files changed, 12 insertions(+), 18 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkdec.c b/sys/msdk/gstmsdkdec.c
+index 4932ad93349a..c7304e2e7a3d 100644
+--- a/sys/msdk/gstmsdkdec.c
++++ b/sys/msdk/gstmsdkdec.c
+@@ -301,17 +301,15 @@ gst_msdkdec_set_context (GstElement * element, GstContext * context)
+     gst_object_unref (msdk_context);
+   } else
+ #ifndef _WIN32
+-    if (gst_msdk_context_from_external_va_display (context,
+-          thiz->hardware, 0 /* GST_MSDK_JOB_DECODER will be set later */ ,
+-          &msdk_context)) {
++  if (gst_msdk_context_from_external_va_display (context,
++          thiz->hardware, GST_MSDK_JOB_DECODER, &msdk_context)) {
+     gst_object_replace ((GstObject **) & thiz->context,
+         (GstObject *) msdk_context);
+     gst_object_unref (msdk_context);
+   }
+ #else
+-    if (gst_msdk_context_from_external_d3d11_device (context,
+-          thiz->hardware, 0 /* GST_MSDK_JOB_DECODER will be set later */ ,
+-          &msdk_context)) {
++  if (gst_msdk_context_from_external_d3d11_device (context,
++          thiz->hardware, GST_MSDK_JOB_DECODER, &msdk_context)) {
+     gst_object_replace ((GstObject **) & thiz->context,
+         (GstObject *) msdk_context);
+     gst_object_unref (msdk_context);
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 1f4be287c0cf..906ede83a6da 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -133,17 +133,15 @@ gst_msdkenc_set_context (GstElement * element, GstContext * context)
+     gst_object_unref (msdk_context);
+   } else
+ #ifndef _WIN32
+-    if (gst_msdk_context_from_external_va_display (context,
+-          thiz->hardware, 0 /* GST_MSDK_JOB_ENCODER will be set later */ ,
+-          &msdk_context)) {
++  if (gst_msdk_context_from_external_va_display (context,
++          thiz->hardware, GST_MSDK_JOB_ENCODER, &msdk_context)) {
+     gst_object_replace ((GstObject **) & thiz->context,
+         (GstObject *) msdk_context);
+     gst_object_unref (msdk_context);
+   }
+ #else
+-    if (gst_msdk_context_from_external_d3d11_device (context,
+-          thiz->hardware, 0 /* GST_MSDK_JOB_ENCODER will be set later */ ,
+-          &msdk_context)) {
++  if (gst_msdk_context_from_external_d3d11_device (context,
++          thiz->hardware, GST_MSDK_JOB_ENCODER, &msdk_context)) {
+     gst_object_replace ((GstObject **) & thiz->context,
+         (GstObject *) msdk_context);
+     gst_object_unref (msdk_context);
+diff --git a/sys/msdk/gstmsdkvpp.c b/sys/msdk/gstmsdkvpp.c
+index be97f07ced2c..b25178d134c7 100644
+--- a/sys/msdk/gstmsdkvpp.c
++++ b/sys/msdk/gstmsdkvpp.c
+@@ -1781,17 +1781,15 @@ gst_msdkvpp_set_context (GstElement * element, GstContext * context)
+     gst_object_unref (msdk_context);
+   } else
+ #ifndef _WIN32
+-    if (gst_msdk_context_from_external_va_display (context,
+-          thiz->hardware, 0 /* GST_MSDK_JOB_VPP will be set later */ ,
+-          &msdk_context)) {
++  if (gst_msdk_context_from_external_va_display (context,
++          thiz->hardware, GST_MSDK_JOB_VPP, &msdk_context)) {
+     gst_object_replace ((GstObject **) & thiz->context,
+         (GstObject *) msdk_context);
+     gst_object_unref (msdk_context);
+   }
+ #else
+-    if (gst_msdk_context_from_external_d3d11_device (context,
+-          thiz->hardware, 0 /* GST_MSDK_JOB_VPP will be set later */ ,
+-          &msdk_context)) {
++  if (gst_msdk_context_from_external_d3d11_device (context,
++          thiz->hardware, GST_MSDK_JOB_VPP, &msdk_context)) {
+     gst_object_replace ((GstObject **) & thiz->context,
+         (GstObject *) msdk_context);
+     gst_object_unref (msdk_context);
+-- 
+2.43.0
+

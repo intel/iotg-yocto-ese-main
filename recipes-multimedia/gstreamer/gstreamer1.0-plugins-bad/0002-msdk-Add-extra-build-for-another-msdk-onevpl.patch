@@ -1,4 +1,4 @@
-From e4165f9b3f9fb640d8aea06984ec8b1d66922f75 Mon Sep 17 00:00:00 2001
+From 09c6b72cff08dc4ce45a20909dff33307ce695af Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Mon, 14 Aug 2023 15:26:04 +0800
 Subject: [PATCH 2/2] msdk: Add extra build for another msdk onevpl.
@@ -11,7 +11,7 @@ Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
  create mode 100644 sys/msdk/onevpl/meson.build
 
 diff --git a/sys/msdk/meson.build b/sys/msdk/meson.build
-index 6a1609322..0153854cc 100644
+index 85f04899d..660ae130c 100644
 --- a/sys/msdk/meson.build
 +++ b/sys/msdk/meson.build
 @@ -209,3 +209,8 @@ if msdk_deps_found
@@ -172,5 +172,5 @@ index 000000000..e50bd896d
 +  )
 +endif
 -- 
-2.40.1
+2.43.2
 

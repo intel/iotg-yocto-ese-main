@@ -1,31 +1,31 @@
-From 1f8ee36c19a2a3e4fd763759bad8c69c13525274 Mon Sep 17 00:00:00 2001
+From 93e9dcc381a3b4770c0dc7dfb24a1768b3ea50b9 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
-Date: Tue, 25 Apr 2023 12:30:15 -0700
-Subject: [PATCH 03/28] ui/gtk: reset visible flag when window is minimized
+Date: Thu, 25 Jan 2024 10:36:44 -0800
+Subject: [PATCH 03/30] ui/gtk: reset visible flag when window is minimized
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 Add a callback for window-state-event that resets vc->gfx.visible when
-associated window is minimized and vice versa.
+associated window is minimized or restored.
 
-Cc: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Daniel P. Berrangé <berrange@redhat.com>
-Cc: Markus Armbruster <armbru@redhat.com>
-Cc: Philippe Mathieu-Daudé <f4bug@amsat.org>
+In case of virtio-gpu blob scanout, if the window is minimized before
+the rendering event for the last guest scanout frame is finished, it cancels
+the draw submission and unblocks the pipeline to prevent a permanent lockup.
+
 Cc: Marc-André Lureau <marcandre.lureau@redhat.com>
-Cc: Thomas Huth <thuth@redhat.com>
+Cc: Gerd Hoffmann <kraxel@redhat.com>
 Cc: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
- ui/gtk.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ ui/gtk.c | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 4aac49aa50..7f20ca09bf 100644
+index ab00e2eff2..421ed9efaf 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
-@@ -1338,6 +1338,35 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+@@ -1385,6 +1385,37 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
      return TRUE;
  }
  
@@ -46,7 +46,9 @@ index 4aac49aa50..7f20ca09bf 100644
 +            vc->gfx.guest_fb.dmabuf->draw_submitted = false;
 +            graphic_hw_gl_block(vc->gfx.dcl.con, false);
 +        }
-+    } else {
++    /* Restore ui only if the VC has its own window or it is the current VC
++     * of the primary widget */
++    } else if (vc->window || vc == gd_vc_find_current(vc->s)) {
 +        GdkWindow *window;
 +        window = gtk_widget_get_window(vc->gfx.drawing_area);
 +        gd_set_ui_size(vc, gdk_window_get_width(window),
@@ -61,7 +63,7 @@ index 4aac49aa50..7f20ca09bf 100644
  static gboolean gd_win_grab(void *opaque)
  {
      VirtualConsole *vc = opaque;
-@@ -1379,6 +1408,9 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
+@@ -1426,6 +1457,9 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
  
          g_signal_connect(vc->window, "delete-event",
                           G_CALLBACK(gd_tab_window_close), vc);
@@ -71,7 +73,7 @@ index 4aac49aa50..7f20ca09bf 100644
          gtk_widget_show_all(vc->window);
  
          if (qemu_console_is_graphic(vc->gfx.dcl.con)) {
-@@ -2408,6 +2440,11 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2474,6 +2508,11 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
      }
  
      vc = gd_vc_find_current(s);

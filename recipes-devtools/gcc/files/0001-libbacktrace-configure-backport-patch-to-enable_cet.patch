@@ -8,6 +8,7 @@ HSDES ID: NA
 Source:https://gcc.gnu.org/git/?p=gcc.git;a=patch;h=4712bde3cabed644884a52386
 
 Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
+Upstream-Status: Inappropriate [embedded specific source:https://gcc.gnu.org/git/?p=gcc.git;a=patch;h=4712bde3cabed644884a52386]
 ---
  libbacktrace/configure | 17 +++++++++++++++--
  1 file changed, 15 insertions(+), 2 deletions(-)

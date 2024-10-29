@@ -37,10 +37,3 @@ TESTtest[string___bo] = "test*test"
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}-systemd"
 FILES:${PN}-systemd = "${systemd_unitdir}"
-do_install:append(){
-  if test -n "${systemd_unitdir}" -a "${systemd_unitdir}" != "${prefix}/lib/systemd/system" -a -d "${D}${prefix}/lib/systemd/system" ; then
-    install -m 755 -d "${D}${systemd_unitdir}"
-    mv -T "${D}${prefix}/lib/systemd/system" "${D}${systemd_unitdir}"
-    rm -rf ${D}${prefix}/lib/systemd
-  fi
-}

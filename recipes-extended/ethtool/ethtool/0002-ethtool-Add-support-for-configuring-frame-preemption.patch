@@ -1,4 +1,4 @@
-From 19a6f5f7b3a5001f24fb4ca1f62ec6fb7381bfe1 Mon Sep 17 00:00:00 2001
+From e27e8292f3e914b025e88dbd51d0db7fbd63d8c6 Mon Sep 17 00:00:00 2001
 From: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 Date: Fri, 15 May 2020 14:50:29 -0700
 Subject: [PATCH 2/4] ethtool: Add support for configuring frame preemption
@@ -11,41 +11,43 @@ The values that can be retrieved from the hardware are:
   - if frame preemption is enabled;
   - the current minimum fragment size;
 
+Upstream-Status: Inappropriate [embedded specific]
+
 Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 ---
  Makefile.am            |   1 +
- ethtool.8.in           |  15 +++++
+ ethtool.8.in           |  14 +++++
  ethtool.c              |  13 ++++
  netlink/desc-ethtool.c |   9 +++
  netlink/extapi.h       |   4 ++
  netlink/preempt.c      | 137 +++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 179 insertions(+)
+ 6 files changed, 178 insertions(+)
  create mode 100644 netlink/preempt.c
 
 diff --git a/Makefile.am b/Makefile.am
-index dd357d0..c437830 100644
+index b9e06ad..8bfcfcd 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -41,6 +41,7 @@ ethtool_SOURCES += \
- 		  netlink/desc-ethtool.c netlink/desc-genlctrl.c \
- 		  netlink/module-eeprom.c \
+@@ -48,6 +48,7 @@ ethtool_SOURCES += \
  		  netlink/desc-rtnl.c netlink/cable_test.c netlink/tunnels.c \
+ 		  netlink/plca.c \
+ 		  netlink/pse-pd.c \
 +		  netlink/preempt.c \
  		  uapi/linux/ethtool_netlink.h \
  		  uapi/linux/netlink.h uapi/linux/genetlink.h \
- 		  uapi/linux/rtnetlink.h uapi/linux/if_link.h
+ 		  uapi/linux/rtnetlink.h uapi/linux/if_link.h \
 diff --git a/ethtool.8.in b/ethtool.8.in
-index 38fb68f..3380b69 100644
+index 7a3080f..4629ec8 100644
 --- a/ethtool.8.in
 +++ b/ethtool.8.in
-@@ -1459,6 +1459,21 @@ shown. Default is to show notifications for all devices.
- Show tunnel-related device capabilities and state.
- List UDP ports kernel has programmed the device to parse as VxLAN,
- or GENEVE tunnels.
+@@ -1753,7 +1753,21 @@ Set Power Sourcing Equipment (PSE) parameters.
+ .A2 podl-pse-admin-control \ enable disable
+ This parameter manages PoDL PSE Admin operations in accordance with the IEEE
+ 802.3-2018 30.15.1.2.1 (acPoDLPSEAdminControl) specification.
 +.TP
 +.B \-\-set\-frame\-preemption
 +Configures frame preemption support for the specified network device.
-+
+ 
 +Frame preemption allows packets from higher priority queues, called
 +express queues, to interrupt (preempt) the transmission of packets
 +from lower priority queues.
@@ -57,14 +59,14 @@ index 38fb68f..3380b69 100644
 +.B add\-frag\-size \ N
 +Size, in bytes, of minimum non-final fragments of preempted packets
 +supported by the receiver.
- .RE
  .SH BUGS
  Not supported (in part or whole) on all network drivers.
+ .SH AUTHOR
 diff --git a/ethtool.c b/ethtool.c
-index 064bc69..b222b4d 100644
+index 3ac15a7..83658b8 100644
 --- a/ethtool.c
 +++ b/ethtool.c
-@@ -5176,6 +5176,7 @@ static int do_gtunable(struct cmd_context *ctx)
+@@ -5193,6 +5193,7 @@ static int do_gtunable(struct cmd_context *ctx)
  		if (!valid)
  			exit_bad_args();
  	}
@@ -72,9 +74,9 @@ index 064bc69..b222b4d 100644
  	return 0;
  }
  
-@@ -6010,6 +6011,18 @@ static const struct option args[] = {
+@@ -6045,6 +6046,18 @@ static const struct option args[] = {
  		.help	= "Set FEC settings",
- 		.xhelp	= "		[ encoding auto|off|rs|baser|llrs [...]]\n"
+ 		.xhelp	= "		[ encoding auto|off|rs|baser|llrs [...] ]\n"
  	},
 +	{
 +		.opts	= "--show-frame-preemption",
@@ -92,11 +94,11 @@ index 064bc69..b222b4d 100644
  		.opts	= "-Q|--per-queue",
  		.func	= do_perqueue,
 diff --git a/netlink/desc-ethtool.c b/netlink/desc-ethtool.c
-index 69f6561..a2ebec4 100644
+index 661de26..be41cf3 100644
 --- a/netlink/desc-ethtool.c
 +++ b/netlink/desc-ethtool.c
-@@ -392,6 +392,13 @@ static const struct pretty_nla_desc __phc_vclocks_desc[] = {
- 	NLATTR_DESC_BINARY(ETHTOOL_A_PHC_VCLOCKS_INDEX),
+@@ -496,6 +496,13 @@ static const struct pretty_nla_desc __mm_desc[] = {
+ 	NLATTR_DESC_NESTED(ETHTOOL_A_MM_STATS, mm_stat),
  };
  
 +static const struct pretty_nla_desc __preempt_desc[] = {
@@ -109,32 +111,32 @@ index 69f6561..a2ebec4 100644
  const struct pretty_nlmsg_desc ethnl_umsg_desc[] = {
  	NLMSG_DESC_INVALID(ETHTOOL_MSG_USER_NONE),
  	NLMSG_DESC(ETHTOOL_MSG_STRSET_GET, strset),
-@@ -427,6 +434,8 @@ const struct pretty_nlmsg_desc ethnl_umsg_desc[] = {
- 	NLMSG_DESC(ETHTOOL_MSG_MODULE_EEPROM_GET, module_eeprom),
- 	NLMSG_DESC(ETHTOOL_MSG_STATS_GET, stats),
- 	NLMSG_DESC(ETHTOOL_MSG_PHC_VCLOCKS_GET, phc_vclocks),
+@@ -541,6 +548,8 @@ const struct pretty_nlmsg_desc ethnl_umsg_desc[] = {
+ 	NLMSG_DESC(ETHTOOL_MSG_PLCA_GET_STATUS, plca),
+ 	NLMSG_DESC(ETHTOOL_MSG_MM_GET, mm),
+ 	NLMSG_DESC(ETHTOOL_MSG_MM_SET, mm),
 +	NLMSG_DESC(ETHTOOL_MSG_PREEMPT_GET, preempt),
 +	NLMSG_DESC(ETHTOOL_MSG_PREEMPT_SET, preempt),
  };
  
  const unsigned int ethnl_umsg_n_desc = ARRAY_SIZE(ethnl_umsg_desc);
 diff --git a/netlink/extapi.h b/netlink/extapi.h
-index 129e293..07043d2 100644
+index e2d6b71..b6f1a3b 100644
 --- a/netlink/extapi.h
 +++ b/netlink/extapi.h
-@@ -45,6 +45,8 @@ bool nl_gstats_chk(struct cmd_context *ctx);
- int nl_gstats(struct cmd_context *ctx);
- int nl_monitor(struct cmd_context *ctx);
- int nl_getmodule(struct cmd_context *ctx);
+@@ -55,6 +55,8 @@ int nl_get_mm(struct cmd_context *ctx);
+ int nl_set_mm(struct cmd_context *ctx);
+ int nl_gpse(struct cmd_context *ctx);
+ int nl_spse(struct cmd_context *ctx);
 +int nl_get_preempt(struct cmd_context *ctx);
 +int nl_set_preempt(struct cmd_context *ctx);
  
  void nl_monitor_usage(void);
  
-@@ -110,6 +112,8 @@ nl_get_eeprom_page(struct cmd_context *ctx __maybe_unused,
- #define nl_gstats_chk		NULL
- #define nl_gstats		NULL
- #define nl_getmodule		NULL
+@@ -130,6 +132,8 @@ nl_get_eeprom_page(struct cmd_context *ctx __maybe_unused,
+ #define nl_set_mm		NULL
+ #define nl_gpse			NULL
+ #define nl_spse			NULL
 +#define nl_get_preempt		NULL
 +#define nl_set_preempt		NULL
  
@@ -284,5 +286,5 @@ index 0000000..b19fc33
 +		return nlctx->exit_code ?: 81;
 +}
 -- 
-2.25.1
+2.34.1
 

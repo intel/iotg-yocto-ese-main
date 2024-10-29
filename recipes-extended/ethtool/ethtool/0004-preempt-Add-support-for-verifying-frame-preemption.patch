@@ -1,10 +1,12 @@
-From 8ae38d1c877acac81776e3a33e480912300df3d4 Mon Sep 17 00:00:00 2001
+From 19ec7d5d5ad3b9619e20fc774756165d532cf16f Mon Sep 17 00:00:00 2001
 From: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 Date: Mon, 21 Jun 2021 16:59:09 -0700
 Subject: [PATCH 4/4] preempt: Add support for verifying frame preemption
 
 Add support for displaying the verification status in a link, and for
 disabling verification with the link partner.
+
+Upstream-Status: Inappropriate [embedded specific]
 
 Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 ---
@@ -51,10 +53,10 @@ index b19fc33..3a9aa2a 100644
  };
  
 diff --git a/uapi/linux/ethtool_netlink.h b/uapi/linux/ethtool_netlink.h
-index 5640181..438a03c 100644
+index d5ef281..4e9f9e7 100644
 --- a/uapi/linux/ethtool_netlink.h
 +++ b/uapi/linux/ethtool_netlink.h
-@@ -691,6 +691,7 @@ enum {
+@@ -731,6 +731,7 @@ enum {
  	ETHTOOL_A_PREEMPT_UNSPEC,
  	ETHTOOL_A_PREEMPT_HEADER,			/* nest - _A_HEADER_* */
  	ETHTOOL_A_PREEMPT_ENABLED,			/* u8 */
@@ -63,5 +65,5 @@ index 5640181..438a03c 100644
  	ETHTOOL_A_PREEMPT_DISABLE_VERIFY,		/* u8 */
  	ETHTOOL_A_PREEMPT_VERIFIED,			/* u8 */
 -- 
-2.25.1
+2.34.1
 

@@ -1,30 +1,29 @@
-From 36cde25e9c870f0f3ac7b7ec0378ca3eceb37004 Mon Sep 17 00:00:00 2001
-From: KARN JYE LAU <karn.jye.lau@intel.com>
-Date: Mon, 28 Mar 2022 07:42:20 -0400
+From 9913c8e26624c7eb1d9950f5ba35289035440099 Mon Sep 17 00:00:00 2001
+From: "Karn Jye, Lau" <karn.jye.lau@intel.com>
+Date: Fri, 22 Mar 2024 17:26:05 +0530
 Subject: [PATCH] more udev children workers
 
 Upstream-Status: Inappropriate [not author]
 
 From: Arjan van de Ven <arjan@linux.intel.com>
-
-Signed-off-by: KARN JYE LAU <karn.jye.lau@intel.com>
+Signed-off-by: Karn Jye, Lau <karn.jye.lau@intel.com>
 ---
  units/systemd-udevd.service.in | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/units/systemd-udevd.service.in b/units/systemd-udevd.service.in
-index d042bfb0d3..34770387c9 100644
+index b59fdef9b0..517060e11c 100644
 --- a/units/systemd-udevd.service.in
 +++ b/units/systemd-udevd.service.in
-@@ -24,7 +24,7 @@ OOMScoreAdjust=-1000
+@@ -25,7 +25,7 @@ OOMScoreAdjust=-1000
  Sockets=systemd-udevd-control.socket systemd-udevd-kernel.socket
  Restart=always
  RestartSec=0
--ExecStart={{ROOTLIBEXECDIR}}/systemd-udevd
-+ExecStart={{ROOTLIBEXECDIR}}/systemd-udevd --children-max=16
- ExecReload=udevadm control --reload --timeout 0
+-ExecStart={{LIBEXECDIR}}/systemd-udevd
++ExecStart={{LIBEXECDIR}}/systemd-udevd  --children-max=16
  KillMode=mixed
  TasksMax=infinity
+ PrivateMounts=yes
 -- 
-2.25.1
+2.34.1
 

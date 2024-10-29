@@ -1,0 +1,43 @@
+From 41df19c9b41f53a8992b70ae09487512e0c6611b Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Sat, 20 Apr 2024 16:40:21 +0800
+Subject: [PATCH 73/98] vapostproc: Do not append ANY caps into pad template
+
+The ANY caps in pad template caps seems to mess up the DMA negotiation.
+The command of:
+
+GST_GL_API=opengl gst-launch-1.0 -vf videotestsrc ! video/x-raw,format=NV12 !
+  vapostproc ! "video/x-raw(memory:DMABuf)" ! glimagesink
+
+fails to negotiate, but in fact, the vapostproc can convert the input NV12
+formant into the RGBA format to render.
+
+The ANY may help the passthough mode, but we should make the negotiate correct
+first.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6698>
+---
+ sys/va/gstvavpp.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/sys/va/gstvavpp.c b/sys/va/gstvavpp.c
+index f908d573a54c..2233e1f9b091 100644
+--- a/sys/va/gstvavpp.c
++++ b/sys/va/gstvavpp.c
+@@ -2220,13 +2220,6 @@ gst_va_vpp_class_init (gpointer g_class, gpointer class_data)
+   if (gst_va_filter_open (filter)) {
+     caps = gst_va_filter_get_caps (filter);
+ 
+-    /* adds any to enable passthrough */
+-    {
+-      GstCaps *any_caps = gst_caps_new_empty_simple ("video/x-raw");
+-      gst_caps_set_features_simple (any_caps, gst_caps_features_new_any ());
+-      caps = gst_caps_merge (caps, any_caps);
+-    }
+-
+     /* add converter klass */
+     {
+       int i;
+-- 
+2.43.0
+

@@ -1,0 +1,48 @@
+From 2096e303887a0863c8426486c0d765f69417af17 Mon Sep 17 00:00:00 2001
+From: Jin Chung Teng <jin.chung.teng@intel.com>
+Date: Sun, 1 Oct 2023 22:20:22 -0700
+Subject: [PATCH 3/7] channel-display-gst: Prefer playbin3 to playbin
+
+If playbin3 is available (checked in Gstreamer registry), it
+makes sense to prefer it given the major improvements and
+features it offers including the capability to handle higher
+bitrates.
+
+Cc: Frediano Ziglio <freddy77@gmail.com>
+Cc: Dongwon Kim <dongwon.kim@intel.com>
+Cc: Hazwan Arif Mazlan <hazwan.arif.mazlan@intel.com>
+Signed-off-by: Jin Chung Teng <jin.chung.teng@intel.com>
+Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+Acked-by: Frediano Ziglio <freddy77@gmail.com>
+---
+ src/channel-display-gst.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/src/channel-display-gst.c b/src/channel-display-gst.c
+index 36db3a330ea3..5c9927b5c38b 100644
+--- a/src/channel-display-gst.c
++++ b/src/channel-display-gst.c
+@@ -495,11 +495,17 @@ static gboolean create_pipeline(SpiceGstDecoder *decoder)
+     GstElement *playbin, *sink;
+     SpiceGstPlayFlags flags;
+     GstCaps *caps;
++    static bool playbin3_supported = true;
+ 
+-    playbin = gst_element_factory_make("playbin", "playbin");
++    playbin = playbin3_supported ?
++              gst_element_factory_make("playbin3", "playbin") : NULL;
+     if (playbin == NULL) {
+-        spice_warning("error upon creation of 'playbin' element");
+-        return FALSE;
++        playbin3_supported = false;
++        playbin = gst_element_factory_make("playbin", "playbin");
++        if (playbin == NULL) {
++            spice_warning("error upon creation of 'playbin' element");
++            return FALSE;
++        }
+     }
+ 
+     /* Passing the pipeline to widget, try to get window handle and
+-- 
+2.34.1
+

@@ -1,0 +1,133 @@
+From 09275f69ed4c130fa834ed539248c1d1163ef467 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 16 May 2024 08:35:30 +0800
+Subject: [PATCH 56/98] vabaseenc: Set the correct min_buffers for
+ propose_allocation()
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4359>
+---
+ sys/va/gstvaav1enc.c  | 4 +++-
+ sys/va/gstvabaseenc.c | 6 ++++--
+ sys/va/gstvabaseenc.h | 2 ++
+ sys/va/gstvah264enc.c | 4 +++-
+ sys/va/gstvah265enc.c | 3 ++-
+ sys/va/gstvavp9enc.c  | 4 +++-
+ 6 files changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index b3fd01f6acb1..683eacad4aa9 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -2864,8 +2864,10 @@ gst_va_av1_enc_reconfig (GstVaBaseEnc * base)
+       GST_VIDEO_INFO_FPS_N (&base->input_state->info));
+   gst_video_encoder_set_latency (venc, latency, latency);
+ 
+-  max_ref_frames = GST_AV1_NUM_REF_FRAMES + 3 /* scratch frames */ ;
++  max_ref_frames = GST_AV1_NUM_REF_FRAMES;
+   max_ref_frames += base->preferred_output_delay;
++  base->min_buffers = max_ref_frames;
++  max_ref_frames += 3 /* scratch frames */ ;
+ 
+   /* second check after calculations */
+   do_reopen |=
+diff --git a/sys/va/gstvabaseenc.c b/sys/va/gstvabaseenc.c
+index bbd11dc8f123..0011f717236d 100644
+--- a/sys/va/gstvabaseenc.c
++++ b/sys/va/gstvabaseenc.c
+@@ -76,6 +76,7 @@ gst_va_base_enc_reset_state_default (GstVaBaseEnc * base)
+   base->rt_format = 0;
+   base->codedbuf_size = 0;
+   base->preferred_output_delay = 0;
++  base->min_buffers = 1;
+   g_atomic_int_set (&base->reconf, FALSE);
+ }
+ 
+@@ -417,7 +418,7 @@ gst_va_base_enc_propose_allocation (GstVideoEncoder * venc, GstQuery * query)
+   if (!(allocator = _allocator_from_caps (base, caps)))
+     return FALSE;
+ 
+-  pool = gst_va_pool_new_with_config (caps, 1, 0, usage_hint,
++  pool = gst_va_pool_new_with_config (caps, base->min_buffers, 0, usage_hint,
+       GST_VA_FEATURE_AUTO, allocator, &params);
+   if (!pool) {
+     gst_object_unref (allocator);
+@@ -428,7 +429,7 @@ gst_va_base_enc_propose_allocation (GstVideoEncoder * venc, GstQuery * query)
+     goto config_failed;
+ 
+   gst_query_add_allocation_param (query, allocator, &params);
+-  gst_query_add_allocation_pool (query, pool, size, 1, 0);
++  gst_query_add_allocation_pool (query, pool, size, base->min_buffers, 0);
+ 
+   GST_DEBUG_OBJECT (base,
+       "proposing %" GST_PTR_FORMAT " with allocator %" GST_PTR_FORMAT,
+@@ -957,6 +958,7 @@ gst_va_base_enc_init (GstVaBaseEnc * self)
+   g_queue_init (&self->ref_list);
+   g_queue_init (&self->output_list);
+   gst_video_info_init (&self->in_info);
++  self->min_buffers = 1;
+ 
+   self->dts_queue = gst_queue_array_new_for_struct (sizeof (GstClockTime), 8);
+ 
+diff --git a/sys/va/gstvabaseenc.h b/sys/va/gstvabaseenc.h
+index 3969448927d1..3eace51c1be1 100644
+--- a/sys/va/gstvabaseenc.h
++++ b/sys/va/gstvabaseenc.h
+@@ -62,6 +62,8 @@ struct _GstVaBaseEnc
+   gint height;
+   guint rt_format;
+   guint codedbuf_size;
++  /* The min buffer number required for reorder and output delay. */
++  guint min_buffers;
+ 
+   GstClockTime start_pts;
+   GstClockTime frame_duration;
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index fca867263f50..d4acaaf0740a 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -1658,8 +1658,10 @@ gst_va_h264_enc_reconfig (GstVaBaseEnc * base)
+       GST_VIDEO_INFO_FPS_N (&base->input_state->info));
+   gst_video_encoder_set_latency (venc, latency, latency);
+ 
+-  max_ref_frames = self->gop.num_ref_frames + 3 /* scratch frames */ ;
++  max_ref_frames = self->gop.num_ref_frames;
+   max_ref_frames += base->preferred_output_delay;
++  base->min_buffers = max_ref_frames;
++  max_ref_frames += 3 /* scratch frames */ ;
+ 
+   /* second check after calculations */
+   do_reopen |=
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 18a00a503919..b1d75b27592f 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -4649,8 +4649,9 @@ gst_va_h265_enc_reconfig (GstVaBaseEnc * base)
+ 
+   max_ref_frames = self->gop.b_pyramid ?
+       self->gop.highest_pyramid_level + 2 : self->gop.num_ref_frames;
+-  max_ref_frames += 3 /* scratch frames */ ;
+   max_ref_frames += base->preferred_output_delay;
++  base->min_buffers = max_ref_frames;
++  max_ref_frames += 3 /* scratch frames */ ;
+ 
+   /* second check after calculations */
+   do_reopen |=
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 324dc9eb65a5..9b9e12805694 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -2193,8 +2193,10 @@ gst_va_vp9_enc_reconfig (GstVaBaseEnc * base)
+       GST_VIDEO_INFO_FPS_N (&base->input_state->info));
+   gst_video_encoder_set_latency (venc, latency, latency);
+ 
+-  max_ref_frames = GST_VP9_REF_FRAMES + 3 /* scratch frames */ ;
++  max_ref_frames = GST_VP9_REF_FRAMES;
+   max_ref_frames += base->preferred_output_delay;
++  base->min_buffers = max_ref_frames;
++  max_ref_frames += 3 /* scratch frames */ ;
+ 
+   /* second check after calculations */
+   do_reopen |=
+-- 
+2.43.0
+

@@ -2,9 +2,9 @@ do_install:append:class-target() {
     # For qemu
     install -d ${D}/${datadir}/${PN}-edk2
     install ${WORKDIR}/ovmf/Shell.efi ${D}/${datadir}/${PN}-edk2
-    install ${WORKDIR}/ovmf/EnrollDefaultKeys.efi ${D}/${datadir}/${PN}-edk2
+    # EnrollDefaultKeys.efi is only included when Secure Boot is enabled
     if ${@bb.utils.contains('PACKAGECONFIG', 'secureboot', 'true', 'false', d)}; then
-        install ${WORKDIR}/ovmf/EnrollDefaultKeys.efi ${D}/${datadir}/${PN}
+        install ${WORKDIR}/ovmf/EnrollDefaultKeys.efi ${D}/${datadir}/${PN}-edk2
     fi
     for i in \
         ovmf \

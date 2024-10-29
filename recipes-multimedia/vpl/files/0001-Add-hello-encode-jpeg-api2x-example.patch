@@ -1,0 +1,1360 @@
+From 71b3465ad9e6900218025d12e1ae28fee431b846 Mon Sep 17 00:00:00 2001
+From: Vincent Cheah Beng Keat <vincent.beng.keat.cheah@intel.com>
+Date: Fri, 19 Jul 2024 15:00:42 +0800
+Subject: [PATCH] Add hello-encode-jpeg api2x example
+
+Upstream-Status: Backport [https://github.com/intel-innersource/libraries.media.vpl.lib/pull/1065]
+---
+ examples/CMakeLists.txt                       |   3 +-
+ .../api2x/hello-encode-jpeg/CMakeLists.txt    | 109 +++
+ examples/api2x/hello-encode-jpeg/License.txt  |  18 +
+ .../api2x/hello-encode-jpeg/PreLoad.cmake     |   6 +
+ examples/api2x/hello-encode-jpeg/README.md    | 140 ++++
+ .../api2x/hello-encode-jpeg/docker/Dockerfile |  22 +
+ .../src/hello-encode-jpeg.cpp                 | 260 +++++++
+ examples/api2x/hello-encode-jpeg/src/util.hpp | 715 ++++++++++++++++++
+ 8 files changed, 1272 insertions(+), 1 deletion(-)
+ create mode 100644 examples/api2x/hello-encode-jpeg/CMakeLists.txt
+ create mode 100644 examples/api2x/hello-encode-jpeg/License.txt
+ create mode 100644 examples/api2x/hello-encode-jpeg/PreLoad.cmake
+ create mode 100644 examples/api2x/hello-encode-jpeg/README.md
+ create mode 100644 examples/api2x/hello-encode-jpeg/docker/Dockerfile
+ create mode 100644 examples/api2x/hello-encode-jpeg/src/hello-encode-jpeg.cpp
+ create mode 100644 examples/api2x/hello-encode-jpeg/src/util.hpp
+
+diff --git a/examples/CMakeLists.txt b/examples/CMakeLists.txt
+index d96c00d..9ba6dac 100644
+--- a/examples/CMakeLists.txt
++++ b/examples/CMakeLists.txt
+@@ -19,6 +19,7 @@ if(BUILD_EXAMPLES)
+   endif()
+   add_subdirectory(api2x/hello-decvpp)
+   add_subdirectory(api2x/hello-encode)
++  add_subdirectory(api2x/hello-encode-jpeg)
+   add_subdirectory(api2x/hello-transcode)
+   add_subdirectory(api2x/hello-vpp)
+   add_subdirectory(tutorials/01_transition/VPL)
+@@ -43,7 +44,7 @@ if(INSTALL_EXAMPLE_CODE)
+ 
+   install(
+     DIRECTORY api2x/hello-decode api2x/hello-decvpp api2x/hello-encode
+-              api2x/hello-transcode api2x/hello-vpp
++              api2x/hello-transcode api2x/hello-vpp api2x/hello-encode-jpeg
+     DESTINATION ${VPL_INSTALL_EXAMPLEDIR}/api2x
+     COMPONENT ${VPL_COMPONENT_DEV})
+ 
+diff --git a/examples/api2x/hello-encode-jpeg/CMakeLists.txt b/examples/api2x/hello-encode-jpeg/CMakeLists.txt
+new file mode 100644
+index 0000000..962fde0
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/CMakeLists.txt
+@@ -0,0 +1,109 @@
++# ##############################################################################
++# Copyright (C) Intel Corporation
++#
++# SPDX-License-Identifier: MIT
++# ##############################################################################
++cmake_minimum_required(VERSION 3.13.0)
++project(hello-encode-jpeg)
++
++# Default install places 64 bit runtimes in the environment, so we want to do a
++# 64 bit build by default.
++if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
++  set(CMAKE_LIBRARY_ARCHITECTURE x86)
++endif()
++
++if(WIN32)
++  if(NOT DEFINED CMAKE_GENERATOR_PLATFORM)
++    set(CMAKE_GENERATOR_PLATFORM
++        x64
++        CACHE STRING "")
++    message(STATUS "Generator Platform set to ${CMAKE_GENERATOR_PLATFORM}")
++  endif()
++endif()
++
++set(TARGET hello-encode-jpeg)
++set(SOURCES src/hello-encode-jpeg.cpp)
++
++# Set default build type to RelWithDebInfo if not specified
++if(NOT CMAKE_BUILD_TYPE)
++  message(
++    STATUS "Default CMAKE_BUILD_TYPE not set using Release with Debug Info")
++  set(CMAKE_BUILD_TYPE
++      "RelWithDebInfo"
++      CACHE
++        STRING
++        "Choose build type from: None Debug Release RelWithDebInfo MinSizeRel"
++        FORCE)
++endif()
++
++add_executable(${TARGET} ${SOURCES})
++
++if(MSVC)
++  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
++  if(NOT DEFINED ENV{VSCMD_VER})
++    set(CMAKE_MSVCIDE_RUN_PATH $ENV{PATH})
++  endif()
++endif()
++
++find_package(VPL REQUIRED)
++target_link_libraries(${TARGET} VPL::dispatcher)
++if(UNIX)
++  set(LIBVA_SUPPORT
++      ON
++      CACHE BOOL "Enable hardware support.")
++  if(LIBVA_SUPPORT)
++    find_package(PkgConfig REQUIRED)
++    # note: pkg-config version for libva is *API* version
++    pkg_check_modules(PKG_LIBVA IMPORTED_TARGET libva>=1.2)
++    pkg_check_modules(PKG_LIBVA_DRM IMPORTED_TARGET libva-drm>=1.2)
++    if(PKG_LIBVA_FOUND)
++      target_compile_definitions(${TARGET} PUBLIC -DLIBVA_SUPPORT)
++      set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
++      set(THREADS_PREFER_PTHREAD_FLAG TRUE)
++      find_package(Threads REQUIRED)
++      target_link_libraries(${TARGET} PkgConfig::PKG_LIBVA
++                            PkgConfig::PKG_LIBVA_DRM Threads::Threads)
++      target_include_directories(${TARGET} PUBLIC ${PKG_LIBVA_INCLUDE_DIRS})
++    else()
++      message(
++        SEND_ERROR
++          "libva not found: set LIBVA_SUPPORT=OFF to build ${TARGET} without libva support"
++      )
++    endif()
++  else()
++    message(STATUS "Building ${TARGET} without hardware support")
++  endif()
++endif()
++
++install(TARGETS ${TARGET} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++                                  COMPONENT ${VPL_COMPONENT_DEV})
++
++# copy dependent dlls to target location
++if(WIN32)
++  if(${CMAKE_VERSION} VERSION_LESS "3.26")
++    message(
++      STATUS
++        "CMake Version less than 3.26, unable to copy dependent DLLs to target location"
++    )
++  else()
++    add_custom_command(
++      TARGET ${TARGET}
++      POST_BUILD
++      COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:${TARGET}>
++              $<TARGET_RUNTIME_DLLS:${TARGET}>
++      COMMAND_EXPAND_LISTS)
++  endif()
++endif()
++
++include(CTest)
++set(VPL_CONTENT_DIR
++    ${CMAKE_CURRENT_SOURCE_DIR}/../../content
++    CACHE PATH "Path to content.")
++if(IMPL_ARG EQUAL -hw)
++  set(content_file cars_320x240.nv12)
++else()
++  set(content_file cars_320x240.i420)
++endif()
++add_test(NAME ${TARGET}-test
++         COMMAND ${TARGET} -i "${VPL_CONTENT_DIR}/${content_file}" -w 320 -h
++                 240)
+diff --git a/examples/api2x/hello-encode-jpeg/License.txt b/examples/api2x/hello-encode-jpeg/License.txt
+new file mode 100644
+index 0000000..1756b56
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/License.txt
+@@ -0,0 +1,18 @@
++Copyright Intel Corporation
++
++Permission is hereby granted, free of charge, to any person obtaining a copy of
++this software and associated documentation files (the "Software"), to deal in
++the Software without restriction, including without limitation the rights to
++use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
++the Software, and to permit persons to whom the Software is furnished to do so,
++subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
++FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
++COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
++IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+diff --git a/examples/api2x/hello-encode-jpeg/PreLoad.cmake b/examples/api2x/hello-encode-jpeg/PreLoad.cmake
+new file mode 100644
+index 0000000..b763e9f
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/PreLoad.cmake
+@@ -0,0 +1,6 @@
++if(WIN32)
++  set(CMAKE_GENERATOR_PLATFORM
++      x64
++      CACHE STRING "")
++  message(STATUS "Generator Platform set to ${CMAKE_GENERATOR_PLATFORM}")
++endif()
+diff --git a/examples/api2x/hello-encode-jpeg/README.md b/examples/api2x/hello-encode-jpeg/README.md
+new file mode 100644
+index 0000000..8871147
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/README.md
+@@ -0,0 +1,140 @@
++# `hello-encode-jpeg` Sample
++
++This sample shows how to use the Intel® Video Processing Library (Intel® VPL) 2.X common API to
++perform simple MJPEG video encode.
++
++| Optimized for    | Description
++|----------------- | ----------------------------------------
++| OS               | Ubuntu* 20.04/22.04; Windows* 10
++| Hardware         | Compatible with Intel® VPL GPU implementation, which can be found at https://github.com/intel/vpl-gpu-rt 
++|                  | and Intel® Media SDK GPU implementation, which can be found at https://github.com/Intel-Media-SDK/MediaSDK
++| What You Will Learn | How to use Intel® VPL to encode a raw video file MJPEG
++| Time to Complete | 5 minutes
++
++
++## Purpose
++
++This sample is a command line application that takes a file containing a raw
++format video elementary stream as an argument.  Using Intel® VPL, the application encodes and
++writes the encoded output to `a out.mjpeg` in MJPEG format.
++
++Native raw frame input format: GPU=NV12.
++
++## Key Implementation details
++
++| Configuration     | Default setting
++| ----------------- | ----------------------------------
++| Target device     | GPU
++| Input format      | NV12
++| Output format     | MJPEG video elementary stream
++| Output resolution | same as the input
++
++
++## License
++
++Code samples are licensed under the MIT license.
++
++## Building the `hello-encode-jpeg` Program
++
++### Include Files
++The Intel® VPL include folder is located at these locations on your development system:
++ - Windows: <vpl_install_dir>\include 
++ - Linux: <vpl_install_dir>/include
++
++
++### On a Linux* System
++
++Perform the following steps:
++
++1. Install prerequisites. To build and run the sample you need to
++   install prerequisite software and set up your environment:
++
++   - Follow the steps in [install.md](https://github.com/intel/libvpl/blob/master/INSTALL.md) or install libvpl-dev. 
++   - Follow the steps in [dgpu-docs](https://dgpu-docs.intel.com/) according to your GPU.
++   - Install the packages using following commands:
++   ```
++   apt update
++   apt install -y cmake build-essential pkg-config libva-dev libva-drm2 vainfo
++   ```
++
++2. Set up your environment using the following command.
++   ```
++   source <vpl_install_dir>/etc/vpl/vars.sh
++   ```
++   Here `<vpl_install_dir>` represents the root folder of your Intel® VPL
++   installation.  If you customized the
++   installation folder, it is in your custom location.
++
++3. Build the program using the following commands:
++   ```
++   mkdir build
++   cd build
++   cmake -DCMAKE_BUILD_TYPE=Release ..
++   cmake --build .
++   ```
++
++4. Run the program with default arguments using the following command:
++   ```
++   ./hello-encode-jpeg -i ../../../content/cars_320x240.i420 -w 320 -h 240
++   ```
++
++### On a Windows* System Using Visual Studio* Version 2017 or Newer
++
++#### Building the program using CMake
++
++1. Install prerequisites. To build and run the sample you need to
++   install prerequisite software and set up your environment:
++   
++   - Follow the steps in [install.md](https://github.com/intel/libvpl/blob/master/INSTALL.md) to install Intel® VPL package.
++   - Visual Studio 2022
++   - [CMake](https://cmake.org)
++
++2. Set up your environment using the following command.
++   ```
++   <vpl_install_dir>\etc\vpl\vars.bat
++   ```
++   Here `<vpl_install_dir>` represents the root folder of your Intel® VPL
++   installation. If you customized the installation
++   folder, the `vars.bat` is in your custom location.  Note that if a
++   compiler is not installed you should run in a Visual
++   Studio 64-bit command prompt.
++
++3. Build the program with default arguments using the following commands:
++   ```
++   mkdir build
++   cd build
++   cmake ..
++   cmake --build . --config Release
++   ```
++
++4. Run the program using the following command:
++   ```
++   Release\hello-encode-jpeg -i ..\..\..\content\cars_320x240.nv12 -w 320 -h 240
++   ```
++
++
++## Running the Sample
++
++### Example Output
++
++```
++Implementation details:
++  ApiVersion:           2.8
++  Implementation type:  HW
++  AccelerationMode via: D3D11
++  DeviceID:             56a6/0
++  Path: C:\Windows\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_a35f92e9f7f89b10\libmfx64-gen.dll
++
++Encoding ..\..\..\content\cars_320x240.nv12 -> out.mjpeg
++Input colorspace: NV12
++Encoded 30 frames
++```
++
++You can find the output file `out.mjpeg` in the build directory.
++
++You can display the output with a video player that supports raw streams such as
++FFplay. You can use the following command to display the output with FFplay:
++
++```
++ffplay out.mjpeg
++```
+diff --git a/examples/api2x/hello-encode-jpeg/docker/Dockerfile b/examples/api2x/hello-encode-jpeg/docker/Dockerfile
+new file mode 100644
+index 0000000..0a6c493
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/docker/Dockerfile
+@@ -0,0 +1,22 @@
++FROM ubuntu:20.04
++ARG DEBIAN_FRONTEND=noninteractive
++
++
++#Install Graphics runtime package
++RUN apt-get update && \
++    apt-get install --no-install-recommends -q -y gnupg wget software-properties-common && \
++    wget --no-verbose https://repositories.intel.com/graphics/intel-graphics.key && \
++    apt-key add intel-graphics.key && \
++    apt-add-repository 'deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main' && \
++    apt-get update && \
++    apt-get install --no-install-recommends -q -y libmfxgen1 intel-media-va-driver-non-free libmfx1 libva-dev libva-drm2 vainfo && \
++    apt-get install --no-install-recommends -q -y cmake build-essential pkg-config && rm -rf /var/lib/apt/lists/*
++
++# Use non-root user
++ARG GROUP_ID=10000
++ARG USER_ID=10001
++RUN addgroup --gid ${GROUP_ID} --system appgroup \
++ && adduser --uid ${USER_ID} --system --gid ${GROUP_ID} appuser
++USER appuser
++
++HEALTHCHECK CMD cmake --version || exit 1
+diff --git a/examples/api2x/hello-encode-jpeg/src/hello-encode-jpeg.cpp b/examples/api2x/hello-encode-jpeg/src/hello-encode-jpeg.cpp
+new file mode 100644
+index 0000000..c8de4f9
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/src/hello-encode-jpeg.cpp
+@@ -0,0 +1,260 @@
++//==============================================================================
++// Copyright Intel Corporation
++//
++// SPDX-License-Identifier: MIT
++//==============================================================================
++
++///
++/// A minimal IntelÂ® Video Processing Library (IntelÂ® VPL) encode application,
++/// using 2.x API with internal memory management
++///
++/// @file
++
++#include "util.hpp"
++
++#define TARGETKBPS                 4000
++#define FRAMERATE                  30
++#define QUALITY                    90
++#define OUTPUT_FILE                "out.mjpeg"
++#define BITSTREAM_BUFFER_SIZE      (8000 * 8000 * 2)
++#define MAJOR_API_VERSION_REQUIRED 2
++#define MINOR_API_VERSION_REQUIRED 2
++
++void Usage(void) {
++    printf("\n");
++    printf("   Usage  :  hello-encode-jpeg\n");
++    printf("     -i input file name (NV12 raw frames)\n");
++    printf("     -w input width\n");
++    printf("     -h input height\n");
++#if defined(__linux__)
++    printf("     -nv12/yuv400/rgb4/bgr4 input color format\n\n");
++#else
++    printf("     -nv12/rgb4/bgr4 input color format\n\n");
++#endif
++    printf("   Example:  hello-encode-jpeg -i in.NV12 -w 320 -h 240 -nv12\n");
++    printf("   To view:  ffplay %s\n\n", OUTPUT_FILE);
++    printf(" * Encode raw frames to MJPEG elementary stream in %s\n\n", OUTPUT_FILE);
++    printf("   GPU native (default) color format is "
++           "NV12\n");
++    return;
++}
++
++int main(int argc, char *argv[]) {
++    // Variables used for legacy and 2.x
++    bool isDraining                = false;
++    bool isStillGoing              = true;
++    bool isFailed                  = false;
++    FILE *sink                     = NULL;
++    FILE *source                   = NULL;
++    mfxBitstream bitstream         = {};
++    mfxFrameSurface1 *encSurfaceIn = NULL;
++    mfxSession session             = NULL;
++    mfxSyncPoint syncp             = {};
++    mfxU32 framenum                = 0;
++    mfxStatus sts                  = MFX_ERR_NONE;
++    mfxStatus sts_r                = MFX_ERR_NONE;
++    Params cliParams               = {};
++    mfxVideoParam encodeParams     = {};
++
++    // variables used only in 2.x version
++    mfxConfig cfg[3];
++    mfxVariant cfgVal[3];
++    mfxLoader loader = NULL;
++
++    // Parse command line args to cliParams
++    if (ParseArgsAndValidate(argc, argv, &cliParams, PARAMS_ENCODE) == false) {
++        Usage();
++        return 1; // return 1 as error code
++    }
++
++    source = fopen(cliParams.infileName, "rb");
++    VERIFY(source, "Could not open input file");
++
++    sink = fopen(OUTPUT_FILE, "wb");
++    VERIFY(sink, "Could not create output file");
++
++    // Initialize session
++    loader = MFXLoad();
++    VERIFY(NULL != loader, "MFXLoad failed -- is implementation in path?");
++
++    // Implementation used must be the type requested from command line
++    cfg[0] = MFXCreateConfig(loader);
++    VERIFY(NULL != cfg[0], "MFXCreateConfig failed")
++    cfgVal[0].Type     = MFX_VARIANT_TYPE_U32;
++    cfgVal[0].Data.U32 = MFX_IMPL_TYPE_HARDWARE;
++    sts = MFXSetConfigFilterProperty(cfg[0], (mfxU8 *)"mfxImplDescription.Impl", cfgVal[0]);
++    VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for Impl");
++
++    // Implementation must provide an JPEG encoder
++    cfg[1] = MFXCreateConfig(loader);
++    VERIFY(NULL != cfg[1], "MFXCreateConfig failed")
++    cfgVal[1].Type     = MFX_VARIANT_TYPE_U32;
++    cfgVal[1].Data.U32 = MFX_CODEC_JPEG;
++    sts                = MFXSetConfigFilterProperty(
++        cfg[1],
++        (mfxU8 *)"mfxImplDescription.mfxEncoderDescription.encoder.CodecID",
++        cfgVal[1]);
++    VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for encoder CodecID");
++
++    // Implementation used must provide API version 2.2 or newer
++    cfg[2] = MFXCreateConfig(loader);
++    VERIFY(NULL != cfg[2], "MFXCreateConfig failed")
++    cfgVal[2].Type     = MFX_VARIANT_TYPE_U32;
++    cfgVal[2].Data.U32 = VPLVERSION(MAJOR_API_VERSION_REQUIRED, MINOR_API_VERSION_REQUIRED);
++    sts                = MFXSetConfigFilterProperty(cfg[2],
++                                     (mfxU8 *)"mfxImplDescription.ApiVersion.Version",
++                                     cfgVal[2]);
++    VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for API version");
++
++    sts = MFXCreateSession(loader, 0, &session);
++    VERIFY(MFX_ERR_NONE == sts,
++           "Cannot create session -- no implementations meet selection criteria");
++
++    // Print info about implementation loaded
++    ShowImplementationInfo(loader, 0);
++
++    // Initialize encode parameters
++    encodeParams.mfx.CodecId                 = MFX_CODEC_JPEG;
++    encodeParams.mfx.Quality                 = QUALITY;
++    encodeParams.mfx.Interleaved             = MFX_SCANTYPE_INTERLEAVED;
++    encodeParams.mfx.FrameInfo.FrameRateExtN = FRAMERATE;
++    encodeParams.mfx.FrameInfo.FrameRateExtD = 1;
++    encodeParams.mfx.FrameInfo.FourCC        = cliParams.encodeFourcc;
++    encodeParams.mfx.FrameInfo.ChromaFormat  = FourCCToChroma(cliParams.encodeFourcc);
++    encodeParams.mfx.FrameInfo.CropW         = cliParams.srcWidth;
++    encodeParams.mfx.FrameInfo.CropH         = cliParams.srcHeight;
++    encodeParams.mfx.FrameInfo.Width         = ALIGN16(cliParams.srcWidth);
++    encodeParams.mfx.FrameInfo.Height        = ALIGN16(cliParams.srcHeight);
++
++    encodeParams.IOPattern = MFX_IOPATTERN_IN_VIDEO_MEMORY;
++
++    // Validate video encode parameters
++    // - In this example the validation result is written to same structure
++    // - MFX_WRN_INCOMPATIBLE_VIDEO_PARAM is returned if some of the video parameters are not supported,
++    //   instead the encoder will select suitable parameters closest matching the requested configuration,
++    //   and it's ignorable.
++    sts = MFXVideoENCODE_Query(session, &encodeParams, &encodeParams);
++    if (sts == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM)
++        sts = MFX_ERR_NONE;
++    VERIFY(MFX_ERR_NONE == sts, "Encode query failed");
++
++    // Initialize encoder
++    sts = MFXVideoENCODE_Init(session, &encodeParams);
++    VERIFY(MFX_ERR_NONE == sts, "Encode init failed");
++
++    // Prepare output bitstream
++    bitstream.MaxLength = BITSTREAM_BUFFER_SIZE;
++    bitstream.Data      = (mfxU8 *)calloc(bitstream.MaxLength, sizeof(mfxU8));
++
++    printf("Encoding %s -> %s\n", cliParams.infileName, OUTPUT_FILE);
++
++    printf("Input colorspace: ");
++    switch (encodeParams.mfx.FrameInfo.FourCC) {
++        case MFX_FOURCC_NV12: // GPU input
++            printf("NV12\n");
++            break;
++        case MFX_FOURCC_YUV400: // GPU input
++            printf("YUV400\n");
++            break;
++        case MFX_FOURCC_RGB4: // GPU input
++            printf("RGB4\n");
++            break;
++        case MFX_FOURCC_BGR4: // GPU input
++            printf("BGR4\n");
++            break;
++        default:
++            printf("Unsupported color format\n");
++            isFailed = true;
++            goto end;
++            break;
++    }
++
++    while (isStillGoing == true) {
++        // Load a new frame if not draining
++        if (isDraining == false) {
++            sts = MFXMemory_GetSurfaceForEncode(session, &encSurfaceIn);
++            VERIFY(MFX_ERR_NONE == sts, "Could not get encode surface");
++
++            sts = ReadRawFrame_InternalMem(encSurfaceIn, source);
++            if (sts != MFX_ERR_NONE)
++                isDraining = true;
++        }
++
++        sts = MFXVideoENCODE_EncodeFrameAsync(session,
++                                              NULL,
++                                              (isDraining == true) ? NULL : encSurfaceIn,
++                                              &bitstream,
++                                              &syncp);
++
++        if (!isDraining) {
++            sts_r = encSurfaceIn->FrameInterface->Release(encSurfaceIn);
++            VERIFY(MFX_ERR_NONE == sts_r, "mfxFrameSurfaceInterface->Release failed");
++        }
++        switch (sts) {
++            case MFX_ERR_NONE:
++                // MFX_ERR_NONE and syncp indicate output is available
++                if (syncp) {
++                    // Encode output is not available on CPU until sync operation
++                    // completes
++                    do {
++                        sts = MFXVideoCORE_SyncOperation(session, syncp, WAIT_100_MILLISECONDS);
++                        if (MFX_ERR_NONE == sts) {
++                            WriteEncodedStream(bitstream, sink);
++                            framenum++;
++                        }
++                    } while (sts == MFX_WRN_IN_EXECUTION);
++                }
++                break;
++            case MFX_ERR_NOT_ENOUGH_BUFFER:
++                // This example deliberatly uses a large output buffer with immediate
++                // write to disk for simplicity. Handle when frame size exceeds
++                // available buffer here
++                break;
++            case MFX_ERR_MORE_DATA:
++                // The function requires more data to generate any output
++                if (isDraining == true)
++                    isStillGoing = false;
++                break;
++            case MFX_ERR_DEVICE_LOST:
++                // For non-CPU implementations,
++                // Cleanup if device is lost
++                break;
++            case MFX_WRN_DEVICE_BUSY:
++                // For non-CPU implementations,
++                // Wait a few milliseconds then try again
++                break;
++            default:
++                printf("unknown status %d\n", sts);
++                isStillGoing = false;
++                break;
++        }
++    }
++
++end:
++    printf("Encoded %d frames\n", framenum);
++
++    // Clean up resources - It is recommended to close components first, before
++    // releasing allocated surfaces, since some surfaces may still be locked by
++    // internal resources.
++    if (source)
++        fclose(source);
++
++    if (sink)
++        fclose(sink);
++
++    MFXVideoENCODE_Close(session);
++    MFXClose(session);
++
++    if (bitstream.Data)
++        free(bitstream.Data);
++
++    if (loader)
++        MFXUnload(loader);
++
++    if (isFailed) {
++        return -1;
++    }
++    else {
++        return 0;
++    }
++}
+diff --git a/examples/api2x/hello-encode-jpeg/src/util.hpp b/examples/api2x/hello-encode-jpeg/src/util.hpp
+new file mode 100644
+index 0000000..1c41883
+--- /dev/null
++++ b/examples/api2x/hello-encode-jpeg/src/util.hpp
+@@ -0,0 +1,715 @@
++//==============================================================================
++// Copyright Intel Corporation
++//
++// SPDX-License-Identifier: MIT
++//==============================================================================
++// Example using IntelÂ® Video Processing Library (IntelÂ® VPL)
++
++///
++/// Utility library header file for sample code
++///
++/// @file
++
++#ifndef EXAMPLES_UTIL_HPP_
++#define EXAMPLES_UTIL_HPP_
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#ifdef USE_MEDIASDK1
++    #include "mfxvideo.h"
++enum {
++    MFX_FOURCC_I420 = MFX_FOURCC_IYUV /*!< Alias for the IYUV color format. */
++};
++#else
++    #include "vpl/mfxjpeg.h"
++    #include "vpl/mfxvideo.h"
++#endif
++
++#if (MFX_VERSION >= 2000)
++    #include "vpl/mfxdispatcher.h"
++#endif
++
++#ifdef __linux__
++    #include <fcntl.h>
++    #include <unistd.h>
++#endif
++
++#ifdef LIBVA_SUPPORT
++    #include "va/va.h"
++    #include "va/va_drm.h"
++#endif
++
++#define WAIT_100_MILLISECONDS 100
++#define MAX_PATH              260
++#define MAX_WIDTH             16384
++#define MAX_HEIGHT            16384
++#define IS_ARG_EQ(a, b)       (!strcmp((a), (b)))
++
++#define VERIFY(x, y)       \
++    if (!(x)) {            \
++        printf("%s\n", y); \
++        isFailed = true;   \
++        goto end;          \
++    }
++
++#define ALIGN16(value)           (((value + 15) >> 4) << 4)
++#define ALIGN32(X)               (((mfxU32)((X) + 31)) & (~(mfxU32)31))
++#define VPLVERSION(major, minor) (major << 16 | minor)
++
++enum {
++    MFX_FOURCC_IMC3    = MFX_MAKEFOURCC('I', 'M', 'C', '3'),
++    MFX_FOURCC_YUV400  = MFX_MAKEFOURCC('4', '0', '0', 'P'),
++    MFX_FOURCC_YUV411  = MFX_MAKEFOURCC('4', '1', '1', 'P'),
++    MFX_FOURCC_YUV422H = MFX_MAKEFOURCC('4', '2', '2', 'H'),
++    MFX_FOURCC_YUV422V = MFX_MAKEFOURCC('4', '2', '2', 'V'),
++    MFX_FOURCC_YUV444  = MFX_MAKEFOURCC('4', '4', '4', 'P'),
++    MFX_FOURCC_RGBP24  = MFX_MAKEFOURCC('R', 'G', 'B', 'P'),
++};
++
++enum ExampleParams { PARAM_IMPL = 0, PARAM_INFILE, PARAM_INRES, PARAM_COUNT };
++enum ParamGroup {
++    PARAMS_CREATESESSION = 0,
++    PARAMS_DECODE,
++    PARAMS_ENCODE,
++    PARAMS_VPP,
++    PARAMS_TRANSCODE
++};
++
++typedef struct _Params {
++    char *infileName;
++    char *inmodelName;
++
++    mfxU16 srcWidth;
++    mfxU16 srcHeight;
++    mfxU32 encodeFourcc;
++} Params;
++
++char *ValidateFileName(char *in) {
++    if (in) {
++        if (strnlen(in, MAX_PATH) > MAX_PATH)
++            return NULL;
++    }
++
++    return in;
++}
++
++bool ValidateSize(char *in, mfxU16 *vsize, mfxU32 vmax) {
++    if (in) {
++        *vsize = static_cast<mfxU16>(strtol(in, NULL, 10));
++        if (*vsize <= vmax)
++            return true;
++    }
++
++    *vsize = 0;
++    return false;
++}
++
++bool ParseArgsAndValidate(int argc, char *argv[], Params *params, ParamGroup group) {
++    int idx;
++    char *s;
++
++    // init all params to 0
++    *params = {};
++
++    for (idx = 1; idx < argc;) {
++        // all switches must start with '-'
++        if (argv[idx][0] != '-') {
++            printf("ERROR - invalid argument: %s\n", argv[idx]);
++            return false;
++        }
++
++        // switch string, starting after the '-'
++        s = &argv[idx][1];
++        idx++;
++
++        // search for match
++        if (IS_ARG_EQ(s, "i")) {
++            params->infileName = ValidateFileName(argv[idx++]);
++            if (!params->infileName) {
++                return false;
++            }
++        }
++        else if (IS_ARG_EQ(s, "m")) {
++            params->inmodelName = ValidateFileName(argv[idx++]);
++            if (!params->inmodelName) {
++                return false;
++            }
++        }
++        else if (IS_ARG_EQ(s, "w")) {
++            if (!ValidateSize(argv[idx++], &params->srcWidth, MAX_WIDTH))
++                return false;
++        }
++        else if (IS_ARG_EQ(s, "h")) {
++            if (!ValidateSize(argv[idx++], &params->srcHeight, MAX_HEIGHT))
++                return false;
++        }
++        else if (IS_ARG_EQ(s, "nv12")) {
++            params->encodeFourcc = MFX_FOURCC_NV12;
++        }
++#if defined(__linux__)
++        else if (IS_ARG_EQ(s, "yuv400")) {
++            params->encodeFourcc = MFX_FOURCC_YUV400;
++        }
++#endif
++        else if (IS_ARG_EQ(s, "rgb4")) {
++            params->encodeFourcc = MFX_FOURCC_RGB4;
++        }
++        else if (IS_ARG_EQ(s, "bgr4")) {
++            params->encodeFourcc = MFX_FOURCC_BGR4;
++        }
++        else {
++            printf("ERROR - invalid argument\n");
++            return false;
++        }
++    }
++
++    if (!params->encodeFourcc)
++        params->encodeFourcc = MFX_FOURCC_NV12;
++
++    // input file required by all except createsession
++    if ((group != PARAMS_CREATESESSION) && (!params->infileName)) {
++        printf("ERROR - input file name (-i) is required\n");
++        return false;
++    }
++
++    // VPP and encode samples require an input resolution
++    if ((PARAMS_VPP == group) || (PARAMS_ENCODE == group)) {
++        if ((!params->srcWidth) || (!params->srcHeight)) {
++            printf("ERROR - source width/height required\n");
++            return false;
++        }
++    }
++
++    return true;
++}
++
++void *InitAcceleratorHandle(mfxSession session, int *fd) {
++    mfxIMPL impl;
++    mfxStatus sts = MFXQueryIMPL(session, &impl);
++    if (sts != MFX_ERR_NONE)
++        return NULL;
++
++#ifdef LIBVA_SUPPORT
++    if ((impl & MFX_IMPL_VIA_VAAPI) == MFX_IMPL_VIA_VAAPI) {
++        if (!fd)
++            return NULL;
++        VADisplay va_dpy = NULL;
++        // initialize VAAPI context and set session handle (req in Linux)
++        *fd = open("/dev/dri/renderD128", O_RDWR);
++        if (*fd >= 0) {
++            va_dpy = vaGetDisplayDRM(*fd);
++            if (va_dpy) {
++                int major_version = 0, minor_version = 0;
++                if (VA_STATUS_SUCCESS == vaInitialize(va_dpy, &major_version, &minor_version)) {
++                    MFXVideoCORE_SetHandle(session,
++                                           static_cast<mfxHandleType>(MFX_HANDLE_VA_DISPLAY),
++                                           va_dpy);
++                }
++            }
++        }
++        return va_dpy;
++    }
++#endif
++
++    return NULL;
++}
++
++void FreeAcceleratorHandle(void *accelHandle, int fd) {
++#ifdef LIBVA_SUPPORT
++    if (accelHandle) {
++        vaTerminate((VADisplay)accelHandle);
++    }
++    if (fd) {
++        close(fd);
++    }
++#endif
++}
++
++//Shows implementation info for Media SDK or IntelÂ® VPL
++mfxVersion ShowImplInfo(mfxSession session) {
++    mfxIMPL impl;
++    mfxVersion version = { 0, 1 };
++
++    mfxStatus sts = MFXQueryIMPL(session, &impl);
++    if (sts != MFX_ERR_NONE)
++        return version;
++
++    sts = MFXQueryVersion(session, &version);
++    if (sts != MFX_ERR_NONE)
++        return version;
++
++    printf("Session loaded: ApiVersion = %d.%d \timpl= ", version.Major, version.Minor);
++
++    switch (impl) {
++        case MFX_IMPL_SOFTWARE:
++            puts("Software");
++            break;
++        case MFX_IMPL_HARDWARE | MFX_IMPL_VIA_VAAPI:
++            puts("Hardware:VAAPI");
++            break;
++        case MFX_IMPL_HARDWARE | MFX_IMPL_VIA_D3D11:
++            puts("Hardware:D3D11");
++            break;
++        case MFX_IMPL_HARDWARE | MFX_IMPL_VIA_D3D9:
++            puts("Hardware:D3D9");
++            break;
++        default:
++            puts("Unknown");
++            break;
++    }
++
++    return version;
++}
++
++// Shows implementation info with IntelÂ® VPL
++void ShowImplementationInfo(mfxLoader loader, mfxU32 implnum) {
++    mfxImplDescription *idesc = nullptr;
++    mfxStatus sts;
++    //Loads info about implementation at specified list location
++    sts = MFXEnumImplementations(loader, implnum, MFX_IMPLCAPS_IMPLDESCSTRUCTURE, (mfxHDL *)&idesc);
++    if (!idesc || (sts != MFX_ERR_NONE))
++        return;
++
++    printf("Implementation details:\n");
++    printf("  ApiVersion:           %hu.%hu  \n", idesc->ApiVersion.Major, idesc->ApiVersion.Minor);
++    printf("  Implementation type: HW\n");
++    printf("  AccelerationMode via: ");
++    switch (idesc->AccelerationMode) {
++        case MFX_ACCEL_MODE_NA:
++            printf("NA \n");
++            break;
++        case MFX_ACCEL_MODE_VIA_D3D9:
++            printf("D3D9\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_D3D11:
++            printf("D3D11\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_VAAPI:
++            printf("VAAPI\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_VAAPI_DRM_MODESET:
++            printf("VAAPI_DRM_MODESET\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_VAAPI_GLX:
++            printf("VAAPI_GLX\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_VAAPI_X11:
++            printf("VAAPI_X11\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_VAAPI_WAYLAND:
++            printf("VAAPI_WAYLAND\n");
++            break;
++        case MFX_ACCEL_MODE_VIA_HDDLUNITE:
++            printf("HDDLUNITE\n");
++            break;
++        default:
++            printf("unknown\n");
++            break;
++    }
++    printf("  DeviceID:             %s \n", idesc->Dev.DeviceID);
++    MFXDispReleaseImplDescription(loader, idesc);
++
++#if (MFX_VERSION >= 2004)
++    //Show implementation path, added in 2.4 API
++    mfxHDL implPath = nullptr;
++    sts             = MFXEnumImplementations(loader, implnum, MFX_IMPLCAPS_IMPLPATH, &implPath);
++    if (!implPath || (sts != MFX_ERR_NONE))
++        return;
++
++    printf("  Path: %s\n\n", reinterpret_cast<mfxChar *>(implPath));
++    MFXDispReleaseImplDescription(loader, implPath);
++#endif
++}
++
++void PrepareFrameInfo(mfxFrameInfo *fi, mfxU32 format, mfxU16 w, mfxU16 h) {
++    // Video processing input data format
++    fi->FourCC        = format;
++    fi->ChromaFormat  = MFX_CHROMAFORMAT_YUV420;
++    fi->CropX         = 0;
++    fi->CropY         = 0;
++    fi->CropW         = w;
++    fi->CropH         = h;
++    fi->PicStruct     = MFX_PICSTRUCT_PROGRESSIVE;
++    fi->FrameRateExtN = 30;
++    fi->FrameRateExtD = 1;
++    // width must be a multiple of 16
++    // height must be a multiple of 16 in case of frame picture and a multiple of 32 in case of field picture
++    fi->Width = ALIGN16(fi->CropW);
++    fi->Height =
++        (MFX_PICSTRUCT_PROGRESSIVE == fi->PicStruct) ? ALIGN16(fi->CropH) : ALIGN32(fi->CropH);
++}
++
++mfxU32 GetSurfaceSize(mfxU32 FourCC, mfxU32 width, mfxU32 height) {
++    mfxU32 nbytes = 0;
++
++    switch (FourCC) {
++        case MFX_FOURCC_I420:
++        case MFX_FOURCC_NV12:
++            nbytes = width * height + (width >> 1) * (height >> 1) + (width >> 1) * (height >> 1);
++            break;
++        case MFX_FOURCC_I010:
++        case MFX_FOURCC_P010:
++            nbytes = width * height + (width >> 1) * (height >> 1) + (width >> 1) * (height >> 1);
++            nbytes *= 2;
++            break;
++        case MFX_FOURCC_RGB4:
++        case MFX_FOURCC_BGR4:
++            nbytes = width * height * 4;
++            break;
++        default:
++            break;
++    }
++
++    return nbytes;
++}
++
++int GetFreeSurfaceIndex(mfxFrameSurface1 *SurfacesPool, mfxU16 nPoolSize) {
++    for (mfxU16 i = 0; i < nPoolSize; i++) {
++        if (0 == SurfacesPool[i].Data.Locked)
++            return i;
++    }
++    return MFX_ERR_NOT_FOUND;
++}
++
++mfxStatus AllocateExternalSystemMemorySurfacePool(mfxU8 **buf,
++                                                  mfxFrameSurface1 *surfpool,
++                                                  mfxFrameInfo frame_info,
++                                                  mfxU16 surfnum) {
++    // initialize surface pool (I420, RGB4 format)
++    mfxU32 surfaceSize = GetSurfaceSize(frame_info.FourCC, frame_info.Width, frame_info.Height);
++    if (!surfaceSize)
++        return MFX_ERR_MEMORY_ALLOC;
++
++    size_t framePoolBufSize = static_cast<size_t>(surfaceSize) * surfnum;
++    *buf                    = reinterpret_cast<mfxU8 *>(calloc(framePoolBufSize, 1));
++
++    mfxU16 surfW;
++    mfxU16 surfH = frame_info.Height;
++
++    if (frame_info.FourCC == MFX_FOURCC_RGB4) {
++        surfW = frame_info.Width * 4;
++
++        for (mfxU32 i = 0; i < surfnum; i++) {
++            surfpool[i]            = { 0 };
++            surfpool[i].Info       = frame_info;
++            size_t buf_offset      = static_cast<size_t>(i) * surfaceSize;
++            surfpool[i].Data.B     = *buf + buf_offset;
++            surfpool[i].Data.G     = surfpool[i].Data.B + 1;
++            surfpool[i].Data.R     = surfpool[i].Data.B + 2;
++            surfpool[i].Data.A     = surfpool[i].Data.B + 3;
++            surfpool[i].Data.Pitch = surfW;
++        }
++    }
++    else if (frame_info.FourCC == MFX_FOURCC_BGR4) {
++        surfW = frame_info.Width * 4;
++
++        for (mfxU32 i = 0; i < surfnum; i++) {
++            surfpool[i]            = { 0 };
++            surfpool[i].Info       = frame_info;
++            size_t buf_offset      = static_cast<size_t>(i) * surfaceSize;
++            surfpool[i].Data.R     = *buf + buf_offset;
++            surfpool[i].Data.G     = surfpool[i].Data.R + 1;
++            surfpool[i].Data.B     = surfpool[i].Data.R + 2;
++            surfpool[i].Data.A     = surfpool[i].Data.R + 3;
++            surfpool[i].Data.Pitch = surfW;
++        }
++    }
++    else {
++        surfW = (frame_info.FourCC == MFX_FOURCC_P010) ? frame_info.Width * 2 : frame_info.Width;
++
++        for (mfxU32 i = 0; i < surfnum; i++) {
++            surfpool[i]            = { 0 };
++            surfpool[i].Info       = frame_info;
++            size_t buf_offset      = static_cast<size_t>(i) * surfaceSize;
++            surfpool[i].Data.Y     = *buf + buf_offset;
++            surfpool[i].Data.U     = *buf + buf_offset + (surfW * surfH);
++            surfpool[i].Data.V     = surfpool[i].Data.U + ((surfW / 2) * (surfH / 2));
++            surfpool[i].Data.Pitch = surfW;
++        }
++    }
++
++    return MFX_ERR_NONE;
++}
++
++void FreeExternalSystemMemorySurfacePool(mfxU8 *dec_buf, mfxFrameSurface1 *surfpool) {
++    if (dec_buf) {
++        free(dec_buf);
++    }
++
++    if (surfpool)
++        free(surfpool);
++}
++
++// Read encoded stream from file
++mfxStatus ReadEncodedStream(mfxBitstream &bs, FILE *f) {
++    mfxU8 *p0 = bs.Data;
++    mfxU8 *p1 = bs.Data + bs.DataOffset;
++    if (bs.DataOffset > bs.MaxLength - 1) {
++        return MFX_ERR_NOT_ENOUGH_BUFFER;
++    }
++    if (bs.DataLength + bs.DataOffset > bs.MaxLength) {
++        return MFX_ERR_NOT_ENOUGH_BUFFER;
++    }
++    for (mfxU32 i = 0; i < bs.DataLength; i++) {
++        *(p0++) = *(p1++);
++    }
++    bs.DataOffset = 0;
++    bs.DataLength += (mfxU32)fread(bs.Data + bs.DataLength, 1, bs.MaxLength - bs.DataLength, f);
++    if (bs.DataLength == 0)
++        return MFX_ERR_MORE_DATA;
++
++    return MFX_ERR_NONE;
++}
++
++// Write encoded stream to file
++void WriteEncodedStream(mfxBitstream &bs, FILE *f) {
++    fwrite(bs.Data + bs.DataOffset, 1, bs.DataLength, f);
++    bs.DataLength = 0;
++    return;
++}
++
++// Load raw I420 frames to mfxFrameSurface
++mfxStatus ReadRawFrame(mfxFrameSurface1 *surface, FILE *f) {
++    mfxU16 w, h, i, pitch;
++    size_t bytes_read;
++    mfxU8 *ptr;
++    mfxFrameInfo *info = &surface->Info;
++    mfxFrameData *data = &surface->Data;
++
++    w = info->CropW;
++    h = info->CropH;
++
++    switch (info->FourCC) {
++        case MFX_FOURCC_I420:
++            // read luminance plane (Y)
++            pitch = data->Pitch;
++            ptr   = data->Y;
++            for (i = 0; i < h; i++) {
++                bytes_read = (mfxU32)fread(ptr + i * pitch, 1, w, f);
++                if (w != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++
++            // read chrominance (U, V)
++            pitch /= 2;
++            h /= 2;
++            w /= 2;
++            ptr = data->U;
++            for (i = 0; i < h; i++) {
++                bytes_read = (mfxU32)fread(ptr + i * pitch, 1, w, f);
++                if (w != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++
++            ptr = data->V;
++            for (i = 0; i < h; i++) {
++                bytes_read = (mfxU32)fread(ptr + i * pitch, 1, w, f);
++                if (w != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++            break;
++        case MFX_FOURCC_NV12:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                bytes_read = fread(data->Y + i * pitch, 1, w, f);
++                if (w != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++            // UV
++            h /= 2;
++            for (i = 0; i < h; i++) {
++                bytes_read = fread(data->UV + i * pitch, 1, w, f);
++                if (w != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++            break;
++        case MFX_FOURCC_YUV400:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                bytes_read = fread(data->Y + i * pitch, 1, w, f);
++                if (w != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++            break;
++        case MFX_FOURCC_RGB4:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                bytes_read = fread(data->B + i * pitch, 1, pitch, f);
++                if (pitch != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++            break;
++        case MFX_FOURCC_BGR4:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                bytes_read = fread(data->R + i * pitch, 1, pitch, f);
++                if (pitch != bytes_read)
++                    return MFX_ERR_MORE_DATA;
++            }
++            break;
++        default:
++            printf("Unsupported FourCC code, skip LoadRawFrame\n");
++            break;
++    }
++
++    return MFX_ERR_NONE;
++}
++
++#if (MFX_VERSION >= 2000)
++mfxStatus ReadRawFrame_InternalMem(mfxFrameSurface1 *surface, FILE *f) {
++    bool is_more_data = false;
++
++    // Map makes surface writable by CPU for all implementations
++    mfxStatus sts = surface->FrameInterface->Map(surface, MFX_MAP_WRITE);
++    if (sts != MFX_ERR_NONE) {
++        printf("mfxFrameSurfaceInterface->Map failed (%d)\n", sts);
++        return sts;
++    }
++
++    sts = ReadRawFrame(surface, f);
++    if (sts != MFX_ERR_NONE) {
++        if (sts == MFX_ERR_MORE_DATA)
++            is_more_data = true;
++        else
++            return sts;
++    }
++
++    // Unmap/release returns local device access for all implementations
++    sts = surface->FrameInterface->Unmap(surface);
++    if (sts != MFX_ERR_NONE) {
++        printf("mfxFrameSurfaceInterface->Unmap failed (%d)\n", sts);
++        return sts;
++    }
++
++    return (is_more_data == true) ? MFX_ERR_MORE_DATA : MFX_ERR_NONE;
++}
++#endif
++
++// Write raw I420 frame to file
++mfxStatus WriteRawFrame(mfxFrameSurface1 *surface, FILE *f) {
++    mfxU16 w, h, i, pitch;
++    mfxFrameInfo *info = &surface->Info;
++    mfxFrameData *data = &surface->Data;
++
++    w = info->CropW;
++    h = info->CropH;
++
++    // write the output to disk
++    switch (info->FourCC) {
++        case MFX_FOURCC_I420:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                fwrite(data->Y + i * pitch, 1, w, f);
++            }
++            // U
++            pitch /= 2;
++            h /= 2;
++            w /= 2;
++            for (i = 0; i < h; i++) {
++                fwrite(data->U + i * pitch, 1, w, f);
++            }
++            // V
++            for (i = 0; i < h; i++) {
++                fwrite(data->V + i * pitch, 1, w, f);
++            }
++            break;
++        case MFX_FOURCC_NV12:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                fwrite(data->Y + i * pitch, 1, w, f);
++            }
++            // UV
++            h /= 2;
++            for (i = 0; i < h; i++) {
++                fwrite(data->UV + i * pitch, 1, w, f);
++            }
++            break;
++        case MFX_FOURCC_RGB4:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                fwrite(data->B + i * pitch, 1, pitch, f);
++            }
++            break;
++        case MFX_FOURCC_BGR4:
++            // Y
++            pitch = data->Pitch;
++            for (i = 0; i < h; i++) {
++                fwrite(data->R + i * pitch, 1, pitch, f);
++            }
++            break;
++        default:
++            return MFX_ERR_UNSUPPORTED;
++            break;
++    }
++
++    return MFX_ERR_NONE;
++}
++
++#if (MFX_VERSION >= 2000)
++// Write raw frame to file
++mfxStatus WriteRawFrame_InternalMem(mfxFrameSurface1 *surface, FILE *f) {
++    mfxStatus sts = surface->FrameInterface->Map(surface, MFX_MAP_READ);
++    if (sts != MFX_ERR_NONE) {
++        printf("mfxFrameSurfaceInterface->Map failed (%d)\n", sts);
++        return sts;
++    }
++
++    sts = WriteRawFrame(surface, f);
++    if (sts != MFX_ERR_NONE) {
++        printf("Error in WriteRawFrame\n");
++        return sts;
++    }
++
++    sts = surface->FrameInterface->Unmap(surface);
++    if (sts != MFX_ERR_NONE) {
++        printf("mfxFrameSurfaceInterface->Unmap failed (%d)\n", sts);
++        return sts;
++    }
++
++    sts = surface->FrameInterface->Release(surface);
++    if (sts != MFX_ERR_NONE) {
++        printf("mfxFrameSurfaceInterface->Release failed (%d)\n", sts);
++        return sts;
++    }
++
++    return sts;
++}
++#endif
++
++mfxU16 FourCCToChroma(mfxU32 fourCC) {
++    switch (fourCC) {
++        case MFX_FOURCC_NV12:
++        case MFX_FOURCC_P010:
++        case MFX_FOURCC_P016:
++            return MFX_CHROMAFORMAT_YUV420;
++        case MFX_FOURCC_YUV400:
++            return MFX_CHROMAFORMAT_YUV400;
++        case MFX_FOURCC_NV16:
++        case MFX_FOURCC_I422:
++        case MFX_FOURCC_I210:
++        case MFX_FOURCC_P210:
++        case MFX_FOURCC_Y210:
++        case MFX_FOURCC_Y216:
++        case MFX_FOURCC_YUY2:
++            return MFX_CHROMAFORMAT_YUV422;
++        case MFX_FOURCC_Y410:
++        case MFX_FOURCC_A2RGB10:
++        case MFX_FOURCC_AYUV:
++        case MFX_FOURCC_RGB4:
++        case MFX_FOURCC_BGR4:
++            return MFX_CHROMAFORMAT_YUV444;
++    }
++
++    return MFX_CHROMAFORMAT_YUV420;
++}
++
++#endif //EXAMPLES_UTIL_HPP_
+-- 
+2.34.1
+

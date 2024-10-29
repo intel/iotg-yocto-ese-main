@@ -1,22 +1,18 @@
-From 367509fc206723ce729a197d31f2eb4688ea8ebc Mon Sep 17 00:00:00 2001
+From 5a1ad29decf00c88d8d4214db3ba26f89d06d58e Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
-Date: Fri, 21 Oct 2022 15:03:03 -0700
-Subject: [PATCH 02/28] ui/gtk: set the ui size to 0 when invisible
+Date: Thu, 25 Jan 2024 10:36:18 -0800
+Subject: [PATCH 02/30] ui/gtk: set the ui size to 0 when invisible
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
-Make guest displays disconnected when not visible. Setting ui size to 0
-is used to indicate that the display is disconnected. When the VC is
-visible again, the ui size is set to associated window's size again which
-makes the display reconnected and available to the guest.
+Getting guest displays disconnected by setting ui size to 0 when
+the VC is set as invisible. When the VC is set as visible again,
+the ui size is restored back to its previous size to reconnect
+guest displays.
 
-Cc: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Daniel P. Berrangé <berrange@redhat.com>
-Cc: Markus Armbruster <armbru@redhat.com>
-Cc: Philippe Mathieu-Daudé <f4bug@amsat.org>
 Cc: Marc-André Lureau <marcandre.lureau@redhat.com>
-Cc: Thomas Huth <thuth@redhat.com>
+Cc: Gerd Hoffmann <kraxel@redhat.com>
 Cc: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
@@ -24,10 +20,10 @@ Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index aa7cd7bf84..4aac49aa50 100644
+index 74b43b0c39..ab00e2eff2 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
-@@ -1271,10 +1271,12 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
+@@ -1318,10 +1318,12 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
      GtkDisplayState *s = opaque;
      VirtualConsole *vc;
      GtkNotebook *nb = GTK_NOTEBOOK(s->notebook);
@@ -40,7 +36,7 @@ index aa7cd7bf84..4aac49aa50 100644
  
      vc = gd_vc_find_by_menu(s);
      gtk_release_modifiers(s);
-@@ -1282,6 +1284,9 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
+@@ -1329,6 +1331,9 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
          page = gtk_notebook_page_num(nb, vc->tab_item);
          gtk_notebook_set_current_page(nb, page);
          gtk_widget_grab_focus(vc->focus);
@@ -50,7 +46,7 @@ index aa7cd7bf84..4aac49aa50 100644
          vc->gfx.visible = true;
      }
  }
-@@ -1313,6 +1318,7 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+@@ -1360,6 +1365,7 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
      GtkDisplayState *s = vc->s;
  
      vc->gfx.visible = false;
@@ -58,7 +54,7 @@ index aa7cd7bf84..4aac49aa50 100644
      gtk_widget_set_sensitive(vc->menu_item, true);
      gd_widget_reparent(vc->window, s->notebook, vc->tab_item);
      gtk_notebook_set_tab_label_text(GTK_NOTEBOOK(s->notebook),
-@@ -1348,6 +1354,7 @@ static gboolean gd_win_grab(void *opaque)
+@@ -1395,6 +1401,7 @@ static gboolean gd_win_grab(void *opaque)
  static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
  {
      GtkDisplayState *s = opaque;
@@ -66,7 +62,7 @@ index aa7cd7bf84..4aac49aa50 100644
      VirtualConsole *vc = gd_vc_find_current(s);
  
      if (vc->type == GD_VC_GFX &&
-@@ -1386,6 +1393,10 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
+@@ -1433,6 +1440,10 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
          gd_update_geometry_hints(vc);
          gd_update_caption(s);
      }
@@ -77,7 +73,7 @@ index aa7cd7bf84..4aac49aa50 100644
      vc->gfx.visible = true;
  }
  
-@@ -1710,7 +1721,9 @@ static gboolean gd_configure(GtkWidget *widget,
+@@ -1757,7 +1768,9 @@ static gboolean gd_configure(GtkWidget *widget,
  {
      VirtualConsole *vc = opaque;
  

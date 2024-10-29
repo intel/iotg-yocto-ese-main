@@ -6,6 +6,8 @@ Subject: [PATCH] modesetting: Empty the damage after updating front-buffer
 Damage needs to be emptied after the update is done. Without it,
 there is some leakage, which will affect the perf.
 
+Upstream-Status: Submitted [https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1486]
+
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
  hw/xfree86/drivers/modesetting/driver.c | 2 ++

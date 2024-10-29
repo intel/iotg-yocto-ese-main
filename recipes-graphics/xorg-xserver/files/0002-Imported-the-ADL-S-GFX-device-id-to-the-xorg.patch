@@ -3,6 +3,8 @@ From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Sun, 20 Mar 2022 21:56:27 +0800
 Subject: [PATCH xserver 2/6] Imported the ADL-S GFX device id to the xorg
 
+Upstream-Status: Pending
+
 Signed-off-by: Chew, Tong Liang <tong.liang.chew@intel.com>
 Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
 ---

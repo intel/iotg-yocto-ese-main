@@ -1,6 +1,6 @@
 DESCRIPTION = "Mender init helper image"
 PACKAGE_INSTALL = "mender-init"
-MENDER_FEATURES_DISABLE:append = "mender-client-install mender-image mender-grub mender-systemd"
+MENDER_FEATURES_DISABLE:append = "mender-update-install mender-image mender-grub mender-systemd"
 IMAGE_FEATURES:append = " read-only-rootfs"
 IMAGE_FEATURES:remove = "ssh-server-openssh"
 IMAGE_LINGUAS = ""

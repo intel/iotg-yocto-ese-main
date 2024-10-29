@@ -1,8 +1,11 @@
-From c464b7505716a7deac21f82b750e0cabcfd6cb5c Mon Sep 17 00:00:00 2001
+From 93181fcc19d18130c45c29359621f8bf8e661693 Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Date: Tue, 25 Apr 2023 13:01:50 -0700
-Subject: [PATCH 04/28] ui/gtk: Disable the scanout when a detached tab is
+Subject: [PATCH 04/30] ui/gtk: Disable the scanout when a detached tab is
  closed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 When a detached tab window is closed, the underlying (EGL) context
 is destroyed; therefore, disable the scanout which also destroys the
@@ -10,20 +13,20 @@ underlying framebuffer (id) and other objects. Also add calls to
 make the context current in disable scanout and other missing places.
 
 Cc: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Dongwon Kim <dongwon.kim@intel.com>
+Cc: Markus Armbruster <armbru@redhat.com>
+Cc: Marc-André Lureau <marcandre.lureau@redhat.com>
 Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
  ui/gtk-egl.c     | 3 +++
  ui/gtk-gl-area.c | 2 ++
- ui/gtk.c         | 1 +
- 3 files changed, 6 insertions(+)
+ 2 files changed, 5 insertions(+)
 
 diff --git a/ui/gtk-egl.c b/ui/gtk-egl.c
-index fb69010481..12e215c847 100644
+index 2fe81e4706..b3b4894cda 100644
 --- a/ui/gtk-egl.c
 +++ b/ui/gtk-egl.c
-@@ -214,6 +214,9 @@ void gd_egl_scanout_disable(DisplayChangeListener *dcl)
+@@ -228,6 +228,9 @@ void gd_egl_scanout_disable(DisplayChangeListener *dcl)
  {
      VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
  
@@ -34,10 +37,10 @@ index fb69010481..12e215c847 100644
      vc->gfx.h = 0;
      gtk_egl_set_scanout_mode(vc, false);
 diff --git a/ui/gtk-gl-area.c b/ui/gtk-gl-area.c
-index f5069524a3..21c34fade8 100644
+index 0d16a56da4..6d2c7691a1 100644
 --- a/ui/gtk-gl-area.c
 +++ b/ui/gtk-gl-area.c
-@@ -270,6 +270,7 @@ void gd_gl_area_scanout_disable(DisplayChangeListener *dcl)
+@@ -281,6 +281,7 @@ void gd_gl_area_scanout_disable(DisplayChangeListener *dcl)
  {
      VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
  
@@ -45,7 +48,7 @@ index f5069524a3..21c34fade8 100644
      gtk_gl_area_set_scanout_mode(vc, false);
  }
  
-@@ -282,6 +283,7 @@ void gd_gl_area_scanout_flush(DisplayChangeListener *dcl,
+@@ -293,6 +294,7 @@ void gd_gl_area_scanout_flush(DisplayChangeListener *dcl,
          return;
      }
  
@@ -53,18 +56,6 @@ index f5069524a3..21c34fade8 100644
      if (vc->gfx.guest_fb.dmabuf && !vc->gfx.guest_fb.dmabuf->draw_submitted) {
          graphic_hw_gl_block(vc->gfx.dcl.con, true);
          vc->gfx.guest_fb.dmabuf->draw_submitted = true;
-diff --git a/ui/gtk.c b/ui/gtk.c
-index 7f20ca09bf..f77b94e128 100644
---- a/ui/gtk.c
-+++ b/ui/gtk.c
-@@ -1319,6 +1319,7 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
- 
-     vc->gfx.visible = false;
-     gd_set_ui_size(vc, 0, 0);
-+    dpy_gl_scanout_disable(vc->gfx.dcl.con);
-     gtk_widget_set_sensitive(vc->menu_item, true);
-     gd_widget_reparent(vc->window, s->notebook, vc->tab_item);
-     gtk_notebook_set_tab_label_text(GTK_NOTEBOOK(s->notebook),
 -- 
 2.34.1
 

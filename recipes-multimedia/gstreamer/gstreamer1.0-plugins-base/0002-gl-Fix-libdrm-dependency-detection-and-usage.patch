@@ -1,0 +1,91 @@
+From 26b2b7fcefcea783ccff56b7358bfe79c0e5363d Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Tue, 28 May 2024 04:23:01 +0530
+Subject: [PATCH 2/3] gl: Fix libdrm dependency detection and usage
+
+drm_fourcc.h should be picked up via the pkgconfig dep, not the system
+includedir directly. All this allows it to be picked up consistently
+(via the subproject, for example).
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6932>
+---
+ ext/gl/meson.build                | 4 ++--
+ gst-libs/gst/gl/egl/gsteglimage.c | 4 +++-
+ gst-libs/gst/gl/gstglupload.c     | 4 +++-
+ gst-libs/gst/gl/meson.build       | 8 ++++----
+ 4 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/ext/gl/meson.build b/ext/gl/meson.build
+index ad514014..2715a371 100644
+--- a/ext/gl/meson.build
++++ b/ext/gl/meson.build
+@@ -114,8 +114,8 @@ if bcm_host_dep.found()
+   optional_deps += bcm_host_dep
+ endif
+ 
+-if egl_dep.found() and cc.has_header('libdrm/drm_fourcc.h')
+-  optional_deps += allocators_dep
++if egl_dep.found() and cc.has_header('drm_fourcc.h', dependencies: libdrm_dep)
++  optional_deps += [allocators_dep, libdrm_dep]
+ endif
+ 
+ if ['darwin', 'ios'].contains(host_system)
+diff --git a/gst-libs/gst/gl/egl/gsteglimage.c b/gst-libs/gst/gl/egl/gsteglimage.c
+index b70fd59f..c3ee82af 100644
+--- a/gst-libs/gst/gl/egl/gsteglimage.c
++++ b/gst-libs/gst/gl/egl/gsteglimage.c
+@@ -52,7 +52,9 @@
+ 
+ #if GST_GL_HAVE_DMABUF
+ #include <gst/allocators/gstdmabuf.h>
+-#include <libdrm/drm_fourcc.h>
++#ifdef HAVE_LIBDRM
++#include <drm_fourcc.h>
++#endif
+ 
+ #ifndef DRM_FORMAT_R8
+ #define DRM_FORMAT_R8 fourcc_code('R', '8', ' ', ' ')
+diff --git a/gst-libs/gst/gl/gstglupload.c b/gst-libs/gst/gl/gstglupload.c
+index d91898a1..bafd804f 100644
+--- a/gst-libs/gst/gl/gstglupload.c
++++ b/gst-libs/gst/gl/gstglupload.c
+@@ -38,7 +38,9 @@
+ 
+ #if GST_GL_HAVE_DMABUF
+ #include <gst/allocators/gstdmabuf.h>
+-#include <libdrm/drm_fourcc.h>
++#ifdef HAVE_LIBDRM
++#include <drm_fourcc.h>
++#endif
+ #else
+ /* to avoid ifdef in _gst_gl_upload_set_caps_unlocked() */
+ #define DRM_FORMAT_MOD_LINEAR  0ULL
+diff --git a/gst-libs/gst/gl/meson.build b/gst-libs/gst/gl/meson.build
+index bbc5c8f2..751967be 100644
+--- a/gst-libs/gst/gl/meson.build
++++ b/gst-libs/gst/gl/meson.build
+@@ -566,8 +566,8 @@ if need_platform_egl != 'no'
+     gl_platform_deps += egl_dep
+     glconf.set('GST_GL_HAVE_PLATFORM_EGL', 1)
+ 
+-    if cc.has_header('libdrm/drm_fourcc.h')
+-      gl_misc_deps += allocators_dep
++    if cc.has_header('drm_fourcc.h', dependencies: libdrm_dep)
++      gl_misc_deps += [allocators_dep, libdrm_dep]
+       glconf.set('GST_GL_HAVE_DMABUF', 1)
+     endif
+ 
+@@ -1103,8 +1103,8 @@ if build_gstgl
+     soversion : soversion,
+     darwin_versions : osxversion,
+     install : true,
+-    dependencies : [gst_base_dep, video_dep, allocators_dep, gmodule_dep,
+-                    gl_lib_deps, gl_platform_deps, gl_winsys_deps, gl_misc_deps],
++    dependencies : [gst_base_dep, video_dep, gmodule_dep, gl_lib_deps,
++                    gl_platform_deps, gl_winsys_deps, gl_misc_deps],
+     # don't confuse EGL/egl.h with gst-libs/gl/egl/egl.h on case-insensitive file systems
+     implicit_include_directories : false)
+ 
+-- 
+2.43.2
+

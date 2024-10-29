@@ -4,7 +4,7 @@ Date: Thu, 11 Feb 2021 11:27:54 +0530
 Subject: [PATCH] connman: stop dhcpcd service when connman starts
 
 HSDES ID: NA
-
+Upstream-Status: Inappropriate [embedded specific]
 Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
 ---
  src/connman.service.in | 2 +-

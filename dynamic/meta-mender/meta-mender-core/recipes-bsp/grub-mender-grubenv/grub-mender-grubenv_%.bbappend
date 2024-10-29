@@ -25,9 +25,9 @@ python(){
   pref = d.getVar('PREFERRED_PROVIDER_virtual/grub-bootconf')
 
   if pref != pn:
-    # Remove 'virtual/grub-bootconf' from RPROVIDES
+    # Remove 'virtual-grub-bootconf' from RPROVIDES
     rprov = d.getVar('RPROVIDES:' + pn)
-    subrprov = re.sub('virtual/grub-bootconf', '', rprov)
+    subrprov = re.sub('virtual-grub-bootconf', '', rprov)
     d.setVar('RPROVIDES:' + pn, subrprov)
     # Remove 'virtual/grub-bootconf' from PROVIDES
     prov = d.getVar('PROVIDES')

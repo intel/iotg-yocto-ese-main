@@ -10,7 +10,7 @@ INHIBIT_DEFAULT_DEPS = "1"
 
 inherit allarch deploy
 PROVIDES = "virtual/secure-boot-certificates-slimboot"
-RPROVIDES:${PN} = "virtual/secure-boot-certificates-slimboot"
+RPROVIDES:${PN} = "virtual-secure-boot-certificates-slimboot"
 S = "${WORKDIR}"
 
 SRC_URI = "file://${DOWNLOAD_KEY};downloadfilename=${BPN}.pem"

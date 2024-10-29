@@ -1,0 +1,31 @@
+From 1f692ba935e990d9cbf10618574586148204605e Mon Sep 17 00:00:00 2001
+From: osy <osy@turing.llc>
+Date: Sun, 18 Dec 2022 23:20:48 -0800
+Subject: [PATCH 05/12] red-qxl: remove cookie assertion on scanout
+
+The original check ensures we do not have an outstanding GL_DRAW. However,
+in QEMU, there is no guarantee that a scanout cannot happen while the async
+GL_DRAW has not returned a result yet. This introduces a race where if a
+scanout is called while there is an outstanding GL_DRAW, QEMU will crash.
+
+Signed-off-by: osy <osy@turing.llc>
+Acked-by: Frediano Ziglio <freddy77@gmail.com>
+---
+ server/red-qxl.cpp | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/server/red-qxl.cpp b/server/red-qxl.cpp
+index 48c293aea3ff..1135fd52f72a 100644
+--- a/server/red-qxl.cpp
++++ b/server/red-qxl.cpp
+@@ -432,7 +432,6 @@ void spice_qxl_gl_scanout(QXLInstance *qxl,
+     spice_return_if_fail(qxl != nullptr);
+ 
+     QXLState *qxl_state = qxl->st;
+-    spice_return_if_fail(qxl_state->gl_draw_cookie == GL_DRAW_COOKIE_INVALID);
+ 
+     pthread_mutex_lock(&qxl_state->scanout_mutex);
+ 
+-- 
+2.34.1
+

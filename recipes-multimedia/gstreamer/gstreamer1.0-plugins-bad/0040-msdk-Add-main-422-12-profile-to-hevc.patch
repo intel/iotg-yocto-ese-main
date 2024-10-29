@@ -1,0 +1,80 @@
+From bfa5f0f29ea0aa5e7e1e5c392e5f815a7a0922d8 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Tue, 9 Apr 2024 17:10:20 +0800
+Subject: [PATCH 40/98] msdk: Add main-422-12 profile to hevc
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6591>
+---
+ sys/msdk/gstmsdkcaps.c    | 3 ++-
+ sys/msdk/gstmsdkenc.c     | 7 +++++++
+ sys/msdk/gstmsdkh265enc.c | 8 +++++++-
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkcaps.c b/sys/msdk/gstmsdkcaps.c
+index 590cbba6121a..1adedea9a7a4 100644
+--- a/sys/msdk/gstmsdkcaps.c
++++ b/sys/msdk/gstmsdkcaps.c
+@@ -85,7 +85,8 @@ static const Profile profs_hevc[] = {
+   {MFX_PROFILE_HEVC_MAIN, "main"},
+   {MFX_PROFILE_HEVC_MAIN10, "main-10, main-10-still-picture"},
+   {MFX_PROFILE_HEVC_MAINSP, "main-still-picture"},
+-  {MFX_PROFILE_HEVC_REXT, "main-444, main-444-10, main-422-10, main-12"},
++  {MFX_PROFILE_HEVC_REXT,
++      "main-444, main-444-10, main-422-10, main-12, main-422-12"},
+ #if (MFX_VERSION >= 1032)
+   {MFX_PROFILE_HEVC_SCC, "screen-extended-main, screen-extended-main-10, "
+         "screen-extended-main-444, screen-extended-main-444-10"},
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 43f61515d743..f000aaf12c0a 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -627,6 +627,13 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+       thiz->param.mfx.FrameInfo.BitDepthChroma = 12;
+       thiz->param.mfx.FrameInfo.Shift = 1;
+       break;
++    case GST_VIDEO_FORMAT_Y212_LE:
++      thiz->param.mfx.FrameInfo.FourCC = MFX_FOURCC_Y216;
++      thiz->param.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV422;
++      thiz->param.mfx.FrameInfo.BitDepthLuma = 12;
++      thiz->param.mfx.FrameInfo.BitDepthChroma = 12;
++      thiz->param.mfx.FrameInfo.Shift = 1;
++      break;
+ #endif
+     default:
+       thiz->param.mfx.FrameInfo.FourCC = MFX_FOURCC_NV12;
+diff --git a/sys/msdk/gstmsdkh265enc.c b/sys/msdk/gstmsdkh265enc.c
+index a0b53cf1482b..8d37f3b2f628 100644
+--- a/sys/msdk/gstmsdkh265enc.c
++++ b/sys/msdk/gstmsdkh265enc.c
+@@ -386,7 +386,8 @@ gst_msdkh265enc_configure (GstMsdkEnc * encoder)
+     } else if (!g_strcmp0 (h265enc->profile_name, "main-444") ||
+         !g_strcmp0 (h265enc->profile_name, "main-422-10") ||
+         !g_strcmp0 (h265enc->profile_name, "main-444-10") ||
+-        !g_strcmp0 (h265enc->profile_name, "main-12"))
++        !strcmp (h265enc->profile_name, "main-12") ||
++        !strcmp (h265enc->profile_name, "main-422-12"))
+       encoder->param.mfx.CodecProfile = MFX_PROFILE_HEVC_REXT;
+ #if (MFX_VERSION >= 1032)
+     else if (!g_strcmp0 (h265enc->profile_name, "screen-extended-main") ||
+@@ -409,6 +410,7 @@ gst_msdkh265enc_configure (GstMsdkEnc * encoder)
+ #endif
+ #if (MFX_VERSION >= 1031)
+       case MFX_FOURCC_P016:
++      case MFX_FOURCC_Y216:
+ #endif
+         encoder->param.mfx.CodecProfile = MFX_PROFILE_HEVC_REXT;
+         break;
+@@ -597,6 +599,10 @@ gst_msdkh265enc_set_src_caps (GstMsdkEnc * encoder)
+         gst_structure_set (structure, "profile", G_TYPE_STRING, "main-12",
+             NULL);
+         break;
++      case MFX_FOURCC_Y216:
++        gst_structure_set (structure, "profile", G_TYPE_STRING, "main-422-12",
++            NULL);
++        break;
+ #endif
+       default:
+         gst_structure_set (structure, "profile", G_TYPE_STRING, "main", NULL);
+-- 
+2.43.0
+

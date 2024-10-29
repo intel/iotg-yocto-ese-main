@@ -1,4 +1,4 @@
-From e22db3d066cdcd6212dc8f584bc7ff4a03b6f3cf Mon Sep 17 00:00:00 2001
+From 86af8ec8a0a3a6927ac99c49777a7f6a57f9292f Mon Sep 17 00:00:00 2001
 From: Lim Siew Hoon <siew.hoon.lim@intel.com>
 Date: Mon, 14 Aug 2023 13:24:10 +0800
 Subject: [PATCH 1/2] msdk: Use local cflags for configuration
@@ -9,7 +9,7 @@ Signed-off-by: Lim Siew Hoon <siew.hoon.lim@intel.com>
  1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/sys/msdk/meson.build b/sys/msdk/meson.build
-index aaf3bdab7..6a1609322 100644
+index b73370cda..85f04899d 100644
 --- a/sys/msdk/meson.build
 +++ b/sys/msdk/meson.build
 @@ -28,6 +28,7 @@ msdk_dep = []
@@ -20,7 +20,7 @@ index aaf3bdab7..6a1609322 100644
  
  extra_args = [
    '-DGST_USE_UNSTABLE_API',
-@@ -120,7 +121,7 @@ endif
+@@ -121,7 +122,7 @@ endif
  
  if use_onevpl or cxx.has_header('mfxvp9.h', args: '-I' + mfx_incdir)
    msdk_sources += [ 'gstmsdkvp9dec.c' ]
@@ -29,7 +29,7 @@ index aaf3bdab7..6a1609322 100644
  endif
  
  # Usually MFX_VERSION 1026+ is required to support raw VP9 stream, however Fedora 30 has MFX_VERSION==1026
-@@ -140,7 +141,7 @@ have_mfx_ver126 = cc.compiles(mfx_ver126_check_code,
+@@ -141,7 +142,7 @@ have_mfx_ver126 = cc.compiles(mfx_ver126_check_code,
  
  if have_mfx_ver126
    msdk_sources += [ 'gstmsdkvp9enc.c' ]
@@ -38,7 +38,7 @@ index aaf3bdab7..6a1609322 100644
  endif
  
  mfx_ver134_check_code = '''
-@@ -155,7 +156,7 @@ have_mfx_ver134 = cc.compiles(mfx_ver134_check_code,
+@@ -156,7 +157,7 @@ have_mfx_ver134 = cc.compiles(mfx_ver134_check_code,
  
  if have_mfx_ver134
    msdk_sources += [ 'gstmsdkav1dec.c' ]
@@ -47,7 +47,7 @@ index aaf3bdab7..6a1609322 100644
  endif
  
  mfx_ver205_check_code = '''
-@@ -170,7 +171,7 @@ have_mfx_ver205 = cc.compiles(mfx_ver205_check_code,
+@@ -171,7 +172,7 @@ have_mfx_ver205 = cc.compiles(mfx_ver205_check_code,
  
  if use_onevpl and have_mfx_ver205
    msdk_sources += [ 'gstmsdkav1enc.c' ]
@@ -66,5 +66,5 @@ index aaf3bdab7..6a1609322 100644
      dependencies : [gstbase_dep, gstvideo_dep, gstpbutils_dep, gstallocators_dep, gstcodecparsers_dep, mfx_dep, msdk_deps],
      install : true,
 -- 
-2.40.1
+2.43.2
 

@@ -1,0 +1,40 @@
+From 87959338696a53c398e756f79aeb162ff068bb1c Mon Sep 17 00:00:00 2001
+From: Frediano Ziglio <freddy77@gmail.com>
+Date: Tue, 31 Oct 2023 11:10:01 +0000
+Subject: [PATCH 4/7] gstreamer: Avoid dangling pointers in free_pipeline
+
+Although currently after free_pipeline we free the entire structure
+the name and the function suggests that we only free the pipeline.
+Also this is fixing a future possible problem with the series
+from Vivek Kasireddy reusing the SpiceGstDecoder for another
+pipeline if H/W encoder pipeline creation fails.
+
+Signed-off-by: Frediano Ziglio <freddy77@gmail.com>
+Acked-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+---
+ src/channel-display-gst.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/channel-display-gst.c b/src/channel-display-gst.c
+index 5c9927b5c38b..923c7c4f4df4 100644
+--- a/src/channel-display-gst.c
++++ b/src/channel-display-gst.c
+@@ -353,11 +353,14 @@ static void free_pipeline(SpiceGstDecoder *decoder)
+ 
+     gst_element_set_state(decoder->pipeline, GST_STATE_NULL);
+     gst_object_unref(decoder->appsrc);
++    decoder->appsrc = NULL;
+     if (decoder->appsink) {
+         gst_object_unref(decoder->appsink);
++        decoder->appsink = NULL;
+     }
+-    gst_object_unref(decoder->pipeline);
+     gst_object_unref(decoder->clock);
++    decoder->clock = NULL;
++    gst_object_unref(decoder->pipeline);
+     decoder->pipeline = NULL;
+ }
+ 
+-- 
+2.34.1
+

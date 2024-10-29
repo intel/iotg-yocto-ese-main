@@ -12,14 +12,14 @@ SECTION = "bootloaders"
 LICENSE = "GPL-3.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 SRC_URI = "git://github.com/rhboot/grub2.git;protocol=https;nobranch=1;name=grub"
-SRCREV_grub = "511c49d7fc1ddc777768898e337c68675198d8d2"
+SRCREV_grub = "43a1e960e7b04605afde18300d733a21a5cf5860"
 
 SRC_URI:append = " git://git.savannah.gnu.org/git/gnulib.git;protocol=https;name=gnulib;destsuffix=git/gnulib;nobranch=1"
 SRCREV_gnulib = "9f48fb992a3d7e96610c4ce8be969cff2d61a01b"
 
 SRCREV_FORMAT = "grub_gnulib"
 S = "${WORKDIR}/git"
-PR = "r120+${SRCPV}"
+PR = "r123+${SRCPV}"
 PV = "2.06"
 SRC_URI:append = " \
   file://bootstrap.conf;subdir=. \

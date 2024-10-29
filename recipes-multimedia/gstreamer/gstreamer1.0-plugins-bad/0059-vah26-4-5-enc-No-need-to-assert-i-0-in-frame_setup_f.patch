@@ -1,0 +1,43 @@
+From 96bafb2709e1f97920132d9113be366ea77cd53f Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 17 May 2024 14:40:52 +0800
+Subject: [PATCH 59/98] vah26{4,5}enc: No need to assert i>=0 in
+ frame_setup_from_gop()
+
+The value is an uint here and never be negative.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6868>
+---
+ sys/va/gstvah264enc.c | 2 +-
+ sys/va/gstvah265enc.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index 11919e033cfb..f0a8089eca24 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -1723,7 +1723,7 @@ gst_va_h264_enc_reconfig (GstVaBaseEnc * base)
+ static void
+ frame_setup_from_gop (GstVaH264Enc * self, GstVaH264EncFrame * frame, guint i)
+ {
+-  g_assert (i >= 0 && i < 1024);
++  g_assert (i < 1024);
+ 
+   frame->type = self->gop.frame_types[i].slice_type;
+   frame->is_ref = self->gop.frame_types[i].is_ref;
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 3f39bef8d51e..5ebfb8087f57 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -2024,7 +2024,7 @@ _h265_encode_one_frame (GstVaH265Enc * self, GstVideoCodecFrame * gst_frame)
+ static void
+ frame_setup_from_gop (GstVaH265Enc * self, GstVaH265EncFrame * frame, guint i)
+ {
+-  g_assert (i >= 0 && i < 1024);
++  g_assert (i < 1024);
+ 
+   frame->type = self->gop.frame_types[i].slice_type;
+   frame->is_ref = self->gop.frame_types[i].is_ref;
+-- 
+2.43.0
+

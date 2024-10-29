@@ -15,7 +15,7 @@ SRC_URI = " \
 DEPENDS += "openssl-native"
 inherit allarch deploy
 PROVIDES = "virtual/secure-boot-certificates"
-RPROVIDES:${PN} = "virtual/secure-boot-certificates"
+RPROVIDES:${PN} = "virtual-secure-boot-certificates"
 # normalize names
 do_configure(){
   cp ${WORKDIR}/${PREGENERATED_SIGNING_KEY_PK_KEY} PK.key

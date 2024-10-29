@@ -3,7 +3,7 @@ require ./grub_${PV}.inc conf/image-uefi.conf
 GRUBPLATFORM = "efi"
 
 DEPENDS:append = " grub-native"
-RDEPENDS:${PN} = "diffutils freetype grub-common virtual/grub-bootconf"
+RDEPENDS:${PN} = "diffutils freetype grub-common virtual-grub-bootconf"
 
 SRC_URI:append = " file://cfg"
 

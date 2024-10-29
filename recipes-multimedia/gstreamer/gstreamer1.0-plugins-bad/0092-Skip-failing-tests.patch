@@ -1,0 +1,75 @@
+From d93e631666e84346777afae318ba57544d70be54 Mon Sep 17 00:00:00 2001
+From: Marc Leeman <m.leeman@televic.com>
+Date: Tue, 19 Dec 2023 11:59:24 +0100
+Subject: [PATCH 92/98] Skip failing tests
+
+camerabin:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/1244
+
+netsim:
+https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/3000
+
+Backport from salsa gst-plugins-bad:
+d/patches: disable vapostproc, avtpcrfcsync and vlcolorconvert tests
+link:
+https://salsa.debian.org/gstreamer-team/gst-plugins-bad1.0/-/commit/d33e7e1c56a47d967fb7d801da6d16640a794715
+
+d/patches: refresh Skip-failing-tests.patch
+link:
+https://salsa.debian.org/gstreamer-team/gst-plugins-bad1.0/-/commit/0ed475ab9719041327908cf0c4cf28bf6d0d4f37
+---
+ tests/check/meson.build | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/tests/check/meson.build b/tests/check/meson.build
+index 16a058c54384..4d33f254d94e 100644
+--- a/tests/check/meson.build
++++ b/tests/check/meson.build
+@@ -29,7 +29,7 @@ base_tests = [
+   [['elements/autoconvert.c'], get_option('autoconvert').disabled()],
+   [['elements/autovideoconvert.c'], get_option('autoconvert').disabled()],
+   [['elements/avwait.c'], get_option('timecode').disabled()],
+-  [['elements/camerabin.c'], get_option('camerabin2').disabled()],
++  [['elements/camerabin.c'], true, ],
+   [['elements/ccconverter.c'], not closedcaption_dep.found(), [gstvideo_dep]],
+   [['elements/cccombiner.c'], not closedcaption_dep.found(), ],
+   [['elements/ccextractor.c'], not closedcaption_dep.found(), ],
+@@ -103,7 +103,7 @@ base_tests = [
+   [['libs/jpegbitwriter.c'], false, [gstcodecparsers_dep]],
+   [['libs/vkmemory.c'], not gstvulkan_dep.found(), [gstvulkan_dep]],
+   [['libs/analyticsmeta.c'], false, [gstanalytics_dep]],
+-  [['elements/vkcolorconvert.c'], not gstvulkan_dep.found(), [gstvulkan_dep]],
++  [['elements/vkcolorconvert.c'], true , [gstvulkan_dep]],
+   [['libs/vkwindow.c'], not gstvulkan_dep.found(), [gstvulkan_dep]],
+   [['libs/vkdevice.c'], not gstvulkan_dep.found(), [gstvulkan_dep]],
+   [['elements/vkdeviceprovider.c'], not gstvulkan_dep.found(), [gstvulkan_dep]],
+@@ -132,7 +132,7 @@ if host_machine.system() != 'windows'
+     [['elements/avtpaafdepay.c'], not avtp_dep.found(), [avtp_dep]],
+     [['elements/avtpcrfbase.c'], not avtp_dep.found(), [avtp_dep]],
+     [['elements/avtpcrfcheck.c'], not avtp_dep.found(), [avtp_dep], ['../../ext/avtp/gstavtpcrfutil.c']],
+-    [['elements/avtpcrfsync.c'], not avtp_dep.found(), [avtp_dep], ['../../ext/avtp/gstavtpcrfutil.c', '../../ext/avtp/gstavtpcrfbase.c']],
++    [['elements/avtpcrfsync.c'], true, [avtp_dep], ['../../ext/avtp/gstavtpcrfutil.c', '../../ext/avtp/gstavtpcrfbase.c']],
+     [['elements/avtpcrfutil.c'], not avtp_dep.found(), [avtp_dep], ['../../ext/avtp/gstavtpcrfutil.c', '../../ext/avtp/gstavtpcrfbase.c']],
+     [['elements/avtpcvfpay.c'], not avtp_dep.found(), [avtp_dep]],
+     [['elements/avtpcvfdepay.c'], not avtp_dep.found(), [avtp_dep]],
+@@ -140,7 +140,7 @@ if host_machine.system() != 'windows'
+     [['elements/avtpsrc.c'], not avtp_dep.found(), [avtp_dep]],
+     [['elements/clockselect.c'], get_option('debugutils').disabled()],
+     [['elements/curlhttpsink.c'], not curl_dep.found(), [curl_dep]],
+-    [['elements/curlhttpsrc.c'], not curl_dep.found(), [curl_dep, gio_dep]],
++    [['elements/curlhttpsrc.c'], true , [curl_dep, gio_dep]],
+     [['elements/curlfilesink.c'],
+         not curl_dep.found() or not cdata.has('HAVE_UNISTD_H'), [curl_dep]],
+     [['elements/curlftpsink.c'], not curl_dep.found(), [curl_dep]],
+@@ -156,7 +156,7 @@ if host_machine.system() != 'windows'
+     [['elements/jifmux.c'],
+         not exif_dep.found() or not cdata.has('HAVE_UNISTD_H'), [exif_dep]],
+     [['elements/jpegparse.c'], not cdata.has('HAVE_UNISTD_H')],
+-    [['elements/netsim.c']],
++    [['elements/netsim.c'], true],
+     [['elements/shm.c'], not shm_enabled, shm_deps],
+     [['elements/unixfd.c'], not gio_unix_dep.found()],
+     [['elements/voaacenc.c'],
+-- 
+2.43.0
+

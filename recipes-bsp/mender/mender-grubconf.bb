@@ -10,7 +10,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 PROVIDES = "virtual/grub-bootconf"
-RPROVIDES:${PN} = "virtual/grub-bootconf"
+RPROVIDES:${PN} = "virtual-grub-bootconf"
 
 INHIBIT_DEFAULT_DEPS = "1"
 inherit gnu-efi grub-efi-cfg

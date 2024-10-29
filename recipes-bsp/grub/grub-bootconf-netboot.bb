@@ -5,7 +5,7 @@ DESCRIPTION = "Grub might require different configuration file for \
 different machines."
 HOMEPAGE = "https://www.gnu.org/software/grub/manual/grub/grub.html#Configuration"
 
-RPROVIDES:${PN} += "virtual/grub-bootconf"
+RPROVIDES:${PN} += "virtual-grub-bootconf"
 PROVIDES += "virtual/grub-bootconf"
 require conf/image-uefi.conf
 inherit grub-efi-cfg image-uefi-netboot-paths

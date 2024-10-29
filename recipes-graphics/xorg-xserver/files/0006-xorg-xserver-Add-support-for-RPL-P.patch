@@ -3,6 +3,8 @@ From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Sun, 20 Mar 2022 22:11:01 +0800
 Subject: [PATCH xserver 6/6] xorg-xserver: Add support for RPL-P
 
+Upstream-Status: Pending
+
 Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
 ---
  hw/xfree86/dri2/pci_ids/iris_pci_ids.h | 8 ++++++++

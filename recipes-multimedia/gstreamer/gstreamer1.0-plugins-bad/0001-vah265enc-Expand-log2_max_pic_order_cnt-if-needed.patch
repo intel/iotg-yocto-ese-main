@@ -1,0 +1,36 @@
+From 7f83ace623568ac9db7fa1489df1d756e52e4e74 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Sun, 28 Jan 2024 23:27:48 +0800
+Subject: [PATCH 01/98] vah265enc: Expand log2_max_pic_order_cnt if needed
+
+In b_pyramid mode, B frames can be ref and prevPicOrderCntLsb can
+be the B frame POC which is smaller than the P frame. This can cause
+POC diff bigger than MaxPicOrderCntLsb/2 and generate wrong POC value.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6249>
+---
+ sys/va/gstvah265enc.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index a2f84b8b2b7f..64ce2a485fde 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -4009,6 +4009,14 @@ _h265_generate_gop_structure (GstVaH265Enc * self)
+ create_poc:
+   /* init max_frame_num, max_poc */
+   log2_max_frame_num = _get_log2_max_num (self->gop.idr_period);
++  /* b_pyramid makes B frames as ref and prevPicOrderCntLsb can
++     be the B frame POC which is smaller than the P frame. This
++     can cause POC diff bigger than MaxPicOrderCntLsb/2 and
++     generate wrong POC value. */
++  if (self->gop.b_pyramid &&
++      3 * (self->gop.ip_period >> 1) > 1 << (log2_max_frame_num - 1))
++    log2_max_frame_num++;
++
+   self->gop.log2_max_pic_order_cnt = log2_max_frame_num;
+   self->gop.max_pic_order_cnt = 1 << self->gop.log2_max_pic_order_cnt;
+   self->gop.num_reorder_frames = self->gop.b_pyramid ?
+-- 
+2.43.0
+

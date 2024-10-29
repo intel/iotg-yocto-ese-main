@@ -1,0 +1,73 @@
+From ea102624fe952639f46fb9e553db6ffc74ea51ba Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Wed, 27 Mar 2024 19:41:30 +0100
+Subject: [PATCH 37/98] va: encoders: don't assert at target percentage when
+ QVBR
+
+Instead of asserting, just get the max value between the current value and 10,
+which is the minimum required by QVBR.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6465>
+---
+ sys/va/gstvaav1enc.c  | 2 +-
+ sys/va/gstvah264enc.c | 2 +-
+ sys/va/gstvah265enc.c | 2 +-
+ sys/va/gstvavp9enc.c  | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index 00623201feb1..a34eba451f0a 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -2717,7 +2717,7 @@ _av1_ensure_rate_control (GstVaAV1Enc * self)
+       self->rc.base_qindex = DEFAULT_BASE_QINDEX;
+       /* Fall through. */
+     case VA_RC_QVBR:
+-      g_assert (self->rc.target_percentage >= 10);
++      self->rc.target_percentage = MAX (10, self->rc.target_percentage);
+       self->rc.max_bitrate = (guint) gst_util_uint64_scale_int (bitrate,
+           100, self->rc.target_percentage);
+       self->rc.target_bitrate = bitrate;
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index 251dbd85fcd0..57ff9d0ec3a7 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -651,7 +651,7 @@ _ensure_rate_control (GstVaH264Enc * self)
+       /* Fall through. */
+     case VA_RC_QVBR:
+       self->rc.qp_p = self->rc.qp_b = 26;
+-      g_assert (self->rc.target_percentage >= 10);
++      self->rc.target_percentage = MAX (10, self->rc.target_percentage);
+       self->rc.max_bitrate = (guint) gst_util_uint64_scale_int (bitrate,
+           100, self->rc.target_percentage);
+       self->rc.target_bitrate = bitrate;
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 7fea8ac0d708..aca71148bf54 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -3445,7 +3445,7 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+       /* Fall through. */
+     case VA_RC_QVBR:
+       self->rc.qp_p = self->rc.qp_b = 26;
+-      g_assert (self->rc.target_percentage >= 10);
++      self->rc.target_percentage = MAX (10, self->rc.target_percentage);
+       self->rc.max_bitrate = (guint) gst_util_uint64_scale_int (bitrate,
+           100, self->rc.target_percentage);
+       self->rc.target_bitrate = bitrate;
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 2925421b4ca1..a542545bde6d 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -2023,7 +2023,7 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+       self->rc.base_qindex = DEFAULT_BASE_QINDEX;
+       /* Fall through. */
+     case VA_RC_QVBR:
+-      g_assert (self->rc.target_percentage >= 10);
++      self->rc.target_percentage = MAX (10, self->rc.target_percentage);
+       self->rc.max_bitrate = (guint) gst_util_uint64_scale_int (bitrate,
+           100, self->rc.target_percentage);
+       self->rc.target_bitrate = bitrate;
+-- 
+2.43.0
+

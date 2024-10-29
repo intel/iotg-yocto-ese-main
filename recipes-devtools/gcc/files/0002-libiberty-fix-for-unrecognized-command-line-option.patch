@@ -6,6 +6,7 @@ Subject: [PATCH] libiberty: fix for unrecognized command line option
 
 HSDES ID: NA
 Signed-off-by: RameshkrishnanX, Geddy Sekar <rameshkrishnanx.geddy.sekar@intel.com>
+Upstream-Status: Inappropriate [embedded specific source:https://gcc.gnu.org/git/?p=gcc.git;a=patch;h=4712bde3cabed644884a52386]
 ---
  libiberty/configure | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

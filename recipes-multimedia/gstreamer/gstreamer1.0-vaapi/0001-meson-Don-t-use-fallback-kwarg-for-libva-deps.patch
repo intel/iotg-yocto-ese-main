@@ -1,0 +1,40 @@
+From 1a1fb6cbf09175a2dcfe3abc86208a48c21a8ddb Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Mon, 27 May 2024 18:50:23 +0530
+Subject: [PATCH] meson: Don't use fallback: kwarg for libva deps
+
+This will cause a fallback even when the `va` option is `auto`, not
+giving the user a chance to provide the dependency via the system, and
+likely building this feature unnecessarily.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6932>
+---
+ meson.build | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index b85b2150a95c..431de224f60a 100644
+--- a/meson.build
++++ b/meson.build
+@@ -79,14 +79,10 @@ else
+   message('GStreamer debug system is enabled')
+ endif
+ 
+-libva_dep = dependency('libva', version: libva_req,
+-  fallback : ['libva', 'libva_dep'])
+-libva_drm_dep = dependency('libva-drm', version: libva_req,
+-  required: get_option('drm'), fallback : ['libva', 'libva_drm_dep'])
+-libva_wayland_dep = dependency('libva-wayland', version: libva_req,
+-  required: get_option('wayland'), fallback : ['libva', 'libva_wayland_dep'])
+-libva_x11_dep = dependency('libva-x11', version: libva_req,
+-  required: get_option('x11'), fallback : ['libva', 'libva_x11_dep'])
++libva_dep = dependency('libva', version: libva_req)
++libva_drm_dep = dependency('libva-drm', version: libva_req)
++libva_wayland_dep = dependency('libva-wayland', version: libva_req)
++libva_x11_dep = dependency('libva-x11', version: libva_req)
+ 
+ libdrm_dep = dependency('libdrm', version: libdrm_req, required: get_option('drm'))
+ libudev_dep = dependency('libudev', required: get_option('drm'))
+-- 
+2.43.0
+

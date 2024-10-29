@@ -1,0 +1,134 @@
+From a6338280618f667b418bdadb32ecb12f4f8c8806 Mon Sep 17 00:00:00 2001
+From: Frediano Ziglio <freddy77@gmail.com>
+Date: Mon, 30 Oct 2023 21:08:40 +0000
+Subject: [PATCH 7/7] gstreamer: Fallback to S/W decoder if H/W one is not
+ working
+
+In case the H/W decoder is not able to decode the stream (like too high
+profile) try the S/W version.
+This is done detecting the failure and trying to recreate the pipeline
+in case:
+- we are using a H/W pipeline;
+- we didn't decode any frame (otherwise it means we lost the beginning
+  or it was not a problem of H/W decoder).
+
+Signed-off-by: Frediano Ziglio <freddy77@gmail.com>
+Acked-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+---
+ src/channel-display-gst.c | 39 +++++++++++++++++++++++++++++++++++----
+ 1 file changed, 35 insertions(+), 4 deletions(-)
+
+diff --git a/src/channel-display-gst.c b/src/channel-display-gst.c
+index 2734a546bfc9..78b4985e815b 100644
+--- a/src/channel-display-gst.c
++++ b/src/channel-display-gst.c
+@@ -48,6 +48,8 @@ typedef struct SpiceGstDecoder {
+     GstElement *pipeline;
+     GstClock *clock;
+     GstBus *bus;
++    bool is_hw_pipeline;
++    bool frame_removed;
+ 
+     /* ---------- Decoding and display queues ---------- */
+ 
+@@ -125,6 +127,7 @@ static void free_gst_frame(SpiceGstFrame *gstframe)
+ /* ---------- GStreamer pipeline ---------- */
+ 
+ static void schedule_frame(SpiceGstDecoder *decoder);
++static void try_sw_pipeline(SpiceGstDecoder *decoder);
+ 
+ RECORDER(frames_stats, 64, "Frames statistics");
+ 
+@@ -231,6 +234,7 @@ static guint32 pop_up_to_frame(SpiceGstDecoder *decoder, const SpiceGstFrame *po
+     SpiceGstFrame *gstframe;
+     guint32 freed = 0;
+ 
++    decoder->frame_removed = true;
+     while ((gstframe = g_queue_pop_head(decoder->decoding_queue)) != popframe) {
+         free_gst_frame(gstframe);
+         freed++;
+@@ -371,6 +375,7 @@ static void free_pipeline(SpiceGstDecoder *decoder)
+     decoder->clock = NULL;
+     gst_object_unref(decoder->pipeline);
+     decoder->pipeline = NULL;
++    decoder->is_hw_pipeline = false;
+ }
+ 
+ static gboolean handle_pipeline_message(GstBus *bus, GstMessage *msg, gpointer video_decoder)
+@@ -390,8 +395,11 @@ static gboolean handle_pipeline_message(GstBus *bus, GstMessage *msg, gpointer v
+         }
+         g_clear_error(&err);
+ 
+-        /* We won't be able to process any more frame anyway */
++        bool was_hw = decoder->is_hw_pipeline;
+         free_pipeline(decoder);
++        if (was_hw && !decoder->frame_removed) {
++            try_sw_pipeline(decoder);
++        }
+         break;
+     }
+     case GST_MESSAGE_STREAM_START: {
+@@ -672,6 +680,7 @@ static bool try_intel_hw_pipeline(SpiceGstDecoder *decoder)
+     }
+ 
+     decoder->pipeline = pipeline;
++    decoder->is_hw_pipeline = true;
+     return launch_pipeline(decoder);
+ 
+ err:
+@@ -704,7 +713,7 @@ err:
+     return false;
+ }
+ 
+-static gboolean create_pipeline(SpiceGstDecoder *decoder)
++static gboolean create_pipeline(SpiceGstDecoder *decoder, bool try_hw_pipeline)
+ {
+     GstElement *playbin, *sink;
+     SpiceGstPlayFlags flags;
+@@ -714,7 +723,7 @@ static gboolean create_pipeline(SpiceGstDecoder *decoder)
+ 
+     if (vendor == VENDOR_GPU_DETECTED ||
+         vendor == VENDOR_GPU_UNKNOWN) {
+-        if (try_intel_hw_pipeline(decoder)) {
++        if (try_hw_pipeline && try_intel_hw_pipeline(decoder)) {
+             return TRUE;
+         }
+     }
+@@ -997,7 +1006,7 @@ VideoDecoder* create_gstreamer_decoder(int codec_type, display_stream *stream)
+         g_mutex_init(&decoder->queues_mutex);
+         decoder->decoding_queue = g_queue_new();
+ 
+-        if (!create_pipeline(decoder)) {
++        if (!create_pipeline(decoder, true)) {
+             decoder->base.destroy((VideoDecoder*)decoder);
+             decoder = NULL;
+         }
+@@ -1066,3 +1075,25 @@ gboolean gstvideo_has_codec(int codec_type)
+     gst_plugin_feature_list_free(all_decoders);
+     return TRUE;
+ }
++
++static void try_sw_pipeline(SpiceGstDecoder *decoder)
++{
++    // try to create a S/W pipeline
++    if (!create_pipeline(decoder, false)) {
++        return;
++    }
++
++    // replay the old queue
++    g_mutex_lock(&decoder->queues_mutex);
++    GList *l = g_queue_peek_head_link(decoder->decoding_queue);
++    while (l) {
++        const SpiceGstFrame *gstframe = l->data;
++        GstBuffer *buf = gst_buffer_ref(gstframe->encoded_buffer);
++        if (gst_app_src_push_buffer(decoder->appsrc, buf) != GST_FLOW_OK) {
++            SPICE_DEBUG("GStreamer error: unable to push frame");
++            stream_dropped_frame_on_playback(decoder->base.stream);
++        }
++        l = l->next;
++    }
++    g_mutex_unlock(&decoder->queues_mutex);
++}
+-- 
+2.34.1
+

@@ -15,7 +15,7 @@ SBLIMAGE_BOOT_CERT_GEN_SUBJECT ?= "/CN=BSP Signing Key/"
 
 inherit allarch deploy
 PROVIDES = "virtual/secure-boot-certificates-slimboot"
-RPROVIDES:${PN} = "virtual/secure-boot-certificates-slimboot"
+RPROVIDES:${PN} = "virtual-secure-boot-certificates-slimboot"
 S = "${WORKDIR}"
 # cert-to-efi-sig-list/sign-efi-sig-list from efitools is not available yet
 do_compile(){

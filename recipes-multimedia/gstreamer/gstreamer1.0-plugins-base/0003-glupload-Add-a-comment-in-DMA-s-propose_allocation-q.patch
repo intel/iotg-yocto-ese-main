@@ -1,0 +1,33 @@
+From 38f6ec867f6d563e9593247cd6ed5978afe6a3c0 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Wed, 26 Jun 2024 22:22:47 +0800
+Subject: [PATCH 3/3] glupload: Add a comment in DMA's propose_allocation query
+ for video meta
+
+The video meta API now is a mandatory request for DMA kind negotiation. In
+current code, the raw method always adds that video meta API in the query
+of propose_allocation(), so we do not need to do the duplicated task here.
+Just adding a comment to declare that.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6698>
+---
+ gst-libs/gst/gl/gstglupload.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/gl/gstglupload.c b/gst-libs/gst/gl/gstglupload.c
+index bafd804f..f5cec60a 100644
+--- a/gst-libs/gst/gl/gstglupload.c
++++ b/gst-libs/gst/gl/gstglupload.c
+@@ -1647,7 +1647,8 @@ static void
+ _dma_buf_upload_propose_allocation (gpointer impl, GstQuery * decide_query,
+     GstQuery * query)
+ {
+-  /* nothing to do for now. */
++  /* The raw method always adds the GST_VIDEO_META_API_TYPE
++     and so nothing to do here. */
+ }
+ 
+ static void
+-- 
+2.43.2
+

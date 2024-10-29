@@ -13,6 +13,8 @@ Then offsets should be applied to coordinates if the CRTC's offsets aren't 0.
 And coordinate transposing and inversion are needed in case the rotated image
 is assigned to the FB.
 
+Upstream-Status: Backport [xserver-xorg master]
+
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
  hw/xfree86/drivers/modesetting/driver.c | 113 ++++++++++++++++--------

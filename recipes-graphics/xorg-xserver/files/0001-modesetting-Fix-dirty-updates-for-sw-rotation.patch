@@ -10,6 +10,8 @@ modesetting not sending the correct fb_id to drmModeDirtyFB() and
 passing the damage rects in the rotated state and not as the crtc
 expects them. This patch takes care of both problems.
 
+Upstream-Status: Backport [xserver-xorg master]
+
 Signed-off-by: Patrik Jakobsson <pjakobsson@suse.de>
 ---
  hw/xfree86/drivers/modesetting/driver.c       | 81 ++++++++++++++-----

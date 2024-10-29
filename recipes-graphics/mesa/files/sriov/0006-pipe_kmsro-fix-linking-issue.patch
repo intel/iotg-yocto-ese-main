@@ -1,0 +1,29 @@
+From d96e5393bced2f076c3434b09d5267c8d1972f6d Mon Sep 17 00:00:00 2001
+From: Preeti Sachan <preeti.sachan@intel.com>
+Date: Thu, 8 Aug 2024 12:14:59 +0800
+Subject: [PATCH] pipe_kmsro: fix linking issue
+
+Link iris library while compiling shared library 'pipe_kmsro.so' to fix error:
+| kmsro_drm_winsys.c:(.text.kmsro_drm_screen_create+0x15b):
+| undefined reference to `iris_screen_create_renderonly'
+
+Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
+---
+ src/gallium/targets/pipe-loader/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/gallium/targets/pipe-loader/meson.build b/src/gallium/targets/pipe-loader/meson.build
+index 48497fa..438bea4 100644
+--- a/src/gallium/targets/pipe-loader/meson.build
++++ b/src/gallium/targets/pipe-loader/meson.build
+@@ -35,7 +35,7 @@ pipe_loader_install_dir = join_paths(get_option('libdir'), 'gallium-pipe')
+ 
+ _kmsro_targets = [
+    driver_kmsro, driver_v3d, driver_vc4, driver_freedreno, driver_etnaviv,
+-   driver_panfrost, driver_lima, driver_asahi,
++   driver_panfrost, driver_lima, driver_asahi, driver_iris,
+ ]
+ 
+ if with_gallium_v3d
+-- 
+2.34.1

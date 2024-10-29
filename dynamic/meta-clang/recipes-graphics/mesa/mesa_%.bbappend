@@ -1,9 +1,3 @@
-LDFLAGS:append:toolchain-clang = " -latomic -lm"
-DEPENDS:append:toolchain-clang = " libatomic-ops"
-
-EXTRA_OEMASON:append:toolchain-clang:x86 = " -Dasm=false"
-EXTRA_OEMASON:append:toolchain-clang:x86-64 = " -Dasm=false"
-
 export YOCTO_ALTERNATE_EXE_PATH = "${STAGING_LIBDIR}/llvm-config"
 export LLVM_CONFIG = "${STAGING_BINDIR_NATIVE}/llvm-config"
 
@@ -27,5 +21,10 @@ do_llvm_fixup(){
 
 # use meta-clang
 # replace llvm-native with clang-native, llvm${MESA_LLVM_RELEASE} with clang
-PACKAGECONFIG[gallium-llvm] = "-Dllvm=true -Dshared-llvm=true, -Dllvm=false, clang clang-native \
-                                ${@'elfutils' if ${GALLIUMDRIVERS_LLVM33_ENABLED} else ''}"
+
+CLANG_GALLIUM_LLVM = "-Dllvm=true -Dshared-llvm=true -Ddraw-use-llvm=true,-Dllvm=false,clang clang-native elfutils"
+
+PACKAGECONFIG[gallium-llvm] := "${@[d.getVarFlag('PACKAGECONFIG', 'gallium-llvm'), '${CLANG_GALLIUM_LLVM}'][d.getVar('TOOLCHAIN') == 'clang']}"
+
+# PACKAGECONFIG "opencl" requires libclc from meta-clang
+PACKAGECONFIG:append = " opencl"

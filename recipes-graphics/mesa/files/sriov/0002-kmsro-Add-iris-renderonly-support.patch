@@ -1,0 +1,173 @@
+From 0e67cfa82810d0d30c630037492b661e7c0bf0a6 Mon Sep 17 00:00:00 2001
+From: Dongwon Kim <dongwon.kim@intel.com>
+Date: Fri, 19 Jan 2024 12:32:36 -0800
+Subject: [PATCH 2/5] kmsro: Add iris renderonly support
+
+Enable using iris for KMS renderonly.
+
+v2: let kmsro_drm_screen_create() be invoked by kmsro driver.
+v3: rebased temporarily
+
+Signed-off-by: Tina Zhang <tina.zhang@intel.com>
+Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
+Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
+---
+ meson.build                                         | 1 +
+ src/gallium/auxiliary/pipe-loader/meson.build       | 3 +++
+ src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c | 5 +++++
+ src/gallium/auxiliary/target-helpers/drm_helper.h   | 4 ++++
+ src/gallium/winsys/iris/drm/iris_drm_public.h       | 2 +-
+ src/gallium/winsys/iris/drm/iris_drm_winsys.c       | 4 ++--
+ src/gallium/winsys/kmsro/drm/kmsro_drm_winsys.c     | 6 ++++++
+ src/loader/loader.c                                 | 4 ++--
+ 8 files changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 6b22930eb5f1..a7b43ca62395 100644
+--- a/meson.build
++++ b/meson.build
+@@ -215,6 +215,7 @@ with_gallium_kmsro = system_has_kms_drm and [
+   with_gallium_panfrost,
+   with_gallium_v3d,
+   with_gallium_vc4,
++  with_gallium_iris,
+ ].contains(true)
+ 
+ _vulkan_drivers = get_option('vulkan-drivers')
+diff --git a/src/gallium/auxiliary/pipe-loader/meson.build b/src/gallium/auxiliary/pipe-loader/meson.build
+index 7927515cf988..a1d9a51880f4 100644
+--- a/src/gallium/auxiliary/pipe-loader/meson.build
++++ b/src/gallium/auxiliary/pipe-loader/meson.build
+@@ -56,6 +56,9 @@ endif
+ if with_gallium_asahi
+   renderonly_drivers_c_args += '-DGALLIUM_ASAHI'
+ endif
++if with_gallium_iris
++  renderonly_drivers_c_args += '-DGALLIUM_IRIS'
++endif
+ 
+ libpipe_loader_static = static_library(
+   'pipe_loader_static',
+diff --git a/src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c b/src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c
+index 70b3f3a59d77..4e68135f96b4 100644
+--- a/src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c
++++ b/src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c
+@@ -297,6 +297,9 @@ pipe_loader_get_compatible_render_capable_device_fd(int kms_only_fd)
+ #endif
+ #if defined GALLIUM_VC4
+       "vc4",
++#endif
++#if defined GALLIUM_IRIS
++      "i915",
+ #endif
+    };
+ 
+@@ -305,10 +308,12 @@ pipe_loader_get_compatible_render_capable_device_fd(int kms_only_fd)
+    is_platform_device = (dev->type == PIPE_LOADER_DEVICE_PLATFORM);
+    pipe_loader_release(&dev, 1);
+ 
++#ifndef GALLIUM_IRIS
+    /* For display-only devices that are not on the platform bus, we can't assume
+     * that any of the rendering devices are compatible. */
+    if (!is_platform_device)
+       return -1;
++#endif
+ 
+    /* For platform display-only devices, we try to find a render-capable device
+     * on the platform bus and that should be compatible with the display-only
+diff --git a/src/gallium/auxiliary/target-helpers/drm_helper.h b/src/gallium/auxiliary/target-helpers/drm_helper.h
+index 23f2215a1e6d..971c254b70b6 100644
+--- a/src/gallium/auxiliary/target-helpers/drm_helper.h
++++ b/src/gallium/auxiliary/target-helpers/drm_helper.h
+@@ -68,6 +68,7 @@ const struct drm_driver_descriptor descriptor_name = {         \
+ #undef GALLIUM_PANFROST
+ #undef GALLIUM_LIMA
+ #undef GALLIUM_ASAHI
++#undef GALLIUM_IRIS
+ #endif
+ 
+ #ifdef GALLIUM_I915
+@@ -463,6 +464,9 @@ const driOptionDescription kmsro_driconf[] = {
+ #ifdef GALLIUM_PANFROST
+       #include "panfrost/driinfo_panfrost.h"
+ #endif
++#ifdef GALLIUM_IRIS
++      #include "iris/driinfo_iris.h"
++#endif
+ };
+ DRM_DRIVER_DESCRIPTOR(kmsro, kmsro_driconf, ARRAY_SIZE(kmsro_driconf))
+ 
+diff --git a/src/gallium/winsys/iris/drm/iris_drm_public.h b/src/gallium/winsys/iris/drm/iris_drm_public.h
+index c7003947e07e..4e4c3edaec35 100644
+--- a/src/gallium/winsys/iris/drm/iris_drm_public.h
++++ b/src/gallium/winsys/iris/drm/iris_drm_public.h
+@@ -32,7 +32,7 @@ struct pipe_screen *
+ iris_drm_screen_create(int drm_fd, const struct pipe_screen_config *config);
+ 
+ struct pipe_screen *
+-iris_screen_create_renderonly(struct renderonly *ro,
++iris_screen_create_renderonly(int fd, struct renderonly *ro,
+                               const struct pipe_screen_config *config);
+ 
+ #endif /* IRIS_DRM_PUBLIC_H */
+diff --git a/src/gallium/winsys/iris/drm/iris_drm_winsys.c b/src/gallium/winsys/iris/drm/iris_drm_winsys.c
+index b414b64ef22f..bf6c5577c782 100644
+--- a/src/gallium/winsys/iris/drm/iris_drm_winsys.c
++++ b/src/gallium/winsys/iris/drm/iris_drm_winsys.c
+@@ -40,12 +40,12 @@ iris_drm_screen_create(int fd, const struct pipe_screen_config *config)
+ }
+ 
+ struct pipe_screen *
+-iris_screen_create_renderonly(struct renderonly *ro,
++iris_screen_create_renderonly(int fd, struct renderonly *ro,
+                               const struct pipe_screen_config *config)
+ {
+    struct iris_screen *pscreen;
+ 
+-   pscreen = (struct iris_screen *)iris_screen_create(os_dupfd_cloexec(ro->gpu_fd), config);
++   pscreen = (struct iris_screen *)iris_screen_create(os_dupfd_cloexec(fd), config);
+    if (!pscreen)
+       return NULL;
+ 
+diff --git a/src/gallium/winsys/kmsro/drm/kmsro_drm_winsys.c b/src/gallium/winsys/kmsro/drm/kmsro_drm_winsys.c
+index 259e876dc8b2..46916e867225 100644
+--- a/src/gallium/winsys/kmsro/drm/kmsro_drm_winsys.c
++++ b/src/gallium/winsys/kmsro/drm/kmsro_drm_winsys.c
+@@ -33,6 +33,7 @@
+ #include "panfrost/drm/panfrost_drm_public.h"
+ #include "lima/drm/lima_drm_public.h"
+ #include "asahi/drm/asahi_drm_public.h"
++#include "iris/drm/iris_drm_public.h"
+ #include "xf86drm.h"
+ 
+ #include "pipe/p_screen.h"
+@@ -120,6 +121,11 @@ struct pipe_screen *kmsro_drm_screen_create(int kms_fd,
+        */
+       ro->create_for_resource = renderonly_create_gpu_import_for_resource;
+       screen = vc4_drm_screen_create_renderonly(ro->gpu_fd, ro, config);
++#endif
++   } else if (strcmp(render_dev_name, "i915") == 0) {
++#if defined(GALLIUM_IRIS)
++      ro->create_for_resource = renderonly_create_kms_dumb_buffer_for_resource,
++      screen = iris_screen_create_renderonly(ro->gpu_fd, ro, config);
+ #endif
+    }
+ 
+diff --git a/src/loader/loader.c b/src/loader/loader.c
+index db242b8f8f46..2f9716ca433f 100644
+--- a/src/loader/loader.c
++++ b/src/loader/loader.c
+@@ -187,8 +187,8 @@ loader_open_render_node_platform_device(const char * const drivers[],
+    for (i = 0; i < num_devices; i++) {
+       device = devices[i];
+ 
+-      if ((device->available_nodes & (1 << DRM_NODE_RENDER)) &&
+-          (device->bustype == DRM_BUS_PLATFORM)) {
++      if ((device->available_nodes & (1 << DRM_NODE_RENDER)) /* &&
++          (device->bustype == DRM_BUS_PLATFORM) */) {
+          drmVersionPtr version;
+ 
+          fd = loader_open_device(device->nodes[DRM_NODE_RENDER]);
+-- 
+2.34.1
+

@@ -1,0 +1,47 @@
+From f012c7acacd8aa6c8f3ca68ead831e1dd8b17c7b Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 1 Mar 2024 00:08:03 +0800
+Subject: [PATCH 03/98] vah265enc: Set backward_num to 1 in low delay mode
+
+In low delay B mode, the P frame is converted as B frame with forward
+references. For example, One P frame may refers to P-1, P-2 and P-3 in
+list0 and refers to P-3, P-2 and P-1 in list1.
+So the num in list0 and list1 does not reflect the forward_num and
+backward_num. The vaapi does not provide ref num for forward or backward
+so far. In this case, we just consider the backward_num to be 1 conservatively.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6249>
+---
+ sys/va/gstvah265enc.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index a31339798b6c..46260ba85ef9 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -3854,6 +3854,22 @@ _h265_generate_gop_structure (GstVaH265Enc * self)
+       }
+       GST_INFO_OBJECT (self, "Enable low-delay-b mode");
+       self->gop.low_delay_b_mode = TRUE;
++
++      /* FIXME: In low delay B mode, the P frame is converted as B frame
++         with forward references. For example, One P frame may refers to
++         P-1, P-2 and P-3 in list0 and refers to P-3, P-2 and P-1 in list1.
++         So the num in list0 and list1 does not reflect the forward_num
++         and backward_num. The vaapi does not provide ref num for forward
++         or backward so far. In this case, we just consider the backward_num
++         to be 1 conservatively. */
++      if (list0 == list1) {
++        backward_num =
++            (prediction_direction & VA_PREDICTION_DIRECTION_FUTURE) ? 1 : 0;
++        forward_num = list0 - backward_num;
++
++        GST_INFO_OBJECT (self, "Set forward_num to %d, backward_num to %d in "
++            "low-delay-b mode.", forward_num, backward_num);
++      }
+     }
+   }
+ 
+-- 
+2.43.0
+

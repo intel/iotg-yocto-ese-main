@@ -1,0 +1,31 @@
+From 4bacdd0648ddc5b37a41270b2890a47a6a6804aa Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 29 Mar 2024 18:08:54 +0800
+Subject: [PATCH 25/98] va: vp9enc: Fix the frame size not enough issue for
+ super frame
+
+The current code forgets to add the current last frame size into
+the total super frame size.
+
+Fixes: #3427
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6483>
+---
+ sys/va/gstvavp9enc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 76947958ff7c..8e5f5504a398 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -2514,7 +2514,7 @@ _vp9_create_super_frame_output_buffer (GstVaVp9Enc * self,
+   g_assert ((_enc_frame (last_frame)->flags & FRAME_FLAG_NOT_SHOW) == 0);
+   g_assert (self->frames_in_super_num <= GST_VP9_MAX_FRAMES_IN_SUPERFRAME - 1);
+ 
+-  total_sz = self->frames_in_super_num * base->codedbuf_size;
++  total_sz = (self->frames_in_super_num + 1) * base->codedbuf_size;
+ 
+   data = g_malloc (total_sz);
+   if (!data)
+-- 
+2.43.0
+

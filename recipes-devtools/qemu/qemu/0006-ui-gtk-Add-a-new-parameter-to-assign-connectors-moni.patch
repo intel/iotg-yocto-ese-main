@@ -1,8 +1,8 @@
-From 65fe219641ad9dca7e9a91195db93ad3921e4d4b Mon Sep 17 00:00:00 2001
+From ab55213ff9ccb990d1089c0a6f6c903872a52c9c Mon Sep 17 00:00:00 2001
 From: Vivek Kasireddy <vivek.kasireddy@intel.com>
-Date: Tue, 25 Apr 2023 13:22:04 -0700
-Subject: [PATCH 06/31] ui/gtk: Add a new parameter to assign
- connectors/monitors to GFX VCs
+Date: Fri, 2 Feb 2024 12:47:09 -0800
+Subject: [PATCH 06/30] ui/gtk: Add a new parameter to assign
+ connectors/monitors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -11,30 +11,28 @@ The new parameter named "connector" can be used to assign physical
 monitors/connectors to individual GFX VCs such that when the monitor
 is connected or hotplugged, the associated GTK window would be
 moved to it. If the monitor is disconnected or unplugged, the
-associated GTK window would be destroyed and a relevant disconnect
+associated GTK window would be hidden and a relevant disconnect
 event would be sent to the Guest.
 
 Usage: -device virtio-gpu-pci,max_outputs=2,blob=true,...
        -display gtk,gl=on,connectors.0=eDP-1,connectors.1=DP-1.....
 
-Cc: Dongwon Kim <dongwon.kim@intel.com>
+v2: updated the description for 'connectors' param with more details
+
 Cc: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Daniel P. Berrangé <berrange@redhat.com>
 Cc: Markus Armbruster <armbru@redhat.com>
-Cc: Philippe Mathieu-Daudé <philmd@linaro.org>
 Cc: Marc-André Lureau <marcandre.lureau@redhat.com>
-Cc: Thomas Huth <thuth@redhat.com>
 Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
  include/ui/gtk.h |   1 +
- qapi/ui.json     |  10 +-
- qemu-options.hx  |   5 +-
- ui/gtk.c         | 276 +++++++++++++++++++++++++++++++++++++++++++----
- 4 files changed, 267 insertions(+), 25 deletions(-)
+ qapi/ui.json     |  26 ++++-
+ qemu-options.hx  |   4 +-
+ ui/gtk.c         | 277 +++++++++++++++++++++++++++++++++++++++++++----
+ 4 files changed, 283 insertions(+), 25 deletions(-)
 
 diff --git a/include/ui/gtk.h b/include/ui/gtk.h
-index e7c4726aad..189817ab88 100644
+index 2de38e5724..846d27f13d 100644
 --- a/include/ui/gtk.h
 +++ b/include/ui/gtk.h
 @@ -84,6 +84,7 @@ typedef struct VirtualConsole {
@@ -46,24 +44,39 @@ index e7c4726aad..189817ab88 100644
      union {
          VirtualGfxConsole gfx;
 diff --git a/qapi/ui.json b/qapi/ui.json
-index 98322342f7..ee382699a8 100644
+index a0158baf23..dbb8f8ce6f 100644
 --- a/qapi/ui.json
 +++ b/qapi/ui.json
-@@ -1214,6 +1214,13 @@
- #               Since 7.1
- # @show-menubar: Display the main window menubar. Defaults to "on".
- #                Since 8.0
-+# @connectors:  List of physical monitor/connector names where the GTK
-+#               windows containing the respective graphics virtual consoles
-+#               (VCs) are to be placed. If a mapping exists for a VC, it
-+#               will be moved to that specific monitor or else it would
-+#               not be displayed anywhere and would appear disconnected
-+#               to the guest.
-+#               Since 8.5
+@@ -1316,13 +1316,37 @@
+ # @show-menubar: Display the main window menubar.  Defaults to "on".
+ #     (Since 8.0)
  #
++# @connectors: List of physical monitor/connector names where the
++#     GTK windows containing the respective graphics virtual consoles
++#     (VCs) are to be placed. Index of the connector name in the list
++#     directly indicates the id of the VC. For example, with "-device
++#     gtk,connectors.0=DP-1, connectors.1=HDMI-2", a physical display
++#     connected to DP-1 will be the target monitor for VC0 and the one
++#     on HDMI-2 will be the target for VC1. If there is no valid
++#     connector name for a VC, it won't be displayed anywhere in any
++#     situations and the associated virtual display will be shown
++#     as disconnected in the guest. If a valid connector name exists for
++#     a VC but its display cable is not plugged in when guest is launched,
++#     the VC won't be displayed at first but will show up on the display
++#     as soon as the cable is plugged in. If the cable is disconnected
++#     again, the VC will immediately be hidden and guest will see its
++#     virtual display disconnected. When this list param is used, there
++#     shouldn't be any missing elements before the last one in the list.
++#     For example, if connectors.3 is specified, then connector names for
++#     connectors.0 through connectors.2 should also be given. Multiple
++#     VCs can have a same connector name. In this case, all of those
++#     VCs will be displayed on the same physical monitor. But multiple
++#     different connector names can't be assigned to one VC.
++#     (Since 8.1)
++#
  # Since: 2.12
  ##
-@@ -1221,7 +1228,8 @@
+ { 'struct'  : 'DisplayGTK',
    'data'    : { '*grab-on-hover' : 'bool',
                  '*zoom-to-fit'   : 'bool',
                  '*show-tabs'     : 'bool',
@@ -74,10 +87,10 @@ index 98322342f7..ee382699a8 100644
  ##
  # @DisplayEGLHeadless:
 diff --git a/qemu-options.hx b/qemu-options.hx
-index 59bdf67a2c..a5f781e799 100644
+index 42fd09e4de..0c64751145 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -1977,7 +1977,7 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
+@@ -2077,7 +2077,7 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
  #if defined(CONFIG_GTK)
      "-display gtk[,full-screen=on|off][,gl=on|off][,grab-on-hover=on|off]\n"
      "            [,show-tabs=on|off][,show-cursor=on|off][,window-close=on|off]\n"
@@ -86,18 +99,17 @@ index 59bdf67a2c..a5f781e799 100644
  #endif
  #if defined(CONFIG_VNC)
      "-display vnc=<display>[,<optargs>]\n"
-@@ -2072,6 +2072,9 @@ SRST
+@@ -2174,6 +2174,8 @@ SRST
  
-         ``show-menubar=on|off`` : Display the main window menubar, defaults to "on"
- 
+         ``zoom-to-fit=on|off`` : Expand video output to the window size,
+                                  defaults to "off"
 +        ``connectors=<conn name>`` : VC to connector mappings to display the VC
 +                                     window on a specific monitor
-+
+ 
      ``curses[,charset=<encoding>]``
          Display video output via curses. For graphics device models
-         which support a text mode, QEMU can display this output using a
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 5950b49a4d..6cf61c75a5 100644
+index dcf3c1fa33..a849b2c286 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
 @@ -38,6 +38,7 @@
@@ -108,7 +120,7 @@ index 5950b49a4d..6cf61c75a5 100644
  
  #include "ui/console.h"
  #include "ui/gtk.h"
-@@ -734,6 +735,44 @@ static void gd_set_ui_size(VirtualConsole *vc, gint width, gint height)
+@@ -749,6 +750,39 @@ static void gd_set_ui_size(VirtualConsole *vc, gint width, gint height)
      dpy_set_ui_info(vc->gfx.dcl.con, &info, true);
  }
  
@@ -134,17 +146,12 @@ index 5950b49a4d..6cf61c75a5 100644
 +    info.height = gdk_window_get_height(window);
 +    dpy_set_ui_info(vc->gfx.dcl.con, &info, false);
 +
-+    if (s->ptr_owner && s->kbd_owner &&
-+        s->ptr_owner == vc && s->kbd_owner == vc) {
-+        if (gd_is_grab_active(s)) {
-+            s->ptr_owner = NULL;
-+            s->kbd_owner = NULL;
-+            gd_grab_keyboard(vc, "user-request-main-window");
-+            gd_grab_pointer(vc, "user-request-main-window");
-+        } else {
-+            gd_ungrab_keyboard(s);
-+            gd_ungrab_pointer(s);
-+        }
++    if (gd_is_grab_active(s)) {
++        gd_grab_keyboard(vc, "user-request-main-window");
++        gd_grab_pointer(vc, "user-request-main-window");
++    } else {
++        gd_ungrab_keyboard(s);
++        gd_ungrab_pointer(s);
 +    }
 +
 +    vc->gfx.visible = true;
@@ -153,7 +160,7 @@ index 5950b49a4d..6cf61c75a5 100644
  #if defined(CONFIG_OPENGL)
  
  static gboolean gd_render_event(GtkGLArea *area, GdkGLContext *context,
-@@ -1271,12 +1310,10 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
+@@ -1318,12 +1352,10 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
      GtkDisplayState *s = opaque;
      VirtualConsole *vc;
      GtkNotebook *nb = GTK_NOTEBOOK(s->notebook);
@@ -167,7 +174,7 @@ index 5950b49a4d..6cf61c75a5 100644
  
      vc = gd_vc_find_by_menu(s);
      gtk_release_modifiers(s);
-@@ -1284,10 +1321,7 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
+@@ -1331,10 +1363,7 @@ static void gd_menu_switch_vc(GtkMenuItem *item, void *opaque)
          page = gtk_notebook_page_num(nb, vc->tab_item);
          gtk_notebook_set_current_page(nb, page);
          gtk_widget_grab_focus(vc->focus);
@@ -179,18 +186,17 @@ index 5950b49a4d..6cf61c75a5 100644
      }
  }
  
-@@ -1317,8 +1351,8 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
+@@ -1364,8 +1393,7 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
      VirtualConsole *vc = opaque;
      GtkDisplayState *s = vc->s;
  
 -    vc->gfx.visible = false;
 -    gd_set_ui_size(vc, 0, 0);
 +    gd_ui_hide(vc);
-+
-     dpy_gl_scanout_disable(vc->gfx.dcl.con);
      gtk_widget_set_sensitive(vc->menu_item, true);
      gd_widget_reparent(vc->window, s->notebook, vc->tab_item);
-@@ -1349,20 +1383,14 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+     gtk_notebook_set_tab_label_text(GTK_NOTEBOOK(s->notebook),
+@@ -1395,8 +1423,7 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
      }
  
      if (event->window_state.new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
@@ -200,9 +206,10 @@ index 5950b49a4d..6cf61c75a5 100644
          if (vc->gfx.guest_fb.dmabuf &&
              vc->gfx.guest_fb.dmabuf->draw_submitted) {
              vc->gfx.guest_fb.dmabuf->draw_submitted = false;
-             graphic_hw_gl_block(vc->gfx.dcl.con, false);
-         }
-     } else {
+@@ -1405,12 +1432,7 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+     /* Restore ui only if the VC has its own window or it is the current VC
+      * of the primary widget */
+     } else if (vc->window || vc == gd_vc_find_current(vc->s)) {
 -        GdkWindow *window;
 -        window = gtk_widget_get_window(vc->gfx.drawing_area);
 -        gd_set_ui_size(vc, gdk_window_get_width(window),
@@ -213,7 +220,7 @@ index 5950b49a4d..6cf61c75a5 100644
      }
  
      return TRUE;
-@@ -1422,7 +1450,6 @@ static void gd_tab_window_create(VirtualConsole *vc)
+@@ -1470,7 +1492,6 @@ static void gd_tab_window_create(VirtualConsole *vc)
  static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
  {
      GtkDisplayState *s = opaque;
@@ -221,7 +228,7 @@ index 5950b49a4d..6cf61c75a5 100644
      VirtualConsole *vc = gd_vc_find_current(s);
  
      if (vc->type == GD_VC_GFX &&
-@@ -1434,10 +1461,205 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
+@@ -1482,10 +1503,212 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
          gd_tab_window_create(vc);
      }
  
@@ -256,6 +263,13 @@ index 5950b49a4d..6cf61c75a5 100644
 +    if (s->opts->has_full_screen && s->opts->full_screen) {
 +        gtk_widget_set_size_request(vc->gfx.drawing_area, -1, -1);
 +        gtk_window_fullscreen(GTK_WINDOW(vc->window));
++    } else if ((s->window == vc->window) && s->full_screen) {
++        gd_menu_show_tabs(GTK_MENU_ITEM(s->show_tabs_item), s);
++        if (gtk_check_menu_item_get_active(
++                    GTK_CHECK_MENU_ITEM(s->show_menubar_item))) {
++            gtk_widget_show(s->menu_bar);
++        }
++        s->full_screen = false;
 +    }
 +
 +    vc->monitor = monitor;
@@ -431,16 +445,18 @@ index 5950b49a4d..6cf61c75a5 100644
  }
  
  static void gd_menu_show_menubar(GtkMenuItem *item, void *opaque)
-@@ -1762,7 +1984,7 @@ static gboolean gd_configure(GtkWidget *widget,
+@@ -1810,8 +2033,9 @@ static gboolean gd_configure(GtkWidget *widget,
      VirtualConsole *vc = opaque;
  
      if (vc->gfx.visible) {
 -        gd_set_ui_size(vc, cfg->width, cfg->height);
 +        gd_ui_show(vc);
      }
++
      return FALSE;
  }
-@@ -2097,6 +2319,10 @@ static void gd_connect_signals(GtkDisplayState *s)
+ 
+@@ -2146,6 +2370,10 @@ static void gd_connect_signals(GtkDisplayState *s)
                       G_CALLBACK(gd_menu_grab_input), s);
      g_signal_connect(s->notebook, "switch-page",
                       G_CALLBACK(gd_change_page), s);
@@ -451,11 +467,10 @@ index 5950b49a4d..6cf61c75a5 100644
  }
  
  static GtkWidget *gd_create_menu_machine(GtkDisplayState *s)
-@@ -2471,6 +2697,10 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
+@@ -2538,6 +2766,9 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
          opts->u.gtk.show_tabs) {
          gtk_menu_item_activate(GTK_MENU_ITEM(s->show_tabs_item));
      }
-+
 +    if (s->opts->u.gtk.has_connectors) {
 +        gd_connectors_init(window_display, s);
 +    }

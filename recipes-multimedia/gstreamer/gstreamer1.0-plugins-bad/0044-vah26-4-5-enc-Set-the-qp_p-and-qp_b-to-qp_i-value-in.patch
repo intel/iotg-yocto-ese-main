@@ -1,0 +1,64 @@
+From 5fbe38bd86ad33f0e0820145cc9da8a26f8c97db Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 14 May 2024 10:31:05 +0800
+Subject: [PATCH 44/98] vah26{4,5}enc: Set the qp_p and qp_b to qp_i value in
+ ICQ and QVBR
+
+Set the P and B frame qp to I frame value to avoid generating delta
+QP between different frame types. For ICQ and QVBR modes, we can
+only set the qpi value, so the qpp and qpb values should be set to
+the same value as the qpi.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6841>
+---
+ sys/va/gstvah264enc.c | 4 ++--
+ sys/va/gstvah265enc.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index 57ff9d0ec3a7..35754ac8149b 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -631,7 +631,7 @@ _ensure_rate_control (GstVaH264Enc * self)
+   switch (self->rc.rc_ctrl_mode) {
+     case VA_RC_NONE:
+     case VA_RC_ICQ:
+-      self->rc.qp_p = self->rc.qp_b = 26;
++      self->rc.qp_p = self->rc.qp_b = self->rc.qp_i;
+       /* Fall through. */
+     case VA_RC_CQP:
+       bitrate = 0;
+@@ -650,7 +650,7 @@ _ensure_rate_control (GstVaH264Enc * self)
+       self->rc.qp_i = 26;
+       /* Fall through. */
+     case VA_RC_QVBR:
+-      self->rc.qp_p = self->rc.qp_b = 26;
++      self->rc.qp_p = self->rc.qp_b = self->rc.qp_i;
+       self->rc.target_percentage = MAX (10, self->rc.target_percentage);
+       self->rc.max_bitrate = (guint) gst_util_uint64_scale_int (bitrate,
+           100, self->rc.target_percentage);
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index aca71148bf54..2deb8809c20a 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -3425,7 +3425,7 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+   switch (self->rc.rc_ctrl_mode) {
+     case VA_RC_NONE:
+     case VA_RC_ICQ:
+-      self->rc.qp_p = self->rc.qp_b = 26;
++      self->rc.qp_p = self->rc.qp_b = self->rc.qp_i;
+       /* Fall through. */
+     case VA_RC_CQP:
+       bitrate = 0;
+@@ -3444,7 +3444,7 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+       self->rc.qp_i = 26;
+       /* Fall through. */
+     case VA_RC_QVBR:
+-      self->rc.qp_p = self->rc.qp_b = 26;
++      self->rc.qp_p = self->rc.qp_b = self->rc.qp_i;
+       self->rc.target_percentage = MAX (10, self->rc.target_percentage);
+       self->rc.max_bitrate = (guint) gst_util_uint64_scale_int (bitrate,
+           100, self->rc.target_percentage);
+-- 
+2.43.0
+

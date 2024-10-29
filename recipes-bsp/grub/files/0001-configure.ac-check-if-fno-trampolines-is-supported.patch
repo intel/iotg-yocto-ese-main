@@ -1,19 +1,19 @@
-From dea5a94b0b305b11428b30a1a53530c64c83d174 Mon Sep 17 00:00:00 2001
-From: "Yong, Jonathan" <jonathan.yong@intel.com>
-Date: Mon, 27 Jul 2020 05:14:16 +0000
+From 5cbf31bb81f1489a3ec53ccb3c454598155d7a6a Mon Sep 17 00:00:00 2001
+From: Preeti Sachan <preeti.sachan@intel.com>
+Date: Fri, 17 May 2024 16:26:20 +0530
 Subject: [PATCH] configure.ac: check if -fno-trampolines is supported
 
 Old system gcc may be in use.
 
 Upstream-status: Inappropriate, yocto specific
-Signed-off-by: Yong, Jonathan <jonathan.yong@intel.com>
+Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
 ---
  conf/Makefile.common |  2 +-
  configure.ac         | 20 ++++++++++++++++++--
  2 files changed, 19 insertions(+), 3 deletions(-)
 
 diff --git a/conf/Makefile.common b/conf/Makefile.common
-index 6b85eb394..e0ed1951c 100644
+index 9fe5863b2..2a3d5782c 100644
 --- a/conf/Makefile.common
 +++ b/conf/Makefile.common
 @@ -69,7 +69,7 @@ starfielddir = $(pkgdatadir)/themes/starfield
@@ -26,15 +26,15 @@ index 6b85eb394..e0ed1951c 100644
  
  CFLAGS_POSIX = -fno-builtin
 diff --git a/configure.ac b/configure.ac
-index d150a2e4a..73024d737 100644
+index b66e07c67..f287f2314 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2015,8 +2015,24 @@ if test x"$enable_wextra" != xno ; then
+@@ -2009,8 +2009,24 @@ if test x"$enable_wextra" != xno ; then
    HOST_CFLAGS="$HOST_CFLAGS -Wextra"
  fi
  
--TARGET_CFLAGS="$TARGET_CFLAGS -Werror=trampolines -fno-trampolines"
--HOST_CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines"
+-TARGET_CFLAGS="$TARGET_CFLAGS -Werror=trampolines -fno-trampolines -Wno-incompatible-pointer-types"
+-HOST_CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines -Wno-incompatible-pointer-types"
 +AC_CACHE_CHECK([whether -fno-trampolines work], [grub_cv_host_cc_fnotrampolines], [
 +  SAVED_CFLAGS="$CFLAGS"
 +  CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines -Werror"
@@ -46,8 +46,8 @@ index d150a2e4a..73024d737 100644
 +])
 +
 +if test x"$grub_cv_host_cc_fnotrampolines" = xyes ; then
-+  TARGET_CFLAGS="$TARGET_CFLAGS -Werror=trampolines -fno-trampolines"
-+  HOST_CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines"
++  TARGET_CFLAGS="$TARGET_CFLAGS -Werror=trampolines -fno-trampolines -Wno-incompatible-pointer-types"
++  HOST_CFLAGS="$HOST_CFLAGS -Werror=trampolines -fno-trampolines -Wno-incompatible-pointer-types"
 +  TRAMPOLINES_CFLAGS="-Werror=trampolines -fno-trampolines"
 +else
 +  TRAMPOLINES_CFLAGS=""
@@ -57,5 +57,5 @@ index d150a2e4a..73024d737 100644
  TARGET_CPP="$TARGET_CC -E"
  TARGET_CCAS=$TARGET_CC
 -- 
-2.29.2
+2.34.1
 

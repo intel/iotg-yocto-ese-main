@@ -1,0 +1,28 @@
+From 6ac9be9ab0a214493fe0abd5e8aa77b1e17e655b Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Fri, 26 Apr 2024 17:12:03 +0800
+Subject: [PATCH 42/98] msdk: Add Y212 format to hevc encoder static raw caps
+
+Note that static caps is used for the old MSDK dispatch.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6750>
+---
+ sys/msdk/gstmsdkcaps.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/msdk/gstmsdkcaps.c b/sys/msdk/gstmsdkcaps.c
+index 1adedea9a7a4..be67cb2f3e5b 100644
+--- a/sys/msdk/gstmsdkcaps.c
++++ b/sys/msdk/gstmsdkcaps.c
+@@ -1605,7 +1605,7 @@ _enc_get_static_raw_formats (guint codec_id)
+       return "NV12, YUY2, UYVY, BGRA";
+     case MFX_CODEC_HEVC:
+       return "NV12, YUY2, BGRA, BGR10A2_LE, P010_10LE, VUYA, Y410, Y210, "
+-          "P012_LE";
++          "P012_LE, Y212_LE";
+     case MFX_CODEC_MPEG2:
+       return "NV12";
+     case MFX_CODEC_VP9:
+-- 
+2.43.0
+

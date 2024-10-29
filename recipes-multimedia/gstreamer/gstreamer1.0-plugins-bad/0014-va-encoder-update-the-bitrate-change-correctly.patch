@@ -1,0 +1,128 @@
+From 604e7a870d61a5130bcc7f746ea608a1d201f71d Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Sat, 23 Mar 2024 19:14:56 +0800
+Subject: [PATCH 14/98] va: encoder: update the bitrate change correctly
+
+We should update and notify the bitrate change at a common place,
+no matter whether the bitrate is calculated or not.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6433>
+---
+ sys/va/gstvaav1enc.c  | 7 +++----
+ sys/va/gstvah264enc.c | 1 +
+ sys/va/gstvah265enc.c | 7 +++----
+ sys/va/gstvavp9enc.c  | 7 +++----
+ 4 files changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index f31089a8dda6..e14831071789 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -2693,9 +2693,6 @@ _av1_ensure_rate_control (GstVaAV1Enc * self)
+         GST_VIDEO_INFO_FPS_D (&base->in_info)) / 1000;
+ 
+     GST_INFO_OBJECT (self, "target bitrate computed to %u kbps", bitrate);
+-
+-    self->prop.bitrate = bitrate;
+-    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_BITRATE]);
+   }
+ 
+   /* Adjust the setting based on RC mode. */
+@@ -2703,6 +2700,7 @@ _av1_ensure_rate_control (GstVaAV1Enc * self)
+     case VA_RC_NONE:
+     case VA_RC_ICQ:
+     case VA_RC_CQP:
++      bitrate = 0;
+       self->rc.max_bitrate = 0;
+       self->rc.target_bitrate = 0;
+       self->rc.target_percentage = 0;
+@@ -2751,7 +2749,8 @@ _av1_ensure_rate_control (GstVaAV1Enc * self)
+       || self->rc.rc_ctrl_mode == VA_RC_QVBR)
+     _av1_calculate_bitrate_hrd (self);
+ 
+-  /* notifications */
++  /* update & notifications */
++  update_property_uint (base, &self->prop.bitrate, bitrate, PROP_BITRATE);
+   update_property_uint (base, &self->prop.cpb_size, self->rc.cpb_size,
+       PROP_CPB_SIZE);
+   update_property_uint (base, &self->prop.target_percentage,
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index ebc5b69d9f25..b8b3237d685d 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -634,6 +634,7 @@ _ensure_rate_control (GstVaH264Enc * self)
+       self->rc.qp_p = self->rc.qp_b = 26;
+       /* Fall through. */
+     case VA_RC_CQP:
++      bitrate = 0;
+       self->rc.max_bitrate = 0;
+       self->rc.target_bitrate = 0;
+       self->rc.target_percentage = 0;
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index a79172dfaead..ed23f85df8c6 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -3418,10 +3418,7 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+     bitrate = gst_util_uint64_scale (factor,
+         GST_VIDEO_INFO_FPS_N (&base->in_info),
+         GST_VIDEO_INFO_FPS_D (&base->in_info)) / 1000;
+-
+     GST_INFO_OBJECT (self, "target bitrate computed to %u kbps", bitrate);
+-
+-    update_property_uint (base, &self->prop.bitrate, bitrate, PROP_BITRATE);
+   }
+ 
+   /* Adjust the setting based on RC mode. */
+@@ -3431,6 +3428,7 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+       self->rc.qp_p = self->rc.qp_b = 26;
+       /* Fall through. */
+     case VA_RC_CQP:
++      bitrate = 0;
+       self->rc.max_bitrate = 0;
+       self->rc.target_bitrate = 0;
+       self->rc.target_percentage = 0;
+@@ -3480,7 +3478,8 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+       || self->rc.rc_ctrl_mode == VA_RC_QVBR)
+     _h265_calculate_bitrate_hrd (self);
+ 
+-  /* notifications */
++  /* update & notifications */
++  update_property_uint (base, &self->prop.bitrate, bitrate, PROP_BITRATE);
+   update_property_uint (base, &self->prop.min_qp, self->rc.min_qp, PROP_MIN_QP);
+   update_property_uint (base, &self->prop.cpb_size,
+       self->rc.cpb_size, PROP_CPB_SIZE);
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index bcfb4c361db1..700a049a62f2 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -1986,9 +1986,6 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+         GST_VIDEO_INFO_FPS_D (&base->in_info)) / 1000;
+ 
+     GST_INFO_OBJECT (self, "target bitrate computed to %u kbps", bitrate);
+-
+-    self->prop.bitrate = bitrate;
+-    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_BITRATE]);
+   }
+ 
+   /* Adjust the setting based on RC mode. */
+@@ -1996,6 +1993,7 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+     case VA_RC_NONE:
+     case VA_RC_ICQ:
+     case VA_RC_CQP:
++      bitrate = 0;
+       self->rc.max_bitrate = 0;
+       self->rc.target_bitrate = 0;
+       self->rc.target_percentage = 0;
+@@ -2050,7 +2048,8 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+       || self->rc.rc_ctrl_mode == VA_RC_QVBR)
+     _vp9_calculate_bitrate_hrd (self);
+ 
+-  /* notifications */
++  /* update & notifications */
++  update_property_uint (base, &self->prop.bitrate, bitrate, PROP_BITRATE);
+   update_property_uint (base, &self->prop.cpb_size, self->rc.cpb_size,
+       PROP_CPB_SIZE);
+   update_property_uint (base, &self->prop.target_percentage,
+-- 
+2.43.0
+

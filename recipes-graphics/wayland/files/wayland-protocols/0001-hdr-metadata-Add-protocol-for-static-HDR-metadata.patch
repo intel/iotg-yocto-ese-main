@@ -1,4 +1,4 @@
-From fefb0671c2765ad759cd81a7f21f18390da741bd Mon Sep 17 00:00:00 2001
+From ad95823e8504de43aa04b9b6844faaaeed6f4701 Mon Sep 17 00:00:00 2001
 From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Mon, 21 Mar 2022 00:20:39 +0800
 Subject: [PATCH 1/2] hdr-metadata: Add protocol for static HDR metadata
@@ -6,7 +6,9 @@ Subject: [PATCH 1/2] hdr-metadata: Add protocol for static HDR metadata
 v2: Add description for the hdr_surface requests, fix style
     and typo (Simon Ser)
 
-v3: Rebase on the new baseline 1.25
+v3: Rebase on the new baseline 1.34
+
+Upstream-Status: Inappropriate [custom HDR feature]
 
 Signed-off-by: Harish Krupo <harish.krupo.kps@intel.com>
 Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
@@ -19,10 +21,10 @@ Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
  create mode 100644 unstable/hdr-metadata/hdr-metadata-unstable-v1.xml
 
 diff --git a/meson.build b/meson.build
-index cc27196ac6f8..13f70e3bb460 100644
+index d237739357a0..d170e07614fb 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -33,6 +33,7 @@ unstable_protocols = {
+@@ -34,6 +34,7 @@ unstable_protocols = {
  	'xdg-output': ['v1'],
  	'xdg-shell': ['v5', 'v6'],
  	'xwayland-keyboard-grab': ['v1'],

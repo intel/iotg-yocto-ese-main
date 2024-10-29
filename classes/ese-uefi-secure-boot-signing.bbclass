@@ -1,7 +1,11 @@
 # should be in lowercase for filename comparison despite FAT being case insensitive
-ESE_UEFI_SIGNING_EARLY ??= "shim${GNU_EFI_ARCH}.efi boot${GNU_EFI_ARCH}.efi fwup${GNU_EFI_ARCH}.efi"
+ESE_UEFI_SIGNING_EARLY ??= "shim${GNU_EFI_ARCH}.efi boot${GNU_EFI_ARCH}.efi fwupd${GNU_EFI_ARCH}.efi"
 ESE_UEFI_SIGNING_SHIM ??= "mm${GNU_EFI_ARCH}.efi"
 ESE_UEFI_SIGNING_EXCLUDE ??= ""
+
+do_ese_copy_fwupd(){
+        install -m644 "${DEPLOY_DIR_IMAGE}/fwupd-efi/fwupd${GNU_EFI_ARCH}.efi" "${IMAGE_ROOTFS}/${EFI_FILES_PATH}"
+}
 
 python do_ese_boot_sign(){
   import os
@@ -99,8 +103,9 @@ python do_ese_boot_sign(){
   do_signing_task(d, tasks)
 }
 
-do_rootfs[depends]     += "virtual/secure-boot-certificates:do_deploy file-native:do_populate_sysroot sbsigntool-native:do_populate_sysroot"
+do_rootfs[depends]     += "virtual/secure-boot-certificates:do_deploy file-native:do_populate_sysroot sbsigntool-native:do_populate_sysroot fwupd-efi:do_deploy"
 do_rootfs[recideptask] += "virtual/secure-boot-certificates:do_deploy"
 python(){
+    d.appendVar('ESE_IMAGE_CALLS', ' do_ese_copy_fwupd;')
     d.appendVar('ESE_IMAGE_CALLS', ' do_ese_boot_sign;')
 }

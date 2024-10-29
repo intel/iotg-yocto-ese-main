@@ -1,0 +1,70 @@
+From 58015344f74e5971297783bd9480c48909951a31 Mon Sep 17 00:00:00 2001
+From: "Soon, Thean Siew" <thean.siew.soon@intel.com>
+Date: Fri, 25 Aug 2023 14:59:17 +0000
+Subject: [PATCH 93/98] va: compositor: Update to multiple input direct write
+ operations
+
+Signed-off-by: Soon, Thean Siew <thean.siew.soon@intel.com>
+---
+ sys/va/gstvafilter.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/sys/va/gstvafilter.c b/sys/va/gstvafilter.c
+index 05dff4510196..0eb1d7659115 100644
+--- a/sys/va/gstvafilter.c
++++ b/sys/va/gstvafilter.c
+@@ -1768,12 +1768,6 @@ gst_va_filter_compose (GstVaFilter * self, GstVaComposeTransaction * tx)
+ 
+   dpy = gst_va_display_get_va_dpy (self->display);
+ 
+-  status = vaBeginPicture (dpy, self->context, out_surface);
+-  if (status != VA_STATUS_SUCCESS) {
+-    GST_ERROR_OBJECT (self, "vaBeginPicture: %s", vaErrorStr (status));
+-    return FALSE;
+-  }
+-
+   sample = tx->next (tx->user_data);
+   for (; sample; sample = tx->next (tx->user_data)) {
+     VAProcPipelineParameterBuffer params = { 0, };
+@@ -1794,7 +1788,6 @@ gst_va_filter_compose (GstVaFilter * self, GstVaComposeTransaction * tx)
+       .surface = in_surface,
+       .surface_region = &sample->input_region,
+       .output_region = &sample->output_region,
+-      .output_background_color = 0xff000000,
+       .filter_flags = self->scale_method,
+     };
+     /* *INDENT-ON* */
+@@ -1812,6 +1805,12 @@ gst_va_filter_compose (GstVaFilter * self, GstVaComposeTransaction * tx)
+       params.blend_state = &blend;
+     }
+ 
++    status = vaBeginPicture (dpy, self->context, out_surface);
++    if (status != VA_STATUS_SUCCESS) {
++      GST_ERROR_OBJECT (self, "vaBeginPicture: %s", vaErrorStr (status));
++      return FALSE;
++    }
++
+     status = vaCreateBuffer (dpy, self->context,
+         VAProcPipelineParameterBufferType, sizeof (params), 1, &params,
+         &buffer);
+@@ -1826,12 +1825,12 @@ gst_va_filter_compose (GstVaFilter * self, GstVaComposeTransaction * tx)
+       GST_ERROR_OBJECT (self, "vaRenderPicture: %s", vaErrorStr (status));
+       goto fail_end_pic;
+     }
+-  }
+ 
+-  status = vaEndPicture (dpy, self->context);
+-  if (status != VA_STATUS_SUCCESS) {
+-    GST_ERROR_OBJECT (self, "vaEndPicture: %s", vaErrorStr (status));
+-    return FALSE;
++    status = vaEndPicture (dpy, self->context);
++    if (status != VA_STATUS_SUCCESS) {
++      GST_ERROR_OBJECT (self, "vaEndPicture: %s", vaErrorStr (status));
++      return FALSE;
++    }
+   }
+ 
+   return TRUE;
+-- 
+2.43.0
+

@@ -5,6 +5,8 @@ Subject: [PATCH xserver 1/6] dri2: Add support for TGL
 
 In addition, have iris be chosen as the DRI driver for TGL platforms.
 
+Upstream-Status: Pending
+
 Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
 ---

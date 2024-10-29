@@ -11,7 +11,7 @@ do_bootimg[depends] += "tar-native:do_populate_sysroot virtual/kernel:do_deploy 
 IMAGE_TYPES_MASKED += "uefi-netboot"
 UEFI_NETBOOT_DIR = "${B}/uefi-netboot"
 UEFI_NETBOOT_SECURE_BOOT_SIGN ?= "0"
-INITRAMFS_IMAGE_PATH ?= "${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE_NAME}-${MACHINE}.cpio"
+INITRAMFS_IMAGE_PATH ?= "${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE_NAME}-${MACHINE}${IMAGE_NAME_SUFFIX}.cpio"
 UEFI_NETBOOT_COPY_FS = ""
 UEFI_NETBOOT_GRUB_GPG_SIGN ?= "0"
 UEFI_NETBOOT_GRUB_MODULES ?= "normal tftp linux gcry_sha256 gcry_dsa gcry_rsa gcry_sha512"
@@ -150,7 +150,7 @@ uefi_netboot_build(){
 	fi
 
 	for fs in ${UEFI_NETBOOT_COPY_FS}; do
-		install -m 644 ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${fs} "${UEFI_NETBOOT_DIR}/${UEFI_NETBOOT_TFTPROOT}"
+		install -m 644 ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}${IMAGE_NAME_SUFFIX}.${fs} "${UEFI_NETBOOT_DIR}/${UEFI_NETBOOT_TFTPROOT}"
 	done
 }
 
@@ -163,4 +163,4 @@ do_bootimg[fakeroot] = "1"
 do_bootimg[cleandirs] += "${GRUB_GPG_HOME} ${UEFI_NETBOOT_DIR}/${UEFI_NETBOOT_TFTPROOT}"
 addtask bootimg before do_image_complete
 do_image_uefi_netboot_tar[depends] += "${PN}:do_bootimg"
-IMAGE_CMD:uefi-netboot.tar = "${IMAGE_CMD_TAR} --numeric-owner -cf ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.uefi-netboot.tar -C ${UEFI_NETBOOT_DIR} . || [ $? -eq 1 ]"
+IMAGE_CMD:uefi-netboot.tar = "${IMAGE_CMD_TAR} --numeric-owner -cf ${IMGDEPLOYDIR}/${IMAGE_NAME}.uefi-netboot.tar -C ${UEFI_NETBOOT_DIR} . || [ $? -eq 1 ]"

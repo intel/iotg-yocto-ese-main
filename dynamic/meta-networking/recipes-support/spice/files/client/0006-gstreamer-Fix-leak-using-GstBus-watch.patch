@@ -1,0 +1,63 @@
+From eb85187bad080bd3e51a0a97540b402003753802 Mon Sep 17 00:00:00 2001
+From: Frediano Ziglio <freddy77@gmail.com>
+Date: Tue, 31 Oct 2023 11:08:46 +0000
+Subject: [PATCH 6/7] gstreamer: Fix leak using GstBus watch
+
+This patch fixes a leak due to not freeing GstBus watch.
+The watch is attached (as GSource) to the main loop and retains
+a pointer to the bus so we need to remove it to release the bus
+when we release the pipeline.
+This was detected forcibly creating and destroying lot of streams.
+After a while the client program consumed all file descriptors
+and stopped working. This as GstBus retains a GPoll which,
+under Unix, uses 2 file descriptors.
+For some reasons using gst_pipeline_get_bus again in free_pipeline
+do not fix entirely the leak so keep a pointer to the exact
+bus we set our watch on.
+
+Signed-off-by: Frediano Ziglio <freddy77@gmail.com>
+Acked-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
+---
+ src/channel-display-gst.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/src/channel-display-gst.c b/src/channel-display-gst.c
+index 3b372dc08994..2734a546bfc9 100644
+--- a/src/channel-display-gst.c
++++ b/src/channel-display-gst.c
+@@ -47,6 +47,7 @@ typedef struct SpiceGstDecoder {
+     GstAppSink *appsink;
+     GstElement *pipeline;
+     GstClock *clock;
++    GstBus *bus;
+ 
+     /* ---------- Decoding and display queues ---------- */
+ 
+@@ -352,6 +353,13 @@ static void free_pipeline(SpiceGstDecoder *decoder)
+         return;
+     }
+ 
++    GstBus *bus = decoder->bus;
++    if (bus) {
++        gst_bus_remove_watch(bus);
++        gst_object_unref(bus);
++        decoder->bus = NULL;
++    }
++
+     gst_element_set_state(decoder->pipeline, GST_STATE_NULL);
+     gst_object_unref(decoder->appsrc);
+     decoder->appsrc = NULL;
+@@ -534,7 +542,9 @@ static bool launch_pipeline(SpiceGstDecoder *decoder)
+     }
+     bus = gst_pipeline_get_bus(GST_PIPELINE(decoder->pipeline));
+     gst_bus_add_watch(bus, handle_pipeline_message, decoder);
+-    gst_object_unref(bus);
++    // Retains the bus object to be able to release the watch.
++    // We keep the reference to avoid a dangling pointer.
++    decoder->bus = bus;
+ 
+     decoder->clock = gst_pipeline_get_clock(GST_PIPELINE(decoder->pipeline));
+ 
+-- 
+2.34.1
+

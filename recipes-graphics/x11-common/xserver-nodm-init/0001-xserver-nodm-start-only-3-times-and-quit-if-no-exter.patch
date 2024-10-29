@@ -6,6 +6,8 @@ Subject: [PATCH] xserver-nodm: start only 3 times and quit if no external
 
 HSDES ID: 15010257007
 
+Upstream-Status: Inappropriate [custom init setting]
+
 Signed-off-by: Rameshkrishnan Geddy Sekar <rameshkrishnan.geddy.sekar@intel.com>
 ---
  xserver-nodm.service.in | 2 ++

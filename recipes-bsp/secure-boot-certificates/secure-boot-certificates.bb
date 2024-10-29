@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384
 
 inherit allarch deploy
 PROVIDES = "virtual/secure-boot-certificates"
-RPROVIDES:${PN} = "virtual/secure-boot-certificates"
+RPROVIDES:${PN} = "virtual-secure-boot-certificates"
 S = "${WORKDIR}"
 # cert-to-efi-sig-list/sign-efi-sig-list from efitools is not available yet
 do_compile(){

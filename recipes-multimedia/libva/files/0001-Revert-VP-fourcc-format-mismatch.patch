@@ -1,0 +1,151 @@
+From 0077b44a1e95e621eb5840cf21f142f2fc017c46 Mon Sep 17 00:00:00 2001
+From: Lim Siew Hoon <siew.hoon.lim@intel.com>
+Date: Wed, 9 Oct 2024 14:17:40 +0800
+Subject: [PATCH] Revert "[VP] fourcc format mismatch"
+
+This reverts commit 7c9645864d1437480a347d7fdac502ffe21d5716.
+
+Track issue until finally conclusion has make and align between
+media-driver and gst-va to be fix in gst-va or revert RGB list
+color format mention not going to support.
+
+https://jira.devtools.intel.com/browse/VIZ-20903
+---
+ media_driver/linux/gen11/ddi/media_libva_caps_g11.cpp         | 4 ++++
+ media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp         | 4 ++++
+ media_driver/linux/gen8/ddi/media_libva_caps_g8.cpp           | 4 ++++
+ media_driver/linux/gen9/ddi/media_libva_caps_g9.cpp           | 4 ++++
+ .../linux/Xe_M_plus/ddi/media_libva_caps_mtl_base.cpp         | 4 ++++
+ .../linux/xe2_lpm_r0/ddi/capstable_data_xe2_lpm_r0_specific.h | 4 ++++
+ .../ddi/capstable_data_xe_lpm_plus_r0_specific.h              | 4 ++++
+ 7 files changed, 28 insertions(+)
+
+diff --git a/media_driver/linux/gen11/ddi/media_libva_caps_g11.cpp b/media_driver/linux/gen11/ddi/media_libva_caps_g11.cpp
+index 49d252a6b..83a8ae73d 100755
+--- a/media_driver/linux/gen11/ddi/media_libva_caps_g11.cpp
++++ b/media_driver/linux/gen11/ddi/media_libva_caps_g11.cpp
+@@ -37,9 +37,13 @@
+ 
+ const VAImageFormat m_supportedImageformatsG11[] =
+ {   {VA_FOURCC_BGRA,           VA_LSB_FIRST,   32, 32, 0x0000ff00, 0x00ff0000, 0xff000000,  0x000000ff}, /* [31:0] B:G:R:A 8:8:8:8 little endian */
++    {VA_FOURCC_ARGB,           VA_LSB_FIRST,   32, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,  0xff000000}, /* [31:0] A:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBA,           VA_LSB_FIRST,   32, 32, 0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff}, /* [31:0] R:G:B:A 8:8:8:8 little endian */
++    {VA_FOURCC_ABGR,           VA_LSB_FIRST,   32, 32, 0x000000ff, 0x0000ff00, 0x00ff0000,  0xff000000}, /* [31:0] A:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_BGRX,           VA_LSB_FIRST,   32, 24, 0x0000ff00, 0x00ff0000, 0xff000000,  0},          /* [31:0] B:G:R:x 8:8:8:8 little endian */
++    {VA_FOURCC_XRGB,           VA_LSB_FIRST,   32, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,  0},          /* [31:0] x:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBX,           VA_LSB_FIRST,   32, 24, 0xff000000, 0x00ff0000, 0x0000ff00,  0},          /* [31:0] R:G:B:x 8:8:8:8 little endian */
++    {VA_FOURCC_XBGR,           VA_LSB_FIRST,   32, 24, 0x000000ff, 0x0000ff00, 0x00ff0000,  0},          /* [31:0] x:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_A2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0x30000000}, /* [31:0] A:R:G:B 2:10:10:10 little endian */
+     {VA_FOURCC_A2B10G10R10,    VA_LSB_FIRST,   32, 30, 0x000003ff, 0x000ffc00, 0x3ff00000,  0x30000000}, /* [31:0] A:B:G:R 2:10:10:10 little endian */
+     {VA_FOURCC_X2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0},          /* [31:0] X:R:G:B 2:10:10:10 little endian */
+diff --git a/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp b/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp
+index 39b069c78..a72be068d 100644
+--- a/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp
++++ b/media_driver/linux/gen12/ddi/media_libva_caps_g12.cpp
+@@ -49,9 +49,13 @@
+ 
+ const VAImageFormat m_supportedImageformatsG12[] =
+ {   {VA_FOURCC_BGRA,           VA_LSB_FIRST,   32, 32, 0x0000ff00, 0x00ff0000, 0xff000000,  0x000000ff}, /* [31:0] B:G:R:A 8:8:8:8 little endian */
++    {VA_FOURCC_ARGB,           VA_LSB_FIRST,   32, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,  0xff000000}, /* [31:0] A:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBA,           VA_LSB_FIRST,   32, 32, 0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff}, /* [31:0] R:G:B:A 8:8:8:8 little endian */
++    {VA_FOURCC_ABGR,           VA_LSB_FIRST,   32, 32, 0x000000ff, 0x0000ff00, 0x00ff0000,  0xff000000}, /* [31:0] A:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_BGRX,           VA_LSB_FIRST,   32, 24, 0x0000ff00, 0x00ff0000, 0xff000000,  0},          /* [31:0] B:G:R:x 8:8:8:8 little endian */
++    {VA_FOURCC_XRGB,           VA_LSB_FIRST,   32, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,  0},          /* [31:0] x:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBX,           VA_LSB_FIRST,   32, 24, 0xff000000, 0x00ff0000, 0x0000ff00,  0},          /* [31:0] R:G:B:x 8:8:8:8 little endian */
++    {VA_FOURCC_XBGR,           VA_LSB_FIRST,   32, 24, 0x000000ff, 0x0000ff00, 0x00ff0000,  0},          /* [31:0] x:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_A2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0x30000000}, /* [31:0] A:R:G:B 2:10:10:10 little endian */
+     {VA_FOURCC_A2B10G10R10,    VA_LSB_FIRST,   32, 30, 0x000003ff, 0x000ffc00, 0x3ff00000,  0x30000000}, /* [31:0] A:B:G:R 2:10:10:10 little endian */
+     {VA_FOURCC_X2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0},          /* [31:0] X:R:G:B 2:10:10:10 little endian */
+diff --git a/media_driver/linux/gen8/ddi/media_libva_caps_g8.cpp b/media_driver/linux/gen8/ddi/media_libva_caps_g8.cpp
+index 3ec2e1e39..a8f69f11c 100644
+--- a/media_driver/linux/gen8/ddi/media_libva_caps_g8.cpp
++++ b/media_driver/linux/gen8/ddi/media_libva_caps_g8.cpp
+@@ -32,9 +32,13 @@
+ 
+ const VAImageFormat m_supportedImageformatsG8[] =
+ {   {VA_FOURCC_BGRA,   VA_LSB_FIRST,   32, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,  0xff000000},
++    {VA_FOURCC_ARGB,   VA_LSB_FIRST,   32, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,  0xff000000},
+     {VA_FOURCC_RGBA,   VA_LSB_FIRST,   32, 32, 0x000000ff, 0x0000ff00, 0x00ff0000,  0xff000000},
++    {VA_FOURCC_ABGR,   VA_LSB_FIRST,   32, 32, 0x000000ff, 0x0000ff00, 0x00ff0000,  0xff000000},
+     {VA_FOURCC_BGRX,   VA_LSB_FIRST,   32, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,  0},
++    {VA_FOURCC_XRGB,   VA_LSB_FIRST,   32, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,  0},
+     {VA_FOURCC_RGBX,   VA_LSB_FIRST,   32, 24, 0x000000ff, 0x0000ff00, 0x00ff0000,  0},
++    {VA_FOURCC_XBGR,   VA_LSB_FIRST,   32, 24, 0x000000ff, 0x0000ff00, 0x00ff0000,  0},
+     {VA_FOURCC_RGB565, VA_LSB_FIRST,   16, 16, 0xf800,     0x07e0,     0x001f,      0},
+     {VA_FOURCC_NV12,   VA_LSB_FIRST,   12, 0,0,0,0,0},
+     {VA_FOURCC_NV21,   VA_LSB_FIRST,   12, 0,0,0,0,0},
+diff --git a/media_driver/linux/gen9/ddi/media_libva_caps_g9.cpp b/media_driver/linux/gen9/ddi/media_libva_caps_g9.cpp
+index cdf891a26..dd8449db1 100755
+--- a/media_driver/linux/gen9/ddi/media_libva_caps_g9.cpp
++++ b/media_driver/linux/gen9/ddi/media_libva_caps_g9.cpp
+@@ -33,9 +33,13 @@
+ 
+ const VAImageFormat m_supportedImageformatsG9[] =
+ {   {VA_FOURCC_BGRA,           VA_LSB_FIRST,   32, 32, 0x0000ff00, 0x00ff0000, 0xff000000,  0x000000ff}, /* [31:0] B:G:R:A 8:8:8:8 little endian */
++    {VA_FOURCC_ARGB,           VA_LSB_FIRST,   32, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,  0xff000000}, /* [31:0] A:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBA,           VA_LSB_FIRST,   32, 32, 0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff}, /* [31:0] R:G:B:A 8:8:8:8 little endian */
++    {VA_FOURCC_ABGR,           VA_LSB_FIRST,   32, 32, 0x000000ff, 0x0000ff00, 0x00ff0000,  0xff000000}, /* [31:0] A:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_BGRX,           VA_LSB_FIRST,   32, 24, 0x0000ff00, 0x00ff0000, 0xff000000,  0},          /* [31:0] B:G:R:x 8:8:8:8 little endian */
++    {VA_FOURCC_XRGB,           VA_LSB_FIRST,   32, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,  0},          /* [31:0] x:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBX,           VA_LSB_FIRST,   32, 24, 0xff000000, 0x00ff0000, 0x0000ff00,  0},          /* [31:0] R:G:B:x 8:8:8:8 little endian */
++    {VA_FOURCC_XBGR,           VA_LSB_FIRST,   32, 24, 0x000000ff, 0x0000ff00, 0x00ff0000,  0},          /* [31:0] x:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_A2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0x30000000}, /* [31:0] A:R:G:B 2:10:10:10 little endian */
+     {VA_FOURCC_A2B10G10R10,    VA_LSB_FIRST,   32, 30, 0x000003ff, 0x000ffc00, 0x3ff00000,  0x30000000}, /* [31:0] A:B:G:R 2:10:10:10 little endian */
+     {VA_FOURCC_X2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0},          /* [31:0] X:R:G:B 2:10:10:10 little endian */
+diff --git a/media_softlet/linux/Xe_M_plus/ddi/media_libva_caps_mtl_base.cpp b/media_softlet/linux/Xe_M_plus/ddi/media_libva_caps_mtl_base.cpp
+index d985fccba..7f0bc9c2e 100644
+--- a/media_softlet/linux/Xe_M_plus/ddi/media_libva_caps_mtl_base.cpp
++++ b/media_softlet/linux/Xe_M_plus/ddi/media_libva_caps_mtl_base.cpp
+@@ -40,9 +40,13 @@
+ 
+ const VAImageFormat m_supportedImageformatsXe_Lpm_Plus_Base[] =
+ {   {VA_FOURCC_BGRA,           VA_LSB_FIRST,   32, 32, 0x0000ff00, 0x00ff0000, 0xff000000,  0x000000ff}, /* [31:0] B:G:R:A 8:8:8:8 little endian */
++    {VA_FOURCC_ARGB,           VA_LSB_FIRST,   32, 32, 0x00ff0000, 0x0000ff00, 0x000000ff,  0xff000000}, /* [31:0] A:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBA,           VA_LSB_FIRST,   32, 32, 0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff}, /* [31:0] R:G:B:A 8:8:8:8 little endian */
++    {VA_FOURCC_ABGR,           VA_LSB_FIRST,   32, 32, 0x000000ff, 0x0000ff00, 0x00ff0000,  0xff000000}, /* [31:0] A:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_BGRX,           VA_LSB_FIRST,   32, 24, 0x0000ff00, 0x00ff0000, 0xff000000,  0},          /* [31:0] B:G:R:x 8:8:8:8 little endian */
++    {VA_FOURCC_XRGB,           VA_LSB_FIRST,   32, 24, 0x00ff0000, 0x0000ff00, 0x000000ff,  0},          /* [31:0] x:R:G:B 8:8:8:8 little endian */
+     {VA_FOURCC_RGBX,           VA_LSB_FIRST,   32, 24, 0xff000000, 0x00ff0000, 0x0000ff00,  0},          /* [31:0] R:G:B:x 8:8:8:8 little endian */
++    {VA_FOURCC_XBGR,           VA_LSB_FIRST,   32, 24, 0x000000ff, 0x0000ff00, 0x00ff0000,  0},          /* [31:0] x:B:G:R 8:8:8:8 little endian */
+     {VA_FOURCC_A2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0x30000000}, /* [31:0] A:R:G:B 2:10:10:10 little endian */
+     {VA_FOURCC_A2B10G10R10,    VA_LSB_FIRST,   32, 30, 0x000003ff, 0x000ffc00, 0x3ff00000,  0x30000000}, /* [31:0] A:B:G:R 2:10:10:10 little endian */
+     {VA_FOURCC_X2R10G10B10,    VA_LSB_FIRST,   32, 30, 0x3ff00000, 0x000ffc00, 0x000003ff,  0},          /* [31:0] X:R:G:B 2:10:10:10 little endian */
+diff --git a/media_softlet/linux/xe2_lpm_r0/ddi/capstable_data_xe2_lpm_r0_specific.h b/media_softlet/linux/xe2_lpm_r0/ddi/capstable_data_xe2_lpm_r0_specific.h
+index 4fa4529bb..6e7f00837 100644
+--- a/media_softlet/linux/xe2_lpm_r0/ddi/capstable_data_xe2_lpm_r0_specific.h
++++ b/media_softlet/linux/xe2_lpm_r0/ddi/capstable_data_xe2_lpm_r0_specific.h
+@@ -77,9 +77,13 @@ const PlatformInfo plt_Xe2_Lpm_r0 = {IP_VERSION_XE2_LPM, 0};
+ static const std::map<const uint32_t, const VAImageFormat*> imgtbl_Xe2_lpm_r0
+ {
+     {VA_FOURCC_BGRA, &formatBGRA},
++    {VA_FOURCC_ARGB, &formatARGB},
+     {VA_FOURCC_RGBA, &formatRGBA},
++    {VA_FOURCC_ABGR, &formatABGR},
+     {VA_FOURCC_BGRX, &formatBGRX},
++    {VA_FOURCC_XRGB, &formatXRGB},
+     {VA_FOURCC_RGBX, &formatRGBX},
++    {VA_FOURCC_XBGR, &formatXBGR},
+     {VA_FOURCC_A2R10G10B10, &formatA2R10G10B10},
+     {VA_FOURCC_A2B10G10R10, &formatA2B10G10R10},
+     {VA_FOURCC_X2R10G10B10, &formatX2R10G10B10},
+diff --git a/media_softlet/linux/xe_lpm_plus_r0/ddi/capstable_data_xe_lpm_plus_r0_specific.h b/media_softlet/linux/xe_lpm_plus_r0/ddi/capstable_data_xe_lpm_plus_r0_specific.h
+index 25c2cc4c4..89d0a5101 100644
+--- a/media_softlet/linux/xe_lpm_plus_r0/ddi/capstable_data_xe_lpm_plus_r0_specific.h
++++ b/media_softlet/linux/xe_lpm_plus_r0/ddi/capstable_data_xe_lpm_plus_r0_specific.h
+@@ -76,9 +76,13 @@ const PlatformInfo plt_Xe_Lpm_plus_r0 = {IP_VERSION_XE_LPM_PLUS, 0};
+ static const std::map<const uint32_t, const VAImageFormat*> imgtbl_Xe_lpm_plus_r0
+ {
+     {VA_FOURCC_BGRA, &formatBGRA},
++    {VA_FOURCC_ARGB, &formatARGB},
+     {VA_FOURCC_RGBA, &formatRGBA},
++    {VA_FOURCC_ABGR, &formatABGR},
+     {VA_FOURCC_BGRX, &formatBGRX},
++    {VA_FOURCC_XRGB, &formatXRGB},
+     {VA_FOURCC_RGBX, &formatRGBX},
++    {VA_FOURCC_XBGR, &formatXBGR},
+     {VA_FOURCC_A2R10G10B10, &formatA2R10G10B10},
+     {VA_FOURCC_A2B10G10R10, &formatA2B10G10R10},
+     {VA_FOURCC_X2R10G10B10, &formatX2R10G10B10},
+-- 
+2.43.2
+

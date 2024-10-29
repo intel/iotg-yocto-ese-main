@@ -1,27 +1,30 @@
-From efb2bff8d4d1a9b16f6aa711da9fa366e45e9e8c Mon Sep 17 00:00:00 2001
+From 6ce9669b53b0dd3703180c7961b54e459cd6a09f Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
-Date: Tue, 2 May 2023 12:46:42 -0700
-Subject: [PATCH 07/28] ui/gtk: unblock gl if draw submitted already or fence
+Date: Fri, 2 Feb 2024 13:00:22 -0800
+Subject: [PATCH 07/30] ui/gtk: unblock gl if draw submitted already or fence
  is not yet signaled
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Removing monitor while a guest frame is still being processed could block
-guest scanout render pipe line. To avoid this sitation, now the code
-checks whether there is on-going frame that wasn't render event yet for
-it, it cancels it and unblock the pipeline.
+Remove monitor while a guest frame is still being processed could block
+the guest (virtio-gpu) scanout pipe line. It is needed to manually flush
+the pipeline to prevent the permanent lockup.
 
-Also, it is needed to manually flush pipeline in case the frame is already
-in draw queue but the fence is not yet signaled.
-
+Cc: Gerd Hoffmann <kraxel@redhat.com>
+Cc: Markus Armbruster <armbru@redhat.com>
+Cc: Marc-André Lureau <marcandre.lureau@redhat.com>
+Cc: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Dongwon Kim <dongwon.kim@intel.com>
 ---
- ui/gtk.c | 29 ++++++++++++++++++++---------
- 1 file changed, 20 insertions(+), 9 deletions(-)
+ ui/gtk.c | 26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
 diff --git a/ui/gtk.c b/ui/gtk.c
-index 1a3089c428..336e0160d5 100644
+index a849b2c286..4a8b19ed76 100644
 --- a/ui/gtk.c
 +++ b/ui/gtk.c
-@@ -591,10 +591,21 @@ void gd_hw_gl_flushed(void *vcon)
+@@ -598,10 +598,21 @@ void gd_hw_gl_flushed(void *vcon)
      VirtualConsole *vc = vcon;
      QemuDmaBuf *dmabuf = vc->gfx.guest_fb.dmabuf;
  
@@ -47,17 +50,7 @@ index 1a3089c428..336e0160d5 100644
  }
  
  /** DisplayState Callbacks (opengl version) **/
-@@ -735,6 +746,9 @@ static void gd_set_ui_size(VirtualConsole *vc, gint width, gint height)
-     dpy_set_ui_info(vc->gfx.dcl.con, &info, true);
- }
- 
-+static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
-+                                      void *opaque);
-+
- static void gd_ui_hide(VirtualConsole *vc)
- {
-     QemuUIInfo info;
-@@ -750,6 +764,8 @@ static void gd_ui_hide(VirtualConsole *vc)
+@@ -759,6 +770,8 @@ static void gd_ui_hide(VirtualConsole *vc)
      info.width = 0;
      info.height = 0;
      dpy_set_ui_info(vc->gfx.dcl.con, &info, false);
@@ -66,7 +59,7 @@ index 1a3089c428..336e0160d5 100644
  }
  
  static void gd_ui_show(VirtualConsole *vc)
-@@ -1380,11 +1396,6 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
+@@ -1424,11 +1437,6 @@ static gboolean gd_window_state_event(GtkWidget *widget, GdkEvent *event,
  
      if (event->window_state.new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
          gd_ui_hide(vc);
@@ -75,9 +68,9 @@ index 1a3089c428..336e0160d5 100644
 -            vc->gfx.guest_fb.dmabuf->draw_submitted = false;
 -            graphic_hw_gl_block(vc->gfx.dcl.con, false);
 -        }
-     } else {
-         gd_ui_show(vc);
-     }
+     /* Restore ui only if the VC has its own window or it is the current VC
+      * of the primary widget */
+     } else if (vc->window || vc == gd_vc_find_current(vc->s)) {
 -- 
 2.34.1
 

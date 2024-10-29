@@ -14,7 +14,7 @@ fakeroot python do_mender_persistent_fixup(){
     mode = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
 
     # is this really a mender image with /data?
-    is_mender = bb.utils.contains_any('MENDER_FEATURES', 'mender-client-install mender-client-install', "1", "0", d)
+    is_mender = bb.utils.contains('MENDER_FEATURES', 'mender-update-install', "1", "0", d)
     if not int(is_mender):
         return
 

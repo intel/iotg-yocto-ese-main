@@ -1,4 +1,4 @@
-From 7ad4c85a930b38886f05923806c10732b98150fe Mon Sep 17 00:00:00 2001
+From 8e4d7e6cc4413ec6cd4f380d69e70c4aee3b11ad Mon Sep 17 00:00:00 2001
 From: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 Date: Fri, 15 May 2020 15:39:22 -0700
 Subject: [PATCH 3/4] igc: Add support for dumping frame preemption stats
@@ -6,6 +6,8 @@ Subject: [PATCH 3/4] igc: Add support for dumping frame preemption stats
 
 Includes registers that help verify if frame preemption is indeed
 working, and if any problem happened.
+
+Upstream-Status: Inappropriate [embedded specific]
 
 Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@intel.com>
 ---
@@ -37,5 +39,5 @@ index 1550ac0..b43a9ab 100644
  	return 0;
  }
 -- 
-2.25.1
+2.34.1
 

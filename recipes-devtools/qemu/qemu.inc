@@ -6,10 +6,14 @@ a variety of guest operating systems"
 HOMEPAGE = "http://qemu.org"
 LICENSE = "GPL-2.0-only & LGPL-2.1-only"
 
+DEPENDS += "bison-native meson-native ninja-native"
+
 RDEPENDS:${PN}-ptest = "bash"
 
 require qemu-targets.inc
-inherit pkgconfig ptest update-rc.d systemd
+# https://gitlab.com/qemu-project/qemu/-/commit/81e2b198a8cb4ee5fdf108bd438f44b193ee3a36 means
+# we need a full python3-native setup
+inherit pkgconfig ptest update-rc.d systemd python3native
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=441c28d2cf86e15a37fa47e15a72fbac \
                     file://COPYING.LIB;endline=24;md5=8c5efda6cf1e1b03dcfd0e6c0d271c7f"
@@ -27,10 +31,22 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0009-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch \
            file://0002-linux-user-Replace-use-of-lfs64-related-functions-an.patch \
-           file://0001-tracetool-use-relative-paths-for-line-preprocessor-d.patch \
+           file://fixedmeson.patch \
+           file://no-pip.patch \
+           file://4a8579ad8629b57a43daa62e46cc7af6e1078116.patch \
+           file://0001-linux-user-x86_64-Handle-the-vsyscall-page-in-open_s.patch \
+           file://0002-linux-user-loongarch64-Remove-TARGET_FORCE_SHMLBA.patch \
+           file://0003-linux-user-Add-strace-for-shmat.patch \
+           file://0004-linux-user-Rewrite-target_shmat.patch \
+           file://0005-tests-tcg-Check-that-shmat-does-not-break-proc-self-.patch \
+           file://CVE-2023-6683.patch \
            file://qemu-guest-agent.init \
            file://qemu-guest-agent.udev \
-           file://ppc.patch \
+           file://CVE-2024-3446-01.patch \
+           file://CVE-2024-3446-02.patch \
+           file://CVE-2024-3446-03.patch \
+           file://CVE-2024-3446-04.patch \
+           file://CVE-2024-3567.patch \
            file://0001-ui-gtk-skip-drawing-guest-scanout-when-associated-VC.patch \
            file://0002-ui-gtk-set-the-ui-size-to-0-when-invisible.patch \
            file://0003-ui-gtk-reset-visible-flag-when-window-is-minimized.patch \
@@ -39,63 +55,73 @@ SRC_URI = "https://download.qemu.org/${BPN}-${PV}.tar.xz \
            file://0006-ui-gtk-Add-a-new-parameter-to-assign-connectors-moni.patch \
            file://0007-ui-gtk-unblock-gl-if-draw-submitted-already-or-fence.patch \
            file://0008-ui-gtk-skip-drawing-if-any-of-ctx-surface-image-don-.patch \
-           file://0009-ui-gtk-skip-refresh-rendering-if-VC-is-invisible.patch \
-           file://0010-ui-console-display-inactive-display-output-when-repl.patch \
-           file://0011-virtio-gpu-replace-the-surface-with-null-surface-onl.patch \
-           file://0012-hw-virtio-Adds-support-for-VIRTIO_GPU_FORMAT_R8G8B8A.patch \
-           file://0013-virtio-gpu-VIRTIO_GPU_RESP_ERR_OUT_OF_MEMORY-if-udma.patch \
-           file://0014-ui-gtk-configure-the-area-of-the-texture-correctly.patch \
-           file://0015-ui-gtk-making-dmabuf-NULL-when-dmabuf-is-not-valid-a.patch \
-           file://0016-virtio-gpu-udmabuf-create-udmabuf-for-blob-when-iov_.patch \
-           file://0017-ui-gtk-negative-page_number-shouldn-t-be-processed.patch \
-           file://0018-ui-gtk-skip-refresh-if-new-dmabuf-is-submitted.patch \
-           file://0019-ui-gtk-egl-Make-sure-the-right-EGL-context-is-curren.patch \
-           file://0020-ui-gtk-Handle-relative-mode-events-correctly-with-Wa.patch \
-           file://0021-ui-gtk-Consider-the-scaling-factor-when-getting-the-.patch \
-           file://0022-ui-gtk-gl-area-Don-t-forget-to-calculate-the-scaling.patch \
-           file://0023-virtio-gpu-Provide-position-info-x-y-to-the-Guest.patch \
-           file://0024-ui-gtk-Include-the-position-info-while-setting-the-u.patch \
-           file://0025-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
-           file://0026-ui-gtk-adds-status-bar-for-expressing-ups-and-fps.patch \
-           file://0027-usb-hid-added-new-type-for-touch-stylus.patch \
-           file://0028-ui-egl-helpers-display-EGL-error-if-eglCreateImageKH.patch \
-           file://0029-ui-gtk-Added-an-input-mode.patch \
-           file://0030-qemu-remove-invisible-boundary-of-guest-mouse-cursor.patch \
-           file://0031-virtio-gpu-io-mediator-for-blob-true.patch \
-           file://0001-ui-gtk-fullscreen-control-on-all-QEMU-windows.patch \
-           file://0001-ui-gtk-fullscreening-display-state-as-well.patch \
-           file://0001-The-Ctrl-Alt-G-does-not-work-in-fullscreen-mode.patch \
-           file://0002-Switch-audio-status-with-Guest-VM-switch-from-QMP-co.patch \
-           file://0001-ui-gtk-egl-using-window-scale-factor-when-calculatin.patch \
-           file://0001-ui-gtk-show-menu-bar-and-tabs-after-HPD-if-not-full-.patch \
-           file://0001-ui-gtk-show-ui-and-enable-guest-display-only-when-wi.patch \
-           file://0001-ui-gtk-apply-window-scale-in-gd_egl_scanout_flush.patch \
-           file://0001-ui-gtk-attach-fullscreen-hotkey-cb-to-new-vc-window.patch \
-           file://0001-ui-gtk-reshow-VC-if-it-s-main-VC.patch \
-           file://0001-ui-gtk-properly-handling-detached-VC-window.patch \
+           file://0009-ui-gtk-flush-display-pipeline-before-saving-vmstate-.patch \
+           file://0010-virtio-gpu-first-surface-update-with-blob-scanout-af.patch \
+           file://0011-ui-gtk-attach-fullscreen-hotkey-cb-to-new-vc-window.patch \
+           file://0012-ui-gtk-properly-handling-detached-VC-window.patch \
+           file://0013-virtio-gpu-replace-the-surface-with-null-surface-onl.patch \
+           file://0014-ui-gtk-negative-page_number-shouldn-t-be-processed.patch \
+           file://0015-ui-gtk-move-guest-mouse-cursor-after-host-cursor-hit.patch \
+           file://0016-ui-gtk-fullscreen-control-on-all-QEMU-windows.patch \
+           file://0017-ui-gtk-fullscreening-display-state-as-well.patch \
+           file://0018-ui-gtk-adds-status-bar-for-expressing-ups-and-fps.patch \
+           file://0019-virtio-gpu-call-dpy_gl_frame_counter-at-every-guest-.patch \
+           file://0020-ui-gtk-Added-an-input-mode.patch \
+           file://0021-usb-hid-added-new-type-for-touch-stylus.patch \
+           file://0022-ui-gtk-Handle-relative-mode-events-correctly-with-Wa.patch \
+           file://0023-ui-gtk-Consider-the-scaling-factor-when-getting-the-.patch \
+           file://0024-ui-gtk-gl-area-Don-t-forget-to-calculate-the-scaling.patch \
+           file://0025-virtio-gpu-Provide-position-info-x-y-to-the-Guest.patch \
+           file://0026-ui-gtk-Include-the-position-info-while-setting-the-u.patch \
+           file://0027-ui-gtk-enable-ungrabbing-fullscreened-widget.patch \
+           file://0028-ui-spice-Add-an-option-for-users-to-provide-a-prefer.patch \
+           file://0029-ui-spice-Enable-gl-on-option-for-non-local-or-remote.patch \
+           file://0030-ui-spice-Submit-the-gl_draw-requests-at-60-FPS-for-r.patch \
+           file://0031-Switch-audio-status-with-Guest-VM-switch-from-QMP-co.patch \
+           file://0032-ui-gtk-Enable-delay-in-gd-configure-while-resize-win.patch \
+           file://0033-ui-gtk-gd_ui_show-and-hide-only-when-ui_info-exists.patch \
+           file://0034-ui-gtk-Regrabbing-only-on-the-VC-which-owned-it-befo.patch \
+           file://0035-hw-display-virtio-gpu-udmabuf-dmabuf-fence_fd-should.patch \
+           file://0036-virtio-gpu-Enabling-performance-mode-for-blob-true-c.patch \
+           file://0037-gtk-untabifying-the-primary-window-as-well.patch \
+           file://0038-ui-console-gl-Add-a-helper-to-create-a-texture-with-.patch \
+           file://0039-ui-spice-Create-another-texture-with-linear-layout-w.patch \
+           file://0040-ui-spice-Blit-the-scanout-texture-if-its-memory-layo.patch \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
-SRC_URI[sha256sum] = "bb60f0341531181d6cc3969dd19a013d0427a87f918193970d9adb91131e56d0"
+# SDK_OLDEST_KERNEL is set below 4.17, which is the minimum version required by QEMU >= 8.1
+# This is due to two MMAP flags being used at certain points
+SRC_URI:append:class-nativesdk = " \
+	file://0011-linux-user-workaround-for-missing-MAP_FIXED_NOREPLAC.patch \
+	file://0012-linux-user-workaround-for-missing-MAP_SHARED_VALIDAT.patch \
+        "
 
-SRC_URI:append:class-target = " file://cross.patch"
-SRC_URI:append:class-nativesdk = " file://cross.patch"
+# Support building and using native version on pre 4.17 kernels
+SRC_URI:append:class-native = " \
+	file://0011-linux-user-workaround-for-missing-MAP_FIXED_NOREPLAC.patch \
+	file://0012-linux-user-workaround-for-missing-MAP_SHARED_VALIDAT.patch \
+        "
 
-# Applies against virglrender < 0.6.0 and not qemu itself
-CVE_CHECK_IGNORE += "CVE-2017-5957"
+SRC_URI[sha256sum] = "8562751158175f9d187c5f22b57555abe3c870f0325c8ced12c34c6d987729be"
 
-# The VNC server can expose host files uder some circumstances. We don't
-# enable it by default.
-CVE_CHECK_IGNORE += "CVE-2007-0998"
+CVE_STATUS[CVE-2007-0998] = "not-applicable-config: The VNC server can expose host files uder some circumstances. We don't enable it by default."
 
-# 'The issues identified by this CVE were determined to not constitute a vulnerability.'
 # https://bugzilla.redhat.com/show_bug.cgi?id=1609015#c11
-CVE_CHECK_IGNORE += "CVE-2018-18438"
+CVE_STATUS[CVE-2018-18438] = "disputed: The issues identified by this CVE were determined to not constitute a vulnerability."
 
 # As per https://nvd.nist.gov/vuln/detail/CVE-2023-0664
 # https://bugzilla.redhat.com/show_bug.cgi?id=2167423
-# this bug related to windows specific.
-CVE_CHECK_IGNORE += "CVE-2023-0664"
+CVE_STATUS[CVE-2023-0664] = "not-applicable-platform: Issue only applies on Windows"
+
+# As per https://bugzilla.redhat.com/show_bug.cgi?id=2203387
+CVE_STATUS[CVE-2023-2680] = "not-applicable-platform: RHEL specific issue."
+
+CVE_STATUS[CVE-2023-3019] = "cpe-incorrect: Applies only against versions before 8.2.0"
+
+CVE_STATUS[CVE-2023-5088] = "cpe-incorrect: Applies only against version 8.2.0 and earlier"
+
+CVE_STATUS[CVE-2023-6693] = "cpe-incorrect: Applies only against version 8.2.0 and earlier"
 
 COMPATIBLE_HOST:mipsarchn32 = "null"
 COMPATIBLE_HOST:mipsarchn64 = "null"
@@ -152,11 +178,15 @@ EXTRA_OECONF = " \
     --disable-werror \
     --extra-cflags='${CFLAGS}' \
     --extra-ldflags='${LDFLAGS}' \
-    --with-git=/bin/false \
-    --with-git-submodules=ignore \
-    --meson=meson \
+    --disable-download \
+    --disable-docs \
+    --host-cc='${BUILD_CC}' \
+    --disable-af-xdp \
     ${PACKAGECONFIG_CONFARGS} \
     "
+
+EXTRA_OECONF:append:class-target = " --cross-prefix=${HOST_PREFIX}"
+EXTRA_OECONF:append:class-nativesdk = " --cross-prefix=${HOST_PREFIX}"
 
 B = "${WORKDIR}/build"
 
@@ -171,6 +201,7 @@ do_configure:prepend:class-native() {
 }
 
 do_configure() {
+    export PKG_CONFIG=pkg-config
     ${S}/configure ${EXTRA_OECONF}
 }
 do_configure[cleandirs] += "${B}"
@@ -192,6 +223,10 @@ do_install () {
 		install -m 0644 ${S}/contrib/systemd/qemu-guest-agent.service ${D}${systemd_unitdir}/system
 		sed -i -e 's,-/usr/bin/,-${bindir}/,g' ${D}${systemd_unitdir}/system/qemu-guest-agent.service
 	fi
+	# ELF binary /usr/share/qemu/s390-netboot.img has relocations in .text
+	rm ${D}${datadir}/qemu/s390-netboot.img -f
+	# ELF binary /usr/share/qemu/s390-ccw.img has relocations in .text [textrel]
+	rm ${D}${datadir}/qemu/s390-ccw.img -f
 }
 
 # The following fragment will create a wrapper for qemu-mips user emulation
@@ -210,7 +245,7 @@ do_install:append() {
 
 # Disable kvm/virgl/mesa on targets that do not support it
 PACKAGECONFIG:remove:darwin = "kvm virglrenderer epoxy gtk+"
-PACKAGECONFIG:remove:mingw32 = "kvm virglrenderer epoxy gtk+"
+PACKAGECONFIG:remove:mingw32 = "kvm virglrenderer epoxy gtk+ pie"
 
 PACKAGECONFIG[sdl] = "--enable-sdl,--disable-sdl,libsdl2"
 PACKAGECONFIG[png] = "--enable-png,--disable-png,libpng"
@@ -234,6 +269,7 @@ PACKAGECONFIG[fdt] = "--enable-fdt,--disable-fdt,dtc"
 PACKAGECONFIG[alsa] = "--audio-drv-list=default,,alsa-lib"
 PACKAGECONFIG[epoxy] = "--enable-opengl,--disable-opengl,libepoxy"
 PACKAGECONFIG[lzo] = "--enable-lzo,--disable-lzo,lzo"
+PACKAGECONFIG[dax] = "--enable-libdaxctl,--disable-libdaxctl,ndctl"
 PACKAGECONFIG[numa] = "--enable-numa,--disable-numa,numactl"
 PACKAGECONFIG[gnutls] = "--enable-gnutls,--disable-gnutls,gnutls"
 PACKAGECONFIG[bzip2] = "--enable-bzip2,--disable-bzip2,bzip2"
@@ -243,11 +279,12 @@ PACKAGECONFIG[virglrenderer] = "--enable-virglrenderer,--disable-virglrenderer,v
 # spice will be in meta-networking layer
 PACKAGECONFIG[spice] = "--enable-spice,--disable-spice,spice"
 # usbredir will be in meta-networking layer
+PACKAGECONFIG[dbus-display] = "--enable-dbus-display,--disable-dbus-display,glib-2.0-native,dbus"
 PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,usbredir"
 PACKAGECONFIG[snappy] = "--enable-snappy,--disable-snappy,snappy"
 PACKAGECONFIG[glusterfs] = "--enable-glusterfs,--disable-glusterfs,glusterfs"
 PACKAGECONFIG[xkbcommon] = "--enable-xkbcommon,--disable-xkbcommon,libxkbcommon"
-PACKAGECONFIG[libudev] = "--enable-libudev,--disable-libudev,eudev"
+PACKAGECONFIG[libudev] = "--enable-libudev,--disable-libudev,udev"
 PACKAGECONFIG[attr] = "--enable-attr,--disable-attr,attr,"
 PACKAGECONFIG[rbd] = "--enable-rbd,--disable-rbd,ceph,ceph"
 PACKAGECONFIG[vhost] = "--enable-vhost-net,--disable-vhost-net,,"
@@ -257,19 +294,48 @@ PACKAGECONFIG[seccomp] = "--enable-seccomp,--disable-seccomp,libseccomp"
 # libnfs is currently provided by meta-kodi
 PACKAGECONFIG[libnfs] = "--enable-libnfs,--disable-libnfs,libnfs"
 PACKAGECONFIG[pmem] = "--enable-libpmem,--disable-libpmem,pmdk"
-PACKAGECONFIG[pulsedio] = "--enable-pa,--disable-pa,pulseaudio"
+PACKAGECONFIG[pulseaudio] = "--enable-pa,--disable-pa,pulseaudio"
 PACKAGECONFIG[selinux] = "--enable-selinux,--disable-selinux"
 PACKAGECONFIG[bpf] = "--enable-bpf,--disable-bpf,libbpf"
 PACKAGECONFIG[capstone] = "--enable-capstone,--disable-capstone"
 PACKAGECONFIG[rdma] = "--enable-rdma,--disable-rdma"
 PACKAGECONFIG[vde] = "--enable-vde,--disable-vde"
+PACKAGECONFIG[fuse] = "--enable-fuse --enable-fuse-lseek,--disable-fuse --disable-fuse-lseek,fuse3"
 PACKAGECONFIG[slirp] = "--enable-slirp,--disable-slirp,libslirp"
 PACKAGECONFIG[brlapi] = "--enable-brlapi,--disable-brlapi"
 PACKAGECONFIG[jack] = "--enable-jack,--disable-jack,jack,"
+PACKAGECONFIG[debuginfo] = "--enable-libdw,--disable-libdw,elfutils"
+PACKAGECONFIG[pipewire] = "--enable-pipewire,--disable-pipewire,pipewire"
+PACKAGECONFIG[sndio] = "--enable-sndio,--disable-sndio,sndio"
 
-INSANE_SKIP:${PN} = "arch"
+INSANE_SKIP:${PN}-common = "arch"
 
 FILES:${PN} += "${datadir}/icons"
+
+# For user who want to install all arch packages
+PACKAGES =+ "${PN}-common"
+RDEPENDS:${PN} += "${PN}-common"
+
+ALLOW_EMPTY:${PN} = "1"
+FILES:${PN} = ""
+
+FILES:${PN}-common = "${bindir}/* ${includedir}/* ${libexecdir}/* ${datadir}/* ${localstatedir}"
+
+PACKAGES_DYNAMIC += "^${PN}-user-.*  ^${PN}-system-.*"
+
+PACKAGESPLITFUNCS =+ "split_qemu_packages"
+
+python split_qemu_packages () {
+    archdir = d.expand('${bindir}/')
+    subpackages = do_split_packages(d, archdir, r'^qemu-system-(.*)$', '${PN}-system-%s', 'QEMU full system emulation binaries(%s)' , prepend=True, extra_depends='${PN}-common')
+
+    subpackages += do_split_packages(d, archdir, r'^qemu-((?!system|edid|ga|img|io|nbd|pr-helper|storage-daemon).*)$', '${PN}-user-%s', 'QEMU full user emulation binaries(%s)' , prepend=True, extra_depends='${PN}-common')
+    if subpackages:
+        d.appendVar('RDEPENDS:' + d.getVar('PN'), ' ' + ' '.join(subpackages))
+    mipspackage = d.getVar('PN') + "-user-mips"
+    if mipspackage in ' '.join(subpackages):
+        d.appendVar('RDEPENDS:' + mipspackage, ' ' + d.getVar("MLPREFIX") + 'bash')
+}
 
 # Put the guest agent in a separate package
 PACKAGES =+ "${PN}-guest-agent"

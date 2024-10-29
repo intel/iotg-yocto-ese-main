@@ -1,10 +1,15 @@
---- a/dhcpcd.service
-+++ b/dhcpcd.service
-@@ -2,7 +2,6 @@
+--- a/dhcpcd.service	2024-04-02 12:27:39.301095475 +0530
++++ b/dhcpcd.service	2024-04-02 12:25:24.745100287 +0530
+Upstream-Status: Inappropriate [embedded specific]
+@@ -2,10 +2,9 @@
  Description=A minimalistic network configuration daemon with DHCPv4, rdisc and DHCPv6 support
  Wants=network.target
  Before=network.target
 -Conflicts=connman.service
-
+ 
  [Service]
- ExecStart=/usr/sbin/dhcpcd -q --nobackground
+-ExecStart=/sbin/dhcpcd -q --nobackground
++ExecStart=/usr/sbin/dhcpcd -q --nobackground
+ 
+ [Install]
+ WantedBy=multi-user.target
