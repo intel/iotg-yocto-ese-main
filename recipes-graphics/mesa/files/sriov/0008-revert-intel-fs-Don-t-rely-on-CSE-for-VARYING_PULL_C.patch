@@ -1,0 +1,157 @@
+From dd4b4f246ba0a7e8e03535764754c9d413e91470 Mon Sep 17 00:00:00 2001
+From: CHEW TONG LIANG <tong.liang.chew@intel.com>
+Date: Thu, 7 Nov 2024 00:51:08 +0800
+Subject: [PATCH] revert: intel/fs: Don't rely on CSE for
+ VARYING_PULL_CONSTANT_LOAD
+
+In the past, we didn't have a good solution for combining scalar loads
+with a variable index plus a constant offset.  To handle that, we took
+our load offset and rounded it down to the nearest vec4, loaded an
+entire vec4, and trusted in the backend CSE pass to detect loads from
+the same address and remove redundant ones.
+
+These days, nir_opt_load_store_vectorize() does a good job of taking
+those scalar loads and combining them into vector loads for us, so we
+no longer need to do this trick.  In fact, it can be better not to:
+our offset need only be 4 byte (scalar) aligned, but we were making it
+16 byte (vec4) aligned.  So if you wanted to load an unaligned vec2,
+we might actually load two vec4's (___X | Y___) instead of doing a
+single load at the starting offset.
+
+This should also reduce the work the backend CSE pass has to do,
+since we just emit a single VARYING_PULL_CONSTANT_LOAD instead of 4.
+
+shader-db results on Alchemist:
+- No changes in SEND count or spills/fills
+- Instructions: helped 95, hurt 100, +/- 1-3 instructions
+- Cycles: helped 3411 hurt 1868, -0.01% (-0.28% in affected)
+- SIMD32: gained 5, lost 3
+
+fossil-db results on Alchemist:
+- Instrs: 161381427 -> 161384130 (+0.00%); split: -0.00%, +0.00%
+- Cycles: 14258305873 -> 14145884365 (-0.79%); split: -0.95%, +0.16%
+- SIMD32: Gained 42, lost 26
+
+- Totals from 56285 (8.63% of 652236) affected shaders:
+- Instrs: 13318308 -> 13321011 (+0.02%); split: -0.01%, +0.03%
+- Cycles: 7464985282 -> 7352563774 (-1.51%); split: -1.82%, +0.31%
+
+From this we can see that we aren't doing more loads than before
+and the change is pretty inconsequential, but it requires less
+optimizing to produce similar results.
+
+Reviewed-by: Lionel Landwerlin <lionel.g.landwerlin@intel.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/27568>
+---
+ src/intel/compiler/brw_fs.cpp       | 23 ++++++++++++++---------
+ src/intel/compiler/brw_fs.h         |  3 +--
+ src/intel/compiler/brw_fs_lower.cpp |  2 +-
+ src/intel/compiler/brw_fs_nir.cpp   | 12 +++---------
+ 4 files changed, 19 insertions(+), 21 deletions(-)
+
+diff --git a/src/intel/compiler/brw_fs.cpp b/src/intel/compiler/brw_fs.cpp
+index a2412253e14..d4e876d0bff 100644
+--- a/src/intel/compiler/brw_fs.cpp
++++ b/src/intel/compiler/brw_fs.cpp
+@@ -209,17 +209,21 @@ fs_visitor::VARYING_PULL_CONSTANT_LOAD(const fs_builder &bld,
+                                        const fs_reg &surface_handle,
+                                        const fs_reg &varying_offset,
+                                        uint32_t const_offset,
+-                                       uint8_t alignment,
+-                                       unsigned components)
++                                       uint8_t alignment)
+ {
+-   assert(components <= 4);
+-
+    /* We have our constant surface use a pitch of 4 bytes, so our index can
+     * be any component of a vector, and then we load 4 contiguous
+-    * components starting from that.  TODO: Support loading fewer than 4.
++    * components starting from that.
++    *
++    * We break down the const_offset to a portion added to the variable offset
++    * and a portion done using fs_reg::offset, which means that if you have
++    * GLSL using something like "uniform vec4 a[20]; gl_FragColor = a[i]",
++    * we'll temporarily generate 4 vec4 loads from offset i * 4, and CSE can
++    * later notice that those loads are all the same and eliminate the
++    * redundant ones.
+     */
+-   fs_reg total_offset = bld.vgrf(BRW_REGISTER_TYPE_UD);
+-   bld.ADD(total_offset, varying_offset, brw_imm_ud(const_offset));
++   fs_reg vec4_offset = bld.vgrf(BRW_REGISTER_TYPE_UD);
++   bld.ADD(vec4_offset, varying_offset, brw_imm_ud(const_offset & ~0xf));
+ 
+    /* The pull load message will load a vec4 (16 bytes). If we are loading
+     * a double this means we are only loading 2 elements worth of data.
+@@ -232,14 +236,15 @@ fs_visitor::VARYING_PULL_CONSTANT_LOAD(const fs_builder &bld,
+    fs_reg srcs[PULL_VARYING_CONSTANT_SRCS];
+    srcs[PULL_VARYING_CONSTANT_SRC_SURFACE]        = surface;
+    srcs[PULL_VARYING_CONSTANT_SRC_SURFACE_HANDLE] = surface_handle;
+-   srcs[PULL_VARYING_CONSTANT_SRC_OFFSET]         = total_offset;
++   srcs[PULL_VARYING_CONSTANT_SRC_OFFSET]         = vec4_offset;
+    srcs[PULL_VARYING_CONSTANT_SRC_ALIGNMENT]      = brw_imm_ud(alignment);
+ 
+    fs_inst *inst = bld.emit(FS_OPCODE_VARYING_PULL_CONSTANT_LOAD_LOGICAL,
+                             vec4_result, srcs, PULL_VARYING_CONSTANT_SRCS);
+    inst->size_written = 4 * vec4_result.component_size(inst->exec_size);
+ 
+-   shuffle_from_32bit_read(bld, dst, vec4_result, 0, components);
++   shuffle_from_32bit_read(bld, dst, vec4_result,
++		            (const_offset & 0xf) / type_sz(dst.type), 1);
+ }
+ 
+ bool
+diff --git a/src/intel/compiler/brw_fs.h b/src/intel/compiler/brw_fs.h
+index 4036d610604..6c3418a075d 100644
+--- a/src/intel/compiler/brw_fs.h
++++ b/src/intel/compiler/brw_fs.h
+@@ -245,8 +245,7 @@ public:
+                                    const fs_reg &surface_handle,
+                                    const fs_reg &varying_offset,
+                                    uint32_t const_offset,
+-                                   uint8_t alignment,
+-                                   unsigned components);
++                                   uint8_t alignment);
+ 
+    bool run_fs(bool allow_spilling, bool do_rep_send);
+    bool run_vs();
+diff --git a/src/intel/compiler/brw_fs_lower.cpp b/src/intel/compiler/brw_fs_lower.cpp
+index b758b146aff..fdce7e38486 100644
+--- a/src/intel/compiler/brw_fs_lower.cpp
++++ b/src/intel/compiler/brw_fs_lower.cpp
+@@ -68,7 +68,7 @@ brw_fs_lower_constant_loads(fs_visitor &s)
+                                       brw_imm_ud(index),
+                                       fs_reg() /* surface_handle */,
+                                       inst->src[1],
+-                                      pull_index * 4, 4, 1);
++                                      pull_index * 4, 4);
+          inst->remove(block);
+ 
+          progress = true;
+diff --git a/src/intel/compiler/brw_fs_nir.cpp b/src/intel/compiler/brw_fs_nir.cpp
+index ef0d2330cae..b1afa9fc244 100644
+--- a/src/intel/compiler/brw_fs_nir.cpp
++++ b/src/intel/compiler/brw_fs_nir.cpp
+@@ -6394,17 +6394,11 @@ fs_nir_emit_intrinsic(nir_to_brw_state &ntb,
+             fs_reg base_offset = retype(get_nir_src(ntb, instr->src[1]),
+                                         BRW_REGISTER_TYPE_UD);
+ 
+-            const unsigned comps_per_load = type_sz(dest.type) == 8 ? 2 : 4;
+-
+-            for (int i = 0; i < instr->num_components; i += comps_per_load) {
+-               const unsigned remaining = instr->num_components - i;
++            for (int i = 0; i < instr->num_components; i++)
+                s.VARYING_PULL_CONSTANT_LOAD(bld, offset(dest, bld, i),
+                                             surface, surface_handle,
+-                                            base_offset,
+-                                            i * type_sz(dest.type),
+-                                            instr->def.bit_size / 8,
+-                                            MIN2(remaining, comps_per_load));
+-            }
++                                            base_offset, i * type_sz(dest.type),
++					    instr->def.bit_size / 8);
+ 
+             s.prog_data->has_ubo_pull = true;
+          } else {
+-- 
+2.43.0
+

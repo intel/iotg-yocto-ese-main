@@ -25,6 +25,8 @@ SRC_URI = "https://mesa.freedesktop.org/archive/mesa-${PV}.tar.xz \
            file://sriov/0004-meson-version-update.patch\
            file://sriov/0005-Revert-Auto-enable-TLSDESC-support.patch\
            file://sriov/0006-pipe_kmsro-fix-linking-issue.patch\
+           file://sriov/0007-meson-mesa-fix-build-error.patch\
+           file://sriov/0008-revert-intel-fs-Don-t-rely-on-CSE-for-VARYING_PULL_C.patch\
 "
 
 SRC_URI[sha256sum] = "0038826c6f7e88d90b4ce6f719192fa58ca7dedf4edcaa1174cf7bd920ef89ea"

@@ -1,0 +1,40 @@
+From 270f7df4fa9d7ff5a54a359c5039e35b4bcec05e Mon Sep 17 00:00:00 2001
+From: SyazwanHalim <mohd.syazwan.abdul.halim@intel.com>
+Date: Tue, 16 Jul 2024 05:21:04 +0800
+Subject: [PATCH] meson: mesa fix build error
+
+File iris_drm_winsys.c is indirectly including header file “intel/dev/intel_wa.h”.
+Source files 'intel_wa.h' and 'intel_wa.c' are being created at build time and
+need available before iris_drm_winsys.c compilation.
+
+Error:
+| In file included from ../mesa-24.0.5/src/gallium/drivers/iris/iris_screen.h:31,
+|                  from ../mesa-24.0.5/src/gallium/winsys/iris/drm/iris_drm_winsys.c:32:
+| ../mesa-24.0.5/src/intel/dev/intel_device_info.h:37:10: fatal error: intel/dev/intel_wa.h: No such file or directory
+|    37 | #include "intel/dev/intel_wa.h"
+|       |          ^~~~~~~~~~~~~~~~~~~~~~
+| compilation terminated.
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
+Signed-off-by: Abdul Halim, Mohd Syazwan <mohd.syazwan.abdul.halim@intel.com>
+---
+ src/gallium/winsys/iris/drm/meson.build | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/gallium/winsys/iris/drm/meson.build b/src/gallium/winsys/iris/drm/meson.build
+index cc9ea810756..403ef2317f6 100644
+--- a/src/gallium/winsys/iris/drm/meson.build
++++ b/src/gallium/winsys/iris/drm/meson.build
+@@ -30,6 +30,7 @@ libiriswinsys = static_library(
+     inc_src, inc_include,
+     inc_gallium, inc_gallium_aux, inc_gallium_drivers, inc_gallium_winsys, inc_intel
+   ],
++  dependencies : [idep_intel_dev],
+   c_args : [iris_drm_winsys_c_args],
+   gnu_symbol_visibility : 'hidden',
+ )
+-- 
+2.34.1
+
