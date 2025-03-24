@@ -1,0 +1,81 @@
+From 0ef932e36a1505ee49894264ad8b33497ee51765 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 29 Mar 2024 19:30:10 +0800
+Subject: [PATCH 025/117] va: encoder: Fix the unit of bitrate in debug log
+ message
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6483>
+---
+ sys/va/gstvaav1enc.c  | 5 ++---
+ sys/va/gstvah264enc.c | 5 ++---
+ sys/va/gstvah265enc.c | 5 ++---
+ sys/va/gstvavp9enc.c  | 5 ++---
+ 4 files changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index def47f0de..64247d154 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -2740,9 +2740,8 @@ _av1_ensure_rate_control (GstVaAV1Enc * self)
+       break;
+   }
+ 
+-  GST_DEBUG_OBJECT (self, "Max bitrate: %u bits/sec, "
+-      "Target bitrate: %u bits/sec", self->rc.max_bitrate,
+-      self->rc.target_bitrate);
++  GST_DEBUG_OBJECT (self, "Max bitrate: %u kbps, target bitrate: %u kbps",
++      self->rc.max_bitrate, self->rc.target_bitrate);
+ 
+   if (self->rc.rc_ctrl_mode == VA_RC_CBR || self->rc.rc_ctrl_mode == VA_RC_VBR
+       || self->rc.rc_ctrl_mode == VA_RC_VCM
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index b8b3237d6..ed791a923 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -675,9 +675,8 @@ _ensure_rate_control (GstVaH264Enc * self)
+       break;
+   }
+ 
+-  GST_DEBUG_OBJECT (self, "Max bitrate: %u bits/sec, "
+-      "Target bitrate: %u bits/sec", self->rc.max_bitrate,
+-      self->rc.target_bitrate);
++  GST_DEBUG_OBJECT (self, "Max bitrate: %u kbps, target bitrate: %u kbps",
++      self->rc.max_bitrate, self->rc.target_bitrate);
+ 
+   if (self->rc.rc_ctrl_mode == VA_RC_CBR || self->rc.rc_ctrl_mode == VA_RC_VBR
+       || self->rc.rc_ctrl_mode == VA_RC_VCM
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index ed23f85df..e21baaf78 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -3469,9 +3469,8 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+       break;
+   }
+ 
+-  GST_DEBUG_OBJECT (self, "Max bitrate: %u bits/sec, "
+-      "Target bitrate: %u bits/sec", self->rc.max_bitrate,
+-      self->rc.target_bitrate);
++  GST_DEBUG_OBJECT (self, "Max bitrate: %u kbps, target bitrate: %u kbps",
++      self->rc.max_bitrate, self->rc.target_bitrate);
+ 
+   if (self->rc.rc_ctrl_mode == VA_RC_CBR || self->rc.rc_ctrl_mode == VA_RC_VBR
+       || self->rc.rc_ctrl_mode == VA_RC_VCM
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 8757fbdf8..718066e88 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -2050,9 +2050,8 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+       break;
+   }
+ 
+-  GST_DEBUG_OBJECT (self, "Max bitrate: %u bits/sec, "
+-      "Target bitrate: %u bits/sec", self->rc.max_bitrate,
+-      self->rc.target_bitrate);
++  GST_DEBUG_OBJECT (self, "Max bitrate: %u kbps, target bitrate: %u kbps",
++      self->rc.max_bitrate, self->rc.target_bitrate);
+ 
+   if (self->rc.rc_ctrl_mode == VA_RC_CBR || self->rc.rc_ctrl_mode == VA_RC_VBR
+       || self->rc.rc_ctrl_mode == VA_RC_VCM
+-- 
+2.43.0
+

@@ -1,0 +1,32 @@
+From 14fef737ef26eed2cf8ff44500da25181d03b062 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Sebastian=20Dr=C3=B6ge?= <sebastian@centricular.com>
+Date: Thu, 18 Apr 2024 09:20:13 +0300
+Subject: [PATCH 039/117] vavp9enc: Preserve PTS and other frame metadata
+
+See also https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4150
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6680>
+---
+ sys/va/gstvavp9enc.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 32a6edbd1..5c8817d2d 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -2680,12 +2680,6 @@ gst_va_vp9_enc_prepare_output (GstVaBaseEnc * base,
+     return TRUE;
+   }
+ 
+-  frame->pts =
+-      base->start_pts + base->frame_duration;
+-  frame->dts =
+-      base->start_pts + base->frame_duration;
+-  frame->duration = base->frame_duration;
+-
+   if (frame_enc->flags & FRAME_FLAG_ALREADY_OUTPUTTED) {
+     gsize sz;
+ 
+-- 
+2.43.0
+

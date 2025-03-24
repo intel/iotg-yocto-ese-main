@@ -1,0 +1,40 @@
+From 73bebe1970f7f1bcb3ba5316a66ebc1d569de2bb Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 28 Mar 2024 16:29:50 +0800
+Subject: [PATCH 018/117] va: {av1, vp9}enc: Use g_free() to free frames
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6466>
+---
+ sys/va/gstvaav1enc.c | 2 +-
+ sys/va/gstvavp9enc.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index e699e76fd..def47f0de 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -525,7 +525,7 @@ gst_va_av1_enc_frame_free (gpointer pframe)
+   GstVaAV1EncFrame *frame = pframe;
+ 
+   g_clear_pointer (&frame->picture, gst_va_encode_picture_free);
+-  g_slice_free (GstVaAV1EncFrame, frame);
++  g_free (frame);
+ }
+ 
+ static gboolean
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 901ab1064..1444284b2 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -282,7 +282,7 @@ gst_va_vp9_enc_frame_free (gpointer pframe)
+   GstVaVp9EncFrame *frame = pframe;
+ 
+   g_clear_pointer (&frame->picture, gst_va_encode_picture_free);
+-  g_slice_free (GstVaVp9EncFrame, frame);
++  g_free (frame);
+ }
+ 
+ static gboolean
+-- 
+2.43.0
+

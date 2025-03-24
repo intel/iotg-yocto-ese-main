@@ -1,0 +1,30 @@
+From 262858f995ade5d65dc868c524bf6b41d3b3326f Mon Sep 17 00:00:00 2001
+From: "Lim, Siew Hoon" <siew.hoon.lim@intel.com>
+Date: Thu, 27 Jun 2024 14:05:46 +0800
+Subject: [PATCH 065/117] vacompositor: Initialize the allocation related
+ variables in decide_allocation()
+
+Prevent garbage value has been pass thru and causing
+pipeline fail to run later on.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7097>
+---
+ sys/va/gstvacompositor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvacompositor.c b/sys/va/gstvacompositor.c
+index b4b4f6eef..ccbc4763f 100644
+--- a/sys/va/gstvacompositor.c
++++ b/sys/va/gstvacompositor.c
+@@ -653,7 +653,7 @@ gst_va_compositor_decide_allocation (GstAggregator * agg, GstQuery * query)
+   GstVideoAggregator *vagg = GST_VIDEO_AGGREGATOR (agg);
+ 
+   GstAllocator *allocator = NULL, *other_allocator = NULL;
+-  GstAllocationParams params, other_params;
++  GstAllocationParams params = { 0, }, other_params = { 0, };
+   GstBufferPool *pool = NULL, *other_pool = NULL;
+   GstCaps *caps = NULL;
+   GstStructure *config;
+-- 
+2.43.0
+

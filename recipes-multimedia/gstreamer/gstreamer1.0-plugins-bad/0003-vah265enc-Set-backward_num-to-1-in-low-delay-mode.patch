@@ -1,7 +1,7 @@
-From f012c7acacd8aa6c8f3ca68ead831e1dd8b17c7b Mon Sep 17 00:00:00 2001
+From ab451c6c4783356277eba051bd88174218b9d3d2 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Fri, 1 Mar 2024 00:08:03 +0800
-Subject: [PATCH 03/98] vah265enc: Set backward_num to 1 in low delay mode
+Subject: [PATCH 003/117] vah265enc: Set backward_num to 1 in low delay mode
 
 In low delay B mode, the P frame is converted as B frame with forward
 references. For example, One P frame may refers to P-1, P-2 and P-3 in
@@ -16,7 +16,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/62
  1 file changed, 16 insertions(+)
 
 diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
-index a31339798b6c..46260ba85ef9 100644
+index a31339798..46260ba85 100644
 --- a/sys/va/gstvah265enc.c
 +++ b/sys/va/gstvah265enc.c
 @@ -3854,6 +3854,22 @@ _h265_generate_gop_structure (GstVaH265Enc * self)

@@ -1,0 +1,66 @@
+From e33387dbaf863628adb9aac098d6dc030963ab3c Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Wed, 4 Dec 2024 23:27:37 +0800
+Subject: [PATCH 102/117] Doc: Update the plugin document for h266parse
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5710>
+---
+ docs/plugins/gst_plugins_cache.json | 42 +++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+diff --git a/docs/plugins/gst_plugins_cache.json b/docs/plugins/gst_plugins_cache.json
+index 7884048b5..7fdabe00f 100644
+--- a/docs/plugins/gst_plugins_cache.json
++++ b/docs/plugins/gst_plugins_cache.json
+@@ -243592,6 +243592,48 @@
+                 },
+                 "rank": "secondary"
+             },
++            "h266parse": {
++                "author": "Hongcheng Zhong",
++                "description": "Parses H.266 streams",
++                "hierarchy": [
++                    "GstH266Parse",
++                    "GstBaseParse",
++                    "GstElement",
++                    "GstObject",
++                    "GInitiallyUnowned",
++                    "GObject"
++                ],
++                "klass": "Codec/Parser/Converter/Video",
++                "pad-templates": {
++                    "sink": {
++                        "caps": "video/x-h266:\n",
++                        "direction": "sink",
++                        "presence": "always"
++                    },
++                    "src": {
++                        "caps": "video/x-h266:\n         parsed: true\n  stream-format: { (string)byte-stream }\n      alignment: { (string)au, (string)nal }\n",
++                        "direction": "src",
++                        "presence": "always"
++                    }
++                },
++                "properties": {
++                    "config-interval": {
++                        "blurb": "Send VPS, SPS and PPS Insertion Interval in seconds (sprop parameter sets will be multiplexed in the data stream when detected.) (0 = disabled, -1 = send with every IDR frame)",
++                        "conditionally-available": false,
++                        "construct": true,
++                        "construct-only": false,
++                        "controllable": false,
++                        "default": "0",
++                        "max": "3600",
++                        "min": "-1",
++                        "mutable": "null",
++                        "readable": true,
++                        "type": "gint",
++                        "writable": true
++                    }
++                },
++                "rank": "secondary"
++            },
+             "jpeg2000parse": {
+                 "author": "Aaron Boxer <boxerab@gmail.com>",
+                 "description": "Parses JPEG 2000 files",
+-- 
+2.43.0
+

@@ -1,0 +1,43 @@
+From afe196982d43aaa764988031005d1cc3eb782da3 Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Tue, 14 Nov 2023 14:39:29 +0800
+Subject: [PATCH 069/117] msdk: Add new driver name "xe"
+
+Intel has released a new graphic driver named "xe" for
+newer Gen12/Xe graphics (i.e. from Lunar Lake).
+This patch add "xe" name when getting device in gst-msdk plugins.
+See xe driver public in
+https://github.com/torvalds/linux/tree/master/drivers/gpu/drm/xe
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7178>
+---
+ sys/msdk/gstmsdkcontext.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkcontext.c b/sys/msdk/gstmsdkcontext.c
+index c15496a58..baf9f2cfe 100644
+--- a/sys/msdk/gstmsdkcontext.c
++++ b/sys/msdk/gstmsdkcontext.c
+@@ -92,7 +92,8 @@ get_device_path (void)
+     if (fd >= 0) {
+       drmVersionPtr drm_version = drmGetVersion (fd);
+ 
+-      if (!drm_version || strncmp (drm_version->name, "i915", 4)) {
++      if (!drm_version || (strncmp (drm_version->name, "i915", 4) &&
++              strncmp (drm_version->name, "xe", 2))) {
+         GST_ERROR ("The specified device isn't an Intel device");
+         drmFreeVersion (drm_version);
+         close (fd);
+@@ -131,7 +132,8 @@ get_device_path (void)
+ 
+       parent = g_udev_device_get_parent (dev);
+       if (g_strcmp0 (g_udev_device_get_subsystem (parent), "pci") != 0 ||
+-          g_strcmp0 (g_udev_device_get_driver (parent), "i915") != 0) {
++          (g_strcmp0 (g_udev_device_get_driver (parent), "i915") != 0 &&
++              g_strcmp0 (g_udev_device_get_driver (parent), "xe") != 0)) {
+         g_object_unref (parent);
+         continue;
+       }
+-- 
+2.43.0
+

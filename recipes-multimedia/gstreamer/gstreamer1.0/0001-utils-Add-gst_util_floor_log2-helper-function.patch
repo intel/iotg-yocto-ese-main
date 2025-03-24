@@ -1,0 +1,84 @@
+From b812f8a28b8bce7450d8b78ae6052c171f000f6f Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Wed, 20 Nov 2024 15:02:19 +0800
+Subject: [PATCH] utils: Add gst_util_floor_log2 helper function
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5003>
+---
+ gst/gstutils.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ gst/gstutils.h |  3 +++
+ 2 files changed, 48 insertions(+)
+
+diff --git a/gst/gstutils.c b/gst/gstutils.c
+index 99e95dd0..ad9938e5 100644
+--- a/gst/gstutils.c
++++ b/gst/gstutils.c
+@@ -4518,6 +4518,51 @@ gst_util_ceil_log2 (guint32 v)
+   return y;
+ }
+ 
++/**
++ * gst_util_floor_log2:
++ * @v: a #guint32 value.
++ *
++ * Returns smallest integral value not bigger than log2(v).
++ *
++ * Returns: a computed #guint val.
++ *
++ * Since: 1.26
++ */
++guint
++gst_util_floor_log2 (guint32 v)
++{
++  guint32 result = 0;
++
++  g_return_val_if_fail (v != 0, -1);
++
++  if (v & 0xffff0000) {
++    v >>= 16;
++    result += 16;
++  }
++
++  if (v & 0xff00) {
++    v >>= 8;
++    result += 8;
++  }
++
++  if (v & 0xf0) {
++    v >>= 4;
++    result += 4;
++  }
++
++  if (v & 0xc) {
++    v >>= 2;
++    result += 2;
++  }
++
++  if (v & 0x2) {
++    v >>= 1;
++    result += 1;
++  }
++
++  return result;
++}
++
+ /**
+  * gst_calculate_linear_regression: (skip)
+  * @xy: Pairs of (x,y) values
+diff --git a/gst/gstutils.h b/gst/gstutils.h
+index f42dab84..9400507f 100644
+--- a/gst/gstutils.h
++++ b/gst/gstutils.h
+@@ -1243,6 +1243,9 @@ gboolean      gst_type_is_plugin_api            (GType type, GstPluginAPIFlags *
+ GST_API
+ guint         gst_util_ceil_log2                (guint32 v);
+ 
++GST_API
++guint         gst_util_floor_log2               (guint32 x);
++
+ GST_API
+ gint          gst_util_filename_compare        (const gchar *a, const gchar *b);
+ 
+-- 
+2.43.0
+

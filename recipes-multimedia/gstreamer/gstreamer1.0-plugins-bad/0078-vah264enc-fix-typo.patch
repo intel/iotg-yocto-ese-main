@@ -1,0 +1,27 @@
+From 61a337ce069189e5349aa5c13c601945bb10e94b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Thu, 8 Aug 2024 14:09:20 +0200
+Subject: [PATCH 078/117] vah264enc: fix typo
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7337>
+---
+ sys/va/gstvah264enc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index b318b2589..bfb2d5dfc 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -2356,7 +2356,7 @@ _fill_picture_parameter (GstVaH264Enc * self, GstVaH264EncFrame * frame,
+     .pic_fields.bits.weighted_bipred_idc = 0,
+     .pic_fields.bits.constrained_intra_pred_flag = 0,
+     .pic_fields.bits.transform_8x8_mode_flag = self->use_dct8x8,
+-    /* enable debloking */
++    /* enable deblocking */
+     .pic_fields.bits.deblocking_filter_control_present_flag = 1,
+     .pic_fields.bits.redundant_pic_cnt_present_flag = 0,
+     /* bottom_field_pic_order_in_frame_present_flag */
+-- 
+2.43.0
+

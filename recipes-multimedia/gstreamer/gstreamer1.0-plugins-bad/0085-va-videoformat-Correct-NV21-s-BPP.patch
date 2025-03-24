@@ -1,0 +1,26 @@
+From af2ed9bf9f656bc5d4d1ee5ae89cda63098d2529 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Thu, 5 Sep 2024 01:14:17 +0800
+Subject: [PATCH 085/117] va: videoformat: Correct NV21's BPP
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6022>
+---
+ gst-libs/gst/va/gstvavideoformat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/va/gstvavideoformat.c b/gst-libs/gst/va/gstvavideoformat.c
+index 8e5b2a510..2d837dc9e 100644
+--- a/gst-libs/gst/va/gstvavideoformat.c
++++ b/gst-libs/gst/va/gstvavideoformat.c
+@@ -44,7 +44,7 @@ static struct FormatMap
+ #define G(format, fourcc, rtformat, order, bpp) \
+     F (format, fourcc, rtformat, order, bpp, 0, 0, 0 ,0, 0)
+   G (NV12, ('N', 'V', '1', '2'), YUV420, NSB, 12),
+-  G (NV21, ('N', 'V', '2', '1'), YUV420, NSB, 21),
++  G (NV21, ('N', 'V', '2', '1'), YUV420, NSB, 12),
+   G (VUYA, ('A', 'Y', 'U', 'V'), YUV444, LSB, 32),
+   F (RGBA, ('R', 'G', 'B', 'A'), RGB32, LSB, 32, 32, 0x000000ff,
+       0x0000ff00, 0x00ff0000, 0xff000000),
+-- 
+2.43.0
+

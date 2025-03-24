@@ -1,0 +1,123 @@
+From 9a5c73879f937fbfb5cf0b191a1403ebb04ee5da Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 14 May 2024 10:54:03 +0800
+Subject: [PATCH 043/117] vaenc: Allow to set the max-qp and min-qp for QVBR
+ and ICQ modes
+
+In fact, these setting can work well.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6841>
+---
+ sys/va/gstvaav1enc.c  | 11 -----------
+ sys/va/gstvabaseenc.c |  2 --
+ sys/va/gstvah264enc.c | 11 -----------
+ sys/va/gstvah265enc.c | 11 -----------
+ sys/va/gstvavp9enc.c  | 11 -----------
+ 5 files changed, 46 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index 905b2f439..69a36181a 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -2620,17 +2620,6 @@ _av1_ensure_rate_control (GstVaAV1Enc * self)
+     self->rc.rc_ctrl_mode = VA_RC_NONE;
+   }
+ 
+-  /* ICQ mode and QVBR mode do not need max/min qp. */
+-  if (self->rc.rc_ctrl_mode == VA_RC_ICQ || self->rc.rc_ctrl_mode == VA_RC_QVBR) {
+-    self->rc.min_qindex = 0;
+-    self->rc.max_qindex = 255;
+-
+-    update_property_uint (base, &self->prop.min_qp, self->rc.min_qindex,
+-        PROP_MIN_QP);
+-    update_property_uint (base, &self->prop.max_qp, self->rc.max_qindex,
+-        PROP_MAX_QP);
+-  }
+-
+   if (self->rc.min_qindex > self->rc.max_qindex) {
+     GST_INFO_OBJECT (self, "The min_qindex %d is bigger than the max_qindex"
+         " %d, set it to the max_qindex", self->rc.min_qindex,
+diff --git a/sys/va/gstvabaseenc.c b/sys/va/gstvabaseenc.c
+index 5e68258aa..59cb46dd3 100644
+--- a/sys/va/gstvabaseenc.c
++++ b/sys/va/gstvabaseenc.c
+@@ -984,10 +984,8 @@ gst_va_base_enc_add_rate_control_parameter (GstVaBaseEnc * base,
+   /* *INDENT-ON* */
+ 
+   if (rc_mode == VA_RC_ICQ) {
+-    g_assert (min_qp == 0);
+     rate_control.rate_control.ICQ_quality_factor = qp_i;
+   } else if (rc_mode == VA_RC_QVBR) {
+-    g_assert (min_qp == 0);
+     rate_control.rate_control.quality_factor = qp_i;
+   } else {
+     rate_control.rate_control.initial_qp = qp_i;
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index 35754ac81..6f6737970 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -539,17 +539,6 @@ _ensure_rate_control (GstVaH264Enc * self)
+     self->rc.rc_ctrl_mode = VA_RC_NONE;
+   }
+ 
+-  /* ICQ mode and QVBR mode do not need max/min qp. */
+-  if (self->rc.rc_ctrl_mode == VA_RC_ICQ || self->rc.rc_ctrl_mode == VA_RC_QVBR) {
+-    self->rc.min_qp = 0;
+-    self->rc.max_qp = 51;
+-
+-    update_property_uint (base, &self->prop.min_qp, self->rc.min_qp,
+-        PROP_MIN_QP);
+-    update_property_uint (base, &self->prop.max_qp, self->rc.max_qp,
+-        PROP_MAX_QP);
+-  }
+-
+   if (self->rc.min_qp > self->rc.max_qp) {
+     GST_INFO_OBJECT (self, "The min_qp %d is bigger than the max_qp %d, "
+         "set it to the max_qp", self->rc.min_qp, self->rc.max_qp);
+diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
+index 2deb8809c..a9b689820 100644
+--- a/sys/va/gstvah265enc.c
++++ b/sys/va/gstvah265enc.c
+@@ -3325,17 +3325,6 @@ _h265_ensure_rate_control (GstVaH265Enc * self)
+     self->rc.rc_ctrl_mode = VA_RC_NONE;
+   }
+ 
+-  /* ICQ mode and QVBR mode do not need max/min qp. */
+-  if (self->rc.rc_ctrl_mode == VA_RC_ICQ || self->rc.rc_ctrl_mode == VA_RC_QVBR) {
+-    self->rc.min_qp = 0;
+-    self->rc.max_qp = 51;
+-
+-    update_property_uint (base, &self->prop.min_qp, self->rc.min_qp,
+-        PROP_MIN_QP);
+-    update_property_uint (base, &self->prop.max_qp, self->rc.max_qp,
+-        PROP_MAX_QP);
+-  }
+-
+   if (self->rc.min_qp > self->rc.max_qp) {
+     GST_INFO_OBJECT (self, "The min_qp %d is bigger than the max_qp %d, "
+         "set it to the max_qp", self->rc.min_qp, self->rc.max_qp);
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 15968b5c5..ea0a47870 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -1913,17 +1913,6 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+     self->rc.rc_ctrl_mode = VA_RC_NONE;
+   }
+ 
+-  /* ICQ mode and QVBR mode do not need max/min qp. */
+-  if (self->rc.rc_ctrl_mode == VA_RC_ICQ || self->rc.rc_ctrl_mode == VA_RC_QVBR) {
+-    self->rc.min_qindex = 0;
+-    self->rc.max_qindex = 255;
+-
+-    update_property_uint (base, &self->prop.min_qp, self->rc.min_qindex,
+-        PROP_MIN_QP);
+-    update_property_uint (base, &self->prop.max_qp, self->rc.max_qindex,
+-        PROP_MAX_QP);
+-  }
+-
+   if (self->rc.min_qindex > self->rc.max_qindex) {
+     GST_INFO_OBJECT (self, "The min_qindex %d is bigger than the max_qindex"
+         " %d, set it to the max_qindex", self->rc.min_qindex,
+-- 
+2.43.0
+

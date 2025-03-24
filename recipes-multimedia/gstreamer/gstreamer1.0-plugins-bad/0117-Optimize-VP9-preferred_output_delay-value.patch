@@ -1,0 +1,26 @@
+From 4993f16ac6a5b0573842467cf2aa42557609fbcd Mon Sep 17 00:00:00 2001
+From: "Ch'ng, Seng Guan" <seng.guan.chng@intel.com>
+Date: Tue, 18 Feb 2025 22:39:54 +0000
+Subject: [PATCH 117/117] Optimize VP9 preferred_output_delay value
+
+Signed-off-by: Ch'ng, Seng Guan <seng.guan.chng@intel.com>
+---
+ sys/va/gstvavp9enc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
+index 2c99d2feb..0c2fcef47 100644
+--- a/sys/va/gstvavp9enc.c
++++ b/sys/va/gstvavp9enc.c
+@@ -2141,7 +2141,7 @@ gst_va_vp9_enc_reconfig (GstVaBaseEnc * base)
+     base->preferred_output_delay = 0;
+   } else {
+     /* FIXME: An experience value for most of the platforms. */
+-    base->preferred_output_delay = 4;
++    base->preferred_output_delay = 2;
+   }
+ 
+   base->profile = profile;
+-- 
+2.43.0
+

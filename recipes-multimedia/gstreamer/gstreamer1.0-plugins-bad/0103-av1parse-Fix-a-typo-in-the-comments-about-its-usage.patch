@@ -1,0 +1,28 @@
+From 599719816e6ce5ae51916e4a4bff96ed300a3e92 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 20 Dec 2024 08:18:15 +0800
+Subject: [PATCH 103/117] av1parse: Fix a typo in the comments about its usage
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5710>
+---
+ gst/videoparsers/gstav1parse.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst/videoparsers/gstav1parse.c b/gst/videoparsers/gstav1parse.c
+index 3d382893b..b401c3889 100644
+--- a/gst/videoparsers/gstav1parse.c
++++ b/gst/videoparsers/gstav1parse.c
+@@ -58,8 +58,8 @@
+  * ## Example launch line to generate annex B format AV1 stream:
+  * ```
+  * gst-launch-1.0 filesrc location=sample.av1 ! ivfparse ! av1parse !  \
+- *   video/x-av1,alignment=\(string\)tu,stream-format=\(string\)annexb ! \
+- *   filesink location=matroskamux ! filesink location=trans.mkv
++ *   video/x-av1,alignment=\(string\)tu,stream-format=\(string\)obu-stream ! \
++ *   matroskamux ! filesink location=trans.mkv
+  * ```
+  *
+  * Since: 1.20
+-- 
+2.43.0
+

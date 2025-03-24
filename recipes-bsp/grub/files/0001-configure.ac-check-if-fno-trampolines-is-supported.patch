@@ -1,6 +1,6 @@
-From 5cbf31bb81f1489a3ec53ccb3c454598155d7a6a Mon Sep 17 00:00:00 2001
+From a8ea0273928bd5016d18fb0b801a0cac6c519961 Mon Sep 17 00:00:00 2001
 From: Preeti Sachan <preeti.sachan@intel.com>
-Date: Fri, 17 May 2024 16:26:20 +0530
+Date: Mon, 30 Sep 2024 09:09:42 +0800
 Subject: [PATCH] configure.ac: check if -fno-trampolines is supported
 
 Old system gcc may be in use.
@@ -13,23 +13,23 @@ Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
  2 files changed, 19 insertions(+), 3 deletions(-)
 
 diff --git a/conf/Makefile.common b/conf/Makefile.common
-index 9fe5863b2..2a3d5782c 100644
+index f8c2f6bd8..575c02696 100644
 --- a/conf/Makefile.common
 +++ b/conf/Makefile.common
-@@ -69,7 +69,7 @@ starfielddir = $(pkgdatadir)/themes/starfield
+@@ -78,7 +78,7 @@ starfielddir = $(pkgdatadir)/themes/starfield
  systemdunitdir = ${prefix}/lib/systemd/system
  systemd_logind_service_ddir = $(systemdunitdir)/systemd-logind.service.d
  
--CFLAGS_GNULIB = -Wno-undef -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Werror=trampolines -fno-trampolines
-+CFLAGS_GNULIB = -Wno-undef -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code $(TRAMPOLINES_CFLAGS)
+-CFLAGS_GNULIB = -Wno-undef -Wno-error=sign-compare -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Wno-error=attributes -Werror=trampolines -fno-trampolines
++CFLAGS_GNULIB = -Wno-undef -Wno-error=sign-compare -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Wno-error=attributes $(TRAMPOLINES_CFLAGS)
  CPPFLAGS_GNULIB = -I$(top_builddir)/grub-core/lib/gnulib -I$(top_srcdir)/grub-core/lib/gnulib
  
  CFLAGS_POSIX = -fno-builtin
 diff --git a/configure.ac b/configure.ac
-index b66e07c67..f287f2314 100644
+index 4788f3d6a..f64a1f660 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2009,8 +2009,24 @@ if test x"$enable_wextra" != xno ; then
+@@ -2166,8 +2166,24 @@ if test x"$enable_wextra" != xno ; then
    HOST_CFLAGS="$HOST_CFLAGS -Wextra"
  fi
  

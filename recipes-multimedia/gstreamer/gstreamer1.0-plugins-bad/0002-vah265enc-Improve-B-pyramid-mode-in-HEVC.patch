@@ -1,7 +1,7 @@
-From e056b3c4b9c4803fd694cd1b7ab644dc6c05d6e8 Mon Sep 17 00:00:00 2001
+From 858a45bf63a64776a1b59b2a62085c888fbdd37a Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Fri, 26 Jan 2024 23:50:08 +0800
-Subject: [PATCH 02/98] vah265enc: Improve B pyramid mode in HEVC
+Subject: [PATCH 002/117] vah265enc: Improve B pyramid mode in HEVC
 
 If the reference frame number is bigger than 2, we can enable the
 pyramid B mode. We do not need to assign a reference frame to each
@@ -13,7 +13,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/62
  1 file changed, 23 insertions(+), 22 deletions(-)
 
 diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
-index 64ce2a485fde..a31339798b6c 100644
+index 64ce2a485..a31339798 100644
 --- a/sys/va/gstvah265enc.c
 +++ b/sys/va/gstvah265enc.c
 @@ -714,9 +714,7 @@ static gboolean

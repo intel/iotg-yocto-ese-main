@@ -1,0 +1,33 @@
+From b46242d60513faeef7326d673c10ae901a4853ea Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 30 Aug 2024 23:00:48 +0800
+Subject: [PATCH 081/117] va: baseenc: Check the bitrate property before get
+ its value
+
+Not all the encoders have the bitrate property, such as the jpeg enc.
+We need to check that property before getting its value, or the glib
+will print warnings.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6022>
+---
+ sys/va/gstvabaseenc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvabaseenc.c b/sys/va/gstvabaseenc.c
+index 75bb98985..08a916320 100644
+--- a/sys/va/gstvabaseenc.c
++++ b/sys/va/gstvabaseenc.c
+@@ -1194,7 +1194,9 @@ gst_va_base_enc_add_codec_tag (GstVaBaseEnc * base, const gchar * codec_name)
+   const gchar *encoder_name;
+   guint bitrate = 0;
+ 
+-  g_object_get (venc, "bitrate", &bitrate, NULL);
++  if (g_object_class_find_property (G_OBJECT_GET_CLASS (base), "bitrate"))
++    g_object_get (venc, "bitrate", &bitrate, NULL);
++
+   if (bitrate > 0)
+     gst_tag_list_add (tags, GST_TAG_MERGE_REPLACE, GST_TAG_NOMINAL_BITRATE,
+         bitrate, NULL);
+-- 
+2.43.0
+

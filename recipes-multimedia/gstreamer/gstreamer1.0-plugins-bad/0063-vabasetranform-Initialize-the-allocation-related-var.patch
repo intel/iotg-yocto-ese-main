@@ -1,0 +1,30 @@
+From f1064bbc51b07bd8fc87457b4293385a55d27977 Mon Sep 17 00:00:00 2001
+From: "Lim, Siew Hoon" <siew.hoon.lim@intel.com>
+Date: Tue, 25 Jun 2024 14:38:12 +0800
+Subject: [PATCH 063/117] vabasetranform: Initialize the allocation related
+ variables in decide_allocation()
+
+Prevent garbage value has been pass thru and causing
+pipeline fail to run.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7097>
+---
+ sys/va/gstvabasetransform.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvabasetransform.c b/sys/va/gstvabasetransform.c
+index e6a8bf4af..8ac2f08c3 100644
+--- a/sys/va/gstvabasetransform.c
++++ b/sys/va/gstvabasetransform.c
+@@ -326,7 +326,7 @@ gst_va_base_transform_decide_allocation (GstBaseTransform * trans,
+ {
+   GstVaBaseTransform *self = GST_VA_BASE_TRANSFORM (trans);
+   GstAllocator *allocator = NULL, *other_allocator = NULL;
+-  GstAllocationParams params, other_params;
++  GstAllocationParams params = { 0, }, other_params = { 0, };
+   GstBufferPool *pool = NULL, *other_pool = NULL;
+   GstCaps *outcaps = NULL;
+   GstStructure *config;
+-- 
+2.43.0
+

@@ -1,0 +1,27 @@
+From d49de544c7f6a08e2c6f1c0e778732ef120aa62c Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Wed, 6 Mar 2024 11:04:37 +0800
+Subject: [PATCH 020/117] msdkenc: Set VideoFullRange according to input
+ colorimetry range
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6316>
+---
+ sys/msdk/gstmsdkenc.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index a74bc5294..028cab905 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -664,6 +664,8 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+         gst_video_transfer_function_to_iso (info.colorimetry.transfer);
+     ext_vsi.MatrixCoefficients =
+         gst_video_color_matrix_to_iso (info.colorimetry.matrix);
++    ext_vsi.VideoFullRange =
++        (info.colorimetry.range == GST_VIDEO_COLOR_RANGE_0_255);
+     gst_msdkenc_add_extra_param (thiz, (mfxExtBuffer *) & ext_vsi);
+   }
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,49 @@
+From 4ffc3c7f9da9c6b66b3302bf2a9751d79e9f5dc7 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Fri, 6 Sep 2024 23:44:53 +0800
+Subject: [PATCH 087/117] va: jpegenc: Fix a memory leak when filter sink caps
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7547>
+---
+ sys/va/gstvajpegenc.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/sys/va/gstvajpegenc.c b/sys/va/gstvajpegenc.c
+index 9b22b887b..3850a8cc5 100644
+--- a/sys/va/gstvajpegenc.c
++++ b/sys/va/gstvajpegenc.c
+@@ -1216,8 +1216,10 @@ _filter_sink_caps (GstCaps * sinkcaps)
+       guint32 fourcc;
+ 
+       val = gst_structure_get_value (st, "drm-format");
+-      if (!val)
++      if (!val) {
++        gst_structure_free (st);
+         continue;
++      }
+ 
+       if (G_VALUE_HOLDS_STRING (val)) {
+         format_str = g_value_get_string (val);
+@@ -1253,8 +1255,10 @@ _filter_sink_caps (GstCaps * sinkcaps)
+           gst_caps_features_copy (features));
+     } else {
+       val = gst_structure_get_value (st, "format");
+-      if (!val)
++      if (!val) {
++        gst_structure_free (st);
+         continue;
++      }
+ 
+       if (G_VALUE_HOLDS_STRING (val)) {
+         format_str = g_value_get_string (val);
+@@ -1299,7 +1303,6 @@ _filter_sink_caps (GstCaps * sinkcaps)
+   return ret;
+ }
+ 
+-
+ gboolean
+ gst_va_jpeg_enc_register (GstPlugin * plugin, GstVaDevice * device,
+     GstCaps * sink_caps, GstCaps * src_caps, guint rank,
+-- 
+2.43.0
+

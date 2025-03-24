@@ -1,0 +1,41 @@
+From 674b83aab4b56dd86c5548de4ad3c74c365b2028 Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Mon, 16 Dec 2024 21:41:55 -0500
+Subject: [PATCH 096/117] va: h264dec: Allow "extended" profile decoding
+
+Extended is identical to main but allows for FMO/ASO features to be
+used, and prevent using CABAC. Using similar logic to "baseline",
+assume that if we support main, we can also do extended.
+
+This fixes the following fluster vectors, which otherwise would fail
+when trying to link the parsebin pad.
+
+  - BA3_SVA_C
+  - MR6_BT_B
+  - MR7_BT_B
+  - MR8_BT_B
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/8164>
+---
+ sys/va/gstvah264dec.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/sys/va/gstvah264dec.c b/sys/va/gstvah264dec.c
+index c17dbfda8..c4a149434 100644
+--- a/sys/va/gstvah264dec.c
++++ b/sys/va/gstvah264dec.c
+@@ -787,6 +787,11 @@ _complete_sink_caps (GstCaps * sinkcaps)
+ 
+     _append_str (&val, profile);
+ 
++    /* Similar to baseline and constrained-baseline, extended is the same as
++     * main if we ignore ASO/FMO features. */
++    if (g_strcmp0 (profile, "main") == 0)
++      _append_str (&val, "extended");
++
+     if (g_strcmp0 (profile, "high") == 0) {
+       for (j = 0; j < G_N_ELEMENTS (high_synthetic); j++)
+         _append_str (&val, high_synthetic[j]);
+-- 
+2.43.0
+

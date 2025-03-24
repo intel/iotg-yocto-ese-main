@@ -1,7 +1,7 @@
-From 7f83ace623568ac9db7fa1489df1d756e52e4e74 Mon Sep 17 00:00:00 2001
+From 026f5ea31a6868e12388e85b941b5d4f3bb2a617 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Sun, 28 Jan 2024 23:27:48 +0800
-Subject: [PATCH 01/98] vah265enc: Expand log2_max_pic_order_cnt if needed
+Subject: [PATCH 001/117] vah265enc: Expand log2_max_pic_order_cnt if needed
 
 In b_pyramid mode, B frames can be ref and prevPicOrderCntLsb can
 be the B frame POC which is smaller than the P frame. This can cause
@@ -13,7 +13,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/62
  1 file changed, 8 insertions(+)
 
 diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
-index a2f84b8b2b7f..64ce2a485fde 100644
+index a2f84b8b2..64ce2a485 100644
 --- a/sys/va/gstvah265enc.c
 +++ b/sys/va/gstvah265enc.c
 @@ -4009,6 +4009,14 @@ _h265_generate_gop_structure (GstVaH265Enc * self)

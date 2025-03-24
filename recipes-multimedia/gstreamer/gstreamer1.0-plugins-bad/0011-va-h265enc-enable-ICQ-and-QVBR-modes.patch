@@ -1,7 +1,7 @@
-From b55c97ab9936c2e124defb10c1fcb8fd0550f200 Mon Sep 17 00:00:00 2001
+From e115476a2760ed873d44383e693fd0b14977d44b Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Sat, 23 Mar 2024 01:05:40 +0800
-Subject: [PATCH 11/98] va: h265enc: enable ICQ and QVBR modes
+Subject: [PATCH 011/117] va: h265enc: enable ICQ and QVBR modes
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6433>
 ---
@@ -9,7 +9,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/64
  1 file changed, 37 insertions(+), 5 deletions(-)
 
 diff --git a/sys/va/gstvah265enc.c b/sys/va/gstvah265enc.c
-index 46260ba85ef9..a79172dfaead 100644
+index 46260ba85..a79172dfa 100644
 --- a/sys/va/gstvah265enc.c
 +++ b/sys/va/gstvah265enc.c
 @@ -3242,7 +3242,7 @@ _h265_ensure_rate_control (GstVaH265Enc * self)

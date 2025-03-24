@@ -1,24 +1,24 @@
-From f5ee6763e2b8843e2815ecbd8492582722e01013 Mon Sep 17 00:00:00 2001
+From 7355e34f6538213e63c14a2070603d8a1c573c15 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Tue, 30 Jan 2024 18:18:31 +0800
-Subject: [PATCH 07/98] va: Implement the vavp9enc plugin
+Subject: [PATCH 007/117] va: Implement the vavp9enc plugin
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3293>
 ---
- sys/va/gstvavp9enc.c | 3191 ++++++++++++++++++++++++++++++++++++++++++
+ sys/va/gstvavp9enc.c | 3185 ++++++++++++++++++++++++++++++++++++++++++
  sys/va/gstvavp9enc.h |   34 +
  sys/va/meson.build   |    3 +-
  sys/va/plugin.c      |    8 +
- 4 files changed, 3235 insertions(+), 1 deletion(-)
+ 4 files changed, 3229 insertions(+), 1 deletion(-)
  create mode 100644 sys/va/gstvavp9enc.c
  create mode 100644 sys/va/gstvavp9enc.h
 
 diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
 new file mode 100644
-index 000000000000..a8e8808e973c
+index 000000000..038c40a59
 --- /dev/null
 +++ b/sys/va/gstvavp9enc.c
-@@ -0,0 +1,3191 @@
+@@ -0,0 +1,3185 @@
 +/* GStreamer
 + *  Copyright (C) 2022 Intel Corporation
 + *     Author: He Junyan <junyan.he@intel.com>
@@ -181,8 +181,6 @@ index 000000000000..a8e8808e973c
 +  gint frame_num;
 +  guint32 flags;
 +  guint pyramid_level;
-+  /* The total frame count we handled. */
-+  guint total_frame_count;
 +  gboolean bidir_ref;
 +  gint8 ref_frame_idx[GST_VP9_REF_FRAME_MAX];
 +  /* The index in reference list to update */
@@ -288,7 +286,6 @@ index 000000000000..a8e8808e973c
 +  frame->frame_num = -1;
 +  frame->type = FRAME_TYPE_INVALID;
 +  frame->picture = NULL;
-+  frame->total_frame_count = 0;
 +  frame->pyramid_level = 0;
 +  frame->flags = 0;
 +  frame->bidir_ref = FALSE;
@@ -315,7 +312,6 @@ index 000000000000..a8e8808e973c
 +  GstVaVp9EncFrame *frame_in;
 +
 +  frame_in = gst_va_vp9_enc_frame_new ();
-+  frame_in->total_frame_count = base->input_frame_count++;
 +  gst_video_codec_frame_set_user_data (frame, frame_in,
 +      gst_va_vp9_enc_frame_free);
 +
@@ -2611,9 +2607,9 @@ index 000000000000..a8e8808e973c
 +  }
 +
 +  frame->pts =
-+      base->start_pts + base->frame_duration * frame_enc->total_frame_count;
++      base->start_pts + base->frame_duration;
 +  frame->dts =
-+      base->start_pts + base->frame_duration * base->output_frame_count;
++      base->start_pts + base->frame_duration;
 +  frame->duration = base->frame_duration;
 +
 +  if (frame_enc->flags & FRAME_FLAG_ALREADY_OUTPUTTED) {
@@ -2661,8 +2657,6 @@ index 000000000000..a8e8808e973c
 +
 +  gst_buffer_replace (&frame->output_buffer, buf);
 +  gst_clear_buffer (&buf);
-+
-+  base->output_frame_count++;
 +
 +  return TRUE;
 +}
@@ -3212,7 +3206,7 @@ index 000000000000..a8e8808e973c
 +}
 diff --git a/sys/va/gstvavp9enc.h b/sys/va/gstvavp9enc.h
 new file mode 100644
-index 000000000000..94db2e8e3bd9
+index 000000000..94db2e8e3
 --- /dev/null
 +++ b/sys/va/gstvavp9enc.h
 @@ -0,0 +1,34 @@
@@ -3251,7 +3245,7 @@ index 000000000000..94db2e8e3bd9
 +
 +G_END_DECLS
 diff --git a/sys/va/meson.build b/sys/va/meson.build
-index 250b961c8c83..d498a7b6d78e 100644
+index 250b961c8..d498a7b6d 100644
 --- a/sys/va/meson.build
 +++ b/sys/va/meson.build
 @@ -23,6 +23,7 @@ va_sources = [
@@ -3272,7 +3266,7 @@ index 250b961c8c83..d498a7b6d78e 100644
    install : true,
    install_dir : plugins_install_dir,
 diff --git a/sys/va/plugin.c b/sys/va/plugin.c
-index 06595a397778..5088880c073d 100644
+index 06595a397..5088880c0 100644
 --- a/sys/va/plugin.c
 +++ b/sys/va/plugin.c
 @@ -43,6 +43,7 @@

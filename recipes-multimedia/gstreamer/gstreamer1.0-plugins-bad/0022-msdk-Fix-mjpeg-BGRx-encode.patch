@@ -1,0 +1,38 @@
+From 04aae815f4f5f6f3300680184b179d4ad52e6928 Mon Sep 17 00:00:00 2001
+From: "Cheah, Vincent Beng Keat" <vincent.beng.keat.cheah@intel.com>
+Date: Wed, 27 Mar 2024 14:34:31 +0800
+Subject: [PATCH 022/117] msdk: Fix mjpeg BGRx encode
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6401>
+---
+ sys/msdk/gstmsdkallocator_libva.c | 1 +
+ sys/msdk/gstmsdkenc.c             | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/sys/msdk/gstmsdkallocator_libva.c b/sys/msdk/gstmsdkallocator_libva.c
+index d9b99542c..c20b8c068 100644
+--- a/sys/msdk/gstmsdkallocator_libva.c
++++ b/sys/msdk/gstmsdkallocator_libva.c
+@@ -324,6 +324,7 @@ gst_msdk_frame_lock (mfxHDL pthis, mfxMemId mid, mfxFrameData * data)
+         data->V = data->U + 2;
+         break;
+       case VA_FOURCC_ARGB:
++      case VA_FOURCC_XRGB:
+         data->Pitch = mem_id->image.pitches[0];
+         data->B = buf + mem_id->image.offsets[0];
+         data->G = data->B + 1;
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 028cab905..c47d3acdc 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -601,6 +601,7 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+       break;
+ #endif
+     case GST_VIDEO_FORMAT_BGRA:
++    case GST_VIDEO_FORMAT_BGRx:
+       thiz->param.mfx.FrameInfo.FourCC = MFX_FOURCC_RGB4;
+       thiz->param.mfx.FrameInfo.ChromaFormat = MFX_CHROMAFORMAT_YUV444;
+       thiz->param.mfx.FrameInfo.BitDepthLuma = 8;
+-- 
+2.43.0
+

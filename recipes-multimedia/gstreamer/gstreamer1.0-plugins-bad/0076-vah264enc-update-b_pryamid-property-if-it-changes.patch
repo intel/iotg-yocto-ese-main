@@ -1,0 +1,43 @@
+From d4bed26177e9b8f0b3da524d36ed524785a9c305 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?=
+ <vjaquez@igalia.com>
+Date: Tue, 6 Aug 2024 10:58:29 +0200
+Subject: [PATCH 076/117] vah264enc: update b_pryamid property if it changes
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7337>
+---
+ sys/va/gstvah264enc.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/sys/va/gstvah264enc.c b/sys/va/gstvah264enc.c
+index 43fb85a87..cb3636618 100644
+--- a/sys/va/gstvah264enc.c
++++ b/sys/va/gstvah264enc.c
+@@ -1172,6 +1172,10 @@ create_poc:
+       self->gop.num_ref_frames, PROP_NUM_REF_FRAMES);
+   update_property_uint (base, &self->prop.num_iframes, self->gop.num_iframes,
+       PROP_IFRAMES);
++  update_property_uint (base, &self->prop.num_bframes, self->gop.num_bframes,
++      PROP_BFRAMES);
++  update_property_bool (base, &self->prop.b_pyramid, self->gop.b_pyramid,
++      PROP_B_PYRAMID);
+ }
+ 
+ static void
+@@ -1639,13 +1643,6 @@ gst_va_h264_enc_reconfig (GstVaBaseEnc * base)
+ 
+   _calculate_coded_size (self);
+ 
+-  /* updates & notifications */
+-  /* num_bframes are modified several times before */
+-  update_property_uint (base, &self->prop.num_bframes, self->gop.num_bframes,
+-      PROP_BFRAMES);
+-  update_property_bool (base, &self->prop.b_pyramid, self->gop.b_pyramid,
+-      PROP_B_PYRAMID);
+-
+   if (!_init_packed_headers (self))
+     return FALSE;
+ 
+-- 
+2.43.0
+

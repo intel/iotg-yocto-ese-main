@@ -1,0 +1,1559 @@
+From f9dfb1c4402f2bac3567c167f6c2426e003f2ca1 Mon Sep 17 00:00:00 2001
+From: jlui <jonathan.ming.jun.lui@intel.com>
+Date: Tue, 8 Oct 2024 05:40:59 +0000
+Subject: [PATCH 2/2] Implement GTK using OpenGL in SD and SMT
+
+commit b0ad21c1ea3aebb7bf7a98bb1cd408cd5938a72a
+Author: jlui <jonathan.ming.jun.lui@intel.com>
+Date:   Tue Aug 27 05:22:43 2024 +0000
+
+    Fix rendering issue on Weston
+
+commit 99701f7a1d066564166e53c421f0dde8d4602e10
+Author: jlui <jonathan.ming.jun.lui@intel.com>
+Date:   Fri Aug 23 04:40:23 2024 +0000
+
+    Update Changelog and fix race condition
+
+commit 968d277f8751e9a3f695e937c73e17585cd1c5b5
+Author: jlui <jonathan.ming.jun.lui@intel.com>
+Date:   Thu Aug 15 01:06:38 2024 +0000
+
+    Implement GTK using OpenGL in SD and SMT
+---
+ CHANGELOG.md                                  |   2 +
+ CMakeLists.txt                                |   1 +
+ tools/legacy/sample_common/CMakeLists.txt     |  37 +-
+ .../sample_common/include/d3d11_device.h      |   5 +-
+ .../legacy/sample_common/include/d3d_device.h |   5 +-
+ tools/legacy/sample_common/include/gtkdata.h  |  19 +
+ tools/legacy/sample_common/include/gtkutils.h |  63 +++
+ .../legacy/sample_common/include/hw_device.h  |   6 +-
+ .../sample_common/include/sample_defs.h       |   3 +-
+ .../sample_common/include/vaapi_device.h      |  99 ++++-
+ .../sample_common/include/vaapi_utils_gtk.h   |  47 +++
+ .../legacy/sample_common/src/d3d11_device.cpp |   5 +-
+ tools/legacy/sample_common/src/d3d_device.cpp |   5 +-
+ tools/legacy/sample_common/src/gtkutils.cpp   | 376 ++++++++++++++++++
+ .../legacy/sample_common/src/vaapi_device.cpp | 111 +++++-
+ .../sample_common/src/vaapi_utils_gtk.cpp     |  96 +++++
+ .../sample_decode/include/pipeline_decode.h   |   7 +-
+ .../sample_decode/src/pipeline_decode.cpp     |  34 +-
+ .../sample_decode/src/sample_decode.cpp       |  18 +
+ .../include/smt_cli_params.h                  |   2 +
+ .../src/pipeline_transcode.cpp                |   3 +
+ .../src/sample_multi_transcode.cpp            |  19 +-
+ .../sample_multi_transcode/src/smt_cli.cpp    |  14 +
+ .../sample_vpp/include/sample_vpp_utils.h     |   1 +
+ .../sample_vpp/src/sample_vpp_utils.cpp       |   6 -
+ 25 files changed, 947 insertions(+), 37 deletions(-)
+ create mode 100644 tools/legacy/sample_common/include/gtkdata.h
+ create mode 100644 tools/legacy/sample_common/include/gtkutils.h
+ create mode 100644 tools/legacy/sample_common/include/vaapi_utils_gtk.h
+ create mode 100644 tools/legacy/sample_common/src/gtkutils.cpp
+ create mode 100644 tools/legacy/sample_common/src/vaapi_utils_gtk.cpp
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 978a2c9..5f53b6c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -15,6 +15,8 @@ GPUs from the command line.
+ ### Added
+ - VVC decode support to sample_decode
+ - Embedded version information to all shared libraries
++- GTK renderer option to samplde_decode and sample_multi_transcode
++- `-fullscreen` option to sample_decode and sample_multi_transcode when using GTK.
+ 
+ ### Changed
+ - Metrics monitor library to now build statically by default
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0bf91d8..a858a88 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -212,6 +212,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
+   message(STATUS "  ENABLE_WAYLAND                  : ${ENABLE_WAYLAND}")
+   message(STATUS "  ENABLE_X11                      : ${ENABLE_X11}")
+   message(STATUS "  ENABLE_DRI3                     : ${ENABLE_DRI3}")
++  message(STATUS "  ENABLE_GTK4                     : ${ENABLE_GTK4}")
+ endif()
+ 
+ message(STATUS "Surface sharing test tools:")
+diff --git a/tools/legacy/sample_common/CMakeLists.txt b/tools/legacy/sample_common/CMakeLists.txt
+index 2b9a8b4..b820667 100644
+--- a/tools/legacy/sample_common/CMakeLists.txt
++++ b/tools/legacy/sample_common/CMakeLists.txt
+@@ -24,7 +24,9 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
+   pkg_check_modules(PKG_WAYLAND_CLIENT wayland-client IMPORTED_TARGET GLOBAL)
+   find_program(WAYLAND_SCANNER_BIN "wayland-scanner")
+   pkg_check_modules(PKG_WAYLAND_PROTOCOLS "wayland-protocols>=1.15")
+-
++  pkg_check_modules(PKG_GTK4 GLOBAL IMPORTED_TARGET gtkmm-4.0)
++  pkg_check_modules(PKG_EPOXY GLOBAL IMPORTED_TARGET epoxy)
++  find_package(OpenGL)
+   # Set defaults for ENABLE_VA
+   if(PKG_LIBVA_FOUND AND PKG_LIBVA_DRM_FOUND)
+     set(VA_DEFAULT ON)
+@@ -79,6 +81,17 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
+   set(ENABLE_DRI3
+       ${DRI3_DEFAULT}
+       CACHE BOOL "Enable X11/DRI3 in tools.")
++
++  if(X11_DEFAULT AND PKG_GTK4_FOUND)
++    set(GTK4_DEFAULT ON)
++  else()
++    set(GTK4_DEFAULT OFF)
++  endif()
++
++  set(ENABLE_GTK4
++      ${GTK4_DEFAULT}
++      CACHE BOOL "Enable X11/GTK4 in tools.")
++
+ endif()
+ 
+ # Error if options conflict
+@@ -87,6 +100,7 @@ if(NOT ENABLE_VA
+         OR ENABLE_WAYLAND
+         OR ENABLE_X11
+         OR ENABLE_DRI3
++        OR ENABLE_GTK4
+        ))
+   message(
+     SEND_ERROR "conflicting options: VA backend requested but ENABLE_VA=OFF")
+@@ -102,6 +116,12 @@ if(ENABLE_DRI3 AND (NOT ENABLE_X11 OR NOT ENABLE_DRM))
+       "conflicting options: DRI3 requires ENABLE_X11=ON and ENABLE_DRM=ON")
+ endif()
+ 
++if(ENABLE_GTK4 AND (NOT ENABLE_X11 OR NOT ENABLE_DRM))
++  message(
++    SEND_ERROR
++      "conflicting options: GTK4 requires ENABLE_X11=ON and ENABLE_DRM=ON")
++endif()
++
+ set(TARGET sample_common)
+ add_library(${TARGET} STATIC)
+ 
+@@ -131,6 +151,7 @@ target_sources(
+           src/vaapi_utils.cpp
+           src/vaapi_utils_drm.cpp
+           src/vaapi_utils_x11.cpp
++          src/vaapi_utils_gtk.cpp
+           src/vpl_implementation_loader.cpp
+           src/vpp_ex.cpp
+           src/vm/atomic.cpp
+@@ -140,7 +161,8 @@ target_sources(
+           src/vm/thread_linux.cpp
+           src/vm/thread_windows.cpp
+           src/vm/time.cpp
+-          src/vm/time_linux.cpp)
++          src/vm/time_linux.cpp
++          src/gtkutils.cpp)
+ 
+ target_include_directories(
+   ${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+@@ -304,6 +326,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
+           else()
+             message(STATUS "Building ${TARGET} without DRI3 support")
+           endif()
++
+         else()
+           message(
+             SEND_ERROR
+@@ -313,6 +336,16 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
+       else()
+         message(STATUS "Building ${TARGET} without X11 support")
+       endif()
++
++      if(ENABLE_GTK4)
++        target_compile_definitions(${TARGET} PUBLIC LIBVA_GTK4_SUPPORT)
++        target_link_libraries(${TARGET} PUBLIC PkgConfig::PKG_GTK4)
++        target_link_libraries(${TARGET} PUBLIC OpenGL::GL)
++        target_include_directories(${TARGET} PUBLIC OpenGL::GL)
++        target_link_libraries(${TARGET} PUBLIC PkgConfig::PKG_EPOXY)
++        target_include_directories(${TARGET} PUBLIC PkgConfig::PKG_EPOXY)
++      endif()
++
+     else()
+       message(
+         SEND_ERROR
+diff --git a/tools/legacy/sample_common/include/d3d11_device.h b/tools/legacy/sample_common/include/d3d11_device.h
+index db27698..4f97f79 100644
+--- a/tools/legacy/sample_common/include/d3d11_device.h
++++ b/tools/legacy/sample_common/include/d3d11_device.h
+@@ -25,7 +25,10 @@ class CD3D11Device : public CHWDevice {
+ public:
+     CD3D11Device();
+     virtual ~CD3D11Device();
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum);
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false);
+     virtual mfxStatus Reset();
+     virtual mfxStatus GetHandle(mfxHandleType type, mfxHDL* pHdl);
+     virtual mfxStatus SetHandle(mfxHandleType type, mfxHDL hdl);
+diff --git a/tools/legacy/sample_common/include/d3d_device.h b/tools/legacy/sample_common/include/d3d_device.h
+index 8a08ecb..f39b4b7 100644
+--- a/tools/legacy/sample_common/include/d3d_device.h
++++ b/tools/legacy/sample_common/include/d3d_device.h
+@@ -26,7 +26,10 @@ public:
+     CD3D9Device();
+     virtual ~CD3D9Device();
+ 
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum);
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false);
+     virtual mfxStatus Reset();
+     virtual mfxStatus GetHandle(mfxHandleType type, mfxHDL* pHdl);
+     virtual mfxStatus SetHandle(mfxHandleType type, mfxHDL hdl);
+diff --git a/tools/legacy/sample_common/include/gtkdata.h b/tools/legacy/sample_common/include/gtkdata.h
+new file mode 100644
+index 0000000..2614a6d
+--- /dev/null
++++ b/tools/legacy/sample_common/include/gtkdata.h
+@@ -0,0 +1,19 @@
++/*############################################################################
++  # Copyright (C) 2024 Intel Corporation
++  #
++  # SPDX-License-Identifier: MIT
++  ############################################################################*/
++#ifndef __GTK_DATA_H__
++#define __GTK_DATA_H__
++
++typedef struct {
++    int fd;
++    int width;
++    int height;
++    int stride[3];
++    int num_planes;
++    int offset[3];
++    uint32_t fourcc;
++} gtk_data_t;
++
++#endif // __GTK_DATA_H__
+diff --git a/tools/legacy/sample_common/include/gtkutils.h b/tools/legacy/sample_common/include/gtkutils.h
+new file mode 100644
+index 0000000..e3a9808
+--- /dev/null
++++ b/tools/legacy/sample_common/include/gtkutils.h
+@@ -0,0 +1,63 @@
++/*############################################################################
++  # Copyright (C) 2024 Intel Corporation
++  #
++  # SPDX-License-Identifier: MIT
++  ############################################################################*/
++#ifndef __GTK_UTILS_H__
++#define __GTK_UTILS_H__
++#if defined(LIBVA_GTK4_SUPPORT)
++    #include <iostream>
++    #include <string>
++    #include <vector>
++
++    #include <epoxy/egl.h>
++    #include <gtkmm.h>
++    #include "gtkdata.h"
++
++class GtkPlayer : public Gtk::Window {
++public:
++    GtkPlayer(int width, int height, bool isFullscreen);
++    ~GtkPlayer();
++    void frameReady();
++    std::unique_ptr<Glib::Dispatcher> m_dispatcher;
++    gtk_data_t m_frame_data;
++
++protected:
++    Gtk::Box m_VBox{ Gtk::Orientation::VERTICAL, false };
++
++    EGLDisplay m_egl_display;
++    PFNEGLCREATEIMAGEPROC eglCreateImage;
++    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
++    Gtk::GLArea m_GLArea;
++
++    void realize();
++    void unrealize();
++    bool render(const Glib::RefPtr<Gdk::GLContext>& context);
++
++    void initBuffers();
++    void initShaders();
++    void initEgl(void);
++    void getMonitorDimension();
++
++    bool onKeyPressEvent(guint keyval, guint a, Gdk::ModifierType state);
++
++    int m_target = GL_TEXTURE_2D;
++    GLuint m_Vao{ 0 };
++    GLuint m_Buffer{ 0 };
++    GLuint m_program{ 0 };
++    GLuint m_Mvp{ 0 };
++    GLuint m_Ebo{ 0 };
++    GLuint m_texture;
++
++    Gdk::Rectangle m_mon_dim;
++    Gdk::Rectangle m_mon_work_area;
++    bool m_isX11 = false;
++    int m_height = 0;
++    int m_width  = 0;
++    bool m_fullscreenMode;
++    std::set<guint> m_pressed_keys;
++};
++
++#endif /* #if defined(LIBVA_GTK4_SUPPORT) */
++
++#endif /* __GTK_UTILS_H__ */
+diff --git a/tools/legacy/sample_common/include/hw_device.h b/tools/legacy/sample_common/include/hw_device.h
+index f60ef2b..6e65231 100644
+--- a/tools/legacy/sample_common/include/hw_device.h
++++ b/tools/legacy/sample_common/include/hw_device.h
+@@ -16,8 +16,12 @@ public:
+     @param[in] hWindow Window handle to bundle device to.
+     @param[in] nViews Number of views to process.
+     @param[in] nAdapterNum Number of adapter to use
++    @param[in] isFullScreen Full screen is enabled or not
+     */
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) = 0;
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false) = 0;
+     /// Reset device.
+     virtual mfxStatus Reset() = 0;
+     /// Get handle can be used for MFX session SetHandle calls
+diff --git a/tools/legacy/sample_common/include/sample_defs.h b/tools/legacy/sample_common/include/sample_defs.h
+index 68a59d0..b099153 100644
+--- a/tools/legacy/sample_common/include/sample_defs.h
++++ b/tools/legacy/sample_common/include/sample_defs.h
+@@ -96,7 +96,8 @@ enum LibVABackend {
+     MFX_LIBVA_DRM_RENDERNODE = MFX_LIBVA_DRM,
+     MFX_LIBVA_DRM_MODESET,
+     MFX_LIBVA_X11,
+-    MFX_LIBVA_WAYLAND
++    MFX_LIBVA_WAYLAND,
++    MFX_LIBVA_GTK
+ };
+ 
+ #endif
+diff --git a/tools/legacy/sample_common/include/vaapi_device.h b/tools/legacy/sample_common/include/vaapi_device.h
+index 6d46c23..b3973dd 100644
+--- a/tools/legacy/sample_common/include/vaapi_device.h
++++ b/tools/legacy/sample_common/include/vaapi_device.h
+@@ -6,13 +6,18 @@
+ 
+ #if defined(LIBVA_DRM_SUPPORT) || defined(LIBVA_X11_SUPPORT) || defined(LIBVA_ANDROID_SUPPORT) || \
+     defined(LIBVA_WAYLAND_SUPPORT)
+-
+     #include "hw_device.h"
+     #include "vaapi_utils_drm.h"
+     #include "vaapi_utils_x11.h"
+     #if defined(LIBVA_ANDROID_SUPPORT)
+         #include "vaapi_utils_android.h"
+     #endif
++    #ifdef LIBVA_GTK4_SUPPORT
++        #include <glibmm/dispatcher.h>
++        #include <future>
++        #include "gtkdata.h"
++        #include "vaapi_utils_gtk.h"
++    #endif
+ 
+ CHWDevice* CreateVAAPIDevice(const std::string& devicePath = "", int type = MFX_LIBVA_DRM);
+ 
+@@ -23,7 +28,10 @@ public:
+     CVAAPIDeviceDRM(const std::string& devicePath, int type);
+     virtual ~CVAAPIDeviceDRM(void);
+ 
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum);
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false);
+     virtual mfxStatus Reset(void) {
+         return MFX_ERR_NONE;
+     }
+@@ -80,7 +88,10 @@ public:
+     }
+     virtual ~CVAAPIDeviceX11(void);
+ 
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum);
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false);
+     virtual mfxStatus Reset(void);
+     virtual void Close(void);
+ 
+@@ -128,7 +139,10 @@ public:
+     }
+     virtual ~CVAAPIDeviceWayland(void);
+ 
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum);
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false);
+     virtual mfxStatus Reset(void) {
+         return MFX_ERR_NONE;
+     }
+@@ -192,7 +206,10 @@ public:
+         Close();
+     }
+ 
+-    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
++    virtual mfxStatus Init(mfxHDL hWindow,
++                           mfxU16 nViews,
++                           mfxU32 nAdapterNum,
++                           bool isFullScreen = false) {
+         return MFX_ERR_NONE;
+     }
+     virtual mfxStatus Reset(void) {
+@@ -222,6 +239,78 @@ public:
+ 
+ protected:
+     AndroidLibVA* m_pAndroidLibVA;
++};
++    #endif
++    #if defined(LIBVA_GTK4_SUPPORT)
++class CVAAPIDeviceGTK : public CHWDevice {
++public:
++    CVAAPIDeviceGTK(const std::string& devicePath) {
++        m_nRenderWinX = 0;
++        m_nRenderWinY = 0;
++        m_nRenderWinW = 0;
++        m_nRenderWinH = 0;
++        m_bRenderWin  = false;
++        m_device_path = devicePath;
++
++        if (isWayland()) {
++            m_DRMLibVA = new DRMLibVA(devicePath);
++        }
++        else {
++            m_GtkLibVA = new X11GtkVA(devicePath);
++        }
++    }
++
++    virtual ~CVAAPIDeviceGTK(void) {
++        delete m_GtkLibVA;
++        delete m_DRMLibVA;
++    }
++
++    virtual mfxStatus Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum, bool isFullScreen);
++    virtual mfxStatus Reset(void) {
++        return MFX_ERR_NONE;
++    }
++    virtual void Close(void) {}
++
++    virtual mfxStatus SetHandle(mfxHandleType type, mfxHDL hdl) {
++        return MFX_ERR_UNSUPPORTED;
++    }
++    virtual mfxStatus GetHandle(mfxHandleType type, mfxHDL* pHdl);
++
++    virtual mfxStatus RenderFrame(mfxFrameSurface1* pSurface, mfxFrameAllocator* pmfxAlloc);
++
++    virtual void UpdateTitle(double fps) {}
++    virtual void SetMondelloInput(bool isMondelloInputEnabled) {}
++    virtual void SetDxgiFullScreen() {}
++
++    bool GetInitDone() {
++        return m_initComplete.get();
++    }
++
++    bool isWayland() {
++        return std::getenv("WAYLAND_DISPLAY") != nullptr;
++    }
++
++private:
++    bool m_bRenderWin;
++    mfxU32 m_nRenderWinX;
++    mfxU32 m_nRenderWinY;
++    mfxU32 m_nRenderWinW;
++    mfxU32 m_nRenderWinH;
++    std::string m_device_path;
++    std::atomic<bool> m_ForceStop = false;
++    std::promise<bool> m_initPromise;
++    std::future<bool> m_initComplete;
++
++protected:
++    X11GtkVA* m_GtkLibVA;
++    DRMLibVA* m_DRMLibVA;
++    virtual void SetForceStop() {
++        m_ForceStop = true;
++    }
++    void gtkMain(bool isFullScreen, std::promise<bool>&& initPromise);
++    Glib::Dispatcher* m_dispatcher_ptr;
++    gtk_data_t* m_frame_data_ptr;
++    std::thread* m_gtk_thread;
+ };
+     #endif
+ #endif //#if defined(LIBVA_DRM_SUPPORT) || defined(LIBVA_X11_SUPPORT) || defined(LIBVA_ANDROID_SUPPORT)
+diff --git a/tools/legacy/sample_common/include/vaapi_utils_gtk.h b/tools/legacy/sample_common/include/vaapi_utils_gtk.h
+new file mode 100644
+index 0000000..a33b134
+--- /dev/null
++++ b/tools/legacy/sample_common/include/vaapi_utils_gtk.h
+@@ -0,0 +1,47 @@
++/*############################################################################
++  # Copyright (C) 2024 Intel Corporation
++  #
++  # SPDX-License-Identifier: MIT
++  ############################################################################*/
++
++#ifndef __VAAPI_UTILS_GTK_H__
++#define __VAAPI_UTILS_GTK_H__
++
++#if defined(LIBVA_GTK4_SUPPORT)
++
++    #include <sigc++/sigc++.h>
++    #include <va/va_x11.h>
++    #include "vaapi_utils.h"
++
++class X11GtkVA : public CLibVA {
++public:
++    X11GtkVA(const std::string& devicePath = "");
++    virtual ~X11GtkVA(void);
++
++    MfxLoader::XLib_Proxy& GetX11() {
++        return m_x11lib;
++    }
++    MfxLoader::VA_X11Proxy& GetVAX11() {
++        return m_vax11lib;
++    }
++
++    void* GetXDisplay(void) {
++        return m_display;
++    }
++
++protected:
++    Display* m_display;
++    VAConfigID m_configID;
++    VAContextID m_contextID;
++    MfxLoader::XLib_Proxy m_x11lib;
++    MfxLoader::VA_X11Proxy m_vax11lib;
++
++private:
++    void Close();
++
++    DISALLOW_COPY_AND_ASSIGN(X11GtkVA);
++};
++
++#endif // #if defined(LIBVA_GTK4_SUPPORT)
++
++#endif // #ifndef __VAAPI_UTILS_GTK_H__
+diff --git a/tools/legacy/sample_common/src/d3d11_device.cpp b/tools/legacy/sample_common/src/d3d11_device.cpp
+index 789b52d..5370ffd 100644
+--- a/tools/legacy/sample_common/src/d3d11_device.cpp
++++ b/tools/legacy/sample_common/src/d3d11_device.cpp
+@@ -78,7 +78,10 @@ mfxStatus CD3D11Device::FillSCD1(DXGI_SWAP_CHAIN_DESC1& scd1) {
+     return MFX_ERR_NONE;
+ }
+ 
+-mfxStatus CD3D11Device::Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
++mfxStatus CD3D11Device::Init(mfxHDL hWindow,
++                             mfxU16 nViews,
++                             mfxU32 nAdapterNum,
++                             bool /* isFullScreen */) {
+     m_HandleWindow = (HWND)hWindow;
+     mfxStatus sts  = MFX_ERR_NONE;
+     HRESULT hres   = S_OK;
+diff --git a/tools/legacy/sample_common/src/d3d_device.cpp b/tools/legacy/sample_common/src/d3d_device.cpp
+index 11ac0c2..74ca79f 100644
+--- a/tools/legacy/sample_common/src/d3d_device.cpp
++++ b/tools/legacy/sample_common/src/d3d_device.cpp
+@@ -165,7 +165,10 @@ mfxStatus CD3D9Device::FillD3DPP(mfxHDL hWindow, mfxU16 nViews, D3DPRESENT_PARAM
+     return sts;
+ }
+ 
+-mfxStatus CD3D9Device::Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
++mfxStatus CD3D9Device::Init(mfxHDL hWindow,
++                            mfxU16 nViews,
++                            mfxU32 nAdapterNum,
++                            bool /* isFullScreen */) {
+     mfxStatus sts = MFX_ERR_NONE;
+ 
+     if (2 < nViews)
+diff --git a/tools/legacy/sample_common/src/gtkutils.cpp b/tools/legacy/sample_common/src/gtkutils.cpp
+new file mode 100644
+index 0000000..0b80edf
+--- /dev/null
++++ b/tools/legacy/sample_common/src/gtkutils.cpp
+@@ -0,0 +1,376 @@
++/*############################################################################
++  # Copyright (C) 2024 Intel Corporation
++  #
++  # SPDX-License-Identifier: MIT
++  ############################################################################*/
++#if defined(LIBVA_GTK4_SUPPORT)
++    #include "gtkutils.h"
++    #include <drm/drm_fourcc.h>
++    #include <gdk/wayland/gdkwayland.h>
++    #include <gdk/x11/gdkx.h>
++    #include <gtk/gtk.h>
++
++GLfloat vertexData[] = {
++    // Positions    // Texture Coords
++    -1.0f, 1.0f,  0.0f, 0.0f, // Top-left
++    -1.0f, -1.0f, 0.0f, 1.0f, // Bottom-left
++    1.0f,  -1.0f, 1.0f, 1.0f, // Bottom-right
++    1.0f,  1.0f,  1.0f, 0.0f // Top-right
++};
++
++GLuint indices[] = { 3, 1, 0, 3, 2, 1 };
++
++// Vertex shader source
++const char* vertexShaderSrc = R"(
++    #version 300 es
++    layout(location = 0) in vec2 position;
++    layout(location = 1) in vec2 texcoord;
++    out vec2 Texcoord;
++    void main()
++    {
++        Texcoord = texcoord;
++        gl_Position = vec4(position, 0.0, 1.0);
++    }
++)";
++
++// Fragment shader source
++const char* fragmentShaderSrc = R"(
++    #version 300 es
++    precision mediump float;  // Define default precision for float types
++    in vec2 Texcoord;
++    out vec4 outColor;
++    uniform sampler2D tex;
++
++    void main()
++    {
++        outColor = texture(tex, Texcoord);
++    }
++)";
++
++static void CheckGLError(const char* statement, const char* fname, int line);
++
++    #define GL_CHECK(x)                           \
++        do {                                      \
++            x;                                    \
++            CheckGLError(#x, __FILE__, __LINE__); \
++        } while (0)
++
++static void CheckGLError(const char* statement, const char* fname, int line) {
++    GLenum err = glGetError();
++    if (err != GL_NO_ERROR) {
++        std::cerr << "OpenGL error " << err << " at " << fname << ":" << line << " - for "
++                  << statement << std::endl;
++    }
++}
++
++void GtkPlayer::initEgl(void) {
++    auto dis = get_display()->gobj();
++
++    if (GDK_IS_X11_DISPLAY(dis)) {
++        Display* xDis = GDK_DISPLAY_XDISPLAY(dis);
++        m_egl_display = eglGetDisplay((EGLNativeDisplayType)xDis);
++    }
++    else if (GDK_IS_WAYLAND_DISPLAY(dis)) {
++        m_egl_display =
++            eglGetDisplay((EGLNativeDisplayType)gdk_wayland_display_get_wl_display(dis));
++    }
++    else {
++        std::cerr << "EGL display is Unknown" << std::endl;
++    }
++
++    if (m_egl_display == EGL_NO_DISPLAY) {
++        std::cerr << "EGL display is NULL" << std::endl;
++    }
++
++    if (!eglInitialize(m_egl_display, nullptr, nullptr)) {
++        std::cerr << "Unable to initialize EGL." << std::endl;
++    }
++
++    eglCreateImage = (PFNEGLCREATEIMAGEPROC)eglGetProcAddress("eglCreateImage");
++    if (!eglCreateImage) {
++        std::cerr << "Failed to load eglCreateImage" << std::endl;
++    }
++
++    glEGLImageTargetTexture2DOES =
++        (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)eglGetProcAddress("glEGLImageTargetTexture2DOES");
++    if (!glEGLImageTargetTexture2DOES) {
++        std::cerr << "Failed to load glEGLImageTargetTexture2DOES" << std::endl;
++    }
++}
++
++void GtkPlayer::getMonitorDimension() {
++    auto mon           = Gdk::Display::get_default()->get_monitors()->get_object(0);
++    auto first_monitor = std::dynamic_pointer_cast<const Gdk::Monitor>(mon);
++    first_monitor->get_geometry(m_mon_dim);
++
++    if (GDK_IS_X11_DISPLAY(Gdk::Display::get_default()->gobj())) {
++        m_isX11                       = true;
++        GdkMonitor* first_monitor_ptr = (GdkMonitor*)first_monitor->gobj();
++        gdk_x11_monitor_get_workarea(first_monitor_ptr, m_mon_work_area.gobj());
++    }
++}
++
++GtkPlayer::GtkPlayer(int width, int height, bool isFullscreen) {
++    m_width          = width;
++    m_height         = height;
++    m_fullscreenMode = isFullscreen;
++
++    // Set the window title
++    set_title("GTK Video Player");
++    set_size_request(m_width, m_height);
++
++    set_child(m_VBox);
++    m_dispatcher = std::make_unique<Glib::Dispatcher>();
++    m_dispatcher->connect(sigc::mem_fun(*this, &GtkPlayer::frameReady));
++
++    auto key_press = Gtk::EventControllerKey::create();
++    key_press->signal_key_pressed().connect(sigc::mem_fun(*this, &GtkPlayer::onKeyPressEvent),
++                                            false);
++    add_controller(key_press);
++
++    m_GLArea.set_expand(true);
++    m_GLArea.set_size_request(m_width, m_height);
++    m_GLArea.set_auto_render(true);
++    m_GLArea.signal_realize().connect(sigc::mem_fun(*this, &GtkPlayer::realize));
++    m_GLArea.signal_unrealize().connect(sigc::mem_fun(*this, &GtkPlayer::unrealize), false);
++    m_GLArea.signal_render().connect(sigc::mem_fun(*this, &GtkPlayer::render), false);
++    m_VBox.append(m_GLArea);
++
++    getMonitorDimension();
++    initEgl();
++
++    if (false == m_isX11) {
++        // Remove the title bar on Wayland
++        set_decorated(false);
++    }
++}
++
++bool GtkPlayer::onKeyPressEvent(guint keyval, guint a, Gdk::ModifierType state) {
++    if (keyval == GDK_KEY_Escape) {
++        if (is_fullscreen()) {
++            m_fullscreenMode = false;
++            unfullscreen();
++        }
++        m_pressed_keys.clear();
++    }
++    else if (GDK_KEY_Control_L == keyval || GDK_KEY_Control_R == keyval) {
++        m_pressed_keys.emplace(keyval);
++    }
++    else if ((m_pressed_keys.find(GDK_KEY_Control_L) != m_pressed_keys.end() ||
++              m_pressed_keys.find(GDK_KEY_Control_R) != m_pressed_keys.end()) &&
++             (GDK_KEY_f == keyval || GDK_KEY_F == keyval)) {
++        fullscreen();
++        present();
++        m_pressed_keys.clear();
++        m_fullscreenMode = true;
++    }
++
++    return false;
++}
++
++bool GtkPlayer::render(const Glib::RefPtr<Gdk::GLContext>& /* context */) {
++    try {
++        m_GLArea.throw_if_error();
++        glClearColor(0.5, 1.5, 1.5, 1.0);
++        glClear(GL_COLOR_BUFFER_BIT);
++
++        // Use the shader program
++        glUseProgram(m_program);
++
++        // Bind the Vertex Array Object
++        glBindVertexArray(m_Vao);
++
++        glBindTexture(GL_TEXTURE_2D, m_texture);
++
++        // Draw the quad
++        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
++
++        glBindVertexArray(0);
++        glUseProgram(0);
++        glFlush();
++
++        return true;
++    }
++    catch (const Gdk::GLError& gle) {
++        std::cerr << "An error occurred in the render callback of the GLArea" << std::endl;
++        std::cerr << gle.domain() << "-" << gle.code() << "-" << gle.what() << std::endl;
++        return false;
++    }
++}
++
++void GtkPlayer::frameReady() {
++    if ((m_height != m_frame_data.height || m_width != m_frame_data.width) ||
++        (m_isX11 &&
++         (m_height < m_mon_work_area.get_height() || m_width < m_mon_work_area.get_width()))) {
++        m_height = m_frame_data.height;
++        m_width  = m_frame_data.width;
++
++        if (true == m_isX11) {
++            if (m_frame_data.height >= m_mon_dim.get_height() &&
++                m_frame_data.width >= m_mon_dim.get_width()) {
++                // Lock the dimension according to the monitor's dimension
++                m_height = m_mon_work_area.get_height();
++                m_width  = m_mon_work_area.get_width();
++            }
++        }
++
++        set_size_request(m_width, m_height);
++        queue_resize();
++        m_GLArea.set_size_request(m_width, m_height);
++        m_GLArea.queue_resize();
++
++        if (m_fullscreenMode) {
++            fullscreen();
++        }
++    }
++
++    glBindTexture(GL_TEXTURE_2D, m_texture);
++
++    EGLAttrib const attribute_list[] = { EGL_WIDTH,
++                                         m_frame_data.width,
++                                         EGL_HEIGHT,
++                                         m_frame_data.height,
++                                         EGL_LINUX_DRM_FOURCC_EXT,
++                                         DRM_FORMAT_ARGB8888,
++                                         EGL_DMA_BUF_PLANE0_FD_EXT,
++                                         m_frame_data.fd,
++                                         EGL_DMA_BUF_PLANE0_OFFSET_EXT,
++                                         m_frame_data.offset[0],
++                                         EGL_DMA_BUF_PLANE0_PITCH_EXT,
++                                         m_frame_data.stride[0],
++                                         EGL_NONE };
++
++    EGLImage image = eglCreateImage(m_egl_display,
++                                    nullptr,
++                                    EGL_LINUX_DMA_BUF_EXT,
++                                    (EGLClientBuffer) nullptr,
++                                    attribute_list);
++    if (!glIsTexture(m_texture)) {
++        std::cerr << "Texture " << m_texture << " is not complete at " << __LINE__ << std::endl;
++        return;
++    }
++    if (image) {
++        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
++        GL_CHECK(glEGLImageTargetTexture2DOES);
++
++        m_GLArea.queue_draw();
++    }
++    else {
++        std::cerr << "[Err] Image created is Null" << std::endl;
++        GL_CHECK(eglCreateImage);
++    }
++}
++
++GtkPlayer::~GtkPlayer() {
++    // Unrealize will perform all the cleanup
++}
++
++void GtkPlayer::initShaders() {
++    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
++    glShaderSource(vertex_shader, 1, &vertexShaderSrc, nullptr);
++    glCompileShader(vertex_shader);
++
++    GLint success;
++    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
++    if (!success) {
++        char info_log[512];
++        glGetShaderInfoLog(vertex_shader, 512, nullptr, info_log);
++        std::cerr << info_log << std::endl;
++    }
++
++    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
++    glShaderSource(fragment_shader, 1, &fragmentShaderSrc, nullptr);
++    glCompileShader(fragment_shader);
++
++    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
++    if (!success) {
++        char info_log[512];
++        glGetShaderInfoLog(fragment_shader, 512, nullptr, info_log);
++        std::cerr << "FRAGMENT ERROR " << info_log << std::endl;
++    }
++
++    m_program = glCreateProgram();
++    glAttachShader(m_program, vertex_shader);
++    glAttachShader(m_program, fragment_shader);
++    glLinkProgram(m_program);
++
++    glGetProgramiv(m_program, GL_LINK_STATUS, &success);
++    if (!success) {
++        char info_log[512];
++        glGetShaderInfoLog(vertex_shader, 512, nullptr, info_log);
++        std::cerr << "FAILED TO LINK PROGRAM" << info_log << std::endl;
++    }
++
++    glDeleteShader(vertex_shader);
++    glDeleteShader(fragment_shader);
++}
++
++void GtkPlayer::initBuffers() {
++    glGenVertexArrays(1, &m_Vao);
++    glBindVertexArray(m_Vao);
++
++    glGenBuffers(1, &m_Buffer);
++    glBindBuffer(GL_ARRAY_BUFFER, m_Buffer);
++    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
++
++    glGenBuffers(1, &m_Ebo);
++    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Ebo);
++    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
++
++    // Attributes
++    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
++    glEnableVertexAttribArray(0);
++    glVertexAttribPointer(1,
++                          2,
++                          GL_FLOAT,
++                          GL_FALSE,
++                          4 * sizeof(GLfloat),
++                          (void*)(2 * sizeof(GLfloat)));
++    glEnableVertexAttribArray(1);
++
++    glBindBuffer(GL_ARRAY_BUFFER, 0);
++    glBindVertexArray(0);
++
++    // Initialize Texture
++    glGenTextures(1, &m_texture);
++    glBindTexture(GL_TEXTURE_2D, m_texture);
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++
++    glBindTexture(GL_TEXTURE_2D, 0);
++}
++
++void GtkPlayer::realize() {
++    m_GLArea.make_current();
++    try {
++        m_GLArea.throw_if_error();
++        initBuffers();
++        initShaders();
++    }
++    catch (const Gdk::GLError& gle) {
++        std::cerr << "An error occured making the context current during realize:" << std::endl;
++        std::cerr << gle.domain() << "-" << gle.code() << "-" << gle.what() << std::endl;
++    }
++}
++
++void GtkPlayer::unrealize() {
++    m_GLArea.make_current();
++    try {
++        m_GLArea.throw_if_error();
++
++        // Delete buffers and program
++        glDeleteBuffers(1, &m_Buffer);
++        glDeleteBuffers(1, &m_Ebo);
++        glDeleteProgram(m_program);
++        glDeleteTextures(1, &m_texture);
++    }
++    catch (const Gdk::GLError& gle) {
++        std::cerr << "An error occured making the context current during unrealize" << std::endl;
++        std::cerr << gle.domain() << "-" << gle.code() << "-" << gle.what() << std::endl;
++    }
++}
++
++#endif /* #if defined(LIBVA_GTK4_SUPPORT) */
+diff --git a/tools/legacy/sample_common/src/vaapi_device.cpp b/tools/legacy/sample_common/src/vaapi_device.cpp
+index a20d253..e255c7f 100644
+--- a/tools/legacy/sample_common/src/vaapi_device.cpp
++++ b/tools/legacy/sample_common/src/vaapi_device.cpp
+@@ -5,9 +5,11 @@
+   ############################################################################*/
+ 
+ #if defined(LIBVA_DRM_SUPPORT) || defined(LIBVA_X11_SUPPORT) || defined(LIBVA_ANDROID_SUPPORT)
+-
++    #ifdef LIBVA_GTK4_SUPPORT
++        #include "gtkutils.h"
++    #endif
++    #include "sample_utils.h"
+     #include "vaapi_device.h"
+-
+     #if defined(LIBVA_WAYLAND_SUPPORT)
+         #include "class_wayland.h"
+     #endif
+@@ -38,7 +40,10 @@ CVAAPIDeviceX11::~CVAAPIDeviceX11(void) {
+     Close();
+ }
+ 
+-mfxStatus CVAAPIDeviceX11::Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
++mfxStatus CVAAPIDeviceX11::Init(mfxHDL hWindow,
++                                mfxU16 nViews,
++                                mfxU32 nAdapterNum,
++                                bool /* isFullScreen */) {
+     mfxStatus mfx_res = MFX_ERR_NONE;
+     Window* window    = NULL;
+ 
+@@ -306,7 +311,10 @@ CVAAPIDeviceWayland::~CVAAPIDeviceWayland(void) {
+     m_WaylandClient.WaylandDestroy((MfxLoader::Wayland*)m_Wayland);
+ }
+ 
+-mfxStatus CVAAPIDeviceWayland::Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
++mfxStatus CVAAPIDeviceWayland::Init(mfxHDL hWindow,
++                                    mfxU16 nViews,
++                                    mfxU32 nAdapterNum,
++                                    bool /* isFullScreen */) {
+     mfxStatus mfx_res = MFX_ERR_NONE;
+ 
+     if (nViews) {
+@@ -399,7 +407,10 @@ CVAAPIDeviceDRM::~CVAAPIDeviceDRM(void) {
+     MSDK_SAFE_DELETE(m_rndr);
+ }
+ 
+-mfxStatus CVAAPIDeviceDRM::Init(mfxHDL hWindow, mfxU16 nViews, mfxU32 nAdapterNum) {
++mfxStatus CVAAPIDeviceDRM::Init(mfxHDL hWindow,
++                                mfxU16 nViews,
++                                mfxU32 nAdapterNum,
++                                bool /* isFullScreen */) {
+     if (0 == nViews) {
+         return MFX_ERR_NONE;
+     }
+@@ -459,6 +470,11 @@ CHWDevice* CreateVAAPIDevice(const std::string& devicePath, int type) {
+             device = new CVAAPIDeviceWayland(devicePath);
+         #endif
+             break;
++        case MFX_LIBVA_GTK:
++        #if defined(LIBVA_GTK4_SUPPORT)
++            device = new CVAAPIDeviceGTK(devicePath);
++        #endif
++            break;
+         case MFX_LIBVA_AUTO:
+         #if defined(LIBVA_X11_SUPPORT)
+             try {
+@@ -482,6 +498,91 @@ CHWDevice* CreateVAAPIDevice(const std::string& devicePath, int type) {
+     return device;
+ }
+ 
++        #if defined(LIBVA_GTK4_SUPPORT)
++void CVAAPIDeviceGTK::gtkMain(bool isFullScreen, std::promise<bool>&& initPromise) {
++    Glib::RefPtr<Gtk::Application> gtk_app = Gtk::Application::create();
++    auto window                            = new GtkPlayer(200, 200, isFullScreen);
++    m_dispatcher_ptr                       = window->m_dispatcher.get();
++    m_frame_data_ptr                       = &window->m_frame_data;
++
++    gtk_app->signal_activate().connect([&] {
++        gtk_app->add_window(*window);
++        window->show();
++    });
++    gtk_app->signal_window_removed().connect([&](Gtk::Window* window) {
++        m_ForceStop = true;
++        gtk_app->remove_window(*window);
++        delete window;
++    });
++    gtk_app->signal_shutdown().connect([&]() {
++        std::vector<Gtk::Window*> window_list = gtk_app->get_windows();
++        for (auto win : window_list) {
++            win->close();
++        }
++    });
++
++    initPromise.set_value(true);
++    gtk_app->run(0, nullptr);
++}
++
++mfxStatus CVAAPIDeviceGTK::Init(mfxHDL hWindow,
++                                mfxU16 /* nViews */,
++                                mfxU32 /* nAdapterNum */,
++                                bool isFullScreen) {
++    mfxStatus mfx_res = MFX_ERR_NONE;
++    m_initComplete    = m_initPromise.get_future();
++    m_gtk_thread =
++        new std::thread(&CVAAPIDeviceGTK::gtkMain, this, isFullScreen, std::move(m_initPromise));
++    m_gtk_thread->detach();
++    return mfx_res;
++}
++
++mfxStatus CVAAPIDeviceGTK::GetHandle(mfxHandleType type, mfxHDL* pHdl) {
++    if ((MFX_HANDLE_VA_DISPLAY == type) && (NULL != pHdl)) {
++        if (isWayland()) {
++            *pHdl = m_DRMLibVA->GetVADisplay();
++        }
++        else {
++            *pHdl = m_GtkLibVA->GetVADisplay();
++        }
++        return MFX_ERR_NONE;
++    }
++
++    return MFX_ERR_UNSUPPORTED;
++}
++
++mfxStatus CVAAPIDeviceGTK::RenderFrame(mfxFrameSurface1* pSurface, mfxFrameAllocator* pmfxAlloc) {
++    mfxStatus mfx_res   = MFX_ERR_NONE;
++    mfxFrameInfo* pInfo = &pSurface->Info;
++    int width           = pInfo->CropX + pInfo->CropW;
++    int height          = pInfo->CropY + pInfo->CropH;
++
++    if (m_ForceStop) {
++        return MFX_ERR_DEVICE_FAILED;
++    }
++
++    vaapiMemId* memId = nullptr;
++    memId             = (vaapiMemId*)(pSurface->Data.MemId);
++    if (!memId || !memId->m_surface) {
++        mfx_res = MFX_ERR_NULL_PTR;
++    }
++
++    m_frame_data_ptr->stride[0]  = memId->m_image.pitches[0];
++    m_frame_data_ptr->stride[1]  = memId->m_image.pitches[1];
++    m_frame_data_ptr->stride[2]  = memId->m_image.pitches[2];
++    m_frame_data_ptr->offset[0]  = memId->m_image.offsets[0];
++    m_frame_data_ptr->offset[1]  = memId->m_image.offsets[1];
++    m_frame_data_ptr->offset[2]  = memId->m_image.offsets[2];
++    m_frame_data_ptr->num_planes = memId->m_image.num_planes;
++    m_frame_data_ptr->fourcc     = memId->m_image.format.fourcc;
++    m_frame_data_ptr->height     = height;
++    m_frame_data_ptr->width      = width;
++    m_frame_data_ptr->fd         = (int)memId->m_buffer_info.handle;
++    m_dispatcher_ptr->emit();
++
++    return mfx_res;
++}
++        #endif
+     #elif defined(LIBVA_ANDROID_SUPPORT)
+ 
+ static AndroidLibVA g_LibVA;
+diff --git a/tools/legacy/sample_common/src/vaapi_utils_gtk.cpp b/tools/legacy/sample_common/src/vaapi_utils_gtk.cpp
+new file mode 100644
+index 0000000..284a3aa
+--- /dev/null
++++ b/tools/legacy/sample_common/src/vaapi_utils_gtk.cpp
+@@ -0,0 +1,96 @@
++/*############################################################################
++  # Copyright (C) 2024 Intel Corporation
++  #
++  # SPDX-License-Identifier: MIT
++  ############################################################################*/
++#if defined(LIBVA_GTK4_SUPPORT)
++    #include "vaapi_utils_gtk.h"
++    #include <fcntl.h>
++    #include <sys/ioctl.h>
++
++    #define VAAPI_X_DEFAULT_DISPLAY ":0.0"
++
++X11GtkVA ::X11GtkVA(const std::string& devicePath)
++        : CLibVA(MFX_LIBVA_X11),
++          m_display(0),
++          m_configID(VA_INVALID_ID),
++          m_contextID(VA_INVALID_ID) {
++    char* currentDisplay = getenv("DISPLAY");
++
++    m_display = (currentDisplay) ? m_x11lib.XOpenDisplay(currentDisplay)
++                                 : m_x11lib.XOpenDisplay(VAAPI_X_DEFAULT_DISPLAY);
++
++    if (!m_display) {
++        printf("Failed to open X Display: try to check/set DISPLAY environment variable.\n");
++        throw std::bad_alloc();
++    }
++
++    m_va_dpy = m_vax11lib.vaGetDisplay(m_display);
++
++    if (!m_va_dpy) {
++        m_x11lib.XCloseDisplay(m_display);
++        printf("Failed to get VA Display\n");
++        throw std::bad_alloc();
++    }
++
++    int major_version = 0, minor_version = 0;
++    VAStatus sts = m_libva.vaInitialize(m_va_dpy, &major_version, &minor_version);
++
++    if (VA_STATUS_SUCCESS != sts) {
++        m_x11lib.XCloseDisplay(m_display);
++        printf("Failed to initialize VAAPI: %d\n", (int)sts);
++        throw std::bad_alloc();
++    }
++
++    VAConfigAttrib cfgAttrib{};
++    if (VA_STATUS_SUCCESS == sts) {
++        cfgAttrib.type = VAConfigAttribRTFormat;
++        sts            = m_libva.vaGetConfigAttributes(m_va_dpy,
++                                            VAProfileNone,
++                                            VAEntrypointVideoProc,
++                                            &cfgAttrib,
++                                            1);
++    }
++    if (VA_STATUS_SUCCESS == sts) {
++        sts = m_libva.vaCreateConfig(m_va_dpy,
++                                     VAProfileNone,
++                                     VAEntrypointVideoProc,
++                                     &cfgAttrib,
++                                     1,
++                                     &m_configID);
++    }
++    if (VA_STATUS_SUCCESS == sts) {
++        sts =
++            m_libva.vaCreateContext(m_va_dpy, m_configID, 0, 0, VA_PROGRESSIVE, 0, 0, &m_contextID);
++    }
++    if (VA_STATUS_SUCCESS != sts) {
++        Close();
++        printf("Failed to initialize VP: %d\n", sts);
++        throw std::bad_alloc();
++    }
++}
++
++X11GtkVA::~X11GtkVA() {
++    Close();
++}
++
++void X11GtkVA::Close() {
++    VAStatus sts;
++    if (m_contextID != VA_INVALID_ID) {
++        sts = m_libva.vaDestroyContext(m_va_dpy, m_contextID);
++        if (sts != VA_STATUS_SUCCESS)
++            printf("Failed to destroy VA context: %d\n", (int)sts);
++    }
++    if (m_configID != VA_INVALID_ID) {
++        sts = m_libva.vaDestroyConfig(m_va_dpy, m_configID);
++        if (sts != VA_STATUS_SUCCESS)
++            printf("Failed to destroy VA config: %d\n", (int)sts);
++    }
++    sts = m_libva.vaTerminate(m_va_dpy);
++    if (sts != VA_STATUS_SUCCESS)
++        printf("Failed to close VAAPI library: %d\n", (int)sts);
++
++    m_x11lib.XCloseDisplay(m_display);
++}
++
++#endif // LIBVA_GTK4_SUPPORT
+diff --git a/tools/legacy/sample_decode/include/pipeline_decode.h b/tools/legacy/sample_decode/include/pipeline_decode.h
+index 03e41f3..d983164 100644
+--- a/tools/legacy/sample_decode/include/pipeline_decode.h
++++ b/tools/legacy/sample_decode/include/pipeline_decode.h
+@@ -6,7 +6,6 @@
+ 
+ #ifndef __PIPELINE_DECODE_H__
+ #define __PIPELINE_DECODE_H__
+-
+ #include "sample_defs.h"
+ 
+ #if D3D_SURFACES_SUPPORT
+@@ -139,6 +138,7 @@ struct sInputParams {
+     std::string m_decode_cfg;
+     std::string m_vpp_cfg;
+     std::string dump_file;
++    bool bIsFullscreen = false;
+ };
+ 
+ struct CPipelineStatistics {
+@@ -200,6 +200,9 @@ public:
+                 printf("[Error] Frame Gap Error detected!\n");
+         }
+     }
++    void stopDeliverLoop() {
++        m_bStopDeliverLoop = true;
++    }
+ 
+ protected: // functions
+ #if (defined(_WIN64) || defined(_WIN32)) && (MFX_VERSION >= 1031)
+@@ -325,7 +328,7 @@ protected: // variables
+ 
+     bool m_bResetFileWriter;
+     bool m_bResetFileReader;
+-
++    bool m_fullscreen;
+     eAPIVersion m_verSessionInit;
+ 
+ private:
+diff --git a/tools/legacy/sample_decode/src/pipeline_decode.cpp b/tools/legacy/sample_decode/src/pipeline_decode.cpp
+index 51b7d69..d849285 100644
+--- a/tools/legacy/sample_decode/src/pipeline_decode.cpp
++++ b/tools/legacy/sample_decode/src/pipeline_decode.cpp
+@@ -3,7 +3,6 @@
+   #
+   # SPDX-License-Identifier: MIT
+   ############################################################################*/
+-
+ #include <algorithm>
+ #include "mfx_samples_config.h"
+ #include "sample_defs.h"
+@@ -121,6 +120,7 @@ CDecodingPipeline::CDecodingPipeline()
+ #endif
+           m_bResetFileWriter(false),
+           m_bResetFileReader(false),
++          m_fullscreen(false),
+           m_verSessionInit(API_2X) {
+     // reserve some space to reduce dynamic reallocation impact on pipeline execution
+     m_vLatency.reserve(1000);
+@@ -479,7 +479,7 @@ mfxStatus CDecodingPipeline::Init(sInputParams* pParams) {
+         MSDK_CHECK_STATUS(sts, "AV1d have no DX9 support \n");
+     }
+ #endif
+-
++    m_fullscreen          = pParams->bIsFullscreen;
+     bool isDeviceRequired = false;
+     mfxHandleType hdl_t;
+ #if D3D_SURFACES_SUPPORT
+@@ -1150,8 +1150,9 @@ mfxStatus CDecodingPipeline::CreateHWDevice() {
+ 
+     if (render)
+         m_d3dRender.SetHWDevice(m_hwdev);
+-#elif defined(LIBVA_DRM_SUPPORT) || defined(LIBVA_X11_SUPPORT) || \
+-    defined(LIBVA_ANDROID_SUPPORT) || defined(LIBVA_WAYLAND_SUPPORT)
++#elif defined(LIBVA_DRM_SUPPORT) || defined(LIBVA_X11_SUPPORT) ||       \
++    defined(LIBVA_ANDROID_SUPPORT) || defined(LIBVA_WAYLAND_SUPPORT) || \
++    defined(LIBVA_GTK4_SUPPORT)
+     mfxStatus sts = MFX_ERR_NONE;
+ 
+     if (m_strDevicePath.empty() && m_verSessionInit == API_2X) {
+@@ -1167,7 +1168,10 @@ mfxStatus CDecodingPipeline::CreateHWDevice() {
+     mfxU32 adapterNum = (m_verSessionInit == API_1X) ? MSDKAdapter::GetNumber(m_mfxSession)
+                                                      : MSDKAdapter::GetNumber(m_pLoader.get());
+ 
+-    sts = m_hwdev->Init(&m_monitorType, (m_eWorkMode == MODE_RENDERING) ? 1 : 0, adapterNum);
++    sts = m_hwdev->Init(&m_monitorType,
++                        (m_eWorkMode == MODE_RENDERING) ? 1 : 0,
++                        adapterNum,
++                        m_fullscreen);
+     MSDK_CHECK_STATUS(sts, "m_hwdev->Init failed");
+ 
+     #if defined(LIBVA_WAYLAND_SUPPORT)
+@@ -1185,6 +1189,15 @@ mfxStatus CDecodingPipeline::CreateHWDevice() {
+         wld->SetPerfMode(m_bPerfMode);
+     }
+     #endif //LIBVA_WAYLAND_SUPPORT
++    #ifdef LIBVA_GTK4_SUPPORT
++    if (m_eWorkMode == MODE_RENDERING && m_libvaBackend == MFX_LIBVA_GTK) {
++        CVAAPIDeviceGTK* gtk_dev = dynamic_cast<CVAAPIDeviceGTK*>(m_hwdev);
++        if (!gtk_dev) {
++            MSDK_CHECK_STATUS(MFX_ERR_DEVICE_FAILED, "Failed to reach GTK VAAPI device");
++        }
++        printf("GTK Init complete %d\n", gtk_dev->GetInitDone());
++    }
++    #endif //LIBVA_GTK4_SUPPORT
+ 
+ #endif
+     return MFX_ERR_NONE;
+@@ -1442,7 +1455,8 @@ mfxStatus CDecodingPipeline::CreateAllocator() {
+                     dynamic_cast<vaapiAllocatorParams::Exporter*>(drmdev->getRenderer());
+     #endif
+             }
+-            else if (m_libvaBackend == MFX_LIBVA_WAYLAND || m_libvaBackend == MFX_LIBVA_X11) {
++            else if (m_libvaBackend == MFX_LIBVA_WAYLAND || m_libvaBackend == MFX_LIBVA_X11 ||
++                     m_libvaBackend == MFX_LIBVA_GTK) {
+                 p_vaapiAllocParams->m_export_mode = vaapiAllocatorParams::PRIME;
+             }
+         }
+@@ -1793,7 +1807,6 @@ mfxStatus CDecodingPipeline::RunDecoding() {
+ 
+                     // Reset bitstream state
+                     pBitstream->DataFlag = 0;
+-
+                     continue;
+                 }
+ 
+@@ -1873,6 +1886,12 @@ mfxStatus CDecodingPipeline::RunDecoding() {
+             break;
+         }
+ 
++        // exit because GTK window is closed
++        if (m_bStopDeliverLoop) {
++            sts = MFX_ERR_NONE;
++            break;
++        }
++
+         if ((MFX_ERR_NONE == sts) || (MFX_ERR_MORE_DATA == sts) || (MFX_ERR_MORE_SURFACE == sts)) {
+             if (m_bIsCompleteFrame) {
+                 m_pCurrentFreeSurface->submit = m_timer_overall.Sync();
+@@ -2114,6 +2133,7 @@ mfxStatus CDecodingPipeline::RunDecoding() {
+ 
+     if (m_eWorkMode == MODE_RENDERING) {
+         m_bStopDeliverLoop = true;
++
+         m_pDeliverOutputSemaphore->Post();
+ 
+         if (deliverThread.joinable())
+diff --git a/tools/legacy/sample_decode/src/sample_decode.cpp b/tools/legacy/sample_decode/src/sample_decode.cpp
+index 33ab1f5..2ef2bac 100644
+--- a/tools/legacy/sample_decode/src/sample_decode.cpp
++++ b/tools/legacy/sample_decode/src/sample_decode.cpp
+@@ -122,6 +122,11 @@ void PrintHelp(char* strAppName, const char* strErrorMessage) {
+ #if defined(LIBVA_X11_SUPPORT)
+     printf("   [-r]                      - render decoded data in a separate X11 window \n");
+ #endif
++#if defined(LIBVA_GTK4_SUPPORT)
++    printf(
++        "   [-rgtk]                      - render decoded data in a separate X11 window using GTK. Need to use with -rgb4\n");
++    printf("   [-fullscreen]             - set the GTK player in fullscreen\n");
++#endif
+ #if defined(LIBVA_WAYLAND_SUPPORT)
+     printf("   [-rwld]                   - render decoded data in a Wayland window \n");
+     printf("   [-perf]                   - turn on asynchronous flipping for Wayland rendering \n");
+@@ -283,6 +288,14 @@ mfxStatus ParseInputString(char* strInput[], mfxU32 nArgNum, sInputParams* pPara
+         else if (msdk_match(strInput[i], "-perf")) {
+             pParams->bPerfMode = true;
+         }
++    #if defined(LIBVA_GTK4_SUPPORT)
++        else if (msdk_match(strInput[i], "-rgtk")) {
++            pParams->memType          = D3D9_MEMORY;
++            pParams->accelerationMode = MFX_ACCEL_MODE_VIA_VAAPI;
++            pParams->mode             = MODE_RENDERING;
++            pParams->libvaBackend     = MFX_LIBVA_GTK;
++        }
++    #endif
+         else if (0 == strncmp(strInput[i], "-rdrm", 5)) {
+             pParams->memType          = D3D9_MEMORY;
+             pParams->accelerationMode = MFX_ACCEL_MODE_VIA_VAAPI;
+@@ -320,6 +333,11 @@ mfxStatus ParseInputString(char* strInput[], mfxU32 nArgNum, sInputParams* pPara
+ 
+             pParams->bRenderWin = true;
+         }
++#endif
++#if defined(LIBVA_GTK4_SUPPORT)
++        else if (msdk_match(strInput[i], "-fullscreen")) {
++            pParams->bIsFullscreen = true;
++        }
+ #endif
+         else if (msdk_match(strInput[i], "-low_latency")) {
+             switch (pParams->videoType) {
+diff --git a/tools/legacy/sample_multi_transcode/include/smt_cli_params.h b/tools/legacy/sample_multi_transcode/include/smt_cli_params.h
+index 0c4cbdb..9fc7d64 100644
+--- a/tools/legacy/sample_multi_transcode/include/smt_cli_params.h
++++ b/tools/legacy/sample_multi_transcode/include/smt_cli_params.h
+@@ -417,6 +417,7 @@ typedef struct sInputParams {
+ #endif
+     mfxU16 ScenarioInfo;
+     mfxU16 ContentInfo;
++    bool bIsFullscreen;
+     eAPIVersion verSessionInit;
+ 
+     // set structure to define values
+@@ -644,6 +645,7 @@ typedef struct sInputParams {
+ #endif
+               ScenarioInfo(0),
+               ContentInfo(0),
++              bIsFullscreen(false),
+               verSessionInit(API_2X) {
+ #ifdef ENABLE_MCTF
+         mctfParam.mode                  = VPP_FILTER_DISABLED;
+diff --git a/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp b/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
+index 747c4a3..2aecf6d 100644
+--- a/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
++++ b/tools/legacy/sample_multi_transcode/src/pipeline_transcode.cpp
+@@ -3868,6 +3868,9 @@ mfxStatus CTranscodingPipeline::SetupSurfacePool(mfxU32 preallocateNum) {
+     #if defined(X11_DRI3_SUPPORT)
+              (m_libvaBackend == MFX_LIBVA_X11) ||
+     #endif // X11_DRI3_SUPPORT
++    #if defined(LIBVA_GTK4_SUPPORT)
++             (m_libvaBackend == MFX_LIBVA_GTK) ||
++    #endif // LIBVA_GTK4_SUPPORT
+              (m_libvaBackend == MFX_LIBVA_WAYLAND))) {
+             m_VPPOutAllocReques.Type |= MFX_MEMTYPE_EXPORT_FRAME;
+         }
+diff --git a/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp b/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp
+index 6b2c919..4f4b512 100644
+--- a/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp
++++ b/tools/legacy/sample_multi_transcode/src/sample_multi_transcode.cpp
+@@ -370,7 +370,8 @@ mfxStatus Launcher::Init(int argc, char* argv[]) {
+                                             ? MSDKAdapter::GetNumber(0, 0)
+                                             : MSDKAdapter::GetNumber(m_pLoader.get());
+ 
+-                    sts = hwdev->Init(&params.monitorType, 1, adapterNum);
++                    sts =
++                        hwdev->Init(&params.monitorType, 1, adapterNum, InputParams.bIsFullscreen);
+     #if defined(LIBVA_DRM_SUPPORT)
+                     if (params.libvaBackend == MFX_LIBVA_DRM_MODESET) {
+                         CVAAPIDeviceDRM* drmdev     = dynamic_cast<CVAAPIDeviceDRM*>(hwdev.get());
+@@ -380,7 +381,8 @@ mfxStatus Launcher::Init(int argc, char* argv[]) {
+                     }
+     #endif
+     #if defined(LIBVA_X11_SUPPORT)
+-                    if (params.libvaBackend == MFX_LIBVA_X11) {
++                    if (params.libvaBackend == MFX_LIBVA_X11 ||
++                        params.libvaBackend == MFX_LIBVA_GTK) {
+                         pVAAPIParams->m_export_mode = vaapiAllocatorParams::PRIME;
+                     }
+     #endif
+@@ -409,6 +411,16 @@ mfxStatus Launcher::Init(int argc, char* argv[]) {
+                         pVAAPIParams->m_export_mode = vaapiAllocatorParams::PRIME;
+                     }
+     #endif // LIBVA_WAYLAND_SUPPORT
++    #ifdef LIBVA_GTK4_SUPPORT
++                    else if (params.libvaBackend == MFX_LIBVA_GTK) {
++                        CVAAPIDeviceGTK* gtk_dev = dynamic_cast<CVAAPIDeviceGTK*>(hwdev.get());
++                        if (!gtk_dev) {
++                            MSDK_CHECK_STATUS(MFX_ERR_DEVICE_FAILED,
++                                              "Failed to reach GTK VAAPI device");
++                        }
++                        printf("GTK Init complete %d\n", gtk_dev->GetInitDone());
++                    }
++    #endif
+                     params.m_hwdev = hwdev.get();
+                 }
+                 else /* NO RENDERING*/
+@@ -431,7 +443,7 @@ mfxStatus Launcher::Init(int argc, char* argv[]) {
+                                             ? MSDKAdapter::GetNumber(0, 0)
+                                             : MSDKAdapter::GetNumber(m_pLoader.get());
+ 
+-                    sts = hwdev->Init(NULL, 0, adapterNum);
++                    sts = hwdev->Init(NULL, 0, adapterNum, m_InputParamsArray[i].bIsFullscreen);
+                 }
+                 if (libvaBackend != MFX_LIBVA_WAYLAND) {
+                     MSDK_CHECK_STATUS(sts, "hwdev->Init failed");
+@@ -734,7 +746,6 @@ void Launcher::Run() {
+     }
+ 
+     printf("\nTranscoding finished\n");
+-
+ } // mfxStatus Launcher::Init()
+ 
+ void Launcher::DoTranscoding() {
+diff --git a/tools/legacy/sample_multi_transcode/src/smt_cli.cpp b/tools/legacy/sample_multi_transcode/src/smt_cli.cpp
+index f053385..36c9f75 100644
+--- a/tools/legacy/sample_multi_transcode/src/smt_cli.cpp
++++ b/tools/legacy/sample_multi_transcode/src/smt_cli.cpp
+@@ -848,6 +848,11 @@ void PrintHelp() {
+ #if defined(LIBVA_DRM_SUPPORT)
+     HELP_LINE("");
+     HELP_LINE("  -rdrm        use libva DRM backend");
++#endif
++#if defined(LIBVA_GTK4_SUPPORT)
++    HELP_LINE("");
++    HELP_LINE("  -rgtk        use GTK renderer");
++    HELP_LINE("  -fullscreen  render in fullscreen");
+ #endif
+     HELP_LINE("");
+     HELP_LINE("  -syncop_timeout");
+@@ -2873,6 +2878,15 @@ mfxStatus CmdProcessor::ParseParamsForOneSession(mfxU32 argc, char* argv[]) {
+             }
+         }
+ #endif
++
++#if defined(LIBVA_GTK4_SUPPORT)
++        else if (msdk_starts_with(argv[i], "-rgtk")) {
++            InputParams.libvaBackend = MFX_LIBVA_GTK;
++        }
++        else if (msdk_match(argv[i], "-fullscreen")) {
++            InputParams.bIsFullscreen = true;
++        }
++#endif
+         else if (msdk_match(argv[i], "-vpp::sys")) {
+             InputParams.VppOutPattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
+         }
+diff --git a/tools/legacy/sample_vpp/include/sample_vpp_utils.h b/tools/legacy/sample_vpp/include/sample_vpp_utils.h
+index 67d7d7b..b6c1197 100644
+--- a/tools/legacy/sample_vpp/include/sample_vpp_utils.h
++++ b/tools/legacy/sample_vpp/include/sample_vpp_utils.h
+@@ -34,6 +34,7 @@
+ 
+     #ifdef LIBVA_SUPPORT
+         #include "vaapi_allocator.h"
++        #include "vaapi_device.h"
+         #include "vaapi_utils.h"
+     #endif
+ 
+diff --git a/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp b/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp
+index 1621edb..85a88df 100644
+--- a/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp
++++ b/tools/legacy/sample_vpp/src/sample_vpp_utils.cpp
+@@ -22,12 +22,6 @@
+ #ifdef MFX_D3D11_SUPPORT
+     #include "d3d11_allocator.h"
+     #include "d3d11_device.h"
+-
+-#endif
+-#ifdef LIBVA_SUPPORT
+-    #include "vaapi_allocator.h"
+-    #include "vaapi_device.h"
+-
+ #endif
+ 
+ #include <algorithm>
+-- 
+2.43.0
+

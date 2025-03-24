@@ -1,0 +1,39 @@
+From f7ea5ca12be0294d3173643e7df70be304bb306c Mon Sep 17 00:00:00 2001
+From: "Lim, Siew Hoon" <siew.hoon.lim@intel.com>
+Date: Thu, 27 Jun 2024 13:59:40 +0800
+Subject: [PATCH 064/117] vabasedec: Initialize the allocation related
+ variables in decide_allocation()
+
+Prevent garbage value has been pass thru and causing
+pipeline fail to run.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7097>
+---
+ sys/va/gstvabasedec.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sys/va/gstvabasedec.c b/sys/va/gstvabasedec.c
+index 0847101d5..adfbbfa3a 100644
+--- a/sys/va/gstvabasedec.c
++++ b/sys/va/gstvabasedec.c
+@@ -266,7 +266,7 @@ _decide_allocation_for_video_crop (GstVideoDecoder * decoder,
+     GstQuery * query, GstCaps * caps)
+ {
+   GstAllocator *allocator = NULL, *other_allocator = NULL;
+-  GstAllocationParams other_params, params;
++  GstAllocationParams other_params = { 0, }, params = { 0, };
+   gboolean update_pool = FALSE, update_allocator = FALSE;
+   GstBufferPool *pool = NULL, *other_pool = NULL;
+   guint size = 0, min, max, usage_hint;
+@@ -475,7 +475,7 @@ static gboolean
+ gst_va_base_dec_decide_allocation (GstVideoDecoder * decoder, GstQuery * query)
+ {
+   GstAllocator *allocator = NULL, *other_allocator = NULL;
+-  GstAllocationParams other_params, params;
++  GstAllocationParams other_params = { 0, }, params = { 0, };
+   GstBufferPool *pool = NULL, *other_pool = NULL;
+   GstCaps *caps = NULL;
+   GstVaBaseDec *base = GST_VA_BASE_DEC (decoder);
+-- 
+2.43.0
+

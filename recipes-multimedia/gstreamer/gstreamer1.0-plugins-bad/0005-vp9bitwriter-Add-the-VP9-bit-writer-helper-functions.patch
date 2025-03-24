@@ -1,7 +1,7 @@
-From 50fe290edcc133f375ea36a6366ae32cc3ac6f90 Mon Sep 17 00:00:00 2001
+From 1530bbd084d92e4e38f113b2ecd1bcc06c14f888 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Tue, 30 Jan 2024 18:10:12 +0800
-Subject: [PATCH 05/98] vp9bitwriter: Add the VP9 bit writer helper functions
+Subject: [PATCH 005/117] vp9bitwriter: Add the VP9 bit writer helper functions
 
 In this first version, we only implement the "show existing frame"
 and super frame writting. Other frame header types writting can
@@ -18,7 +18,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/32
 
 diff --git a/gst-libs/gst/codecparsers/gstvp9bitwriter.c b/gst-libs/gst/codecparsers/gstvp9bitwriter.c
 new file mode 100644
-index 000000000000..7e0e60d24ba3
+index 000000000..7e0e60d24
 --- /dev/null
 +++ b/gst-libs/gst/codecparsers/gstvp9bitwriter.c
 @@ -0,0 +1,171 @@
@@ -195,7 +195,7 @@ index 000000000000..7e0e60d24ba3
 +}
 diff --git a/gst-libs/gst/codecparsers/gstvp9bitwriter.h b/gst-libs/gst/codecparsers/gstvp9bitwriter.h
 new file mode 100644
-index 000000000000..3dd8fed62e13
+index 000000000..3dd8fed62
 --- /dev/null
 +++ b/gst-libs/gst/codecparsers/gstvp9bitwriter.h
 @@ -0,0 +1,59 @@
@@ -259,7 +259,7 @@ index 000000000000..3dd8fed62e13
 +G_END_DECLS
 +#endif /* __GST_VP9_BIT_WRITER_H__ */
 diff --git a/gst-libs/gst/codecparsers/meson.build b/gst-libs/gst/codecparsers/meson.build
-index 7e968354a83e..5865b373ef68 100644
+index 7e968354a..5865b373e 100644
 --- a/gst-libs/gst/codecparsers/meson.build
 +++ b/gst-libs/gst/codecparsers/meson.build
 @@ -19,6 +19,7 @@ codecparser_sources = files([

@@ -1,0 +1,38 @@
+From 6019b3cde082a17fc1e50fa9992c71f092eff56e Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 2 Apr 2024 22:47:58 +0800
+Subject: [PATCH 046/117] va: libs: Use va_check_surface_has_status() to
+ implement va_check_surface()
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4359>
+---
+ gst-libs/gst/va/vasurfaceimage.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/gst-libs/gst/va/vasurfaceimage.c b/gst-libs/gst/va/vasurfaceimage.c
+index c2498f88a..6b29868d6 100644
+--- a/gst-libs/gst/va/vasurfaceimage.c
++++ b/gst-libs/gst/va/vasurfaceimage.c
+@@ -369,18 +369,7 @@ va_ensure_image (GstVaDisplay * display, VASurfaceID surface,
+ gboolean
+ va_check_surface (GstVaDisplay * display, VASurfaceID surface)
+ {
+-  VADisplay dpy = gst_va_display_get_va_dpy (display);
+-  VAStatus status;
+-  VASurfaceStatus state;
+-
+-  status = vaQuerySurfaceStatus (dpy, surface, &state);
+-
+-  if (status != VA_STATUS_SUCCESS)
+-    GST_ERROR ("vaQuerySurfaceStatus: %s", vaErrorStr (status));
+-
+-  GST_LOG ("surface %#x status %d", surface, state);
+-
+-  return (status == VA_STATUS_SUCCESS);
++  return va_check_surface_has_status (display, surface, 0);
+ }
+ 
+ gboolean
+-- 
+2.43.0
+

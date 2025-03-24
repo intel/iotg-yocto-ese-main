@@ -1,7 +1,7 @@
-From 4ca4e9a922df8f0c36c387dd46912f6b962f885a Mon Sep 17 00:00:00 2001
+From c0c1f934bb14344a57bdac2d42bacff69c320981 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Fri, 22 Mar 2024 23:59:25 +0800
-Subject: [PATCH 09/98] va: encoder: Enable ICQ and QVBR mode in rate control
+Subject: [PATCH 009/117] va: encoder: Enable ICQ and QVBR mode in rate control
  map
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6433>
@@ -10,7 +10,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/64
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/sys/va/gstvaencoder.c b/sys/va/gstvaencoder.c
-index bee9b7bed19c..09975f758e9b 100644
+index bee9b7bed..09975f758 100644
 --- a/sys/va/gstvaencoder.c
 +++ b/sys/va/gstvaencoder.c
 @@ -1288,11 +1288,11 @@ static const GEnumValue rate_control_map[] = {

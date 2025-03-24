@@ -1,0 +1,32 @@
+From 4c0528b286f3c97ab0931bac4490ed39bc276021 Mon Sep 17 00:00:00 2001
+From: He Junyan <junyan.he@intel.com>
+Date: Tue, 17 Dec 2024 00:15:07 +0800
+Subject: [PATCH 098/117] libs: codecparsers: H266 GstH266RefPicListStruct's
+ abs_delta_poc_st should be 16 bits
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Its value range is 0~(2^15 − 1) according to the spec.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/5710>
+---
+ gst-libs/gst/codecparsers/gsth266parser.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/codecparsers/gsth266parser.h b/gst-libs/gst/codecparsers/gsth266parser.h
+index 95a34efcd..f7f7010ce 100644
+--- a/gst-libs/gst/codecparsers/gsth266parser.h
++++ b/gst-libs/gst/codecparsers/gsth266parser.h
+@@ -1116,7 +1116,7 @@ struct _GstH266RefPicListStruct {
+   guint8 ltrp_in_header_flag;
+   guint8 inter_layer_ref_pic_flag[GST_H266_MAX_REF_ENTRIES];
+   guint8 st_ref_pic_flag[GST_H266_MAX_REF_ENTRIES];
+-  guint8 abs_delta_poc_st[GST_H266_MAX_REF_ENTRIES];
++  guint16 abs_delta_poc_st[GST_H266_MAX_REF_ENTRIES];
+   guint8 strp_entry_sign_flag[GST_H266_MAX_REF_ENTRIES];
+   guint8 rpls_poc_lsb_lt[GST_H266_MAX_REF_ENTRIES];
+   guint num_short_term_pic;
+-- 
+2.43.0
+

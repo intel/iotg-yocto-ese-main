@@ -1,0 +1,25 @@
+From be9d05cfb54c5e115b412a67d9783f5871aa092e Mon Sep 17 00:00:00 2001
+From: "Ge, Senlin" <senlin.ge@intel.com>
+Date: Thu, 24 Oct 2024 22:25:44 +0800
+Subject: [PATCH 5/7] Fix ACM multi-channel AVC encode performance degradation
+
+disable DG2 Height alignment WA
+---
+ media_driver/linux/Xe_M/ddi/media_sku_wa_xe.cpp | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/media_driver/linux/Xe_M/ddi/media_sku_wa_xe.cpp b/media_driver/linux/Xe_M/ddi/media_sku_wa_xe.cpp
+index 9198443ec..bced55a39 100644
+--- a/media_driver/linux/Xe_M/ddi/media_sku_wa_xe.cpp
++++ b/media_driver/linux/Xe_M/ddi/media_sku_wa_xe.cpp
+@@ -443,7 +443,6 @@ static bool InitTglMediaWaExt(struct GfxDeviceInfo *devInfo,
+     }
+ 
+     MEDIA_WR_WA(waTable, WaEnableVPPCopy, 1);
+-    MEDIA_WR_WA(waTable, Wa_AvcUnalignedHeight, 1);
+     return true;
+ }
+ 
+-- 
+2.43.0
+

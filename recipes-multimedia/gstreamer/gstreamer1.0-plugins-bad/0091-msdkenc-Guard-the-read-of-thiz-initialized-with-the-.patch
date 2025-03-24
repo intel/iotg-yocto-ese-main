@@ -1,0 +1,47 @@
+From f056c50e2cc7cd17a2f4d6dfbd481eac4cf4fbbb Mon Sep 17 00:00:00 2001
+From: Mengkejiergeli Ba <mengkejiergeli.ba@intel.com>
+Date: Tue, 24 Sep 2024 23:43:07 -0700
+Subject: [PATCH 091/117] msdkenc: Guard the read of thiz->initialized with the
+ modification of this value
+
+This is to avoid wrongly read/write thiz->initialized when multi-thread
+invoking encoder init function, it is possible when user apps deploy
+multi-thread to dynamically change encoder's settings.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/7578>
+---
+ sys/msdk/gstmsdkenc.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/sys/msdk/gstmsdkenc.c b/sys/msdk/gstmsdkenc.c
+index 76b393d26..7e0ec2a7a 100644
+--- a/sys/msdk/gstmsdkenc.c
++++ b/sys/msdk/gstmsdkenc.c
+@@ -500,11 +500,6 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+   guint i;
+   mfxExtVideoSignalInfo ext_vsi;
+ 
+-  if (thiz->initialized) {
+-    GST_DEBUG_OBJECT (thiz, "Already initialized");
+-    return TRUE;
+-  }
+-
+   if (!thiz->context) {
+     GST_WARNING_OBJECT (thiz, "No MSDK Context");
+     return FALSE;
+@@ -522,6 +517,12 @@ gst_msdkenc_init_encoder (GstMsdkEnc * thiz)
+   }
+ 
+   GST_OBJECT_LOCK (thiz);
++  if (thiz->initialized) {
++    GST_DEBUG_OBJECT (thiz, "Already initialized");
++    GST_OBJECT_UNLOCK (thiz);
++    return TRUE;
++  }
++
+   session = gst_msdk_context_get_session (thiz->context);
+   thiz->codename = msdk_get_platform_codename (session);
+ 
+-- 
+2.43.0
+

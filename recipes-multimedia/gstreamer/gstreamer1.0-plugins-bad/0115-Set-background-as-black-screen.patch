@@ -1,0 +1,41 @@
+From 0c4f5270f49914b864104126a7773aeada3da636 Mon Sep 17 00:00:00 2001
+From: "Ch'ng, Seng Guan" <seng.guan.chng@intel.com>
+Date: Fri, 24 May 2024 17:32:21 +0800
+Subject: [PATCH 115/117] Set background as black screen
+
+---
+ sys/va/gstvafilter.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/sys/va/gstvafilter.c b/sys/va/gstvafilter.c
+index 48d477793..81ca5615d 100644
+--- a/sys/va/gstvafilter.c
++++ b/sys/va/gstvafilter.c
+@@ -1777,7 +1777,7 @@ gst_va_filter_compose (GstVaFilter * self, GstVaComposeTransaction * tx)
+   dpy = gst_va_display_get_va_dpy (self->display);
+ 
+   sample = tx->next (tx->user_data);
+-  for (; sample; sample = tx->next (tx->user_data)) {
++  for(int i=0; sample; i++, sample = tx->next (tx->user_data)) {
+     VAProcPipelineParameterBuffer params = { 0, };
+     VABufferID buffer;
+     VASurfaceID in_surface;
+@@ -1820,6 +1820,15 @@ gst_va_filter_compose (GstVaFilter * self, GstVaComposeTransaction * tx)
+       return FALSE;
+     }
+ 
++    if(0==i)
++    {//With alpha, set black background color
++       params.output_background_color = 0xff000000;
++    }
++    else
++    {//Without alpha, transparent background
++       params.output_background_color = 0;
++    }
++
+     status = vaCreateBuffer (dpy, self->context,
+         VAProcPipelineParameterBufferType, sizeof (params), 1, &params,
+         &buffer);
+-- 
+2.43.0
+

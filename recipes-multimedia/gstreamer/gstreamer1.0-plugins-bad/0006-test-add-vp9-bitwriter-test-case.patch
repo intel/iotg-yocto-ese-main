@@ -1,7 +1,7 @@
-From f6e9160b93304a715d5b1e6a80abc50bdff9aebd Mon Sep 17 00:00:00 2001
+From bf8fae35696470ea334538b6fd575f8eaea33f08 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Mon, 11 Mar 2024 23:06:44 +0800
-Subject: [PATCH 06/98] test: add vp9 bitwriter test case
+Subject: [PATCH 006/117] test: add vp9 bitwriter test case
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3293>
 ---
@@ -12,7 +12,7 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/32
 
 diff --git a/tests/check/libs/vp9bitwriter.c b/tests/check/libs/vp9bitwriter.c
 new file mode 100644
-index 000000000000..72dd9d7bc9e4
+index 000000000..72dd9d7bc
 --- /dev/null
 +++ b/tests/check/libs/vp9bitwriter.c
 @@ -0,0 +1,279 @@
@@ -296,10 +296,10 @@ index 000000000000..72dd9d7bc9e4
 +
 +GST_CHECK_MAIN (vp9bitwriter);
 diff --git a/tests/check/meson.build b/tests/check/meson.build
-index 40006d09bde6..5273191ede7e 100644
+index 1e73b73da..3e448a041 100644
 --- a/tests/check/meson.build
 +++ b/tests/check/meson.build
-@@ -98,6 +98,7 @@ base_tests = [
+@@ -97,6 +97,7 @@ base_tests = [
    [['libs/h265bitwriter.c'], false, [gstcodecparsers_dep]],
    [['libs/vkformat.c'], not gstvulkan_dep.found(), [gstvulkan_dep]],
    [['libs/av1bitwriter.c'], false, [gstcodecparsers_dep]],

@@ -1,0 +1,25 @@
+From e6e8461d2fffaf8925fe9d5708f985fba4f03f32 Mon Sep 17 00:00:00 2001
+From: "Hoe, Sheng Yang" <sheng.yang.hoe@intel.com>
+Date: Wed, 6 Nov 2024 13:29:23 +0800
+Subject: [PATCH 3/3] Remove redundant fd close
+
+Signed-off-by: Hoe, Sheng Yang <sheng.yang.hoe@intel.com>
+---
+ tools/legacy/sample_common/src/vaapi_device.cpp | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tools/legacy/sample_common/src/vaapi_device.cpp b/tools/legacy/sample_common/src/vaapi_device.cpp
+index e255c7f..da2be77 100644
+--- a/tools/legacy/sample_common/src/vaapi_device.cpp
++++ b/tools/legacy/sample_common/src/vaapi_device.cpp
+@@ -294,7 +294,6 @@ mfxStatus CVAAPIDeviceX11::RenderFrame(mfxFrameSurface1* pSurface,
+ 
+         xcblib.xcb_free_pixmap(m_xcbconn, pixmap);
+         xcblib.xcb_flush(m_xcbconn);
+-        close(fd);
+     }
+ 
+     return mfx_res;
+-- 
+2.43.0
+

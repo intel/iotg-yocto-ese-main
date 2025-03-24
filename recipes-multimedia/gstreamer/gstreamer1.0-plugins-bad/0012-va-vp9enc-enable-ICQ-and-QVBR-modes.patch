@@ -1,7 +1,7 @@
-From 4dc7f7b6503f16e1949c90bdf543685414ccb575 Mon Sep 17 00:00:00 2001
+From edee8295164848c62552d6c84e88ea6b69540b07 Mon Sep 17 00:00:00 2001
 From: He Junyan <junyan.he@intel.com>
 Date: Sat, 23 Mar 2024 13:28:12 +0800
-Subject: [PATCH 12/98] va: vp9enc: enable ICQ and QVBR modes
+Subject: [PATCH 012/117] va: vp9enc: enable ICQ and QVBR modes
 
 Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/6433>
 ---
@@ -9,10 +9,10 @@ Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/64
  1 file changed, 37 insertions(+), 5 deletions(-)
 
 diff --git a/sys/va/gstvavp9enc.c b/sys/va/gstvavp9enc.c
-index a8e8808e973c..bcfb4c361db1 100644
+index 038c40a59..d0aa6263a 100644
 --- a/sys/va/gstvavp9enc.c
 +++ b/sys/va/gstvavp9enc.c
-@@ -1818,7 +1818,7 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -1814,7 +1814,7 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
     * speed and quality, while the others control encoding bit rate and
     * quality. The lower value has better quality(maybe bigger MV search
     * range) but slower speed, the higher value has faster speed but lower
@@ -21,7 +21,7 @@ index a8e8808e973c..bcfb4c361db1 100644
     *
     * The possible composition to control the bit rate and quality:
     *
-@@ -1855,6 +1855,18 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -1851,6 +1851,18 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
     *    target bit rate, and encoder will try its best to make the QP
     *    with in the ["max-qp", "min-qp"] range. Other paramters are
     *    ignored.
@@ -40,7 +40,7 @@ index a8e8808e973c..bcfb4c361db1 100644
     */
  
    GstVaBaseEnc *base = GST_VA_BASE_ENC (self);
-@@ -1894,6 +1906,17 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -1890,6 +1902,17 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
      self->rc.rc_ctrl_mode = VA_RC_NONE;
    }
  
@@ -58,7 +58,7 @@ index a8e8808e973c..bcfb4c361db1 100644
    if (self->rc.min_qindex > self->rc.max_qindex) {
      GST_INFO_OBJECT (self, "The min_qindex %d is bigger than the max_qindex"
          " %d, set it to the max_qindex", self->rc.min_qindex,
-@@ -1933,7 +1956,8 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -1929,7 +1952,8 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
  
    /* Calculate a bitrate if it is not set. */
    if ((self->rc.rc_ctrl_mode == VA_RC_CBR || self->rc.rc_ctrl_mode == VA_RC_VBR
@@ -68,7 +68,7 @@ index a8e8808e973c..bcfb4c361db1 100644
      /* FIXME: Provide better estimation. */
      /* Choose the max value of all levels' MainCR which is 8, and x2 for
         conservative calculation. So just using a 1/16 compression ratio,
-@@ -1969,6 +1993,8 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -1965,6 +1989,8 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
  
    /* Adjust the setting based on RC mode. */
    switch (self->rc.rc_ctrl_mode) {
@@ -77,7 +77,7 @@ index a8e8808e973c..bcfb4c361db1 100644
      case VA_RC_CQP:
        self->rc.max_bitrate = 0;
        self->rc.target_bitrate = 0;
-@@ -1985,11 +2011,13 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -1981,11 +2007,13 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
        self->rc.sharpness_level = 0;
        break;
      case VA_RC_VBR:
@@ -92,7 +92,7 @@ index a8e8808e973c..bcfb4c361db1 100644
        self->rc.filter_level = DEFAULT_LOOP_FILTER_LEVEL;
        self->rc.sharpness_level = 0;
        break;
-@@ -2017,7 +2045,9 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
+@@ -2013,7 +2041,9 @@ _vp9_ensure_rate_control (GstVaVp9Enc * self)
        "Target bitrate: %u bits/sec", self->rc.max_bitrate,
        self->rc.target_bitrate);
  
@@ -103,7 +103,7 @@ index a8e8808e973c..bcfb4c361db1 100644
      _vp9_calculate_bitrate_hrd (self);
  
    /* notifications */
-@@ -3001,7 +3031,9 @@ gst_va_vp9_enc_class_init (gpointer g_klass, gpointer class_data)
+@@ -2995,7 +3025,9 @@ gst_va_vp9_enc_class_init (gpointer g_klass, gpointer class_data)
     * The basic quantizer value for all frames.
     */
    properties[PROP_QP] = g_param_spec_uint ("qp", "The frame QP",
