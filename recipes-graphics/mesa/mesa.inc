@@ -113,6 +113,8 @@ PACKAGECONFIG = " \
 	${@bb.utils.contains('DISTRO_FEATURES', 'vulkan', 'zink', '', d)} \
 "
 
+PACKAGECONFIG:remove = "freedreno"
+
 PACKAGECONFIG:append:class-native = " gallium-llvm r600"
 
 # "gbm" requires "opengl"

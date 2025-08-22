@@ -1,0 +1,27 @@
+From 915335dadaddba7a4ee56906bcc8ea6bb0a816fe Mon Sep 17 00:00:00 2001
+From: Hazim Razak <muhammad.azizul.hazim.abd.razak@intel.com>
+Date: Wed, 21 May 2025 16:15:49 +0800
+Subject: [PATCH] [RT Common] Add BMG Device ID for upstream
+
+Add device ID 0xE211
+
+Signed-off-by: Hazim Razak <muhammad.azizul.hazim.abd.razak@intel.com>
+---
+ _studio/shared/include/mfxstructures-int.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/_studio/shared/include/mfxstructures-int.h b/_studio/shared/include/mfxstructures-int.h
+index 70124f20..715980f4 100644
+--- a/_studio/shared/include/mfxstructures-int.h
++++ b/_studio/shared/include/mfxstructures-int.h
+@@ -595,6 +595,7 @@ typedef struct {
+     { 0xE212, MFX_HW_BMG, MFX_GT4 },
+ 
+     /* NEX BMG */
++    { 0xE211, MFX_HW_BMG, MFX_GT4 },
+     { 0xE215, MFX_HW_BMG, MFX_GT4 },
+     { 0xE216, MFX_HW_BMG, MFX_GT4 },
+ 
+-- 
+2.43.0
+

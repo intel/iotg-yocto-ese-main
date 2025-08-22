@@ -4,6 +4,7 @@ is an open source project to converge Intel's development efforts \
 on OpenCL(TM) compute stacks supporting the GEN graphics hardware \
 architecture."
 
+S = "${WORKDIR}/git"
 
 # The developers are not aware of Unix soname conventions
 FILES:${PN}-dev = "${includedir}"

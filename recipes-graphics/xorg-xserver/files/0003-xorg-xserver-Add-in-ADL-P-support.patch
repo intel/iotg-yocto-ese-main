@@ -1,7 +1,7 @@
-From b7ffe39ec2191b4f35d733f9ce682e362b35b8a8 Mon Sep 17 00:00:00 2001
+From e479108ebb86471383526d6c684bf52ae9c4085b Mon Sep 17 00:00:00 2001
 From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Sun, 20 Mar 2022 22:00:40 +0800
-Subject: [PATCH xserver 3/6] xorg-xserver: Add in ADL-P support
+Subject: [PATCH 3/8] xorg-xserver: Add in ADL-P support
 
 Upstream-Status: Pending
 
@@ -11,7 +11,7 @@ Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
  1 file changed, 20 insertions(+)
 
 diff --git a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
-index 0376497ce739..e59df534ab24 100644
+index 0376497ce..e59df534a 100644
 --- a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 +++ b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 @@ -21,3 +21,23 @@ CHIPSET(0x4692, adl_gt1, "Intel(R) Graphics ADL-S GT1")

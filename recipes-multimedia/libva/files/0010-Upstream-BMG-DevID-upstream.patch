@@ -1,0 +1,29 @@
+From 3bbd0d41e1ff374ffb86a4e07addfc2732385671 Mon Sep 17 00:00:00 2001
+From: Hazim Razak <muhammad.azizul.hazim.abd.razak@intel.com>
+Date: Tue, 20 May 2025 17:01:30 +0800
+Subject: [PATCH] [Upstream] BMG DevID upstream
+
+Upstream   1 BMG DevID
+
+Signed-off-by: Hazim Razak <muhammad.azizul.hazim.abd.razak@intel.com>
+---
+ media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp b/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp
+index f7890f4ff..8ab367170 100644
+--- a/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp
++++ b/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp
+@@ -205,4 +205,7 @@ static bool bmgDevicee215 = DeviceInfoFactory<GfxDeviceInfo>::
+     RegisterDevice(0xe215, &bmgInfo);
+ 
+ static bool bmgDevicee216 = DeviceInfoFactory<GfxDeviceInfo>::
+-    RegisterDevice(0xe216, &bmgInfo);
+\ No newline at end of file
++    RegisterDevice(0xe216, &bmgInfo);
++
++static bool bmgDevicee211 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xe211, &bmgInfo);
+-- 
+2.43.0
+

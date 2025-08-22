@@ -1,0 +1,383 @@
+From 56a99fb428c5e1a8f8c12c6a445778b9a927c875 Mon Sep 17 00:00:00 2001
+From: "Abd Razak, Muhammad Azizul Hazim"
+ <muhammad.azizul.hazim.abd.razak@intel.com>
+Date: Wed, 9 Jul 2025 14:26:46 +0800
+Subject: [PATCH] Add AVC 10b decode for PTL
+
+Signed-off-by: Abd Razak, Muhammad Azizul Hazim <muhammad.azizul.hazim.abd.razak@intel.com>
+---
+ .../cmake/linux/media_gen_flags_linux.cmake   |  6 ++
+ .../agnostic/common/hw/vdbox/media_srcs.cmake |  2 +
+ .../hw/vdbox/mhw_vdbox_mfx_cmdpar_ext.h       | 84 +++++++++++++++++++
+ .../common/hw/vdbox/mhw_vdbox_mfx_hwcmd_ext.h | 35 ++++++++
+ .../codec/ddi/dec/ddi_decode_avc_specific.cpp | 45 ++++++++++
+ .../codec/ddi/dec/ddi_decode_avc_specific.h   |  2 +
+ .../ddi/ddi_register_components_specific.h    |  6 ++
+ .../ddi/capstable_data_xe3_lpm_r0_specific.h  | 19 +++++
+ ...able_data_avc_decode_xe3_lpm_r0_specific.h | 35 +++++++-
+ 9 files changed, 233 insertions(+), 1 deletion(-)
+ create mode 100644 media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_cmdpar_ext.h
+ create mode 100644 media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_hwcmd_ext.h
+
+diff --git a/media_driver/cmake/linux/media_gen_flags_linux.cmake b/media_driver/cmake/linux/media_gen_flags_linux.cmake
+index bf24cb72b..732059543 100644
+--- a/media_driver/cmake/linux/media_gen_flags_linux.cmake
++++ b/media_driver/cmake/linux/media_gen_flags_linux.cmake
+@@ -140,6 +140,12 @@ if(PTL)
+     add_definitions(-DIGFX_PTL_SUPPORTED)
+ endif()
+ 
++option(MFX_INTERFACE_EXT_SUPPORT "Enable MFX Interface Ext Support" ON)
++if(MFX_INTERFACE_EXT_SUPPORT)
++    add_definitions(-DIGFX_MFX_INTERFACE_EXT_SUPPORT)
++endif()
++
++
+ if(GEN8)
+     add_definitions(-DIGFX_GEN8_SUPPORTED)
+ endif()
+diff --git a/media_softlet/agnostic/common/hw/vdbox/media_srcs.cmake b/media_softlet/agnostic/common/hw/vdbox/media_srcs.cmake
+index 7a020ea97..24ebf009e 100644
+--- a/media_softlet/agnostic/common/hw/vdbox/media_srcs.cmake
++++ b/media_softlet/agnostic/common/hw/vdbox/media_srcs.cmake
+@@ -47,6 +47,8 @@ set(TMP_SOFTLET_MHW_VDBOX_AVP_HEADERS_
+ )
+ 
+ set(TMP_SOFTLET_MHW_VDBOX_MFX_HEADERS_
++    ${CMAKE_CURRENT_LIST_DIR}/mhw_vdbox_mfx_cmdpar_ext.h
++    ${CMAKE_CURRENT_LIST_DIR}/mhw_vdbox_mfx_hwcmd_ext.h
+     ${CMAKE_CURRENT_LIST_DIR}/mhw_vdbox_mfx_cmdpar.h
+     ${CMAKE_CURRENT_LIST_DIR}/mhw_vdbox_mfx_impl.h
+     ${CMAKE_CURRENT_LIST_DIR}/mhw_vdbox_mfx_itf.h
+diff --git a/media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_cmdpar_ext.h b/media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_cmdpar_ext.h
+new file mode 100644
+index 000000000..ceff6577a
+--- /dev/null
++++ b/media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_cmdpar_ext.h
+@@ -0,0 +1,84 @@
++/*
++* Copyright (c) 2021-2023, Intel Corporation
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included
++* in all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
++* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
++* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++* OTHER DEALINGS IN THE SOFTWARE.
++*/
++//!
++//! \file     mhw_vdbox_mfx_cmdpar_ext.h
++//! \brief    MHW command parameters
++//! \details
++//!
++
++#ifndef __MHW_VDBOX_MFX_CMDPAR_EXT_H__
++#define __MHW_VDBOX_MFX_CMDPAR_EXT_H__
++
++namespace mhw
++{
++namespace vdbox
++{
++namespace mfx
++{
++
++enum SURFACE_FORMAT_EXT
++{
++    SURFACE_FORMAT_P010             = 13,  //!< P010 for 420 10 bits
++    SURFACE_FORMAT_Y216             = 14,  //!< Y216 for 422 10 bit (upto 16 bit)
++    SURFACE_FORMAT_Y210V            = 14,  //!< Y210 Variant
++};
++
++#define mfxMpeg2PicStatePar0 OldbpquantEncoderThisFieldShouldBeSetToZero
++
++#define MFX_AVC_IMG_STATE_EXT        \
++    uint8_t minFrameWSize = 0;       \
++    uint8_t loadSlicePointerFlag = 0;\
++    uint8_t tqchromadisable = 1;     \
++    uint8_t pakQpShift = 0;          \
++    uint8_t nonfirstpassflag = 0;    \
++    uint8_t minframewsizeunits = 0;  \
++
++#define MFX_AVC_SLICE_STATE_EXT                \
++    uint8_t rateControlCounterEnable = 0;      \
++    uint8_t rcTriggleMode = 0;                 \
++    uint8_t rcStableTolerance = 0;             \
++    uint8_t rcPanicEnable = 0;                 \
++    uint8_t mbTypeDirectConversionDis = 0;     \
++    uint8_t mbTypeSkipConversionDis = 0;       \
++    uint8_t compressBitstreamOutputDisFlag = 0;\
++    uint8_t streamID10 = 0;                    \
++    uint8_t magnitudeQpMaxNegativeModifier = 0;\
++    uint8_t magnitudeQpMaxPositiveModifier = 0;\
++    uint8_t shrinkParamShrinkResistance = 0;   \
++    uint8_t shrinkParamShrinkInit = 0;         \
++    uint8_t growParamGrowResistance = 0;       \
++    uint8_t correct6 = 0;                      \
++    uint8_t correct5 = 0;                      \
++    uint8_t correct4 = 0;                      \
++    uint8_t correct3 = 0;                      \
++    uint8_t correct2 = 0;                      \
++    uint8_t correct1 = 0
++
++#define MFX_SURFACE_STATE_EXT              \
++    uint8_t variantSurfaceFormatEnable = 0;\
++
++
++    }  // namespace mfx
++}  // namespace vdbox
++}  // namespace mhw
++
++#endif  // __MHW_VDBOX_MFX_CMDPAR_EXT_H__
+\ No newline at end of file
+diff --git a/media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_hwcmd_ext.h b/media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_hwcmd_ext.h
+new file mode 100644
+index 000000000..988a849bd
+--- /dev/null
++++ b/media_softlet/agnostic/common/hw/vdbox/mhw_vdbox_mfx_hwcmd_ext.h
+@@ -0,0 +1,35 @@
++/*===================== begin_copyright_notice ==================================
++
++INTEL CONFIDENTIAL
++Copyright 2019-2022
++Intel Corporation All Rights Reserved.
++
++The source code contained or described herein and all documents related to the
++source code ("Material") are owned by Intel Corporation or its suppliers or
++licensors. Title to the Material remains with Intel Corporation or its suppliers
++and licensors. The Material contains trade secrets and proprietary and confidential
++information of Intel or its suppliers and licensors. The Material is protected by
++worldwide copyright and trade secret laws and treaty provisions. No part of the
++Material may be used, copied, reproduced, modified, published, uploaded, posted,
++transmitted, distributed, or disclosed in any way without Intel's prior express
++written permission.
++
++No license under any patent, copyright, trade secret or other intellectual
++property right is granted to or conferred upon you by disclosure or delivery
++of the Materials, either expressly, by implication, inducement, estoppel
++or otherwise. Any license under such intellectual property rights must be
++express and approved by Intel in writing.
++
++======================= end_copyright_notice ==================================*/
++//!
++//! \file     mhw_vdbox_mfx_hwcmd_ext.h
++//! \brief    constructors for MHW and states.
++//! \details  This file may not be included outside as other components
++//!           should use MHW interface to interact with MHW commands and states.
++//!
++#ifndef __MHW_VDBOX_MFX_HWCMD_EXT_H__
++#define __MHW_VDBOX_MFX_HWCMD_EXT_H__
++
++#define MFX_MPEG2_PIC_STATE_CMD_DW3_BIT24_28 OldbpquantEncoderThisFieldShouldBeSetToZero
++
++#endif  // __MHW_VDBOX_MFX_HWCMD_EXT_H__
+\ No newline at end of file
+diff --git a/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.cpp b/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.cpp
+index 6d16c694f..dcfedb896 100644
+--- a/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.cpp
++++ b/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.cpp
+@@ -488,6 +488,44 @@ VAStatus DdiDecodeAvc::RenderPicture(
+     return va;
+ }
+ 
++MOS_FORMAT DdiDecodeAvc::GetFormat()
++{
++    DDI_CODEC_FUNC_ENTER;
++
++    MOS_FORMAT Format = Format_NV12;
++    DDI_CODEC_RENDER_TARGET_TABLE *rtTbl = &(m_decodeCtx->RTtbl);
++    CodechalDecodeParams  *decodeParams  = &m_decodeCtx->DecodeParams;
++    CODEC_AVC_PIC_PARAMS *picParams      = (CODEC_AVC_PIC_PARAMS *)decodeParams->m_picParams;
++
++    uint8_t chromaType             = picParams->seq_fields.chroma_format_idc;
++    uint8_t ucBitDepthLumaMinus8   = picParams->bit_depth_luma_minus8;
++    uint8_t ucBitDepthChromaMinus8 = picParams->bit_depth_luma_minus8;
++
++    if ((chromaType == avcChromaFormatMono || chromaType == avcChromaFormat420) && rtTbl->pCurrentRT->format == Media_Format_NV12)
++    {
++        if (ucBitDepthLumaMinus8 == 0 && ucBitDepthChromaMinus8 == 0)
++        {
++            Format = Format_NV12; //420 8 bit
++        }
++    }
++    else if (chromaType == avcChromaFormat420 && rtTbl->pCurrentRT->format == Media_Format_P010)
++    {
++        if (ucBitDepthLumaMinus8 == 2 && ucBitDepthChromaMinus8 == 2)
++        {
++            Format = Format_P010; //420 10 bit
++        }
++    }
++    else if (chromaType == avcChromaFormat422 && rtTbl->pCurrentRT->format == Media_Format_Y210)
++    {
++         if (ucBitDepthLumaMinus8 == 2 && ucBitDepthChromaMinus8 == 2)
++         {
++             Format = Format_Y210; // 422 10 bit
++         }
++    }
++
++    return Format;
++}
++
+ VAStatus DdiDecodeAvc::SetDecodeParams()
+ {
+     DDI_CODEC_FUNC_ENTER;
+@@ -631,6 +669,13 @@ VAStatus DdiDecodeAvc::CodecHalInit(
+ 
+     m_codechalSettings->lumaChromaDepth = CODECHAL_LUMA_CHROMA_DEPTH_8_BITS;
+ 
++    if (m_ddiDecodeAttr->profile == VAProfileH264High10     ||
++        m_ddiDecodeAttr->profile == VAProfileH264High422)
++    {
++        m_codechalSettings->lumaChromaDepth |= CODECHAL_LUMA_CHROMA_DEPTH_10_BITS;
++    }
++
++
+     m_codechalSettings->mode     = CODECHAL_DECODE_MODE_AVCVLD;
+     m_codechalSettings->standard = CODECHAL_AVC;
+ 
+diff --git a/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.h b/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.h
+index 6cec42fcc..52e10d9a2 100644
+--- a/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.h
++++ b/media_softlet/linux/common/codec/ddi/dec/ddi_decode_avc_specific.h
+@@ -59,6 +59,8 @@ public:
+         VABufferID       *buffers,
+         int32_t          numBuffers) override;
+ 
++    virtual MOS_FORMAT GetFormat() override;
++
+     virtual VAStatus SetDecodeParams() override;
+ 
+     virtual void ContextInit(
+diff --git a/media_softlet/linux/common/ddi/ddi_register_components_specific.h b/media_softlet/linux/common/ddi/ddi_register_components_specific.h
+index b6c124675..2d5832c72 100644
+--- a/media_softlet/linux/common/ddi/ddi_register_components_specific.h
++++ b/media_softlet/linux/common/ddi/ddi_register_components_specific.h
+@@ -166,6 +166,12 @@ static bool RegisteredH264HighVLD =
+ static bool RegisteredH264ConstrainedBaselineVLD =
+     DdiDecodeFactory::
+         Register<decode::DdiDecodeAvc>(ComponentInfo{VAProfileH264ConstrainedBaseline, VAEntrypointVLD});
++static bool RegisteredH264High10VLD =
++    DdiDecodeFactory::
++        Register<decode::DdiDecodeAvc>(ComponentInfo{VAProfileH264High10, VAEntrypointVLD});
++static bool RegisteredH264High422VLD =
++    DdiDecodeFactory::
++        Register<decode::DdiDecodeAvc>(ComponentInfo{VAProfileH264High422, VAEntrypointVLD});
+ #endif // _AVC_DECODE_SUPPORTED
+ 
+ #if defined (_AV1_DECODE_SUPPORTED)
+diff --git a/media_softlet/linux/xe3_lpm_r0/ddi/capstable_data_xe3_lpm_r0_specific.h b/media_softlet/linux/xe3_lpm_r0/ddi/capstable_data_xe3_lpm_r0_specific.h
+index 68959a137..d76119dbd 100644
+--- a/media_softlet/linux/xe3_lpm_r0/ddi/capstable_data_xe3_lpm_r0_specific.h
++++ b/media_softlet/linux/xe3_lpm_r0/ddi/capstable_data_xe3_lpm_r0_specific.h
+@@ -248,6 +248,20 @@ static const EntrypointMap entrypointMap_VAProfileH264High_Xe3_Lpm_r0
+ #endif
+ };
+ 
++static const EntrypointMap entrypointMap_VAProfileH264High10_Xe3_Lpm_r0
++{
++#if defined(_AVC_DECODE_SUPPORTED)
++    {VAEntrypointVLD, &entrypointMap_VAProfileH264High10Dec_Data_Xe3_Lpm_r0},
++#endif
++};
++
++static const EntrypointMap entrypointMap_VAProfileH264High422_Xe3_Lpm_r0
++{
++#if defined(_AVC_DECODE_SUPPORTED)
++    {VAEntrypointVLD, &entrypointMap_VAProfileH264High422Dec_Data_Xe3_Lpm_r0},
++#endif
++};
++
+ static const EntrypointMap entrypointMap_VAProfileH264ConstrainedBaseline_Xe3_Lpm_r0
+ {
+ #if defined(_AVC_ENCODE_VDENC_SUPPORTED) && defined(_MEDIA_RESERVED)
+@@ -393,6 +407,11 @@ static const ProfileMap profileMap_Xe3_Lpm_r0
+     {VAProfileH264ConstrainedBaseline, &entrypointMap_VAProfileH264ConstrainedBaseline_Xe3_Lpm_r0},
+ #endif
+ 
++#if defined(_AVC_DECODE_SUPPORTED)
++    {VAProfileH264High10, &entrypointMap_VAProfileH264High10_Xe3_Lpm_r0},
++    {VAProfileH264High422, &entrypointMap_VAProfileH264High422_Xe3_Lpm_r0},
++#endif
++
+ #if defined(_JPEG_ENCODE_SUPPORTED) || defined(_JPEG_DECODE_SUPPORTED)
+     {VAProfileJPEGBaseline, &entrypointMap_VAProfileJPEGBaseline_Xe3_Lpm_r0},
+ #endif
+diff --git a/media_softlet/linux/xe3_lpm_r0/decode/avc/ddi/capstable_data_avc_decode_xe3_lpm_r0_specific.h b/media_softlet/linux/xe3_lpm_r0/decode/avc/ddi/capstable_data_avc_decode_xe3_lpm_r0_specific.h
+index 5e84b5bba..4fc217049 100644
+--- a/media_softlet/linux/xe3_lpm_r0/decode/avc/ddi/capstable_data_avc_decode_xe3_lpm_r0_specific.h
++++ b/media_softlet/linux/xe3_lpm_r0/decode/avc/ddi/capstable_data_avc_decode_xe3_lpm_r0_specific.h
+@@ -44,6 +44,14 @@ static ConfigDataList configDataList_VAProfileH264Main_VAEntrypointVLD_Xe3_Lpm_r
+   {VA_DEC_SLICE_MODE_BASE,   VA_ENCRYPTION_TYPE_NONE, VA_DEC_PROCESSING}
+ };
+ 
++static ConfigDataList configDataList_VAProfileH264High422_VAEntrypointVLD_Xe3_Lpm_r0 =
++{
++  {VA_DEC_SLICE_MODE_NORMAL, VA_ENCRYPTION_TYPE_NONE, VA_DEC_PROCESSING_NONE},
++  {VA_DEC_SLICE_MODE_NORMAL, VA_ENCRYPTION_TYPE_NONE, VA_DEC_PROCESSING},
++  {VA_DEC_SLICE_MODE_BASE,   VA_ENCRYPTION_TYPE_NONE, VA_DEC_PROCESSING_NONE},
++  {VA_DEC_SLICE_MODE_BASE,   VA_ENCRYPTION_TYPE_NONE, VA_DEC_PROCESSING}
++};
++
+ static ConfigDataList configDataList_VAProfileH264High_VAEntrypointVLD_Xe3_Lpm_r0 =
+ {
+   {VA_DEC_SLICE_MODE_NORMAL, VA_ENCRYPTION_TYPE_NONE, VA_DEC_PROCESSING_NONE},
+@@ -83,6 +91,18 @@ static const AttribList attribList_VAProfileH264Main_VAEntrypointVLD_Xe3_Lpm_r0
+    {VAConfigAttribCustomRoundingControl, 1},
+ };
+ 
++static const AttribList attribList_VAProfileH264High422_VAEntrypointVLD_Xe3_Lpm_r0
++{
++   {VAConfigAttribRTFormat, VA_RT_FORMAT_YUV420_10 | VA_RT_FORMAT_YUV422_10 | VA_RT_FORMAT_YUV420_10BPP},
++   {VAConfigAttribDecSliceMode, VA_DEC_SLICE_MODE_NORMAL | VA_DEC_SLICE_MODE_BASE},
++   {VAConfigAttribDecProcessing, VA_DEC_PROCESSING},
++   {VAConfigAttribMaxPictureWidth, CODEC_4K_MAX_PIC_WIDTH},
++   {VAConfigAttribMaxPictureHeight, CODEC_4K_MAX_PIC_HEIGHT},
++   {VAConfigAttribEncryption, VA_ATTRIB_NOT_SUPPORTED},
++   {VAConfigAttribProcessingRate, VA_PROCESSING_RATE_DECODE},
++   {VAConfigAttribCustomRoundingControl, 1},
++};
++
+ static const AttribList attribList_VAProfileH264High_VAEntrypointVLD_Xe3_Lpm_r0
+ {
+    {VAConfigAttribRTFormat, VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV422 | VA_RT_FORMAT_RGB32},
+@@ -141,8 +161,14 @@ static ProfileSurfaceAttribInfo surfaceAttribInfo_VAProfileH264High_VAEntrypoint
+ static ProfileSurfaceAttribInfo surfaceAttribInfo_VAProfileH264High10_VAEntrypointVLD_Xe3_Lpm_r0 =
+ {
+   {VASurfaceAttribPixelFormat, VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE, {VAGenericValueTypeInteger, {VA_FOURCC_P010}}},
++  {VASurfaceAttribMaxWidth,    VA_SURFACE_ATTRIB_GETTABLE, {VAGenericValueTypeInteger, {CODEC_4K_MAX_PIC_WIDTH}}},
++  {VASurfaceAttribMaxHeight,   VA_SURFACE_ATTRIB_GETTABLE, {VAGenericValueTypeInteger, {CODEC_4K_MAX_PIC_HEIGHT}}},
++  {VASurfaceAttribMemoryType,  VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE, {VAGenericValueTypeInteger, {VA_SURFACE_ATTRIB_MEM_TYPE_VA| VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2}}}
++};
++
++static ProfileSurfaceAttribInfo surfaceAttribInfo_VAProfileH264High422_VAEntrypointVLD_Xe3_Lpm_r0 =
++{
+   {VASurfaceAttribPixelFormat, VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE, {VAGenericValueTypeInteger, {VA_FOURCC_Y210}}},
+-  {VASurfaceAttribPixelFormat, VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE, {VAGenericValueTypeInteger, {VA_FOURCC_Y216}}},
+   {VASurfaceAttribMaxWidth,    VA_SURFACE_ATTRIB_GETTABLE, {VAGenericValueTypeInteger, {CODEC_4K_MAX_PIC_WIDTH}}},
+   {VASurfaceAttribMaxHeight,   VA_SURFACE_ATTRIB_GETTABLE, {VAGenericValueTypeInteger, {CODEC_4K_MAX_PIC_HEIGHT}}},
+   {VASurfaceAttribMemoryType,  VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE, {VAGenericValueTypeInteger, {VA_SURFACE_ATTRIB_MEM_TYPE_VA| VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2}}}
+@@ -187,4 +213,11 @@ static const EntrypointData entrypointMap_VAProfileH264High10Dec_Data_Xe3_Lpm_r0
+     &surfaceAttribInfo_VAProfileH264High10_VAEntrypointVLD_Xe3_Lpm_r0
+ };
+ 
++static const EntrypointData entrypointMap_VAProfileH264High422Dec_Data_Xe3_Lpm_r0
++{
++    &attribList_VAProfileH264High422_VAEntrypointVLD_Xe3_Lpm_r0,
++    &configDataList_VAProfileH264High422_VAEntrypointVLD_Xe3_Lpm_r0,
++    &surfaceAttribInfo_VAProfileH264High422_VAEntrypointVLD_Xe3_Lpm_r0
++};
++
+ #endif
+-- 
+2.43.0
+

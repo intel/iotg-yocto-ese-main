@@ -1,0 +1,29 @@
+From 0efaa5f2995680419a673a9fbd074eb6c18bd8cc Mon Sep 17 00:00:00 2001
+From: "Abd Razak, Muhammad Azizul Hazim"
+ <muhammad.azizul.hazim.abd.razak@intel.com>
+Date: Wed, 28 May 2025 16:52:07 +0800
+Subject: [PATCH] Add new BMG Device ID (#234)
+
+Upstream-Status: Backport
+https://github.com/intel/gmmlib/commit/60304dc
+
+Signed-off-by: Abd Razak, Muhammad Azizul Hazim <muhammad.azizul.hazim.abd.razak@intel.com>
+---
+ Source/inc/common/igfxfmid.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Source/inc/common/igfxfmid.h b/Source/inc/common/igfxfmid.h
+index d28b399..5b16529 100644
+--- a/Source/inc/common/igfxfmid.h
++++ b/Source/inc/common/igfxfmid.h
+@@ -2000,6 +2000,7 @@ typedef enum __NATIVEGTTYPE
+ #define DEV_ID_E20B                             0xE20B
+ #define DEV_ID_E20C                             0xE20C
+ #define DEV_ID_E20D                             0xE20D
++#define DEV_ID_E211                             0xE211
+ #define DEV_ID_E212                             0xE212
+ 
+ // PTL
+-- 
+2.43.0
+

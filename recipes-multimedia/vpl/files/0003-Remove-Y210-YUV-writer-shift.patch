@@ -1,0 +1,43 @@
+From 935524cd206c4d0fdb8124a36af4974fd3f4cf84 Mon Sep 17 00:00:00 2001
+From: "Cheah, Vincent Beng Keat" <vincent.beng.keat.cheah@intel.com>
+Date: Fri, 16 May 2025 19:38:06 +0800
+Subject: [PATCH] Remove Y210 YUV writer shift
+
+Upstream-Status: submitted [https://github.com/intel-innersource/libraries.media.vpl.tools/pull/75]
+---
+ .../legacy/sample_common/src/sample_utils.cpp | 19 +++----------------
+ 1 file changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/tools/legacy/sample_common/src/sample_utils.cpp b/tools/legacy/sample_common/src/sample_utils.cpp
+index 684af8b..bf32a2c 100644
+--- a/tools/legacy/sample_common/src/sample_utils.cpp
++++ b/tools/legacy/sample_common/src/sample_utils.cpp
+@@ -1209,22 +1209,9 @@ mfxStatus CSmplYUVWriter::WriteNextFrame(mfxFrameSurface1* pSurface) {
+             for (i = 0; i < pInfo.CropH; i++) {
+                 mfxU8* pBuffer = ((mfxU8*)pData.Y) + (pInfo.CropY * pData.Pitch + pInfo.CropX * 4) +
+                                  i * pData.Pitch;
+-                if (pInfo.Shift) {
+-                    // Bits will be shifted to the lower position
+-                    for (int idx = 0; idx < pInfo.CropW * 2; idx++) {
+-                        tmp[idx] = ((mfxU16*)pBuffer)[idx] >> shiftSizeLuma;
+-                    }
+-
+-                    MSDK_CHECK_NOT_EQUAL(
+-                        fwrite(((const mfxU8*)tmp.data()), 4, pInfo.CropW, dstFile),
+-                        pInfo.CropW,
+-                        MFX_ERR_UNDEFINED_BEHAVIOR);
+-                }
+-                else {
+-                    MSDK_CHECK_NOT_EQUAL(fwrite(pBuffer, 4, pInfo.CropW, dstFile),
+-                                         pInfo.CropW,
+-                                         MFX_ERR_UNDEFINED_BEHAVIOR);
+-                }
++                MSDK_CHECK_NOT_EQUAL(fwrite(pBuffer, 4, pInfo.CropW, dstFile),
++                                     pInfo.CropW,
++                                     MFX_ERR_UNDEFINED_BEHAVIOR);
+             }
+             return MFX_ERR_NONE;
+         } break;
+-- 
+2.43.0
+

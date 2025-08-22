@@ -1,7 +1,7 @@
-From 9454c91777b33cab8ab3b335918fb2fb25468357 Mon Sep 17 00:00:00 2001
+From 7027bb3a9ec89ebb3145693771d6d8f4ec23ce65 Mon Sep 17 00:00:00 2001
 From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Sun, 20 Mar 2022 21:52:34 +0800
-Subject: [PATCH xserver 1/6] dri2: Add support for TGL
+Subject: [PATCH 1/8] dri2: Add support for TGL
 
 In addition, have iris be chosen as the DRI driver for TGL platforms.
 
@@ -11,13 +11,13 @@ Signed-off-by: Vivek Kasireddy <vivek.kasireddy@intel.com>
 Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
 ---
  hw/xfree86/dri2/pci_ids/iris_pci_ids.h      | 12 ++++++++++++
- hw/xfree86/dri2/pci_ids/pci_id_driver_map.h |  9 ++++++++-
- 2 files changed, 20 insertions(+), 1 deletion(-)
+ hw/xfree86/dri2/pci_ids/pci_id_driver_map.h |  8 +++++++-
+ 2 files changed, 19 insertions(+), 1 deletion(-)
  create mode 100644 hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 
 diff --git a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 new file mode 100644
-index 000000000000..cb4c6dc32c48
+index 000000000..cb4c6dc32
 --- /dev/null
 +++ b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 @@ -0,0 +1,12 @@
@@ -34,10 +34,10 @@ index 000000000000..cb4c6dc32c48
 +CHIPSET(0x9AF8, tgl_gt2, "Intel(R) UHD Graphics TGL GT2")
 +
 diff --git a/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h b/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
-index 04f372279034..8b864e2c12ef 100644
+index 04f372279..a45b8ccc3 100644
 --- a/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
 +++ b/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
-@@ -19,6 +19,13 @@ static const int i965_chip_ids[] = {
+@@ -19,6 +19,12 @@ static const int i965_chip_ids[] = {
  #undef CHIPSET
  };
  
@@ -47,11 +47,10 @@ index 04f372279034..8b864e2c12ef 100644
 +#undef CHIPSET
 +};
 +
-+
  #ifndef DRIVER_MAP_GALLIUM_ONLY
  static const int r100_chip_ids[] = {
  #define CHIPSET(chip, name, family) chip,
-@@ -65,7 +72,7 @@ static const struct {
+@@ -65,7 +71,7 @@ static const struct {
  } driver_map[] = {
     { 0x8086, "i915", i915_chip_ids, ARRAY_SIZE(i915_chip_ids) },
     { 0x8086, "i965", i965_chip_ids, ARRAY_SIZE(i965_chip_ids) },

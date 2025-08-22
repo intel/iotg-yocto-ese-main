@@ -1,0 +1,31 @@
+From 6ad38cca797853a0db7f7d5c4805383c47111dcf Mon Sep 17 00:00:00 2001
+From: "Soon, Thean Siew" <thean.siew.soon@intel.com>
+Date: Tue, 26 Nov 2024 00:05:25 +0800
+Subject: [PATCH 7/7] Add BMG-E NEX1 and NEX2 Device ID
+
+Signed-off-by: Soon, Thean Siew <thean.siew.soon@intel.com>
+---
+ media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp b/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp
+index cce03d1f8..564b468ac 100644
+--- a/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp
++++ b/media_softlet/linux/xe2_hpm/ddi/media_sysinfo_bmg.cpp
+@@ -197,4 +197,10 @@ static bool bmgDevicee20D = DeviceInfoFactory<GfxDeviceInfo>::
+     RegisterDevice(0xe20D, &bmgInfo);
+ 
+ static bool bmgDevicee212 = DeviceInfoFactory<GfxDeviceInfo>::
+-    RegisterDevice(0xe212, &bmgInfo);
+\ No newline at end of file
++    RegisterDevice(0xe212, &bmgInfo);
++
++static bool bmgDevicee215 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xe215, &bmgInfo);
++
++static bool bmgDevicee216 = DeviceInfoFactory<GfxDeviceInfo>::
++    RegisterDevice(0xe216, &bmgInfo);
+\ No newline at end of file
+-- 
+2.47.1
+

@@ -9,3 +9,4 @@ do_install:append:class-target() {
 
 PACKAGES += "${PN}-bootimg"
 FILES:${PN}-bootimg = "/boot/intel-uc.img"
+S = "${WORKDIR}/git"

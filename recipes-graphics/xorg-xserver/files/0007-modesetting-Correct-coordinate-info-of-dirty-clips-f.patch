@@ -1,7 +1,7 @@
-From 4a0fc33ea29df9aa333fcd965a82d1bec276c4e6 Mon Sep 17 00:00:00 2001
+From 29403ada42e3a2311a050ada161dacb30e085299 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Tue, 9 Jan 2024 19:15:59 -0800
-Subject: [PATCH 2/2] modesetting: Correct coordinate info of dirty clips for
+Subject: [PATCH 7/8] modesetting: Correct coordinate info of dirty clips for
  front-buffer flushing
 
 A clip should represent the area that is covering the current FB associated

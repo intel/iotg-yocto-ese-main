@@ -1,0 +1,2 @@
+S = "${WORKDIR}/git"
+

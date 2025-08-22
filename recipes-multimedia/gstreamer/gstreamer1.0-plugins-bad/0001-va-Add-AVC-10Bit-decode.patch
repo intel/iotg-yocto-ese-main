@@ -1,0 +1,42 @@
+From 1640f43e3fbbeb8d37673c63f8f9de74c95c79ba Mon Sep 17 00:00:00 2001
+From: "Cheah, Vincent Beng Keat" <vincent.beng.keat.cheah@intel.com>
+Date: Wed, 25 Jun 2025 10:12:22 +0800
+Subject: [PATCH] va: Add AVC 10Bit decode
+
+Upstream-Status: Inappropriate [IGMDPT-869]
+---
+ sys/va/gstvah264dec.c | 4 ++--
+ sys/va/gstvaprofile.c | 2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/sys/va/gstvah264dec.c b/sys/va/gstvah264dec.c
+index c4a149434..658dbfb75 100644
+--- a/sys/va/gstvah264dec.c
++++ b/sys/va/gstvah264dec.c
+@@ -574,8 +574,8 @@ static const struct
+   P (MAIN, Main),
+   /* P (EXTENDED, ), */
+   P (HIGH, High),
+-  /* P (HIGH10, ), */
+-  /* P (HIGH_422, ), */
++  P (HIGH10, High10),
++  P (HIGH_422, High422),
+   /* P (HIGH_444, ), */
+   P (MULTIVIEW_HIGH, MultiviewHigh),
+   P (STEREO_HIGH, StereoHigh),
+diff --git a/sys/va/gstvaprofile.c b/sys/va/gstvaprofile.c
+index e9d8e0d93..1e875b42b 100644
+--- a/sys/va/gstvaprofile.c
++++ b/sys/va/gstvaprofile.c
+@@ -55,6 +55,8 @@ static const struct ProfileMap
+       "mpegversion = (int) 4, profile = (string) main, "),
+   P (H264, Main, "main", "video/x-h264", "profile = (string) main"),
+   P (H264, High, "high", "video/x-h264", "profile = (string) high"),
++  P (H264, High10, "high-10", "video/x-h264", "profile = (string) high-10"),
++  P (H264, High422, "high-4:2:2", "video/x-h264", "profile = (string) high-4:2:2"),
+   P (VC1, Simple, "simple", "video/x-wmv",
+       "wmvversion = (int) 3, profile = (string) simple"),
+   P (VC1, Main, "main", "video/x-wmv",
+-- 
+2.43.0
+

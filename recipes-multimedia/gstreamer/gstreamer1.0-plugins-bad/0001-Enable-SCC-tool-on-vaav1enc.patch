@@ -1,0 +1,237 @@
+From 8d2edfaf5888ead5e5e8aa536bb927252bb5a506 Mon Sep 17 00:00:00 2001
+From: "Lui, Jonathan Ming Jun" <jonathan.ming.jun.lui@intel.com>
+Date: Thu, 6 Mar 2025 08:42:27 +0000
+Subject: [PATCH] Enable SCC tool on vaav1enc vaav1enc: Enable intrablock copy
+ and palette mode and add these as a option
+
+Signed-off-by: Lui, Jonathan Ming Jun <jonathan.ming.jun.lui@intel.com>
+---
+ sys/va/gstvaav1enc.c | 108 +++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 90 insertions(+), 18 deletions(-)
+
+diff --git a/sys/va/gstvaav1enc.c b/sys/va/gstvaav1enc.c
+index e474ab7a1..6daeb2713 100644
+--- a/sys/va/gstvaav1enc.c
++++ b/sys/va/gstvaav1enc.c
+@@ -91,6 +91,8 @@ enum
+   PROP_TILE_GROUPS,
+   PROP_MBBRC,
+   PROP_RATE_CONTROL,
++  PROP_PALETTE_MODE,
++  PROP_ALLOW_INTRABC,  
+   N_PROPERTIES
+ };
+ 
+@@ -225,6 +227,8 @@ struct _GstVaAV1Enc
+     guint32 num_tile_rows;
+     guint32 tile_groups;
+     guint32 mbbrc;
++    gboolean allow_intrabc;
++    gboolean enable_palette_mode;    
+   } prop;
+ 
+   struct
+@@ -2331,8 +2335,8 @@ _av1_setup_encoding_features (GstVaAV1Enc * self)
+     /* not enable it now. */
+     self->features.enable_warped_motion = FALSE;
+     // (features.bits.support_warped_motion != 0);
+-    self->features.enable_palette_mode = FALSE;
+-    //  (features.bits.support_palette_mode != 0);
++    self->features.enable_palette_mode =
++        (features.bits.support_palette_mode != 0);
+     self->features.enable_dual_filter =
+         (features.bits.support_dual_filter != 0);
+     self->features.enable_jnt_comp = (features.bits.support_jnt_comp != 0);
+@@ -2340,11 +2344,16 @@ _av1_setup_encoding_features (GstVaAV1Enc * self)
+         (features.bits.support_ref_frame_mvs != 0);
+     /* not enable it now. */
+     self->features.enable_superres = FALSE;
++    /* not enable it now. */
+     self->features.enable_restoration = FALSE;
+     // (features.bits.support_restoration != 0);
+-    /* not enable it now. */
+-    self->features.allow_intrabc = FALSE;
+-    self->features.enable_cdef = TRUE;
++    self->features.allow_intrabc =
++        (features.bits.support_allow_intrabc != 0);
++    if (TRUE == self->prop.allow_intrabc) {
++      self->features.enable_cdef = FALSE;
++    } else {
++      self->features.enable_cdef = TRUE;
++    }
+     self->features.cdef_channel_strength =
+         (features.bits.support_cdef_channel_strength != 0);
+   }
+@@ -3027,6 +3036,7 @@ _av1_fill_sequence_header (GstVaAV1Enc * self,
+     .enable_jnt_comp = seq_param->seq_fields.bits.enable_jnt_comp,
+     .enable_ref_frame_mvs = seq_param->seq_fields.bits.enable_ref_frame_mvs,
+     .seq_choose_screen_content_tools = 0,
++    .seq_force_screen_content_tools = 0,
+     .order_hint_bits_minus_1 = seq_param->order_hint_bits_minus_1,
+     .enable_superres = seq_param->seq_fields.bits.enable_superres,
+     .enable_cdef = seq_param->seq_fields.bits.enable_cdef,
+@@ -3047,6 +3057,11 @@ _av1_fill_sequence_header (GstVaAV1Enc * self,
+     .film_grain_params_present = 0,
+   };
+   /* *INDENT-ON* */
++
++  if (TRUE == self->prop.allow_intrabc || TRUE == self->prop.enable_palette_mode) {
++    self->sequence_hdr.seq_choose_screen_content_tools = 1;
++    self->sequence_hdr.seq_force_screen_content_tools = GST_AV1_SELECT_SCREEN_CONTENT_TOOLS;
++  }  
+ }
+ 
+ static gboolean
+@@ -3154,6 +3169,17 @@ _av1_calculate_cdef_param (GstVaAV1Enc * self,
+   guint cdef_damping;
+   guint i;
+ 
++  if (self->features.enable_cdef == FALSE)
++  {
++    pic_param->cdef_bits = 0;
++    pic_param->cdef_damping_minus_3 = 3;
++    for (i = 0; i < GST_AV1_CDEF_MAX; i++) {
++      pic_param->cdef_y_strengths[i] = 0;
++      pic_param->cdef_uv_strengths[i] = 0;
++    }
++    return;
++  }
++
+   /* Adjust the CDEF parameter for CQP mode. In bitrate control mode, the
+      driver will update the CDEF value for each frame automatically. */
+   if (self->rc.rc_ctrl_mode == VA_RC_CQP) {
+@@ -3212,11 +3238,14 @@ _av1_fill_frame_param (GstVaAV1Enc * self, GstVaAV1EncFrame * va_frame,
+   g_assert (!(va_frame->type & FRAME_TYPE_REPEAT));
+ 
+   /* *INDENT-OFF* */
+-  if (self->rc.rc_ctrl_mode == VA_RC_CQP) {
++  if (self->rc.rc_ctrl_mode == VA_RC_CQP && self->prop.allow_intrabc == FALSE) {
+     loop_filter_level_y =
+         _av1_calculate_filter_level (self->rc.base_qindex, FALSE);
+     loop_filter_level_uv =
+         _av1_calculate_filter_level (self->rc.base_qindex, TRUE);
++  } else if (self->prop.allow_intrabc) {
++    loop_filter_level_y = 0;
++    loop_filter_level_uv = 0;
+   } else {
+     /* In bitrate control mode, the driver will set the loop filter
+        level for each frame, we do not care here. */
+@@ -3255,7 +3284,7 @@ _av1_fill_frame_param (GstVaAV1Enc * self, GstVaAV1EncFrame * va_frame,
+     }
+   }
+ 
+-  allow_intrabc = self->features.allow_intrabc;
++  allow_intrabc = self->prop.allow_intrabc;
+   if (va_frame->type != GST_AV1_KEY_FRAME
+       && va_frame->type != GST_AV1_INTRA_ONLY_FRAME)
+     allow_intrabc = 0;
+@@ -3287,7 +3316,7 @@ _av1_fill_frame_param (GstVaAV1Enc * self, GstVaAV1EncFrame * va_frame,
+       .long_term_reference = 0,
+       .disable_frame_recon = 0,
+       .allow_intrabc = allow_intrabc,
+-      .palette_mode_enable = self->features.enable_palette_mode,
++      .palette_mode_enable = self->prop.enable_palette_mode,
+     },
+     /* segmentation does not support now */
+     .seg_id_block_size = 0,
+@@ -3365,7 +3394,10 @@ _av1_fill_frame_param (GstVaAV1Enc * self, GstVaAV1EncFrame * va_frame,
+     .skip_frames_reduced_size = 0,
+   };
+   /* *INDENT-ON* */
+-
++  if (self->prop.allow_intrabc) {
++    pic_param->ref_deltas[4] = 0;
++    pic_param->ref_deltas[5] = -1;
++  }
+   _av1_calculate_cdef_param (self, pic_param);
+ 
+   for (i = 0; i < self->partition.num_tile_cols - 1; i++)
+@@ -3649,15 +3681,25 @@ _av1_fill_frame_header (GstVaAV1Enc * self,
+   };
+   /* *INDENT-ON* */
+ 
+-  for (i = 0; i < GST_AV1_CDEF_MAX; i++) {
+-    frame_hdr->cdef_params.cdef_y_pri_strength[i] =
+-        pic_param->cdef_y_strengths[i] / 4;
+-    frame_hdr->cdef_params.cdef_y_sec_strength[i] =
+-        pic_param->cdef_y_strengths[i] % 4;
+-    frame_hdr->cdef_params.cdef_uv_pri_strength[i] =
+-        pic_param->cdef_uv_strengths[i] / 4;
+-    frame_hdr->cdef_params.cdef_uv_sec_strength[i] =
+-        pic_param->cdef_uv_strengths[i] % 4;
++  if (frame_hdr->allow_intrabc == 0) {
++    for (i = 0; i < GST_AV1_CDEF_MAX; i++) {
++      frame_hdr->cdef_params.cdef_y_pri_strength[i] =
++          pic_param->cdef_y_strengths[i] / 4;
++      frame_hdr->cdef_params.cdef_y_sec_strength[i] =
++          pic_param->cdef_y_strengths[i] % 4;
++      frame_hdr->cdef_params.cdef_uv_pri_strength[i] =
++          pic_param->cdef_uv_strengths[i] / 4;
++      frame_hdr->cdef_params.cdef_uv_sec_strength[i] =
++          pic_param->cdef_uv_strengths[i] % 4;
++    }
++  }
++
++  if (frame_hdr->allow_intrabc || pic_param->picture_flags.bits.palette_mode_enable) {
++    frame_hdr->allow_screen_content_tools = 1;
++  }
++
++  if (FALSE == pic_param->picture_flags.bits.use_superres) {
++    frame_hdr->upscaled_width =  self->sequence_hdr.max_frame_width_minus_1 + 1;
+   }
+ 
+   _av1_set_skip_mode_frame (self, va_frame, frame_hdr);
+@@ -4267,6 +4309,12 @@ gst_va_av1_enc_set_property (GObject * object, guint prop_id,
+       }
+       break;
+     }
++    case PROP_PALETTE_MODE:
++      self->prop.enable_palette_mode = g_value_get_boolean (value);
++      break;
++    case PROP_ALLOW_INTRABC:
++      self->prop.allow_intrabc = g_value_get_boolean (value);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+   }
+@@ -4341,6 +4389,12 @@ gst_va_av1_enc_get_property (GObject * object, guint prop_id,
+     case PROP_MBBRC:
+       g_value_set_enum (value, self->prop.mbbrc);
+       break;
++    case PROP_PALETTE_MODE:
++      g_value_set_boolean (value, self->prop.enable_palette_mode);
++      break;
++    case PROP_ALLOW_INTRABC:
++      g_value_set_boolean (value, self->prop.allow_intrabc);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+   }
+@@ -4497,6 +4551,24 @@ gst_va_av1_enc_class_init (gpointer g_klass, gpointer class_data)
+       g_param_spec_boolean ("superblock-128x128", "128x128 superblock",
+       "Enable the 128x128 superblock mode", FALSE, param_flags);
+ 
++  /**
++   * GstVaAV1Enc:palette-mode:
++   *
++   * Enable palette mode.
++   */
++  properties[PROP_PALETTE_MODE] =
++      g_param_spec_boolean ("palette-mode", "Palette mode",
++      "Enable palette mode", FALSE, param_flags);
++
++  /**
++   * GstVaAV1Enc:allow_intrabc:
++   *
++   * Allow intrablock copy.
++   */
++  properties[PROP_ALLOW_INTRABC] =
++      g_param_spec_boolean ("allow-intrabc", "Allow intrabc",
++      "Allow intrablock copy", FALSE, param_flags);
++
+   /**
+    * GstVaAV1Enc:min-qp:
+    *
+-- 
+2.45.2
+

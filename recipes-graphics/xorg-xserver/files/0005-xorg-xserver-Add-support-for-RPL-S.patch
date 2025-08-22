@@ -1,7 +1,7 @@
-From d0fde6d8de32224ce95798f27e3b647605916c18 Mon Sep 17 00:00:00 2001
+From e9671545159f434de76590207a6e523e0df4f561 Mon Sep 17 00:00:00 2001
 From: "Mazlan, Hazwan Arif" <hazwan.arif.mazlan@intel.com>
 Date: Sun, 20 Mar 2022 22:08:04 +0800
-Subject: [PATCH xserver 5/6] xorg-xserver: Add support for RPL-S
+Subject: [PATCH 5/8] xorg-xserver: Add support for RPL-S
 
 Upstream-Status: Pending
 
@@ -11,7 +11,7 @@ Signed-off-by: Mazlan, Hazwan Arif <hazwan.arif.mazlan@intel.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
-index 18ddfa407148..7d1d318946b3 100644
+index 18ddfa407..7d1d31894 100644
 --- a/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 +++ b/hw/xfree86/dri2/pci_ids/iris_pci_ids.h
 @@ -46,3 +46,13 @@ CHIPSET(0x462A, adl_gt2, "Intel(R) Graphics ADL-P GT2")

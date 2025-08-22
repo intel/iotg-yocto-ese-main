@@ -1,0 +1,28 @@
+From 7fc6b8e820a326ce7440fc1e0d16f40cae9c2ad4 Mon Sep 17 00:00:00 2001
+From: "Soon, Thean Siew" <thean.siew.soon@intel.com>
+Date: Mon, 25 Nov 2024 23:38:07 +0800
+Subject: [PATCH] Add BMG-E NEX1 and NEX2 Device ID
+
+Signed-off-by: Soon, Thean Siew <thean.siew.soon@intel.com>
+---
+ _studio/shared/include/mfxstructures-int.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/_studio/shared/include/mfxstructures-int.h b/_studio/shared/include/mfxstructures-int.h
+index 20f711fd..70124f20 100644
+--- a/_studio/shared/include/mfxstructures-int.h
++++ b/_studio/shared/include/mfxstructures-int.h
+@@ -594,6 +594,10 @@ typedef struct {
+     { 0xE20D, MFX_HW_BMG, MFX_GT4 },
+     { 0xE212, MFX_HW_BMG, MFX_GT4 },
+ 
++    /* NEX BMG */
++    { 0xE215, MFX_HW_BMG, MFX_GT4 },
++    { 0xE216, MFX_HW_BMG, MFX_GT4 },
++
+     /* LNL */
+     { 0x6420, MFX_HW_LNL, MFX_GT2 },
+     { 0x6480, MFX_HW_LNL, MFX_GT2 },
+-- 
+2.43.0
+

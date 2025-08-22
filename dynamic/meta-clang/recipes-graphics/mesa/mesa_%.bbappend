@@ -27,4 +27,4 @@ CLANG_GALLIUM_LLVM = "-Dllvm=true -Dshared-llvm=true -Ddraw-use-llvm=true,-Dllvm
 PACKAGECONFIG[gallium-llvm] := "${@[d.getVarFlag('PACKAGECONFIG', 'gallium-llvm'), '${CLANG_GALLIUM_LLVM}'][d.getVar('TOOLCHAIN') == 'clang']}"
 
 # PACKAGECONFIG "opencl" requires libclc from meta-clang
-PACKAGECONFIG:append = " opencl"
+PACKAGECONFIG:append = " opencl libclc"

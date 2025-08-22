@@ -1,7 +1,7 @@
-From d41fa8c1ce137d18862197ce0588157857b03deb Mon Sep 17 00:00:00 2001
+From b2de616aa714fe34edaf2ae1f0369dedb6496f64 Mon Sep 17 00:00:00 2001
 From: Dongwon Kim <dongwon.kim@intel.com>
 Date: Wed, 10 Apr 2024 09:34:00 -0700
-Subject: [PATCH] modesetting: Empty the damage after updating front-buffer
+Subject: [PATCH 8/8] modesetting: Empty the damage after updating front-buffer
 
 Damage needs to be emptied after the update is done. Without it,
 there is some leakage, which will affect the perf.

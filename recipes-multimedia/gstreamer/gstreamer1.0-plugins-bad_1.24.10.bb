@@ -129,6 +129,9 @@ SRC_URI = "https://gstreamer.freedesktop.org/src/gst-plugins-bad/gst-plugins-bad
            file://0001-msdk-Use-local-cflags-for-configuration.patch \
            file://0002-msdk-Add-extra-build-for-another-msdk-onevpl.patch \
            file://0001-msdk-adding-back-libdrm-dependecy.patch \
+           file://0001-Enable-SCC-tool-on-vaav1enc.patch \
+           file://0001-msdkav1enc-Add-intrabc-and-palette-for-scc-encode.patch \
+           file://0001-va-Add-AVC-10Bit-decode.patch \
            "
 SRC_URI[sha256sum] = "1707e3103950c9baed364a8af2ba0495d6b113fcd36e1062dda5f582b8f8904d"
 
